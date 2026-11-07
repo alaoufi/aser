@@ -1,8 +1,7 @@
 {
   "verified_on": "2026-11-08",
-  "code_commit": "4713fb9f405c7adcea4d4edddb42d6f20882d960",
-  "image": "jdatna-application:4713fb9",
-  "image_id": "sha256:6ca02d4f1d7a508d306dcbf94361a20792566f84a1fd8e2234c676b4c0b8e665",
+  "code_commit": "0aeac909e4c696a08d91bf82f3e36fbbd71e3599",
+  "image": "jdatna-application:0aeac909e4c696a08d91bf82f3e36fbbd71e3599",
   "url": "https://jdatna.com",
   "checks": {
     "unit_integration": "40/40",
@@ -23,5 +22,6 @@
     "No physical-phone/WebKit verification or proven speed improvement",
     "Logo/cover/video/QR; orders/mobile apps pending"
   ],
-  "sms_provider": "taqnyat; authenticated active account with positive balance; no real delivery test yet"
+  "sms_provider": "taqnyat; authenticated active account with positive balance; no real delivery test yet",
+  "footer_verification": "Live desktop/mobile: exact text,11px,no horizontal overflow; production build passed"
 }
