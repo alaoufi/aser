@@ -60,7 +60,7 @@ reports. No fictional production records. Product photo re-encoding strips EXIF.
   Homepage/version bodies identical before/after; API200, LiveKit validate401 and
   privacy-path404 checks passed. Shared TLS/TURN ingress reloaded without restart.
 - Aykdmh encrypted DB/config backup restored in isolated temporary PostgreSQL,
- 72 public tables. Working files separately encrypted/backed up and hash-checked.
+  72 public tables. Working files separately encrypted/backed up and hash-checked.
 - Aykdmh checkout FF-updated to authoritative2d5c105 without deploying that source;
   live build remains e91dc41. Existing local Caddy and untracked e2e files preserved.
   Hosting operation AYK-201 noted in its handoff/tasks/decisions so another agent
@@ -70,11 +70,14 @@ reports. No fictional production records. Product photo re-encoding strips EXIF.
 
 ## Release closeout
 
-Final source release/image mapping, Git commits and final docs are recorded at
-completion. Revoke temporary Coolify API token and restore the original disabled
-API settings before handing over. Aykdmh's required isolated source checks are
-logged in `/etc/aykdmh/coolify-site/required-checks.log`; they do not deploy code.
-See docs/COOLIFY.md for the precise ownership boundaries and future-deploy caution.
+Published code commit: 1eb03d1e032ccc1740cb1c9a37d45eec739c072e.
+Image and checks: docs/RELEASE.json. Public HTTPS health reports the matching
+full commit; www redirects to apex. All isolation/backup restore checks passed
+again after deployment. Temporary Coolify token revoked and API restored disabled.
+Aykdmh final isolated checks passed:55 server,152 client,238 integration;482s,
+including both absolute/basename legacy-deploy guard tests. Hosting source commit
+a2a6cfe is saved on server. Neither repository was pushed automatically.
+See docs/COOLIFY.md for ownership boundaries and future-deploy caution.
 
 Remaining external dependency: real SMS provider and authorized test destination.
 Off-server backups also still need an approved destination. Android/iOS and platform

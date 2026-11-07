@@ -4,14 +4,14 @@ The owner authorized organizing both public sites in Coolify. That instruction
 supersedes the old Aykdmh documentation saying to leave Coolify unused. It does not
 authorize replacing Aykdmh application code or migrating its customer database.
 
-| Resource | Owner | Runtime | Data |
-|---|---|---|---|
-| Jdatna application | Coolify Service bt4gbo9l0tq64cchxtms3ai4 | Node, private gateway8092 | Existing jdatna DB/S3 only |
-| Jdatna PostgreSQL | jdatna-stack.service | jdatna-db,1GiB/1CPU | /srv/jdatna/data/postgres |
-| Jdatna object storage | jdatna-storage.service | SeaweedFS4.52,512MiB/.5CPU | /srv/jdatna/data/object-storage |
-| Aykdmh frontend | Coolify Service 0oo2kes5tlkjobgrc2ercloe | Exact existing Caddy image,private gateway8093 | Existing published files read-only |
-| Aykdmh API/DB/LiveKit | Original Docker stack | Original images/containers unchanged | Original volumes unchanged |
-| Shared TLS/TURN ingress | Existing aykdmh-web | Original container,graceful config reload | Existing certificates/config |
+| Resource                | Owner                                    | Runtime                                        | Data                               |
+| ----------------------- | ---------------------------------------- | ---------------------------------------------- | ---------------------------------- |
+| Jdatna application      | Coolify Service bt4gbo9l0tq64cchxtms3ai4 | Node, private gateway8092                      | Existing jdatna DB/S3 only         |
+| Jdatna PostgreSQL       | jdatna-stack.service                     | jdatna-db,1GiB/1CPU                            | /srv/jdatna/data/postgres          |
+| Jdatna object storage   | jdatna-storage.service                   | SeaweedFS4.52,512MiB/.5CPU                     | /srv/jdatna/data/object-storage    |
+| Aykdmh frontend         | Coolify Service 0oo2kes5tlkjobgrc2ercloe | Exact existing Caddy image,private gateway8093 | Existing published files read-only |
+| Aykdmh API/DB/LiveKit   | Original Docker stack                    | Original images/containers unchanged           | Original volumes unchanged         |
+| Shared TLS/TURN ingress | Existing aykdmh-web                      | Original container,graceful config reload      | Existing certificates/config       |
 
 Coolify projects: Jdatna syfhtbuirhgcsxznkvx3jsxo; Aykdmh krplfrejyaryktomklbmyqhr.
 Control plane stays bound to localhost:8000. No new public admin port was opened.
@@ -88,3 +88,10 @@ jdatna-maintenance.timer runs bounded expired-only authentication cleanup every1
 minutes. It executes the bundled cleanup-auth.cjs in exactly one application
 container selected by the jdatna.role label. A database cleanup never touches
 Aykdmh tables. Limits are1000 rows per table/invocation, verified in scratch tests.
+
+## Verified closeout — 2026-11-08
+
+Published Jdatna code:1eb03d1e032ccc1740cb1c9a37d45eec739c072e.
+Aykdmh hosting-source commit:a2a6cfe (server checkout only). No source pushes
+performed. Temporary API token revoked; original is_api_enabled=false and
+allowed_ips=null restored. Existing account unchanged; private UI login200.

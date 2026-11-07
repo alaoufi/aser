@@ -1,0 +1,26 @@
+{
+  "verified_on": "2026-11-08",
+  "code_commit": "1eb03d1e032ccc1740cb1c9a37d45eec739c072e",
+  "image": "jdatna-application:1eb03d1",
+  "image_id": "sha256:35dedc4b84ea3aa2df9132b474d73bb948b204962dc439ae552839b5a8fc7c20",
+  "url": "https://jdatna.com",
+  "checks": {
+    "unit_integration": "37/37",
+    "browser_chromium": "18/18",
+    "typecheck": "passed",
+    "build": "passed",
+    "infrastructure_and_backup_restore": "passed",
+    "live_browser": "desktop/mobile HTTP200; no overflow/page errors"
+  },
+  "registrationOpen": false,
+  "SMS": false,
+  "privateStorage": true,
+  "aykdmh_hosting_commit": "a2a6cfe",
+  "source_pushed": false,
+  "limitations": [
+    "Real SMS and first verified admin pending",
+    "Off-server backup pending",
+    "No physical-phone/WebKit verification or proven speed improvement",
+    "Logo/cover/video/QR; orders/mobile apps pending"
+  ]
+}
