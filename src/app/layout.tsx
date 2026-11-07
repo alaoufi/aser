@@ -87,7 +87,10 @@ export default function RootLayout({
             </div>
           </div>
           <div className="footer-bottom">
-            <span>© {new Date().getFullYear()} أكلات وغذاء الأجداد</span>
+            <span>
+              © {new Date().getFullYear()} أكلات وغذاء الأجداد
+              <small className="footer-affiliation">أحد فروع مواقع تربح</small>
+            </span>
             <span>
               صُنع ليقرّب أهل الدار <span aria-hidden="true">✧</span>
             </span>

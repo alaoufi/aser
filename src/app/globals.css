@@ -684,6 +684,11 @@ img {
   font-size: 10px;
   color: var(--muted);
 }
+.footer-affiliation {
+  display: block;
+  margin-top: 6px;
+  font-size: 11px;
+}
 .page-space {
   padding-block: 50px 80px;
   min-height: 60vh;
