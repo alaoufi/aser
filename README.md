@@ -4,7 +4,8 @@ Repository: `alaoufi/aser`.
 
 The initial deliverable is an isolated infrastructure foundation on the existing
 Contabo server. The website, API, registration, administration interfaces and mobile
-apps have **not** been implemented or published.
+apps have **not** been implemented or published. A static Arabic construction page
+is live at https://jdatna.com with HTTPS and a www redirect.
 
 - [Current handoff](docs/PROJECT_HANDOFF.md)
 - [Remaining tasks](docs/TASKS.md)

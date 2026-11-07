@@ -18,7 +18,12 @@ docker exec -i jdatna-db pg_restore --list < "$stage/database.dump" >/dev/null
 # Globals contain role password hashes; include only inside the encrypted archive.
 docker exec jdatna-db pg_dumpall -U jdatna_admin --globals-only > "$stage/roles.sql"
 cp /opt/jdatna/infra/compose.yaml "$stage/compose.yaml"
-tar -C "$stage" -cf - database.dump roles.sql compose.yaml -C /srv/jdatna/data uploads \
+files=(database.dump roles.sql compose.yaml)
+if [[ -d /srv/jdatna/data/site ]]; then
+  cp -a /srv/jdatna/data/site "$stage/site"
+  files+=(site)
+fi
+tar -C "$stage" -cf - "${files[@]}" -C /srv/jdatna/data uploads \
   | gpg --batch --yes --pinentry-mode loopback --passphrase-file /etc/jdatna/secrets/backup-key \
       --symmetric --cipher-algo AES256 --compress-algo none --output "$partial"
 gpg --batch --quiet --pinentry-mode loopback --passphrase-file /etc/jdatna/secrets/backup-key \

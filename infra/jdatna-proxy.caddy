@@ -1,0 +1,7 @@
+# Appended to the existing shared ingress; keep all Aykdmh routes intact.
+jdatna.com {
+    reverse_proxy 172.18.0.1:8091
+}
+www.jdatna.com {
+    redir https://jdatna.com{uri} permanent
+}

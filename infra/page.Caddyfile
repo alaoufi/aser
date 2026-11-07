@@ -1,0 +1,16 @@
+{
+    admin off
+    auto_https off
+}
+:8080 {
+    root * /site
+    header {
+        -Server
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        Referrer-Policy no-referrer
+        Cache-Control "no-store"
+        Content-Security-Policy "default-src 'none'; style-src 'unsafe-inline'; img-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
+    }
+    file_server
+}

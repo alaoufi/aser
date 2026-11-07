@@ -68,4 +68,19 @@ admin password or unrelated project directories. Join only the Jdatna networks.
 
 The future application needs its own restricted network for outbound traffic;
 keep PostgreSQL on the internal network. No app container or outbound network has
-been deployed yet. Public reverse proxy, DNS and HTTPS are also pending.
+been deployed yet. The construction page has its own separate bridge network;
+public domain routing and HTTPS are configured for that static page only.
+## Construction page
+
+`jdatna-page.service` runs the static page from `/srv/jdatna/data/site`.
+Source: `site/index.html`; config: `infra/page.compose.yaml` and `infra/page.Caddyfile`.
+HTTPS terminates in the existing shared Caddy ingress. Only the Jdatna domain
+blocks in `infra/jdatna-proxy.caddy` were appended to its Caddyfile. Preserve those
+blocks in future Aykdmh deployments; its upstream deployment source has not been
+changed by this task. Ingress backup:
+`/opt/jdatna/audit/Caddyfile.before-jdatna-1794088864815229646`.
+Restore that file and validate/reload Caddy only if rolling back domain routing.
+Do not restart Aykdmh containers to update the static page.
+
+New backups include the `site` folder when present. Publishing a page update is
+an atomic replacement of its index.html; no database migration is involved.

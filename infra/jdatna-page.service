@@ -1,0 +1,18 @@
+[Unit]
+Description=Jdatna construction page
+Requires=docker.service srv-jdatna-data.mount
+After=docker.service srv-jdatna-data.mount
+BindsTo=srv-jdatna-data.mount
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/jdatna
+ExecStartPre=/usr/bin/mountpoint -q /srv/jdatna/data
+ExecStart=/usr/bin/docker compose -f /opt/jdatna/infra/page.compose.yaml up --abort-on-container-exit
+ExecStop=/usr/bin/docker compose -f /opt/jdatna/infra/page.compose.yaml stop -t 15
+Restart=always
+RestartSec=10
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target
