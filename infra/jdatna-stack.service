@@ -1,0 +1,20 @@
+[Unit]
+Description=Isolated Jdatna database stack
+Requires=docker.service srv-jdatna-data.mount
+After=docker.service srv-jdatna-data.mount
+BindsTo=srv-jdatna-data.mount
+StartLimitIntervalSec=120
+StartLimitBurst=5
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/jdatna
+ExecStartPre=/usr/bin/mountpoint -q /srv/jdatna/data
+ExecStart=/usr/bin/docker compose -f /opt/jdatna/infra/compose.yaml up --abort-on-container-exit
+ExecStop=/usr/bin/docker compose -f /opt/jdatna/infra/compose.yaml stop -t 30
+Restart=always
+RestartSec=10
+TimeoutStopSec=60
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,15 @@
+[Unit]
+Description=Encrypted Jdatna backup
+Requires=jdatna-stack.service var-backups-jdatna.mount
+After=jdatna-stack.service var-backups-jdatna.mount
+RequiresMountsFor=/srv/jdatna/data /var/backups/jdatna
+
+[Service]
+Type=oneshot
+ExecStart=/opt/jdatna/infra/backup.sh
+UMask=0077
+Nice=15
+IOSchedulingClass=idle
+CPUQuota=50%
+MemoryMax=512M
+TimeoutStartSec=30min
