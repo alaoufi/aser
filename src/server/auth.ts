@@ -1,3 +1,4 @@
+import { sendSms, smsTransportConfigured } from "./sms";
 import {
   randomBytes,
   randomInt,
@@ -22,23 +23,11 @@ export function storageConfigured() {
   );
 }
 export function smsConfigured() {
-  try {
-    const url = new URL(process.env.SMS_WEBHOOK_URL ?? "");
-    return (
-      url.protocol === "https:" &&
-      (process.env.SMS_ALLOWED_HOSTS ?? "")
-        .split(",")
-        .map((x) => x.trim())
-        .includes(url.hostname) &&
-      Boolean(
-        process.env.SMS_WEBHOOK_TOKEN &&
-        (process.env.OTP_HASH_SECRET?.length ?? 0) >= 32 &&
-        process.env.SMS_VERIFIED === "true",
-      )
-    );
-  } catch {
-    return false;
-  }
+  return (
+    smsTransportConfigured() &&
+    (process.env.OTP_HASH_SECRET?.length ?? 0) >= 32 &&
+    process.env.SMS_VERIFIED === "true"
+  );
 }
 export function registrationOpen() {
   return (
@@ -103,20 +92,7 @@ export async function requestOtp(phoneValue: string) {
     [id, phone, otpHash(id, code)],
   );
   try {
-    const response = await fetch(process.env.SMS_WEBHOOK_URL!, {
-      method: "POST",
-      redirect: "error",
-      headers: {
-        "content-type": "application/json",
-        authorization: `Bearer ${process.env.SMS_WEBHOOK_TOKEN}`,
-      },
-      body: JSON.stringify({
-        to: phone,
-        message: `رمز التحقق لمنصة أكلات وغذاء الأجداد: ${code}`,
-      }),
-      signal: AbortSignal.timeout(10000),
-    });
-    if (!response.ok) throw new Error("SMS rejected");
+    await sendSms(phone, `رمز التحقق لمنصة أكلات وغذاء الأجداد: ${code}`);
   } catch {
     await db().query("DELETE FROM jdatna.otp_challenges WHERE id=$1", [id]);
     throw new HttpError(503, "تعذر إرسال رمز التحقق");
