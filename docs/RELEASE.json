@@ -1,12 +1,12 @@
 {
   "verified_on": "2026-11-08",
-  "code_commit": "1eb03d1e032ccc1740cb1c9a37d45eec739c072e",
-  "image": "jdatna-application:1eb03d1",
-  "image_id": "sha256:35dedc4b84ea3aa2df9132b474d73bb948b204962dc439ae552839b5a8fc7c20",
+  "code_commit": "4713fb9f405c7adcea4d4edddb42d6f20882d960",
+  "image": "jdatna-application:4713fb9",
+  "image_id": "sha256:6ca02d4f1d7a508d306dcbf94361a20792566f84a1fd8e2234c676b4c0b8e665",
   "url": "https://jdatna.com",
   "checks": {
-    "unit_integration": "37/37",
-    "browser_chromium": "18/18",
+    "unit_integration": "40/40",
+    "browser_chromium": "18/18 on preceding UI release; UI unchanged by SMS update",
     "typecheck": "passed",
     "build": "passed",
     "infrastructure_and_backup_restore": "passed",
@@ -22,5 +22,6 @@
     "Off-server backup pending",
     "No physical-phone/WebKit verification or proven speed improvement",
     "Logo/cover/video/QR; orders/mobile apps pending"
-  ]
+  ],
+  "sms_provider": "taqnyat; authenticated active account with positive balance; no real delivery test yet"
 }
