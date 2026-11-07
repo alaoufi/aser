@@ -1,0 +1,160 @@
+import { ReportButton } from "@/components/public/report-button";
+import { ShareButton } from "@/components/public/share-button";
+import { notFound } from "next/navigation";
+import Link from "next/link";
+import { getProducer, getProducerProducts } from "@/server/catalog";
+import {
+  ProductCard,
+  EmptyState,
+  phoneNumber,
+  safeUrl,
+  priceLabel,
+} from "@/components/public/ui";
+export const dynamic = "force-dynamic";
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const p = await getProducer((await params).slug);
+  return { title: p?.name ?? "الأسرة غير موجودة" };
+}
+export default async function ProducerDetail({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const p = await getProducer((await params).slug);
+  if (!p) notFound();
+  const products = await getProducerProducts(p.id);
+  const phone = phoneNumber(p.phone);
+  const whatsapp = p.whatsapp ? phoneNumber(p.whatsapp) : null;
+  return (
+    <div className="wrap page-space">
+      <Link href="/producers" className="text-link">
+        الأسر المنتجة ←
+      </Link>
+      <section className="profile-header">
+        <div className="profile-symbol" aria-hidden="true">
+          ⌂
+        </div>
+        <div>
+          <p className="eyebrow">
+            {p.regionName} · {p.cityName}
+          </p>
+          <h1>{p.name}</h1>
+          {p.verified && (
+            <span className="badge inline">تمت مراجعتها إداريًا</span>
+          )}
+          <p className="profile-description">{p.description}</p>
+        </div>
+      </section>
+      <div className="detail-grid">
+        <section>
+          <h2>من مائدة الأسرة</h2>
+          {products.length ? (
+            <div className="product-grid two">
+              {products.map((item) => (
+                <ProductCard key={item.id} product={item} />
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              title="لم تُنشر منتجات بعد"
+              text="تابع هذه الصفحة للتعرف على منتجات الأسرة عند نشرها."
+            />
+          )}
+        </section>
+        <aside className="info-panel">
+          <h2>تواصل مع الأسرة</h2>
+          <ShareButton title={p.name} />
+          <p>اتفق مباشرة على السعر والكمية ووقت التجهيز والاستلام.</p>
+          <div className="contact-actions">
+            {phone && (
+              <a href={`tel:+${phone}`} className="button">
+                اتصل بالأسرة
+              </a>
+            )}
+            {whatsapp && (
+              <a
+                href={`https://wa.me/${whatsapp}`}
+                className="button secondary"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                تواصل عبر واتساب ↗
+              </a>
+            )}
+            {!phone && !whatsapp && <p>لم تُنشر وسائل تواصل بعد.</p>}
+          </div>
+          <hr />
+          <h3>التوصيل والاستلام</h3>
+          <p>
+            {p.delivery
+              ? "التوصيل متاح بالتنسيق مع الأسرة."
+              : "التوصيل غير متاح."}
+          </p>
+          <p>{p.pickup ? "الاستلام متاح بالتنسيق المباشر." : ""}</p>
+          {p.delivery && Boolean(p.deliveryAreas?.length) && (
+            <ul>
+              {p.deliveryAreas!.map((area) => (
+                <li key={area.cityId}>
+                  {area.cityName} —{" "}
+                  {area.fee === null
+                    ? "رسوم التوصيل بالاتفاق"
+                    : area.fee === 0
+                      ? "توصيل مجاني"
+                      : priceLabel(area.fee)}
+                </li>
+              ))}
+            </ul>
+          )}
+          <p className="muted">
+            يُشارك موقع الاستلام الدقيق معك بالتنسيق الخاص؛ لا يُعرض عنوان
+            المنزل علنًا.
+          </p>
+          {p.businessHours && (
+            <>
+              <h3>أوقات العمل</h3>
+              <p className="pre-line">{p.businessHours}</p>
+            </>
+          )}
+          {p.socialLinks.length > 0 && (
+            <>
+              <h3>تابع الأسرة</h3>
+              <div className="social-links">
+                {p.socialLinks.map((s, i) => {
+                  const url = safeUrl(s.url);
+                  return url ? (
+                    <a
+                      key={i}
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {s.platform} ↗
+                    </a>
+                  ) : null;
+                })}
+              </div>
+            </>
+          )}
+          {p.website && safeUrl(p.website) && (
+            <p>
+              <a
+                className="text-link"
+                href={safeUrl(p.website)!}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                الموقع الإلكتروني للأسرة ↗
+              </a>
+            </p>
+          )}
+          <small>المراجعة الإدارية ليست ترخيصًا أو اعتمادًا حكوميًا.</small>
+          <ReportButton producerId={p.id} />
+        </aside>
+      </div>
+    </div>
+  );
+}

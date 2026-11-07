@@ -1,0 +1,215 @@
+import Link from "next/link";
+import {
+  getCategories,
+  getCities,
+  searchProducts,
+  searchProducers,
+} from "@/server/catalog";
+import {
+  EmptyState,
+  FoodArt,
+  ProductCard,
+  ProducerCard,
+  SectionHeading,
+} from "@/components/public/ui";
+export const dynamic = "force-dynamic";
+export default async function Home() {
+  const [categories, cities, products, producers] = await Promise.all([
+    getCategories(),
+    getCities(),
+    searchProducts({}),
+    searchProducers({}),
+  ]);
+  return (
+    <>
+      <section className="hero wrap">
+        <div className="hero-copy">
+          <p className="eyebrow">
+            <span className="tiny-line" /> من موروثنا، بكل حب
+          </p>
+          <h1>
+            للأصالة طعم.
+            <br />
+            ولكل بيت <em>حكاية.</em>
+          </h1>
+          <p className="hero-description">
+            اكتشف نكهات الأجداد من أيدي الأسر المنتجة.
+            <br />
+            أكلات أصيلة، ومنتجات بلدية، وتواصل يقرّبكم.
+          </p>
+          <form action="/browse" className="hero-search">
+            <label>
+              <span>وش تشتهي اليوم؟</span>
+              <input name="q" placeholder="جريش، معمول، قهوة…" />
+            </label>
+            <label className="city-field">
+              <span>مدينتك</span>
+              <select name="city" defaultValue="">
+                <option value="">كل المدن</option>
+                {cities.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button className="button" type="submit">
+              اكتشف <span aria-hidden="true">←</span>
+            </button>
+          </form>
+          <div className="hero-notes">
+            <span>✧ تصفّح بدون تسجيل</span>
+            <span>✧ تواصل مباشر مع الأسرة</span>
+          </div>
+        </div>
+        <div className="hero-visual">
+          <span className="art-label">على سفرة الأصالة</span>
+          <FoodArt />
+          <span className="art-stamp">
+            صنعة بيت
+            <br />
+            <strong>وروح تراث</strong>
+          </span>
+        </div>
+      </section>
+      <section className="value-strip">
+        <div className="wrap value-grid">
+          <div>
+            <span>⌂</span>
+            <p>
+              <strong>من بيوت أهلنا</strong>
+              <small>للأسر المنتجة الغذائية فقط</small>
+            </p>
+          </div>
+          <div>
+            <span>♧</span>
+            <p>
+              <strong>على ذوقك وقريب منك</strong>
+              <small>اختر مدينتك واكتشف نكهاتها</small>
+            </p>
+          </div>
+          <div>
+            <span>♡</span>
+            <p>
+              <strong>الخير لأهل الخير</strong>
+              <small>تسجيل مجاني وبدون عمولة</small>
+            </p>
+          </div>
+        </div>
+      </section>
+      <section className="section wrap">
+        <SectionHeading
+          eyebrow="كل نكهة لها باب"
+          title="وش خاطرك فيه؟"
+          href="/browse"
+          label="تصفّح جميع الأكلات"
+        />
+        <div className="category-grid">
+          {categories.map((c, i) => (
+            <Link
+              href={`/browse?category=${encodeURIComponent(c.id)}`}
+              key={c.id}
+              className="category-card"
+            >
+              <span
+                className={`category-icon tone-${i % 4}`}
+                aria-hidden="true"
+              >
+                {
+                  ["♨", "◉", "◌", "♧", "✿", "❧", "⬡", "◈", "✺", "☕", "☀", "✧"][
+                    i % 12
+                  ]
+                }
+              </span>
+              <h3>{c.name}</h3>
+              <span className="category-arrow" aria-hidden="true">
+                ↗
+              </span>
+            </Link>
+          ))}
+        </div>
+      </section>
+      <section className="availability-section wrap">
+        <div>
+          <p className="eyebrow">لكل وقت، نكهته</p>
+          <h2>
+            جاهز اليوم؟
+            <br />
+            أو على موعد معك.
+          </h2>
+        </div>
+        <Link href="/browse?status=available" className="availability-card">
+          <span className="status-dot" />
+          <h3>متوفر الآن</h3>
+          <p>اكتشف المنتجات المتاحة وتأكد من موعدها مع الأسرة.</p>
+          <span className="text-link">شوف المتوفر ←</span>
+        </Link>
+        <Link href="/browse?status=preorder" className="availability-card warm">
+          <span aria-hidden="true">◷</span>
+          <h3>يتجهّز على طلبك</h3>
+          <p>للعزائم واللّمات… نكهات تستاهل الانتظار.</p>
+          <span className="text-link">اكتشف حسب الطلب ←</span>
+        </Link>
+      </section>
+      <section className="section wrap">
+        <SectionHeading
+          eyebrow="أهل الصنعة وأهل الطيب"
+          title="تعرّف على الأسر المنتجة"
+          href="/producers"
+        />
+        {producers.length ? (
+          <div className="producer-grid">
+            {producers.slice(0, 4).map((p) => (
+              <ProducerCard key={p.id} producer={p} />
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            title="هنا تبدأ حكايات الأسر"
+            text="نفتح المساحة للأسر المنتجة. ستظهر الملفات العامة هنا بعد اكتمال مراجعتها والموافقة على نشرها."
+          />
+        )}
+      </section>
+      <section className="section wrap">
+        <SectionHeading
+          eyebrow="جديد المائدة"
+          title="نكهات تستحق الاكتشاف"
+          href="/browse"
+        />
+        {products.length ? (
+          <div className="product-grid">
+            {products.slice(0, 4).map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            title="المائدة تنتظر أولى نكهاتها"
+            text="لا توجد منتجات منشورة حاليًا. كل منتج سيظهر بمعلوماته الحقيقية وسعره أو خيار الاستفسار من الأسرة."
+          />
+        )}
+      </section>
+      <section className="join-banner wrap">
+        <div>
+          <p className="eyebrow">لأهل الصنعة، مكان بيننا</p>
+          <h2>
+            طبختك لها محبّين.
+            <br />
+            خلّهم يوصلون لك.
+          </h2>
+          <p>
+            عرّف الناس بمنتجاتك، واحكِ حكايتك، وتواصل معهم مباشرة.
+            <br />
+            التسجيل مجاني وبدون عمولات أو اشتراكات حاليًا.
+          </p>
+          <Link href="/register" className="button light">
+            سجّل كأسرة منتجة <span aria-hidden="true">←</span>
+          </Link>
+        </div>
+        <div className="join-ornament" aria-hidden="true">
+          ✳
+        </div>
+      </section>
+    </>
+  );
+}

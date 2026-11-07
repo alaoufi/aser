@@ -1,0 +1,405 @@
+"use client";
+import { useEffect, useState } from "react";
+import type { Category, City } from "@/lib/types";
+import { api, Message, s } from "./shared";
+function useResource<T>(url: string) {
+  const [data, setData] = useState<T | null>(null);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [success, setSuccess] = useState("");
+  async function refresh() {
+    setData(await api<T>(url));
+  }
+  useEffect(() => {
+    refresh().catch((e) => setError(e.message));
+  }, [url]);
+  async function write(method: string, body: unknown) {
+    setBusy(true);
+    setError("");
+    setSuccess("");
+    try {
+      await api(url, { method, body: JSON.stringify(body) });
+      await refresh();
+      setSuccess("تم حفظ التغييرات.");
+      return true;
+    } catch (e) {
+      setError((e as Error).message);
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  }
+  return { data, error, busy, success, write };
+}
+export function CategoriesAdmin() {
+  const r = useResource<{ categories: Category[] }>("/api/admin/categories");
+  const [editing, setEditing] = useState<Category | null>(null);
+  async function save(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const f = new FormData(e.currentTarget);
+    if (
+      await r.write(editing ? "PATCH" : "POST", {
+        id: editing?.id,
+        name: f.get("name"),
+        slug: f.get("slug"),
+        icon: f.get("icon"),
+      })
+    )
+      setEditing(null);
+  }
+  return (
+    <section>
+      <h2>تصنيفات الأكلات</h2>
+      <Message error={r.error} success={r.success} />
+      <form
+        key={editing?.id || "new"}
+        onSubmit={save}
+        className={`${s.card} ${s.form}`}
+      >
+        <h3>{editing ? "تعديل التصنيف" : "تصنيف جديد"}</h3>
+        <div className={s.grid}>
+          <label className={s.field}>
+            اسم التصنيف
+            <input
+              name="name"
+              required
+              maxLength={120}
+              defaultValue={editing?.name}
+            />
+          </label>
+          <label className={s.field}>
+            الرابط المختصر
+            <input
+              name="slug"
+              dir="ltr"
+              required
+              pattern="[a-z0-9\x2d]+"
+              maxLength={100}
+              title="حروف إنجليزية صغيرة وأرقام وشرطة فقط"
+              defaultValue={editing?.slug}
+            />
+          </label>
+          <label className={s.field}>
+            الرمز
+            <input
+              name="icon"
+              required
+              maxLength={20}
+              defaultValue={editing?.icon || "✦"}
+            />
+          </label>
+        </div>
+        <div className={s.actions}>
+          <button className={s.button} disabled={r.busy}>
+            {r.busy ? "جارٍ الحفظ…" : "حفظ التصنيف"}
+          </button>
+          {editing && (
+            <button
+              type="button"
+              className={s.button}
+              onClick={() => setEditing(null)}
+            >
+              إلغاء التعديل
+            </button>
+          )}
+        </div>
+      </form>
+      {!r.data && !r.error ? (
+        <p role="status">جارٍ تحميل التصنيفات…</p>
+      ) : r.data?.categories.length ? (
+        <div className={s.list}>
+          {r.data.categories.map((c) => (
+            <article className={s.card} key={c.id}>
+              <h3>
+                {c.icon} {c.name}
+              </h3>
+              <p dir="ltr">{c.slug}</p>
+              <button className={s.button} onClick={() => setEditing(c)}>
+                تعديل {c.name}
+              </button>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <p className={s.notice}>لا توجد تصنيفات بعد.</p>
+      )}
+    </section>
+  );
+}
+type Locations = {
+  regions: { id: string; name: string }[];
+  cities: City[];
+  neighborhoods: { id: string; name: string; cityId: string }[];
+};
+export function LocationsAdmin() {
+  const r = useResource<Locations>("/api/admin/locations");
+  const [kind, setKind] = useState("region");
+  async function save(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const f = new FormData(form);
+    if (
+      await r.write("POST", {
+        kind,
+        name: f.get("name"),
+        regionId: f.get("regionId") || undefined,
+        cityId: f.get("cityId") || undefined,
+      })
+    )
+      form.reset();
+  }
+  return (
+    <section>
+      <h2>المناطق والمدن والأحياء</h2>
+      <p className={s.muted}>
+        كل مدينة ترتبط بمنطقة، وكل حي يرتبط بمدينة. تحقق من القوائم قبل إضافة
+        اسم جديد.
+      </p>
+      <Message error={r.error} success={r.success} />
+      <form onSubmit={save} className={`${s.card} ${s.form}`}>
+        <label className={s.field}>
+          نوع الموقع
+          <select value={kind} onChange={(e) => setKind(e.target.value)}>
+            <option value="region">منطقة</option>
+            <option value="city">مدينة</option>
+            <option value="neighborhood">حي</option>
+          </select>
+        </label>
+        {kind === "city" && (
+          <label className={s.field}>
+            المنطقة
+            <select name="regionId" required defaultValue="">
+              <option value="" disabled>
+                اختر المنطقة
+              </option>
+              {r.data?.regions.map((v) => (
+                <option key={v.id} value={v.id}>
+                  {v.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        {kind === "neighborhood" && (
+          <label className={s.field}>
+            المدينة
+            <select name="cityId" required defaultValue="">
+              <option value="" disabled>
+                اختر المدينة
+              </option>
+              {r.data?.cities.map((v) => (
+                <option key={v.id} value={v.id}>
+                  {v.name} — {v.regionName}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        <label className={s.field}>
+          الاسم
+          <input name="name" required maxLength={120} />
+        </label>
+        <button className={s.button} disabled={r.busy || !r.data}>
+          {r.busy ? "جارٍ الحفظ…" : "إضافة الموقع"}
+        </button>
+      </form>
+      {!r.data && !r.error ? (
+        <p role="status">جارٍ تحميل المواقع…</p>
+      ) : !r.data?.regions.length ? (
+        <p className={s.notice}>لا توجد مناطق مسجلة.</p>
+      ) : (
+        r.data.regions.map((region) => (
+          <article className={s.card} key={region.id}>
+            <h3>{region.name}</h3>
+            {r.data?.cities
+              .filter((c) => c.regionId === region.id)
+              .map((city) => (
+                <div key={city.id}>
+                  <h4>{city.name}</h4>
+                  <p>
+                    {r.data?.neighborhoods
+                      .filter((n) => n.cityId === city.id)
+                      .map((n) => n.name)
+                      .join(" · ") || "لا توجد أحياء مسجلة"}
+                  </p>
+                </div>
+              ))}
+          </article>
+        ))
+      )}
+    </section>
+  );
+}
+type ModeratedProduct = {
+  id: string;
+  name: string;
+  producerName: string;
+  cityName: string;
+  status: string;
+  visible: boolean;
+  featured: boolean;
+  categoryIds?: string[];
+};
+function ProductModeration({
+  product,
+  categories,
+  busy,
+  onSave,
+}: {
+  product: ModeratedProduct;
+  categories: Category[];
+  busy: boolean;
+  onSave: (body: unknown) => Promise<boolean>;
+}) {
+  return (
+    <form
+      className={`${s.card} ${s.form}`}
+      onSubmit={async (e) => {
+        e.preventDefault();
+        const f = new FormData(e.currentTarget);
+        await onSave({
+          id: product.id,
+          visible: f.has("visible"),
+          featured: f.has("featured"),
+          categoryIds: f.getAll("categoryIds"),
+          reason: f.get("reason"),
+        });
+      }}
+    >
+      <h3>{product.name}</h3>
+      <p>
+        {product.producerName} · {product.cityName}
+      </p>
+      <div className={s.checks}>
+        <label>
+          <input
+            name="visible"
+            type="checkbox"
+            defaultChecked={product.visible}
+          />
+          ظاهر في المنصة
+        </label>
+        <label>
+          <input
+            name="featured"
+            type="checkbox"
+            defaultChecked={product.featured}
+          />
+          منتج مميز
+        </label>
+      </div>
+      <fieldset>
+        <legend>التصنيفات المناسبة</legend>
+        <div className={s.checks}>
+          {categories.map((c) => (
+            <label key={c.id}>
+              <input
+                name="categoryIds"
+                type="checkbox"
+                value={c.id}
+                defaultChecked={product.categoryIds?.includes(c.id)}
+              />
+              {c.name}
+            </label>
+          ))}
+        </div>
+      </fieldset>
+      <label className={s.field}>
+        سبب التغيير
+        <textarea name="reason" required minLength={3} maxLength={2000} />
+      </label>
+      <button className={s.button} disabled={busy}>
+        حفظ إشراف المنتج
+      </button>
+    </form>
+  );
+}
+export function ProductsAdmin() {
+  const r = useResource<{ products: ModeratedProduct[] }>(
+    "/api/admin/products",
+  );
+  const c = useResource<{ categories: Category[] }>("/api/admin/categories");
+  return (
+    <section>
+      <h2>الإشراف على المنتجات</h2>
+      <Message error={r.error || c.error} success={r.success} />
+      {!r.data && !r.error ? (
+        <p role="status">جارٍ تحميل المنتجات…</p>
+      ) : r.data?.products.length ? (
+        r.data.products.map((p) => (
+          <ProductModeration
+            key={`${p.id}-${p.visible}-${p.featured}-${p.categoryIds?.join()}`}
+            product={p}
+            categories={c.data?.categories || []}
+            busy={r.busy || !c.data}
+            onSave={(body) => r.write("PATCH", body)}
+          />
+        ))
+      ) : (
+        <p className={s.notice}>لا توجد منتجات للمراجعة.</p>
+      )}
+    </section>
+  );
+}
+type Report = {
+  id: string;
+  status: string;
+  reason: string;
+  productId?: string;
+  producerId?: string;
+  productName?: string;
+  producerName?: string;
+  createdAt?: string;
+};
+export function ReportsAdmin() {
+  const r = useResource<{ reports: Report[] }>("/api/admin/reports");
+  return (
+    <section>
+      <h2>البلاغات والشكاوى</h2>
+      <Message error={r.error} success={r.success} />
+      {!r.data && !r.error ? (
+        <p role="status">جارٍ تحميل البلاغات…</p>
+      ) : r.data?.reports.length ? (
+        r.data.reports.map((report) => (
+          <form
+            key={`${report.id}-${report.status}`}
+            className={`${s.card} ${s.form}`}
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const f = new FormData(e.currentTarget);
+              await r.write("PATCH", {
+                id: report.id,
+                status: f.get("status"),
+                reason: f.get("reason"),
+              });
+            }}
+          >
+            <h3>بلاغ {report.id.slice(0, 8)}</h3>
+            <p>{report.reason}</p>
+            <p>
+              {report.productName} {report.producerName}
+            </p>
+            <label className={s.field}>
+              الحالة
+              <select name="status" defaultValue={report.status}>
+                <option value="new">جديد</option>
+                <option value="reviewing">قيد المراجعة</option>
+                <option value="resolved">تم الحل</option>
+                <option value="dismissed">مستبعد</option>
+              </select>
+            </label>
+            <label className={s.field}>
+              سبب الإجراء
+              <textarea name="reason" required minLength={3} maxLength={2000} />
+            </label>
+            <button className={s.button} disabled={r.busy}>
+              حفظ إجراء البلاغ
+            </button>
+          </form>
+        ))
+      ) : (
+        <p className={s.notice}>لا توجد بلاغات حاليًا.</p>
+      )}
+    </section>
+  );
+}

@@ -1,0 +1,47 @@
+name: jdatna-application
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: jdatna-application:${APP_VERSION:-latest}
+    restart: unless-stopped
+    user: "10001:10001"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 512m
+    memswap_limit: 512m
+    cpus: 1.0
+    pids_limit: 128
+    env_file: /etc/jdatna/runtime.env
+    environment:
+      STORAGE_GUARD_PATH: /run/jdatna-storage.marker
+      NODE_EXTRA_CA_CERTS: /run/jdatna-storage-ca.crt
+    volumes:
+      - type: bind
+        source: /srv/jdatna/data/.storage-marker
+        target: /run/jdatna-storage.marker
+        read_only: true
+        bind:
+          create_host_path: false
+      - /etc/jdatna/storage/tls.crt:/run/jdatna-storage-ca.crt:ro
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+      - /app/.next/cache:size=32m,uid=10001,gid=10001,mode=0700
+    ports: ["172.18.0.1:8092:3000"]
+    networks: [application, database, storage]
+    labels:
+      jdatna.role: application
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: "3"}
+networks:
+  application:
+    name: jdatna_application
+  database:
+    external: true
+    name: jdatna_database
+  storage:
+    external: true
+    name: jdatna_storage

@@ -1,0 +1,54 @@
+name: jdatna-storage
+services:
+  storage:
+    image: chrislusf/seaweedfs@sha256:57877e32bb90073b37dc109b438ba66e84fd5ed9ced5f5c04f56444ef243ce59
+    container_name: jdatna-storage
+    entrypoint: weed
+    command:
+      - server
+      - -dir=/data
+      - -ip=127.0.0.1
+      - -ip.bind=127.0.0.1
+      - -s3
+      - -s3.ip.bind=0.0.0.0
+      - -s3.port=0
+      - -s3.port.https=8334
+      - -s3.port.iceberg=0
+      - -s3.port.lance=0
+      - -s3.config=/config/s3.json
+      - -s3.cert.file=/config/tls.crt
+      - -s3.key.file=/config/tls.key
+      - -master.volumeSizeLimitMB=256
+      - -volume.max=8
+      - -volume.minFreeSpace=512MiB
+      - -filer.disableDirListing
+      - -filer.exposeDirectoryData=false
+    user: "10001:10001"
+    restart: "no"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 512m
+    memswap_limit: 512m
+    cpus: 0.5
+    pids_limit: 128
+    working_dir: /data
+    volumes:
+      - type: bind
+        source: /srv/jdatna/data/object-storage
+        target: /data
+        bind: {create_host_path: false}
+      - /etc/jdatna/storage/s3.json:/config/s3.json:ro
+      - /etc/jdatna/storage/tls.crt:/config/tls.crt:ro
+      - /etc/jdatna/storage/tls.key:/config/tls.key:ro
+      - /etc/jdatna/storage/security.toml:/etc/seaweedfs/security.toml:ro
+      - /opt/jdatna/infra/storage-master.toml:/etc/seaweedfs/master.toml:ro
+    tmpfs: ["/tmp:size=32m,mode=1777"]
+    networks: [storage]
+    logging:
+      driver: json-file
+      options: {max-size: 10m, max-file: "3"}
+networks:
+  storage:
+    name: jdatna_storage
+    internal: true

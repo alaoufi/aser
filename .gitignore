@@ -7,3 +7,10 @@ secrets/
 *.dump
 *.ext4
 __pycache__/
+node_modules/
+.next/
+*.tsbuildinfo
+test-results/
+playwright-report/
+.superpowers/
+artifacts/

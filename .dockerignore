@@ -1,0 +1,12 @@
+.git
+.next
+node_modules
+.env*
+!.env.example
+artifacts
+test-results
+playwright-report
+secrets
+*.gpg
+*.dump
+*.ext4

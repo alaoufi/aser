@@ -1,0 +1,11 @@
+[Unit]
+Description=Bounded Jdatna expired authentication cleanup
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/jdatna/infra/cleanup-auth.sh
+TimeoutStartSec=60
+Nice=15
+UMask=0077

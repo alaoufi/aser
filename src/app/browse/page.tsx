@@ -1,0 +1,106 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { getCategories, getCities, searchProducts } from "@/server/catalog";
+import { EmptyState, ProductCard } from "@/components/public/ui";
+export const metadata: Metadata = { title: "اكتشف الأكلات" };
+export const dynamic = "force-dynamic";
+export default async function Browse({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const raw = await searchParams;
+  const val = (k: string) =>
+    typeof raw[k] === "string" ? (raw[k] as string) : "";
+  const filters = {
+    q: val("q"),
+    city: val("city"),
+    category: val("category"),
+    status: val("status"),
+    delivery: val("delivery"),
+  };
+  const [categories, cities, products] = await Promise.all([
+    getCategories(),
+    getCities(),
+    searchProducts(filters),
+  ]);
+  return (
+    <div className="wrap page-space">
+      <div className="page-intro">
+        <p className="eyebrow">نكهات من بيوت أهلنا</p>
+        <h1>اكتشف الأكلات</h1>
+        <p>اختر ما تحب، وتواصل مع الأسرة على التفاصيل.</p>
+      </div>
+      <form className="filter-bar" action="/browse">
+        <label>
+          ابحث عن نكهة
+          <input
+            name="q"
+            defaultValue={filters.q}
+            placeholder="اسم الأكلة أو الأسرة"
+          />
+        </label>
+        <label>
+          المدينة
+          <select name="city" defaultValue={filters.city}>
+            <option value="">كل المدن</option>
+            {cities.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.regionName} — {c.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          التصنيف
+          <select name="category" defaultValue={filters.category}>
+            <option value="">كل التصنيفات</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          التوفر
+          <select name="status" defaultValue={filters.status}>
+            <option value="">كل الحالات</option>
+            <option value="available">متوفر</option>
+            <option value="preorder">حسب الطلب</option>
+            <option value="unavailable">غير متوفر</option>
+          </select>
+        </label>
+        <label>
+          طريقة الاستلام
+          <select name="delivery" defaultValue={filters.delivery}>
+            <option value="">الكل</option>
+            <option value="true">توصيل متاح</option>
+            <option value="pickup">استلام شخصي</option>
+          </select>
+        </label>
+        <button className="button">بحث</button>
+      </form>
+      <div className="results-heading">
+        <p>
+          {products.length ? `${products.length} منتج مطابق` : "نتائج البحث"}
+        </p>
+        <Link href="/browse" className="text-link">
+          مسح المرشحات
+        </Link>
+      </div>
+      {products.length ? (
+        <div className="product-grid">
+          {products.map((p) => (
+            <ProductCard key={p.id} product={p} />
+          ))}
+        </div>
+      ) : (
+        <EmptyState
+          title="لم نجد منتجات بهذه الخيارات"
+          text="جرّب مدينة أو تصنيفًا آخر، أو امسح المرشحات. تظهر المنتجات المعتمدة والمنشورة فقط."
+        />
+      )}
+    </div>
+  );
+}

@@ -33,6 +33,14 @@ for p, digest in before['config_sha256'].items():
     content = Path(p).read_bytes()
     addition = Path('/opt/jdatna/infra/jdatna-proxy.caddy')
     if p == '/opt/aykdmh/deploy/caddy/Caddyfile' and addition.exists():
+        approved_file = Path('/opt/jdatna/audit/approved-ingress.json')
+        if approved_file.exists():
+            approved = json.loads(approved_file.read_text())
+            check(hashlib.sha256(content).hexdigest() == approved['approved_sha256'],
+                  'Shared ingress matches approved Coolify routing')
+            check(approved['backup_path'] == '/etc/aykdmh/coolify-site/original-ingress.caddy',
+                  'Original ingress backup has expected independent path')
+            content = Path(approved['backup_path']).read_bytes()
         suffix = b'\n' + addition.read_bytes()
         if content.endswith(suffix):
             content = content[:-len(suffix)]
@@ -49,6 +57,19 @@ check(set(d['NetworkSettings']['Networks']) == {'jdatna_database'},
       'Database only joins its private project network')
 net = json.loads(run('docker', 'network', 'inspect', 'jdatna_database'))[0]
 check(net['Internal'], 'Database network marked internal')
+apps = run('docker', 'ps', '-q', '--filter', 'label=jdatna.role=application').decode().split()
+check(len(apps) == 1, 'Exactly one Jdatna application is running')
+app = json.loads(run('docker', 'inspect', apps[0]))[0]
+check(app['Config']['User'] == '10001:10001' and app['HostConfig']['ReadonlyRootfs'],
+      'Application runs non-root on a read-only filesystem')
+check('aykdmh_default' not in app['NetworkSettings']['Networks'] and
+      'jdatna_database' in app['NetworkSettings']['Networks'], 'Application networks isolated from Aykdmh')
+check(app['HostConfig']['PortBindings'].get('3000/tcp') == [{'HostIp':'172.18.0.1','HostPort':'8092'}],
+      'Application port binds only the private ingress gateway')
+store = json.loads(run('docker', 'inspect', 'jdatna-storage'))[0]
+check(not store['HostConfig']['PortBindings'] and set(store['NetworkSettings']['Networks']) == {'jdatna_storage'},
+      'Object storage has no host ports or other project networks')
+check(store['State']['Running'] and not store['State']['Paused'], 'Object storage running and unfrozen')
 for path, gib in [('/srv/jdatna/data', 12), ('/var/backups/jdatna', 6)]:
     mount = json.loads(run('findmnt', '-J', '--mountpoint', path))['filesystems'][0]
     check(mount['source'].startswith('/dev/loop') and 'noexec' in mount['options'],
