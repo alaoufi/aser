@@ -1,16 +1,16 @@
 {
-  "verified_on": "2026-11-08",
-  "code_commit": "5fd917b1c2d2152e6e81fc9c59de70b0428a1174",
-  "image": "jdatna-application:5fd917b1c2d2152e6e81fc9c59de70b0428a1174",
+  "verified_on": "2026-11-09",
+  "code_commit": "aa698502aa84a8eeb8f4b34ad52622468526af19",
+  "image": "jdatna-application:aa698502aa84a8eeb8f4b34ad52622468526af19",
   "url": "https://jdatna.com",
   "checks": {
-    "unit_integration": "43/43 on preceding backend release;no backend changes",
-    "browser_chromium": "Targeted approved-name and responsive geometry test passed;production build passed",
+    "unit_integration": "94 distinct tests covered successfully across full run and SSH-timeout retries; full run 92 pass/2 connection failures, retry16/16",
+    "browser_chromium": "36 distinct targeted checks passed across initial35 plus one connection retry",
     "typecheck": "passed",
     "build": "passed",
     "infrastructure_and_backup_restore": "passed after deployment; Aykdmh unchanged",
-    "live_browser": "HTTPS exact release;approved labels and photos visible at320/390/768/851/1440;no overflow/page errors;uniform nonmirrored transforms checked",
-    "otp_endpoint": "Four-digit code format; secure generation1000..9999; existing expiry and retry limits retained"
+    "live_browser": "Exact release verified; nested drinks/dairy branches; widths320/390/768/1440; password login; zero pageerrors",
+    "otp_endpoint": "Missing purpose and login purpose rejected400; OTP only signup/reset; fresh setup grant requires password"
   },
   "registrationOpen": true,
   "SMS": true,
@@ -18,14 +18,13 @@
   "aykdmh_hosting_commit": "a2a6cfe",
   "source_pushed": false,
   "limitations": [
-    "First verified admin pending",
     "Off-server backup pending",
-    "No physical-phone/WebKit verification or proven speed improvement",
-    "Logo/cover/video/QR; orders/mobile apps pending"
+    "No physical-phone/WebKit verification or new SMS delivery test",
+    "Deep geography requires administrative curation"
   ],
   "sms_provider": "Same active Taqnyat credentials as Aykdmh; enabled at explicit owner request to test delivery on own phone",
   "footer_verification": "Affiliation retained",
-  "image_id": "sha256:e8ec54f2c8ca12348ff95890fdbcb999b05c34f8ede0ec040f47e94592684cf4",
+  "image_id": "sha256:e417324b3594cea00526ac9c718717c7a3daab18bbfa6e4144ba7827e42426b5",
   "sms_delivery_confirmed": true,
   "sms_delivery_evidence": "Owner reported receipt of previous6-digit SMS;4-digit release deployed afterwards, not physically re-tested by agent",
   "otp_digits": 4,
@@ -35,13 +34,18 @@
     "qassim": 14,
     "existingCityRecordsUnchanged": true,
     "coverage": "cities/governorates; not all villages or administrative centers",
-    "firstRegions": ["riyadh", "makkah", "madinah", "qassim"]
+    "firstRegions": [
+      "riyadh",
+      "makkah",
+      "madinah",
+      "qassim"
+    ]
   },
   "brand_logo": {
-    "path": "/brand/jdatna-logo.jpeg",
-    "sha256": "6787df925e8c0bb62cac4a4422962a88097e2fb79650b4ce4f4363ad71c83fd8",
+    "path": "/brand/aklaat-jdatna-logo.png",
+    "sha256": "3B2D929C5140128D42890A6018EB31154CDABABF35E76C84BE268020199F80D2",
     "owner_supplied": true,
-    "pixels_unchanged": true
+    "pixels_unchanged": false
   },
   "food_photography": {
     "count": 5,
