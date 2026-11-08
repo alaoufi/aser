@@ -11,6 +11,13 @@ test("food photography stays visible and separate from search across tablet brea
     await page.goto("/");
     await page.evaluate(() => document.fonts.ready);
     await expect(page.locator(".food-showcase img")).toHaveCount(5);
+    await expect(page.locator(".food-showcase .dish-number")).toHaveText([
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+    ]);
     const overlaps = await page.evaluate(() => {
       const a = document.querySelector(".hero-search")!.getBoundingClientRect(),
         b = document.querySelector(".food-showcase")!.getBoundingClientRect();

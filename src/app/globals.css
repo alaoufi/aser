@@ -2011,11 +2011,11 @@ label:has(> select) {
 .food-showcase-main {
   position: relative;
   aspect-ratio: 4/3;
-  background: #fff;
-  border: 1px solid var(--line);
+  background: transparent;
+  border: 0;
   border-radius: 22px;
-  overflow: hidden;
-  box-shadow: 0 12px 32px #32291f08;
+  overflow: visible;
+  box-shadow: none;
 }
 .food-showcase img {
   object-fit: contain;
@@ -2029,10 +2029,10 @@ label:has(> select) {
 .food-showcase-strip > div {
   position: relative;
   aspect-ratio: 1.25;
-  background: #fff;
-  border: 1px solid var(--line);
+  background: transparent;
+  border: 0;
   border-radius: 12px;
-  overflow: hidden;
+  overflow: visible;
 }
 .food-showcase figcaption {
   font-size: 12px;
@@ -2078,4 +2078,44 @@ main {
 }
 .site-footer a:hover {
   color: #fff4d6;
+}
+
+.food-showcase-main img {
+  filter: drop-shadow(0 12px 10px #38291f2b);
+}
+.food-showcase-strip img {
+  filter: drop-shadow(0 5px 4px #38291f26);
+}
+.dish-number {
+  position: absolute;
+  top: 4px;
+  inset-inline-start: 4px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--olive);
+  color: #fff;
+  font-size: 14px;
+  line-height: 1;
+  font-weight: 700;
+  box-shadow: 0 2px 6px #38291f20;
+}
+.food-showcase-main .dish-number {
+  width: 36px;
+  height: 36px;
+  font-size: 18px;
+  top: 10px;
+  inset-inline-start: 10px;
+}
+@media (max-width: 600px) {
+  .food-showcase-strip .dish-number {
+    width: 22px;
+    height: 22px;
+    font-size: 12px;
+    top: 0;
+    inset-inline-start: 0;
+  }
 }

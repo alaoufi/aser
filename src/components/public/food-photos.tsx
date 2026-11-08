@@ -9,20 +9,26 @@ export function FoodPhotos() {
   return (
     <figure className="food-showcase">
       <div className="food-showcase-main">
+        <span className="dish-number" aria-hidden="true">
+          1
+        </span>
         <Image
-          src="/food/rice-plate.jpeg"
-          alt="طبق أرز باللحم والمكسرات"
+          src="/food/rice-plate-cutout.png"
+          alt="الطبق 1: أرز باللحم والمكسرات"
           fill
           sizes="(max-width:600px) 85vw, (max-width:850px) 40vw, 480px"
           preload
         />
       </div>
       <div className="food-showcase-strip">
-        {dishes.map(([id, alt]) => (
+        {dishes.map(([id, alt], index) => (
           <div key={id}>
+            <span className="dish-number" aria-hidden="true">
+              {index + 2}
+            </span>
             <Image
-              src={`/food/${id}.jpeg`}
-              alt={alt}
+              src={`/food/${id}-cutout.png`}
+              alt={`الطبق ${index + 2}: ${alt}`}
               fill
               sizes="(max-width:600px) 20vw, 110px"
             />
