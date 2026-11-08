@@ -5,7 +5,7 @@ export async function getCategories(): Promise<Category[]> {
   return databaseConfigured()
     ? (
         await db().query(
-          "SELECT id,name,slug,icon FROM jdatna.categories ORDER BY length(id),id",
+          'SELECT id,name,slug,icon,parent_id AS "parentId" FROM jdatna.categories ORDER BY length(COALESCE(parent_id,id)),COALESCE(parent_id,id),parent_id NULLS FIRST,id',
         )
       ).rows
     : categories;
@@ -62,8 +62,8 @@ function conditions(f: Filters, products: boolean) {
   if (f.category)
     add(
       products
-        ? "EXISTS(SELECT 1 FROM jdatna.product_categories pc WHERE pc.product_id=x.id AND pc.category_id=?)"
-        : "EXISTS(SELECT 1 FROM jdatna.producer_categories pc WHERE pc.producer_id=p.id AND pc.category_id=?)",
+        ? "EXISTS(SELECT 1 FROM jdatna.product_categories pc WHERE pc.product_id=x.id AND pc.category_id IN(SELECT id FROM jdatna.categories WHERE id=? OR parent_id=?))"
+        : "EXISTS(SELECT 1 FROM jdatna.producer_categories pc WHERE pc.producer_id=p.id AND pc.category_id IN(SELECT id FROM jdatna.categories WHERE id=? OR parent_id=?))",
       f.category,
     );
   if (products && f.status) add("x.status=?", f.status);

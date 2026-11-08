@@ -2210,3 +2210,15 @@ main {
     font-size: 15px;
   }
 }
+
+.category-title {
+  flex: 1;
+  min-width: 0;
+}
+.category-title small {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.7;
+  margin-top: 4px;
+}

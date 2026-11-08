@@ -1,3 +1,4 @@
+import { categoryLabel } from "@/lib/category-label";
 import { LocationFields } from "@/components/public/location-fields";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -54,7 +55,7 @@ export default async function Browse({
             <option value="">كل التصنيفات</option>
             {categories.map((c) => (
               <option key={c.id} value={c.id}>
-                {c.name}
+                {categoryLabel(c, categories)}
               </option>
             ))}
           </select>

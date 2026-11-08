@@ -90,28 +90,56 @@ export default async function Home() {
           label="تصفّح جميع الأكلات"
         />
         <div className="category-grid">
-          {categories.map((c, i) => (
-            <Link
-              href={`/browse?category=${encodeURIComponent(c.id)}`}
-              key={c.id}
-              className="category-card"
-            >
-              <span
-                className={`category-icon tone-${i % 4}`}
-                aria-hidden="true"
+          {categories
+            .filter((c) => !c.parentId)
+            .sort(
+              (a, b) =>
+                (a.id === "13" || a.id === "14" ? -1 : 0) -
+                (b.id === "13" || b.id === "14" ? -1 : 0),
+            )
+            .map((c, i) => (
+              <Link
+                href={`/browse?category=${encodeURIComponent(c.id)}`}
+                key={c.id}
+                className="category-card"
               >
-                {
-                  ["♨", "◉", "◌", "♧", "✿", "❧", "⬡", "◈", "✺", "☕", "☀", "✧"][
-                    i % 12
-                  ]
-                }
-              </span>
-              <h3>{c.name}</h3>
-              <span className="category-arrow" aria-hidden="true">
-                ↗
-              </span>
-            </Link>
-          ))}
+                <span
+                  className={`category-icon tone-${i % 4}`}
+                  aria-hidden="true"
+                >
+                  {
+                    [
+                      "♨",
+                      "◉",
+                      "◌",
+                      "♧",
+                      "✿",
+                      "❧",
+                      "⬡",
+                      "◈",
+                      "✺",
+                      "☕",
+                      "☀",
+                      "✧",
+                    ][i % 12]
+                  }
+                </span>
+                <div className="category-title">
+                  <h3>{c.name}</h3>
+                  {categories.some((child) => child.parentId === c.id) && (
+                    <small>
+                      {categories
+                        .filter((child) => child.parentId === c.id)
+                        .map((child) => child.name)
+                        .join(" · ")}
+                    </small>
+                  )}
+                </div>
+                <span className="category-arrow" aria-hidden="true">
+                  ↗
+                </span>
+              </Link>
+            ))}
         </div>
       </section>
       <section className="availability-section wrap">

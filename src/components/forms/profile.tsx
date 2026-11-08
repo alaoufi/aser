@@ -1,4 +1,5 @@
 "use client";
+import { categoryLabel } from "@/lib/category-label";
 import { LocationFields } from "@/components/public/location-fields";
 import { useEffect, useState } from "react";
 import type { Category, City, SessionUser } from "@/lib/types";
@@ -350,7 +351,7 @@ export function ProfileForm({
                     type="checkbox"
                     defaultChecked={profile?.categoryIds?.includes(c.id)}
                   />
-                  {c.name}
+                  {categoryLabel(c, categories)}
                 </label>
               ))}
             </div>

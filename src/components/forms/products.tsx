@@ -1,4 +1,5 @@
 "use client";
+import { categoryLabel } from "@/lib/category-label";
 import { useEffect, useState } from "react";
 import type { Product, Category } from "@/lib/types";
 import { ProductPhoto } from "./product-photo";
@@ -191,7 +192,7 @@ export function Products() {
                         value={c.id}
                         defaultChecked={editing?.categoryIds.includes(c.id)}
                       />
-                      {c.name}
+                      {categoryLabel(c, categories)}
                     </label>
                   ))}
                 </div>

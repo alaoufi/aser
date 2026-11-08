@@ -23,6 +23,7 @@ export const categorySchema = z.object({
       "الرابط المختصر أحرف إنجليزية صغيرة وأرقام وشرطات فقط",
     ),
   icon: z.string().trim().min(1).max(20),
+  parentId: z.string().min(1).max(30).nullable().optional(),
 });
 export const locationSchema = z.discriminatedUnion("kind", [
   z.object({
@@ -127,10 +128,42 @@ export async function saveCategory(
       "SELECT pg_advisory_xact_lock(hashtext('jdatna.category.ids'))",
     );
     let id = value.id;
+    if (value.parentId) {
+      if (value.parentId === id)
+        throw new HttpError(400, "لا يمكن جعل التصنيف أبًا لنفسه");
+      const parent = (
+        await client.query(
+          "SELECT id,parent_id FROM jdatna.categories WHERE id=$1 FOR UPDATE",
+          [value.parentId],
+        )
+      ).rows[0];
+      if (!parent || parent.parent_id)
+        throw new HttpError(400, "اختر قسمًا رئيسيًا قائمًا");
+      if (
+        editing &&
+        (
+          await client.query(
+            "SELECT 1 FROM jdatna.categories WHERE parent_id=$1 LIMIT 1",
+            [id],
+          )
+        ).rowCount
+      )
+        throw new HttpError(
+          400,
+          "لا يمكن تحويل قسم له أقسام فرعية إلى قسم فرعي",
+        );
+    }
     if (editing) {
       const result = await client.query(
-        "UPDATE jdatna.categories SET name=$2,slug=$3,icon=$4 WHERE id=$1 RETURNING id",
-        [id, value.name, value.slug, value.icon],
+        "UPDATE jdatna.categories SET name=$2,slug=$3,icon=$4,parent_id=CASE WHEN $6 THEN $5 ELSE parent_id END WHERE id=$1 RETURNING id",
+        [
+          id,
+          value.name,
+          value.slug,
+          value.icon,
+          value.parentId ?? null,
+          value.parentId !== undefined,
+        ],
       );
       if (!result.rowCount) throw new HttpError(404, "التصنيف غير موجود");
     } else {
@@ -140,8 +173,8 @@ export async function saveCategory(
         )
       ).rows[0].id;
       await client.query(
-        "INSERT INTO jdatna.categories(id,name,slug,icon) VALUES($1,$2,$3,$4)",
-        [id, value.name, value.slug, value.icon],
+        "INSERT INTO jdatna.categories(id,name,slug,icon,parent_id) VALUES($1,$2,$3,$4,$5)",
+        [id, value.name, value.slug, value.icon, value.parentId ?? null],
       );
     }
     await audit(

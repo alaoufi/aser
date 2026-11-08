@@ -14,7 +14,7 @@ export const categories: Category[] = [
   "القهوة ومستلزماتها",
   "الأكلات الموسمية",
   "المنتجات الغذائية الأخرى المسموح بها",
-  "مشتقات الألبان",
+  "منتجات الألبان",
   "المشروبات",
 ].map((name, i) => ({
   id: String(i + 1),
@@ -37,6 +37,16 @@ export const categories: Category[] = [
     "🥤",
   ][i],
 }));
+export const categoryChildren: Category[] = [
+  ["dairy-laban", "لبن", "13", "🥛"],
+  ["dairy-aqt", "أقط", "13", "🧀"],
+  ["dairy-ghee", "سمن", "13", "🧈"],
+  ["dairy-qeshed", "قشد", "13", "🥛"],
+  ["dairy-butter", "زبد", "13", "🧈"],
+  ["drinks-hot", "مشروبات ساخنة", "14", "☕"],
+  ["drinks-cold", "مشروبات باردة", "14", "🥤"],
+].map(([id, name, parentId, icon]) => ({ id, name, parentId, icon, slug: id }));
+categories.push(...categoryChildren);
 const initialCities: City[] = [
   ["riyadh", "الرياض", "riyadh", "منطقة الرياض"],
   ["jeddah", "جدة", "makkah", "منطقة مكة المكرمة"],

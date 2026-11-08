@@ -66,8 +66,12 @@ async function main() {
         [JSON.stringify(cities)],
       );
       await client.query(
-        "INSERT INTO jdatna.categories(id,name,slug,icon) SELECT id,name,slug,icon FROM json_to_recordset($1::json) AS x(id text,name text,slug text,icon text) ON CONFLICT DO NOTHING",
-        [JSON.stringify(categories)],
+        'INSERT INTO jdatna.categories(id,name,slug,icon,parent_id) SELECT id,name,slug,icon,"parentId" FROM json_to_recordset($1::json) AS x(id text,name text,slug text,icon text,"parentId" text) ON CONFLICT DO NOTHING',
+        [JSON.stringify(categories.filter((c) => !c.parentId))],
+      );
+      await client.query(
+        'INSERT INTO jdatna.categories(id,name,slug,icon,parent_id) SELECT id,name,slug,icon,"parentId" FROM json_to_recordset($1::json) AS x(id text,name text,slug text,icon text,"parentId" text) ON CONFLICT DO NOTHING',
+        [JSON.stringify(categories.filter((c) => c.parentId))],
       );
       // Lookup seeds run after migrations on clean installations. Preserve curated parents.
       await client.query(
