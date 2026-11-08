@@ -96,7 +96,7 @@ function Review({
       <Message error={error} />
       <form className={s.form} onSubmit={submit}>
         <label className={s.field}>
-          القرار
+          <span className="sr-only">القرار</span>
           <select
             name="decision"
             required

@@ -202,11 +202,14 @@ export function ProfileForm({
             النشاط، والاستثناء الإداري لا يعفي من أي ترخيص إلزامي.
           </p>
           <label className={s.field}>
-            نوع المستند
+            <span className="sr-only">نوع المستند</span>
             <select
               value={documentType}
               onChange={(e) => setDocumentType(e.target.value)}
             >
+              <option value="" disabled>
+                اختر نوع المستند
+              </option>
               {documentTypes.map(([v, n]) => (
                 <option key={v} value={v}>
                   {n}

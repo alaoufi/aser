@@ -49,7 +49,7 @@ export default async function Browse({
           defaultCity={filters.city}
         />
         <label>
-          التصنيف
+          <span className="sr-only">التصنيف</span>
           <select name="category" defaultValue={filters.category}>
             <option value="">كل التصنيفات</option>
             {categories.map((c) => (
@@ -60,18 +60,18 @@ export default async function Browse({
           </select>
         </label>
         <label>
-          التوفر
+          <span className="sr-only">التوفر</span>
           <select name="status" defaultValue={filters.status}>
-            <option value="">كل الحالات</option>
+            <option value="">كل حالات التوفر</option>
             <option value="available">متوفر</option>
             <option value="preorder">حسب الطلب</option>
             <option value="unavailable">غير متوفر</option>
           </select>
         </label>
         <label>
-          طريقة الاستلام
+          <span className="sr-only">طريقة الاستلام</span>
           <select name="delivery" defaultValue={filters.delivery}>
-            <option value="">الكل</option>
+            <option value="">كل طرق الاستلام</option>
             <option value="true">توصيل متاح</option>
             <option value="pickup">استلام شخصي</option>
           </select>

@@ -32,7 +32,7 @@ export function LocationFields({
   return (
     <>
       <label className={className}>
-        <span>المنطقة</span>
+        <span className="sr-only">المنطقة</span>
         <select
           name={regionName}
           value={region}
@@ -51,7 +51,7 @@ export function LocationFields({
         </select>
       </label>
       <label className={className}>
-        <span>المدينة</span>
+        <span className="sr-only">المدينة</span>
         <select
           name={cityName}
           value={city}
@@ -64,7 +64,7 @@ export function LocationFields({
               ? "اختر المنطقة أولًا"
               : required
                 ? "اختر المدينة"
-                : "كل مدن المنطقة"}
+                : "كل المدن"}
           </option>
           {cities
             .filter((c) => c.regionId === region)

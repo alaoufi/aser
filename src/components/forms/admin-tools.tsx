@@ -158,8 +158,11 @@ export function LocationsAdmin() {
       <Message error={r.error} success={r.success} />
       <form onSubmit={save} className={`${s.card} ${s.form}`}>
         <label className={s.field}>
-          نوع الموقع
+          <span className="sr-only">نوع الموقع</span>
           <select value={kind} onChange={(e) => setKind(e.target.value)}>
+            <option value="" disabled>
+              اختر نوع الموقع
+            </option>
             <option value="region">منطقة</option>
             <option value="city">مدينة</option>
             <option value="neighborhood">حي</option>
@@ -167,7 +170,7 @@ export function LocationsAdmin() {
         </label>
         {kind === "city" && (
           <label className={s.field}>
-            المنطقة
+            <span className="sr-only">المنطقة</span>
             <select name="regionId" required defaultValue="">
               <option value="" disabled>
                 اختر المنطقة
@@ -182,7 +185,7 @@ export function LocationsAdmin() {
         )}
         {kind === "neighborhood" && (
           <label className={s.field}>
-            المدينة
+            <span className="sr-only">المدينة</span>
             <select name="cityId" required defaultValue="">
               <option value="" disabled>
                 اختر المدينة
@@ -380,12 +383,12 @@ export function ReportsAdmin() {
               {report.productName} {report.producerName}
             </p>
             <label className={s.field}>
-              الحالة
+              <span className="sr-only">الحالة</span>
               <select name="status" defaultValue={report.status}>
-                <option value="new">جديد</option>
-                <option value="reviewing">قيد المراجعة</option>
-                <option value="resolved">تم الحل</option>
-                <option value="dismissed">مستبعد</option>
+                <option value="new">حالة البلاغ: جديد</option>
+                <option value="reviewing">حالة البلاغ: قيد المراجعة</option>
+                <option value="resolved">حالة البلاغ: تم الحل</option>
+                <option value="dismissed">حالة البلاغ: مستبعد</option>
               </select>
             </label>
             <label className={s.field}>

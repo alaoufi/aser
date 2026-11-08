@@ -135,11 +135,14 @@ export function Products() {
                   />
                 </label>
                 <label className={s.field}>
-                  التوفر
+                  <span className="sr-only">التوفر</span>
                   <select
                     name="status"
                     defaultValue={editing?.status || "available"}
                   >
+                    <option value="" disabled>
+                      اختر حالة التوفر
+                    </option>
                     {Object.entries(statusLabels).map(([v, n]) => (
                       <option key={v} value={v}>
                         {n}
