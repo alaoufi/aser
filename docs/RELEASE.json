@@ -1,16 +1,16 @@
 {
   "verified_on": "2026-11-08",
-  "code_commit": "3874780bf15692e8057dbe0b164edbc8656f4fe7",
-  "image": "jdatna-application:3874780bf15692e8057dbe0b164edbc8656f4fe7",
+  "code_commit": "79cd43ec13441220c46b7f81b708bde1dd7eec81",
+  "image": "jdatna-application:79cd43ec13441220c46b7f81b708bde1dd7eec81",
   "url": "https://jdatna.com",
   "checks": {
-    "unit_integration": "40/40 on preceding backend release; no backend changes",
-    "browser_chromium": "23 passed;1 intentional desktop skip for mobile-only navigation",
+    "unit_integration": "41/41, no skips",
+    "browser_chromium": "2 targeted OTP desktop/mobile tests passed; preceding full UI suite23 passed",
     "typecheck": "passed",
     "build": "passed",
     "infrastructure_and_backup_restore": "passed after deployment; Aykdmh unchanged",
-    "live_browser": "HTTPS release matched;desktop/mobile dropdown headings visually hidden, accessible names retained, dependent location fields work, no overflow",
-    "otp_endpoint": "Invalid phone400 before send; no real SMS sent by agent"
+    "live_browser": "HTTPS exact release;4-digit input tested with intercepted mock send (no SMS);6-digit format rejected400 by live API",
+    "otp_endpoint": "Four-digit code format; secure generation1000..9999; existing expiry and retry limits retained"
   },
   "registrationOpen": true,
   "SMS": true,
@@ -18,13 +18,15 @@
   "aykdmh_hosting_commit": "a2a6cfe",
   "source_pushed": false,
   "limitations": [
-    "Owner physical SMS receipt and first verified admin still pending",
+    "First verified admin pending",
     "Off-server backup pending",
     "No physical-phone/WebKit verification or proven speed improvement",
     "Logo/cover/video/QR; orders/mobile apps pending"
   ],
   "sms_provider": "Same active Taqnyat credentials as Aykdmh; enabled at explicit owner request to test delivery on own phone",
   "footer_verification": "Affiliation retained",
-  "image_id": "sha256:a40db1b58579996003e8006f64ba0f3f49ada3c50ade3b3cadee41cdafdc28d4",
-  "sms_delivery_confirmed": false
+  "image_id": "sha256:ef054280f22e2651502ce9061c59cbd67f885238ef6ea6bc9de77aee84876fcb",
+  "sms_delivery_confirmed": true,
+  "sms_delivery_evidence": "Owner reported receipt of previous6-digit SMS;4-digit release deployed afterwards, not physically re-tested by agent",
+  "otp_digits": 4
 }
