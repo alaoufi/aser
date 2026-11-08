@@ -50,7 +50,10 @@ test("passwords are salted scrypt hashes with bounded constant-time verification
   assert.equal(await verifyPassword(password, null), false);
   assert.equal(await verifyPassword(password, "malformed"), false);
   assert.equal(await verifyPassword("a".repeat(129), a), false);
-  await assert.rejects(hashPassword("short"));
+  for (const password of ["1234", "abcd", "!!!!", "أبجد", "a1!ب"]) {
+    assert.equal(await verifyPassword(password, await hashPassword(password)), true);
+  }
+  await assert.rejects(hashPassword("123"));
   await assert.rejects(hashPassword("a".repeat(129)));
 });
 test("credentials reject client authority fields and enforce password length", () => {
@@ -62,7 +65,7 @@ test("credentials reject client authority fields and enforce password length", (
     true,
   );
   for (const value of [
-    { password: "short" },
+    { password: "123" },
     { password: "a".repeat(129) },
     { password: "1234567890", role: "admin" },
     { password: "1234567890", userId: "other" },
@@ -99,7 +102,7 @@ test(
     const tag = randomUUID().slice(0, 8),
       username = "login-" + tag,
       password = "Initial private password!",
-      changedPassword = "Changed private password!";
+      changedPassword = "1234";
     const challengeIds: string[] = [],
       tokens: string[] = [],
       rateKeys: string[] = [];

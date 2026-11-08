@@ -6,7 +6,7 @@ import { hash, rateLimit, sessionToken } from "./auth";
 import { HttpError, normalizePhone } from "./security";
 const passwordSchema = z
   .string()
-  .min(10, "كلمة المرور عشرة أحرف على الأقل")
+  .min(4, "كلمة المرور أربع خانات على الأقل")
   .max(128, "كلمة المرور طويلة جدًا");
 export function normalizeUsername(input: string) {
   const value = input.trim().normalize("NFC").toLowerCase().normalize("NFC");

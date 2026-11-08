@@ -325,11 +325,11 @@ export function LoginForm({
                 type="password"
                 dir="ltr"
                 autoComplete="new-password"
-                minLength={10}
+                minLength={4}
                 maxLength={128}
                 required
               />
-              <small>عشرة أحرف على الأقل.</small>
+              <small>أربع خانات على الأقل؛ أحرف أو أرقام أو رموز، دون اشتراط خلطها.</small>
             </label>
             <label className={s.field}>
               تأكيد كلمة المرور
@@ -338,7 +338,7 @@ export function LoginForm({
                 type="password"
                 dir="ltr"
                 autoComplete="new-password"
-                minLength={10}
+                minLength={4}
                 maxLength={128}
                 required
               />

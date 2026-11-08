@@ -43,7 +43,7 @@ export default function RootLayout({
               alt=""
               width={256}
               height={219}
-              sizes="80px"
+              sizes="(max-width: 380px) 76px, (max-width: 850px) 84px, 112px"
               loading="eager"
             />
             <span>

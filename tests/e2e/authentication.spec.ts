@@ -89,8 +89,8 @@ test("family signup requires credentials before application", async ({
   await page.getByLabel("اسم مستخدم اختياري").fill("family.user");
   await page
     .getByLabel("كلمة المرور الجديدة", { exact: true })
-    .fill("new-password-123");
-  await page.getByLabel("تأكيد كلمة المرور").fill("new-password-123");
+    .fill("1234");
+  await page.getByLabel("تأكيد كلمة المرور").fill("1234");
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,
@@ -100,7 +100,7 @@ test("family signup requires credentials before application", async ({
   await expect(page).toHaveURL(/\/register$/);
   expect(credentials).toEqual({
     username: "family.user",
-    password: "new-password-123",
+    password: "1234",
   });
 });
 
