@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   description:
     "اكتشف الأكلات التراثية والمنتجات الغذائية من الأسر المنتجة السعودية، وتواصل مع الأسرة مباشرة.",
   applicationName: "أكلات وغذاء الأجداد",
-  icons: { icon: { url: "/brand/jdatna-logo.jpeg", type: "image/jpeg" } },
+  icons: { icon: { url: "/brand/jdatna-logo-v2.jpeg", type: "image/jpeg" } },
 };
 export default function RootLayout({
   children,
@@ -31,7 +31,7 @@ export default function RootLayout({
           <Link href="/" className="brand">
             <img
               className="brand-logo"
-              src="/brand/jdatna-logo.jpeg"
+              src="/brand/jdatna-logo-v2.jpeg"
               alt=""
               width={80}
               height={80}
@@ -63,7 +63,7 @@ export default function RootLayout({
               <Link className="footer-brand" href="/">
                 <img
                   className="footer-logo"
-                  src="/brand/jdatna-logo.jpeg"
+                  src="/brand/jdatna-logo-v2.jpeg"
                   alt=""
                   width={96}
                   height={96}
