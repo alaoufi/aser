@@ -1,11 +1,14 @@
 :root {
-  --paper: #f9f6ef;
-  --cream: #f0e9db;
-  --ink: #32291f;
-  --muted: #776c5d;
+  --paper: #fcf8f0;
+  --cream: #f3e7d3;
+  --surface: #fffdf8;
+  --sage-panel: #edf1e7;
+  --footer: #422d21;
+  --ink: #38291f;
+  --muted: #74634f;
   --olive: #526247;
   --rust: #a75035;
-  --line: #ded7ca;
+  --line: #e5d9c6;
 }
 * {
   box-sizing: border-box;
@@ -94,7 +97,7 @@ img {
   margin-inline: auto;
 }
 .announcement {
-  background: var(--olive);
+  background: #603c24;
   color: #fff;
   text-align: center;
   font-size: 12px;
@@ -296,7 +299,7 @@ img {
 }
 .value-strip {
   border-block: 1px solid var(--line);
-  background: #f1ece2;
+  background: var(--sage-panel);
 }
 .value-grid {
   display: grid;
@@ -373,7 +376,7 @@ img {
   border: 1px solid var(--line);
   border-radius: 8px;
   min-height: 96px;
-  background: #fcfaf5;
+  background: var(--surface);
   transition:
     border-color 0.2s,
     transform 0.2s;
@@ -431,12 +434,12 @@ img {
 }
 .availability-card {
   padding: 28px;
-  background: #e9eddf;
+  background: #e8efde;
   border-radius: 9px;
   position: relative;
 }
 .availability-card.warm {
-  background: #f0e2d5;
+  background: #f5e4d5;
 }
 .availability-card h3 {
   font-size: 23px;
@@ -458,7 +461,7 @@ img {
 }
 .empty-state {
   border: 1px dashed #cec3b1;
-  background: #f2ede2;
+  background: #fff5e5;
   text-align: center;
   padding: 28px 20px;
   border-radius: 9px;
@@ -613,7 +616,8 @@ img {
   padding-left: 55px;
 }
 .site-footer {
-  background: #eee8db;
+  background: var(--footer);
+  color: #fff8e9;
   padding: 36px max(48px, calc((100% - 1240px) / 2)) 0;
 }
 .footer-top {
@@ -673,7 +677,7 @@ img {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
   padding: 22px;
-  background: #ede7da;
+  background: var(--cream);
   border: 1px solid var(--line);
   border-radius: 10px;
   align-items: end;
@@ -2056,4 +2060,22 @@ label:has(> select) {
   .hero-search .button {
     width: 100%;
   }
+}
+
+/* Warm paper and earth tones echo the owner-supplied food and logo. */
+main {
+  background:
+    radial-gradient(ellipse 70% 360px at 100% 0%, #eed8af38, transparent),
+    var(--paper);
+}
+.site-footer .footer-top p,
+.site-footer .footer-top > div > a:not(.footer-brand),
+.site-footer .footer-bottom {
+  color: #e3d0b7;
+}
+.site-footer .footer-bottom {
+  border-top-color: #ffffff26;
+}
+.site-footer a:hover {
+  color: #fff4d6;
 }
