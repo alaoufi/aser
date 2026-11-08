@@ -932,7 +932,7 @@ hr {
     gap: 70px;
   }
   .hero-search {
-    width: 650px;
+    width: 100%;
   }
   .hero-visual {
     margin-right: 20px;
@@ -959,10 +959,10 @@ hr {
     width: calc(100% - 64px);
   }
   .hero {
-    gap: 0;
+    gap: 24px;
   }
   .hero-search {
-    width: 110%;
+    width: 100%;
   }
   .hero h1 {
     font-size: 3.6rem;
@@ -1042,7 +1042,7 @@ hr {
     font-size: 14px;
   }
   .hero-search {
-    width: 135%;
+    width: 100%;
   }
   .hero-visual {
     margin-top: -50px;
@@ -2047,5 +2047,13 @@ label:has(> select) {
   }
   .food-showcase-strip > div {
     border-radius: 8px;
+  }
+}
+@media (min-width: 601px) and (max-width: 850px) {
+  .hero-search {
+    width: 100%;
+  }
+  .hero-search .button {
+    width: 100%;
   }
 }
