@@ -1,15 +1,15 @@
 {
   "verified_on": "2026-11-08",
-  "code_commit": "4aa6b36f83df0ad6e7bb475ffed95205cc5c7912",
-  "image": "jdatna-application:4aa6b36f83df0ad6e7bb475ffed95205cc5c7912",
+  "code_commit": "083273e8ab39454928edac74274b1d7015b62d0c",
+  "image": "jdatna-application:083273e8ab39454928edac74274b1d7015b62d0c",
   "url": "https://jdatna.com",
   "checks": {
     "unit_integration": "43/43 on preceding backend release;no backend changes",
-    "browser_chromium": "Current logo:live viewport checks1440/390/320;preceding full UI suite23 passed",
+    "browser_chromium": "Targeted responsive food/search geometry regression passed;preceding full UI suite23 passed",
     "typecheck": "passed",
     "build": "passed",
     "infrastructure_and_backup_restore": "passed after deployment; Aykdmh unchanged",
-    "live_browser": "Exact release;header/footer/favicon load;published image byte-identical to supplied original;no overflow or page errors at1440/390/320",
+    "live_browser": "Exact release;5 optimized photos loaded at10 widths320..1600;no search/photo overlap, horizontal overflow or page errors;5 original asset hashes match",
     "otp_endpoint": "Four-digit code format; secure generation1000..9999; existing expiry and retry limits retained"
   },
   "registrationOpen": true,
@@ -25,7 +25,7 @@
   ],
   "sms_provider": "Same active Taqnyat credentials as Aykdmh; enabled at explicit owner request to test delivery on own phone",
   "footer_verification": "Affiliation retained",
-  "image_id": "sha256:93b4c2479b9a7dfb9b6d04864446397be58da7bbc71a49964cedee187dea971d",
+  "image_id": "sha256:2e5e12b6cccfab606127856973cbc102ae56085c01f51d4435b6ca58ade76199",
   "sms_delivery_confirmed": true,
   "sms_delivery_evidence": "Owner reported receipt of previous6-digit SMS;4-digit release deployed afterwards, not physically re-tested by agent",
   "otp_digits": 4,
@@ -42,5 +42,37 @@
     "sha256": "6787df925e8c0bb62cac4a4422962a88097e2fb79650b4ce4f4363ad71c83fd8",
     "owner_supplied": true,
     "pixels_unchanged": true
+  },
+  "food_photography": {
+    "count": 5,
+    "owner_supplied": true,
+    "originals": [
+      {
+        "name": "clay-pot.jpeg",
+        "bytes": 181988,
+        "sha256": "59d7ea232a261a13a43925e4a90c71e78143aad9c8a9f3340f5f3c2714399a68"
+      },
+      {
+        "name": "fish-tray.jpeg",
+        "bytes": 257169,
+        "sha256": "023db8ff174ab426e1642b2387aabf3dd3bf5d4787eac5e868a97fb3e0f76cf5"
+      },
+      {
+        "name": "grain-plate.jpeg",
+        "bytes": 245603,
+        "sha256": "5ca3a79f4ef792b7141f797c0dc8eff3c6e2ca83a116282f0db7826e9f307c19"
+      },
+      {
+        "name": "rice-plate.jpeg",
+        "bytes": 234097,
+        "sha256": "bab2d764d3a9a81b8a688a686f5157c981defadd595cd870edf82b580af5f268"
+      },
+      {
+        "name": "traditional-platter.jpeg",
+        "bytes": 240112,
+        "sha256": "dcc5abf27cbb425ee047c2cf5ad64e4db06efa635fe126436dd20be815056504"
+      }
+    ],
+    "presentation": "Next/Image responsive optimization; originals unchanged; decorative gallery, no product records"
   }
 }
