@@ -2,14 +2,17 @@ import type { Category, City, Producer, Product, Filters } from "../lib/types";
 import { db, databaseConfigured } from "./db";
 import { categories, cities } from "./constants";
 import { notCookingTodaySql } from "./cooking-availability";
+import { sortCategoryTree } from "../lib/category-label";
 export async function getCategories(): Promise<Category[]> {
   return databaseConfigured()
-    ? (
-        await db().query(
-          'SELECT id,name,slug,icon,parent_id AS "parentId" FROM jdatna.categories ORDER BY length(COALESCE(parent_id,id)),COALESCE(parent_id,id),parent_id NULLS FIRST,id',
-        )
-      ).rows
-    : categories;
+    ? sortCategoryTree(
+        (
+          await db().query(
+            'SELECT id,name,slug,icon,parent_id AS "parentId" FROM jdatna.categories ORDER BY length(COALESCE(parent_id,id)),COALESCE(parent_id,id),parent_id NULLS FIRST,id',
+          )
+        ).rows,
+      )
+    : sortCategoryTree(categories);
 }
 export async function getCities(): Promise<City[]> {
   return databaseConfigured()
@@ -20,7 +23,7 @@ export async function getCities(): Promise<City[]> {
       ).rows
     : cities;
 }
-export const producerSelect = `SELECT ${notCookingTodaySql()} AS "notCookingToday",p.id,p.slug,p.name,p.description,p.city_id AS "cityId",
+export const producerSelect = `SELECT ${notCookingTodaySql()} AS "notCookingToday",p.id,p.slug,COALESCE(p.trade_name,p.name) AS name,p.description,p.city_id AS "cityId",
 c.name AS "cityName",r.name AS "regionName",p.neighborhood,p.verified,p.phone,p.whatsapp,
 p.delivery,p.pickup,(SELECT s.url FROM jdatna.producer_social_links s WHERE s.producer_id=p.id AND s.platform='website') AS website,p.logo_url AS "logoUrl",p.cover_url AS "coverUrl",
 COALESCE((SELECT json_agg(json_build_object('platform',s.platform,'url',s.url))
@@ -33,7 +36,7 @@ COALESCE((SELECT json_agg(json_build_object('cityId',a.city_id,'cityName',ac.nam
  FROM jdatna.business_hours b WHERE b.producer_id=p.id) AS "businessHours"
 FROM jdatna.producer_profiles p JOIN jdatna.cities c ON c.id=p.city_id
 JOIN jdatna.regions r ON r.id=c.region_id`;
-export const productSelect = `SELECT ${notCookingTodaySql()} AS "notCookingToday",x.id,x.producer_id AS "producerId",p.name AS "producerName",p.slug AS "producerSlug",c.name AS "cityName",x.name,x.description,x.price,x.unit,x.status,x.image_url AS "imageUrl",ARRAY(SELECT category_id FROM jdatna.product_categories WHERE product_id=x.id) AS "categoryIds",ARRAY(SELECT name FROM jdatna.product_allergens WHERE product_id=x.id) AS allergens,x.ingredients,x.storage,x.shelf_life AS "shelfLife",x.preparation_time AS "preparationTime",x.story,p.delivery FROM jdatna.products x JOIN jdatna.producer_profiles p ON p.id=x.producer_id JOIN jdatna.cities c ON c.id=p.city_id`;
+export const productSelect = `SELECT ${notCookingTodaySql()} AS "notCookingToday",x.id,x.producer_id AS "producerId",COALESCE(p.trade_name,p.name) AS "producerName",p.slug AS "producerSlug",c.name AS "cityName",x.name,x.description,x.price,x.unit,x.status,x.image_url AS "imageUrl",ARRAY(SELECT category_id FROM jdatna.product_categories WHERE product_id=x.id) AS "categoryIds",ARRAY(SELECT name FROM jdatna.product_allergens WHERE product_id=x.id) AS allergens,x.ingredients,x.storage,x.shelf_life AS "shelfLife",x.preparation_time AS "preparationTime",x.story,p.delivery FROM jdatna.products x JOIN jdatna.producer_profiles p ON p.id=x.producer_id JOIN jdatna.cities c ON c.id=p.city_id`;
 export function mapProduct(row: Product): Product {
   return { ...row, price: row.price === null ? null : Number(row.price) };
 }
@@ -50,8 +53,8 @@ function conditions(f: Filters, products: boolean) {
   if (f.q)
     add(
       products
-        ? "(x.name ILIKE ? OR x.description ILIKE ? OR p.name ILIKE ?)"
-        : "(p.name ILIKE ? OR p.description ILIKE ?)",
+        ? "(x.name ILIKE ? OR x.description ILIKE ? OR p.name ILIKE ? OR p.trade_name ILIKE ?)"
+        : "(p.name ILIKE ? OR p.trade_name ILIKE ? OR p.description ILIKE ?)",
       `%${f.q.slice(0, 120).replace(/[\\%_]/g, "\\$&")}%`,
     );
   if (f.region)
@@ -63,8 +66,8 @@ function conditions(f: Filters, products: boolean) {
   if (f.category)
     add(
       products
-        ? "EXISTS(SELECT 1 FROM jdatna.product_categories pc WHERE pc.product_id=x.id AND pc.category_id IN(SELECT id FROM jdatna.categories WHERE id=? OR parent_id=?))"
-        : "EXISTS(SELECT 1 FROM jdatna.producer_categories pc WHERE pc.producer_id=p.id AND pc.category_id IN(SELECT id FROM jdatna.categories WHERE id=? OR parent_id=?))",
+        ? "EXISTS(SELECT 1 FROM jdatna.product_categories pc WHERE pc.product_id=x.id AND pc.category_id IN(WITH RECURSIVE descendants AS (SELECT id FROM jdatna.categories WHERE id=? UNION SELECT c.id FROM jdatna.categories c JOIN descendants d ON c.parent_id=d.id) SELECT id FROM descendants))"
+        : "EXISTS(SELECT 1 FROM jdatna.producer_categories pc WHERE pc.producer_id=p.id AND pc.category_id IN(WITH RECURSIVE descendants AS (SELECT id FROM jdatna.categories WHERE id=? UNION SELECT c.id FROM jdatna.categories c JOIN descendants d ON c.parent_id=d.id) SELECT id FROM descendants))",
       f.category,
     );
   if (products && f.status) add("x.status=?", f.status);

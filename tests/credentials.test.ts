@@ -132,7 +132,7 @@ test(
       const token = randomBytes(32).toString("hex");
       tokens.push(token);
       await pool.query(
-        `INSERT INTO jdatna.sessions(token_hash,user_id,expires_at,setup_until) VALUES($1,$2,now()+interval '1 hour',${proof === "fresh" ? "now()+interval '10 minutes'" : proof === "expired" ? "now()-interval '1 second'" : "NULL"})`,
+        `INSERT INTO jdatna.sessions(token_hash,user_id,expires_at,setup_until,setup_only) VALUES($1,$2,now()+interval '1 hour',${proof === "fresh" ? "now()+interval '10 minutes'" : proof === "expired" ? "now()-interval '1 second'" : "NULL"},${proof !== "none"})`,
         [hash(token), userId],
       );
       return token;
@@ -144,7 +144,7 @@ test(
         .update(id + ":1234")
         .digest("hex");
       await pool.query(
-        "INSERT INTO jdatna.otp_challenges(id,phone,code_hash,expires_at) VALUES($1,$2,$3,now()+interval '5 minutes')",
+        "INSERT INTO jdatna.otp_challenges(id,phone,code_hash,expires_at,purpose) VALUES($1,$2,$3,now()+interval '5 minutes','reset')",
         [id, phone, digest],
       );
       return id;
@@ -158,6 +158,15 @@ test(
         );
       const ordinary = await session(ids[0], "none"),
         expired = await session(ids[0], "expired");
+      await pool.query(
+        "UPDATE jdatna.sessions SET setup_until=now()+interval '10 minutes' WHERE token_hash=$1",
+        [hash(ordinary)],
+      );
+      assert.equal(
+        (await sessionUser(request(ordinary)))?.id,
+        ids[0],
+        "Existing normal sessions remain authenticated, even with legacy setup timestamps",
+      );
       await assert.rejects(
         setCredentials(request(ordinary), { password, username }),
         { status: 403 },
@@ -176,10 +185,7 @@ test(
       assert.ok(verified);
       tokens.push(verified.token);
       assert.equal(verified.user.role, "customer");
-      assert.equal(
-        (await sessionInfo(request(verified.token)))?.canSetCredentials,
-        true,
-      );
+      assert.equal(await sessionInfo(request(verified.token)), null);
       assert.equal(await verifyOtp(challengeId, "1234"), null);
       const setup = await setCredentials(request(verified.token), {
         password,
@@ -298,7 +304,12 @@ test(
         { status: 409 },
       );
       assert.equal(
-        (await sessionInfo(request(resetProof)))?.canSetCredentials,
+        (
+          await pool.query(
+            "SELECT setup_only AND setup_until>now() AS fresh FROM jdatna.sessions WHERE token_hash=$1",
+            [hash(resetProof)],
+          )
+        ).rows[0]?.fresh,
         true,
         "conflicting setup rolls back without consuming OTP permission",
       );
@@ -349,7 +360,11 @@ test(
         new Request(origin + "/api/auth/verify-otp", {
           method: "POST",
           headers: { origin, "content-type": "application/json" },
-          body: JSON.stringify({ challengeId: routeChallenge, code: "1234" }),
+          body: JSON.stringify({
+            challengeId: routeChallenge,
+            code: "1234",
+            purpose: "reset",
+          }),
         }),
         {},
       );

@@ -70,6 +70,7 @@ export function normalizeNationalId(value: string) {
 export const profileSchema = z
   .object({
     name: z.string().trim().min(2).max(120),
+    tradeName: z.string().trim().max(120).nullable().optional(),
     description: z.string().trim().max(2000).optional(),
     cityId: z.string().min(1).max(50),
     neighborhood: optionalText(120),

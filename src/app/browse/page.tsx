@@ -27,6 +27,18 @@ export default async function Browse({
     getCities(),
     searchProducts(filters),
   ]);
+  const currentCategory = categories.find((c) => c.id === filters.category);
+  const branches = categories.filter((c) => c.parentId === filters.category);
+  const parentCategory = categories.find(
+    (c) => c.id === currentCategory?.parentId,
+  );
+  const categoryHref = (id: string) => {
+    const params = new URLSearchParams(
+      Object.entries(filters).filter(([, value]) => value),
+    );
+    params.set("category", id);
+    return `/browse?${params.toString()}`;
+  };
   return (
     <div className="wrap page-space">
       <div className="page-intro">
@@ -79,6 +91,23 @@ export default async function Browse({
         </label>
         <button className="button">بحث</button>
       </form>
+      {currentCategory && (branches.length > 0 || parentCategory) && (
+        <nav aria-label="فروع القسم" className="category-branches">
+          <p>{categoryLabel(currentCategory, categories)}</p>
+          <div>
+            {parentCategory && (
+              <Link href={categoryHref(parentCategory.id)}>
+                العودة إلى {parentCategory.name}
+              </Link>
+            )}
+            {branches.map((c) => (
+              <Link key={c.id} href={categoryHref(c.id)}>
+                {c.name}
+              </Link>
+            ))}
+          </div>
+        </nav>
+      )}
       <div className="results-heading">
         <p>
           {products.length ? `${products.length} منتج مطابق` : "نتائج البحث"}

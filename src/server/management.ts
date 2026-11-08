@@ -49,7 +49,7 @@ function decryptPrivate(payload: Buffer): ProducerPrivate {
 export async function ownProfile(user: SessionUser) {
   const profile = (
     await db().query(
-      `SELECT p.*,p.city_id AS "cityId",p.user_id AS "userId",ARRAY(SELECT category_id FROM jdatna.producer_categories WHERE producer_id=p.id) AS "categoryIds",v.document_id AS "documentId",v.document_type AS "documentType",v.reason AS "reviewReason",v.document_number AS "documentNumber",v.document_expires_at::text AS "documentExpiresAt",COALESCE((SELECT json_agg(json_build_object('platform',platform,'url',url)) FROM jdatna.producer_social_links WHERE producer_id=p.id),'[]') AS "socialLinks",COALESCE((SELECT json_agg(json_build_object('day',day,'opens',to_char(opens,'HH24:MI'),'closes',to_char(closes,'HH24:MI'))) FROM jdatna.business_hours WHERE producer_id=p.id),'[]') AS "businessHours",COALESCE((SELECT json_agg(json_build_object('cityId',city_id,'fee',fee)) FROM jdatna.delivery_areas WHERE producer_id=p.id),'[]') AS "deliveryAreas" FROM jdatna.producer_profiles p LEFT JOIN LATERAL(SELECT document_id,document_type,reason,document_number,document_expires_at FROM jdatna.producer_verifications WHERE producer_id=p.id ORDER BY created_at DESC LIMIT 1)v ON true WHERE p.user_id=$1`,
+      `SELECT p.*,p.trade_name AS "tradeName",p.city_id AS "cityId",p.user_id AS "userId",ARRAY(SELECT category_id FROM jdatna.producer_categories WHERE producer_id=p.id) AS "categoryIds",v.document_id AS "documentId",v.document_type AS "documentType",v.reason AS "reviewReason",v.document_number AS "documentNumber",v.document_expires_at::text AS "documentExpiresAt",COALESCE((SELECT json_agg(json_build_object('platform',platform,'url',url)) FROM jdatna.producer_social_links WHERE producer_id=p.id),'[]') AS "socialLinks",COALESCE((SELECT json_agg(json_build_object('day',day,'opens',to_char(opens,'HH24:MI'),'closes',to_char(closes,'HH24:MI'))) FROM jdatna.business_hours WHERE producer_id=p.id),'[]') AS "businessHours",COALESCE((SELECT json_agg(json_build_object('cityId',city_id,'fee',fee)) FROM jdatna.delivery_areas WHERE producer_id=p.id),'[]') AS "deliveryAreas" FROM jdatna.producer_profiles p LEFT JOIN LATERAL(SELECT document_id,document_type,reason,document_number,document_expires_at FROM jdatna.producer_verifications WHERE producer_id=p.id ORDER BY created_at DESC LIMIT 1)v ON true WHERE p.user_id=$1`,
       [user.id],
     )
   ).rows[0];
@@ -121,7 +121,7 @@ export async function saveProfile(user: SessionUser, input: unknown) {
         );
     }
     await client.query(
-      `INSERT INTO jdatna.producer_profiles(id,user_id,slug,name,description,city_id,neighborhood,phone,whatsapp,delivery,pickup) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) ON CONFLICT(user_id) DO UPDATE SET name=EXCLUDED.name,description=EXCLUDED.description,city_id=EXCLUDED.city_id,neighborhood=EXCLUDED.neighborhood,phone=EXCLUDED.phone,whatsapp=EXCLUDED.whatsapp,delivery=EXCLUDED.delivery,pickup=EXCLUDED.pickup,status='pending',verified=false,updated_at=now()`,
+      `INSERT INTO jdatna.producer_profiles(id,user_id,slug,name,description,city_id,neighborhood,phone,whatsapp,delivery,pickup,trade_name) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) ON CONFLICT(user_id) DO UPDATE SET name=EXCLUDED.name,description=EXCLUDED.description,city_id=EXCLUDED.city_id,neighborhood=EXCLUDED.neighborhood,phone=EXCLUDED.phone,whatsapp=EXCLUDED.whatsapp,delivery=EXCLUDED.delivery,pickup=EXCLUDED.pickup,trade_name=EXCLUDED.trade_name,status='pending',verified=false,updated_at=now()`,
       [
         id,
         user.id,
@@ -140,6 +140,9 @@ export async function saveProfile(user: SessionUser, input: unknown) {
             : null,
         delivery,
         pickup,
+        value.tradeName === undefined
+          ? (existing?.trade_name ?? null)
+          : value.tradeName || null,
       ],
     );
     if (encrypted)
@@ -329,7 +332,7 @@ export async function adminProducers(user: SessionUser) {
     throw new HttpError(403, "لا تملك صلاحية المراجعة");
   const profiles = (
     await db().query(
-      `SELECT p.*,p.city_id AS "cityId",c.name AS "cityName",u.name AS "ownerName",v.document_id AS "documentId",v.document_type AS "documentType",v.reason AS "reviewReason",v.document_number AS "documentNumber",v.document_expires_at::text AS "documentExpiresAt",ARRAY(SELECT category_id FROM jdatna.producer_categories WHERE producer_id=p.id) AS "categoryIds" FROM jdatna.producer_profiles p JOIN jdatna.users u ON u.id=p.user_id JOIN jdatna.cities c ON c.id=p.city_id LEFT JOIN LATERAL(SELECT document_id,document_type,reason,document_number,document_expires_at FROM jdatna.producer_verifications WHERE producer_id=p.id ORDER BY created_at DESC LIMIT 1)v ON true ORDER BY p.created_at DESC LIMIT 200`,
+      `SELECT p.*,p.trade_name AS "tradeName",p.city_id AS "cityId",c.name AS "cityName",u.name AS "ownerName",v.document_id AS "documentId",v.document_type AS "documentType",v.reason AS "reviewReason",v.document_number AS "documentNumber",v.document_expires_at::text AS "documentExpiresAt",ARRAY(SELECT category_id FROM jdatna.producer_categories WHERE producer_id=p.id) AS "categoryIds" FROM jdatna.producer_profiles p JOIN jdatna.users u ON u.id=p.user_id JOIN jdatna.cities c ON c.id=p.city_id LEFT JOIN LATERAL(SELECT document_id,document_type,reason,document_number,document_expires_at FROM jdatna.producer_verifications WHERE producer_id=p.id ORDER BY created_at DESC LIMIT 1)v ON true ORDER BY p.created_at DESC LIMIT 200`,
     )
   ).rows;
   if (!profiles.length) return profiles;

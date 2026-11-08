@@ -21,6 +21,7 @@ import {
 type Profile = AdvancedProfile & {
   id?: string;
   name: string;
+  tradeName?: string | null;
   description?: string;
   cityId: string;
   neighborhood?: string;
@@ -157,6 +158,7 @@ export function ProfileForm({
         body: JSON.stringify({
           ...optional,
           name: f.get("name"),
+          tradeName: f.get("tradeName") || null,
           phone: user.phone,
           cityId: f.get("cityId"),
           nationalId: f.get("nationalId"),
@@ -222,6 +224,14 @@ export function ProfileForm({
                 minLength={2}
                 maxLength={120}
                 defaultValue={profile?.name || user.name}
+              />
+            </label>
+            <label className={s.field}>
+              الاسم التجاري (اختياري)
+              <input
+                name="tradeName"
+                maxLength={120}
+                defaultValue={profile?.tradeName || ""}
               />
             </label>
             <label className={s.field}>

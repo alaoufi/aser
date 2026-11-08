@@ -134,7 +134,7 @@ export async function submitOrder(user: SessionUser | null, input: unknown) {
     }
     const product = (
       await client.query(
-        `SELECT x.name,x.unit,x.price,x.status,x.visible,p.id AS "producerId",p.name AS "producerName",p.status AS "producerStatus" FROM jdatna.products x JOIN jdatna.producer_profiles p ON p.id=x.producer_id WHERE x.id=$1 FOR SHARE OF x,p`,
+        `SELECT x.name,x.unit,x.price,x.status,x.visible,p.id AS "producerId",COALESCE(p.trade_name,p.name) AS "producerName",p.status AS "producerStatus" FROM jdatna.products x JOIN jdatna.producer_profiles p ON p.id=x.producer_id WHERE x.id=$1 FOR SHARE OF x,p`,
         [value.productId],
       )
     ).rows[0];

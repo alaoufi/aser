@@ -6,6 +6,8 @@ import type { SessionUser } from "../lib/types";
 import { db, transaction } from "./db";
 import { getCategories, getCities } from "./catalog";
 import { HttpError } from "./security";
+import { canReparentCategory } from "../lib/category-label";
+import type { Category } from "../lib/types";
 
 export function assertAdmin(user: SessionUser) {
   if (user.role !== "admin") throw new HttpError(403, "لا تملك صلاحية الإدارة");
@@ -128,29 +130,16 @@ export async function saveCategory(
       "SELECT pg_advisory_xact_lock(hashtext('jdatna.category.ids'))",
     );
     let id = value.id;
-    if (value.parentId) {
-      if (value.parentId === id)
-        throw new HttpError(400, "لا يمكن جعل التصنيف أبًا لنفسه");
-      const parent = (
+    if (value.parentId !== undefined) {
+      const all = (
         await client.query(
-          "SELECT id,parent_id FROM jdatna.categories WHERE id=$1 FOR UPDATE",
-          [value.parentId],
+          'SELECT id,parent_id AS "parentId" FROM jdatna.categories',
         )
-      ).rows[0];
-      if (!parent || parent.parent_id)
-        throw new HttpError(400, "اختر قسمًا رئيسيًا قائمًا");
-      if (
-        editing &&
-        (
-          await client.query(
-            "SELECT 1 FROM jdatna.categories WHERE parent_id=$1 LIMIT 1",
-            [id],
-          )
-        ).rowCount
-      )
+      ).rows as Category[];
+      if (!canReparentCategory(all, editing ? id : undefined, value.parentId))
         throw new HttpError(
           400,
-          "لا يمكن تحويل قسم له أقسام فرعية إلى قسم فرعي",
+          "اختر قسمًا أبًا قائمًا دون دورة وبحد أقصى ثمانية مستويات",
         );
     }
     if (editing) {

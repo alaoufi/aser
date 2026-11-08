@@ -142,7 +142,7 @@ export async function setCredentials(request: Request, input: unknown) {
       ]);
       const proof = (
         await client.query(
-          "SELECT user_id,setup_until>now() AS fresh FROM jdatna.sessions WHERE token_hash=$1 AND expires_at>now() FOR UPDATE",
+          "SELECT user_id,(setup_only AND setup_until>now()) AS fresh FROM jdatna.sessions WHERE token_hash=$1 AND expires_at>now() FOR UPDATE",
           [hash(token)],
         )
       ).rows[0];

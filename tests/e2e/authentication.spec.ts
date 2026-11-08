@@ -9,6 +9,14 @@ const user = {
 test("password login works while SMS unavailable and follows server destination", async ({
   page,
 }) => {
+  let otpCalls = 0;
+  await page.route("**/api/auth/*-otp", (r) => {
+    otpCalls++;
+    return r.fulfill({
+      status: 400,
+      json: { error: "OTP is not used for password login" },
+    });
+  });
   await page.route("**/api/session", (r) =>
     r.fulfill({ json: { user: null, registrationOpen: false } }),
   );
@@ -46,8 +54,9 @@ test("password login works while SMS unavailable and follows server destination"
     identifier: "admin.user",
     password: "correct-password",
   });
+  expect(otpCalls).toBe(0);
 });
-test("family signup can optionally create credentials before application", async ({
+test("family signup requires credentials before application", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 320, height: 900 });
@@ -76,10 +85,7 @@ test("family signup can optionally create credentials before application", async
   await expect(page).toHaveURL(/\/login$/);
   await expect(
     page.getByLabel("كلمة المرور الجديدة", { exact: true }),
-  ).toHaveCount(0);
-  await page
-    .getByRole("button", { name: "تعيين كلمة مرور اختياريًا", exact: true })
-    .click();
+  ).toBeVisible();
   await page.getByLabel("اسم مستخدم اختياري").fill("family.user");
   await page
     .getByLabel("كلمة المرور الجديدة", { exact: true })
@@ -99,36 +105,37 @@ test("family signup can optionally create credentials before application", async
 });
 
 for (const scenario of [
-  { intent: "customer", role: "customer", destination: "orders", proof: true },
-  { intent: "family", role: "customer", destination: "register", proof: true },
-  { intent: "family", role: "producer", destination: "dashboard", proof: true },
-  { intent: "customer", role: "admin", destination: "admin", proof: true },
-  { intent: "customer", role: "customer", destination: "orders", proof: false },
+  { intent: "customer", role: "customer", destination: "orders" },
+  { intent: "family", role: "customer", destination: "register" },
+  { intent: "family", role: "producer", destination: "dashboard" },
+  { intent: "customer", role: "admin", destination: "admin" },
 ])
-  test(`OTP signup continues without mandatory credentials: ${scenario.intent}/${scenario.role}/${scenario.proof}`, async ({
+  test(`OTP signup requires password then routes ${scenario.intent}/${scenario.role}`, async ({
     page,
   }) => {
     await page.route("**/api/session", (r) =>
       r.fulfill({ json: { user: null, registrationOpen: true } }),
     );
-    await page.route("**/api/auth/request-otp", (r) =>
-      r.fulfill({ json: { challengeId: "test-challenge" } }),
-    );
-    await page.route("**/api/auth/verify-otp", (r) =>
-      r.fulfill({
+    let requestPayload: unknown, verifyPayload: unknown;
+    await page.route("**/api/auth/request-otp", (r) => {
+      requestPayload = r.request().postDataJSON();
+      return r.fulfill({ json: { challengeId: "test-challenge" } });
+    });
+    await page.route("**/api/auth/verify-otp", (r) => {
+      verifyPayload = r.request().postDataJSON();
+      return r.fulfill({
         json: {
           user: { ...user, role: scenario.role },
           next: "/orders",
-          canSetCredentials: scenario.proof,
+          canSetCredentials: true,
         },
-      }),
-    );
+      });
+    });
     let credentialCalls = 0;
     await page.route("**/api/auth/credentials", (r) => {
       credentialCalls++;
       return r.fulfill({
-        status: 400,
-        json: { error: "Must not set credentials" },
+        json: { user: { ...user, role: scenario.role }, next: "/orders" },
       });
     });
     await page.goto("/login");
@@ -145,41 +152,58 @@ for (const scenario of [
     await page
       .getByRole("button", { name: "تحقق ومتابعة", exact: true })
       .click();
+    expect(requestPayload).toEqual({ phone: "0500000001", purpose: "signup" });
+    expect(verifyPayload).toEqual({
+      challengeId: "test-challenge",
+      code: "1234",
+      name: "عميل الاختبار",
+      purpose: "signup",
+    });
     await expect(
       page.getByLabel("كلمة المرور الجديدة", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "متابعة التسجيل", exact: true }),
     ).toHaveCount(0);
-    await expect(page.getByLabel("اسم مستخدم اختياري")).toHaveCount(0);
-    if (!scenario.proof)
-      await expect(
-        page.getByRole("button", {
-          name: "تعيين كلمة مرور اختياريًا",
-          exact: true,
-        }),
-      ).toBeDisabled();
     await page
-      .getByRole("button", { name: "متابعة التسجيل", exact: true })
+      .getByRole("button", { name: "حفظ بيانات الدخول", exact: true })
+      .click();
+    expect(credentialCalls).toBe(0);
+    await expect(page).toHaveURL(/\/login$/);
+    await page
+      .getByLabel("كلمة المرور الجديدة", { exact: true })
+      .fill("new-password-123");
+    await page
+      .getByLabel("تأكيد كلمة المرور", { exact: true })
+      .fill("new-password-123");
+    await page
+      .getByRole("button", { name: "حفظ بيانات الدخول", exact: true })
       .click();
     await expect(page).toHaveURL(new RegExp("/" + scenario.destination + "$"));
-    expect(credentialCalls).toBe(0);
+    expect(credentialCalls).toBe(1);
   });
+
 test("password recovery requires matching passwords and reports credential error", async ({
   page,
 }) => {
   await page.route("**/api/session", (r) =>
     r.fulfill({ json: { user: null, registrationOpen: true } }),
   );
-  await page.route("**/api/auth/request-otp", (r) =>
-    r.fulfill({ json: { challengeId: "test-challenge" } }),
-  );
-  await page.route("**/api/auth/verify-otp", (r) =>
-    r.fulfill({
+  let resetRequest: unknown, resetVerify: unknown;
+  await page.route("**/api/auth/request-otp", (r) => {
+    resetRequest = r.request().postDataJSON();
+    return r.fulfill({ json: { challengeId: "test-challenge" } });
+  });
+  await page.route("**/api/auth/verify-otp", (r) => {
+    resetVerify = r.request().postDataJSON();
+    return r.fulfill({
       json: {
         user: { ...user, role: "producer" },
         next: "/dashboard",
         canSetCredentials: true,
       },
-    }),
-  );
+    });
+  });
   let calls = 0;
   let success = false;
   await page.route("**/api/auth/credentials", (r) => {
@@ -191,13 +215,17 @@ test("password recovery requires matching passwords and reports credential error
     return r.fulfill({ status: 409, json: { error: "اسم المستخدم مستخدم" } });
   });
   await page.goto("/login");
-  await page
-    .getByRole("button", { name: "تعيين أو استعادة كلمة المرور" })
-    .click();
+  await page.getByRole("button", { name: "نسيت كلمة المرور" }).click();
   await page.getByLabel("رقم الجوال", { exact: true }).fill("0500000001");
   await page.getByRole("button", { name: "أرسل رمز التحقق" }).click();
   await page.getByLabel("رمز التحقق", { exact: true }).fill("1234");
   await page.getByRole("button", { name: "تحقق ومتابعة" }).click();
+  expect(resetRequest).toEqual({ phone: "0500000001", purpose: "reset" });
+  expect(resetVerify).toEqual({
+    challengeId: "test-challenge",
+    code: "1234",
+    purpose: "reset",
+  });
   await page
     .getByLabel("كلمة المرور الجديدة", { exact: true })
     .fill("new-password-123");

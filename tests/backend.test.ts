@@ -108,7 +108,7 @@ test("unconfigured SMS never allows registration or emits a challenge", async ()
   delete process.env.SMS_VERIFIED;
   try {
     assert.equal(registrationOpen(), false);
-    await assert.rejects(requestOtp("0501234567"), /غير متاح/);
+    await assert.rejects(requestOtp("0501234567", "signup"), /غير متاح/);
   } finally {
     if (old === undefined) delete process.env.SMS_VERIFIED;
     else process.env.SMS_VERIFIED = old;

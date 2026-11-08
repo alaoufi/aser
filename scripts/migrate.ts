@@ -65,14 +65,23 @@ async function main() {
         'INSERT INTO jdatna.cities(id,name,region_id) SELECT id,name,"regionId" FROM json_to_recordset($1::json) AS x(id text,name text,"regionId" text) ON CONFLICT DO NOTHING',
         [JSON.stringify(cities)],
       );
-      await client.query(
-        'INSERT INTO jdatna.categories(id,name,slug,icon,parent_id) SELECT id,name,slug,icon,"parentId" FROM json_to_recordset($1::json) AS x(id text,name text,slug text,icon text,"parentId" text) ON CONFLICT DO NOTHING',
-        [JSON.stringify(categories.filter((c) => !c.parentId))],
-      );
-      await client.query(
-        'INSERT INTO jdatna.categories(id,name,slug,icon,parent_id) SELECT id,name,slug,icon,"parentId" FROM json_to_recordset($1::json) AS x(id text,name text,slug text,icon text,"parentId" text) ON CONFLICT DO NOTHING',
-        [JSON.stringify(categories.filter((c) => c.parentId))],
-      );
+      let categorySeeds = [...categories];
+      const seeded = new Set<string>();
+      while (categorySeeds.length) {
+        const level = categorySeeds.filter(
+          (c) => !c.parentId || seeded.has(c.parentId),
+        );
+        if (!level.length)
+          throw new Error(
+            "Category seed hierarchy contains an orphan or cycle",
+          );
+        await client.query(
+          'INSERT INTO jdatna.categories(id,name,slug,icon,parent_id) SELECT id,name,slug,icon,"parentId" FROM json_to_recordset($1::json) AS x(id text,name text,slug text,icon text,"parentId" text) ON CONFLICT DO NOTHING',
+          [JSON.stringify(level)],
+        );
+        for (const category of level) seeded.add(category.id);
+        categorySeeds = categorySeeds.filter((c) => !seeded.has(c.id));
+      }
       // Lookup seeds run after migrations on clean installations. Preserve curated parents.
       await client.query(
         "INSERT INTO jdatna.coverage_nodes(id,kind,name,region_id) SELECT 'region:'||id,'region',name,id FROM jdatna.regions ON CONFLICT DO NOTHING",

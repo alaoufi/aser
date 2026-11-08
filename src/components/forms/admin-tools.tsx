@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import type { Category, City } from "@/lib/types";
-import { categoryLabel } from "@/lib/category-label";
+import { categoryLabel, categoryParentOptions } from "@/lib/category-label";
 import { api, Message, s } from "./shared";
 function useResource<T>(url: string) {
   const [data, setData] = useState<T | null>(null);
@@ -94,13 +94,13 @@ export function CategoriesAdmin() {
             <span className="sr-only">القسم الرئيسي</span>
             <select name="parentId" defaultValue={editing?.parentId || ""}>
               <option value="">قسم رئيسي مستقل</option>
-              {r.data?.categories
-                .filter((c) => !c.parentId && c.id !== editing?.id)
-                .map((c) => (
+              {categoryParentOptions(r.data?.categories ?? [], editing?.id).map(
+                (c) => (
                   <option key={c.id} value={c.id}>
-                    {c.name}
+                    {categoryLabel(c, r.data?.categories ?? [])}
                   </option>
-                ))}
+                ),
+              )}
             </select>
           </label>
         </div>

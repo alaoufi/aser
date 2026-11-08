@@ -61,9 +61,7 @@ test("phone verification moves to code entry and reports server failure", async 
     route.fulfill({ status: 400, json: { error: "رمز التحقق غير صحيح" } }),
   );
   await page.goto("/login");
-  await page
-    .getByRole("button", { name: "تعيين أو استعادة كلمة المرور" })
-    .click();
+  await page.getByRole("button", { name: "نسيت كلمة المرور" }).click();
   await page.getByLabel("رقم الجوال").fill("0500000000");
   await page.getByRole("button", { name: "أرسل رمز التحقق" }).click();
   await expect(page.getByLabel("رمز التحقق", { exact: true })).toHaveAttribute(

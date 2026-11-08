@@ -139,7 +139,6 @@ export function LoginForm({
   const [intent, setIntent] = useState("customer");
   const [challenge, setChallenge] = useState("");
   const [verified, setVerified] = useState<SessionUser | null>(null);
-  const [showCredentials, setShowCredentials] = useState(false);
   const [canSetCredentials, setCanSetCredentials] = useState(false);
   const [busy, setBusy] = useState(false),
     [error, setError] = useState("");
@@ -150,7 +149,6 @@ export function LoginForm({
     setMode(next);
     setChallenge("");
     setVerified(null);
-    setShowCredentials(false);
     setCanSetCredentials(false);
     setError("");
     setUsername("");
@@ -180,10 +178,6 @@ export function LoginForm({
     const f = new FormData(e.currentTarget);
     try {
       if (verified) {
-        if (!showCredentials) {
-          finish(verified);
-          return;
-        }
         if (!canSetCredentials)
           throw new Error("أعد التحقق من الجوال لتعيين كلمة المرور");
         const password = String(f.get("password") ?? "");
@@ -214,7 +208,10 @@ export function LoginForm({
       } else if (!challenge) {
         const d = await api<{ challengeId: string }>("/api/auth/request-otp", {
           method: "POST",
-          body: JSON.stringify({ phone }),
+          body: JSON.stringify({
+            phone,
+            purpose: mode === "signup" ? "signup" : "reset",
+          }),
         });
         setChallenge(d.challengeId);
       } else {
@@ -227,16 +224,16 @@ export function LoginForm({
           body: JSON.stringify({
             challengeId: challenge,
             code: f.get("code"),
+            purpose: mode === "signup" ? "signup" : "reset",
             ...(mode === "signup" ? { name: f.get("name") } : {}),
           }),
         });
-        if (mode === "recover" && !d.canSetCredentials)
+        if (!d.canSetCredentials)
           throw new Error(
             "تعذر اعتماد إذن إعداد كلمة المرور؛ أعد التحقق من الجوال",
           );
         setVerified(d.user);
         setCanSetCredentials(d.canSetCredentials === true);
-        setShowCredentials(mode === "recover");
         setUsername(
           (d.user as SessionUser & { username?: string | null }).username ?? "",
         );
@@ -254,23 +251,21 @@ export function LoginForm({
     >
       <h1>
         {verified
-          ? showCredentials
-            ? "إعداد بيانات الدخول"
-            : "تم التحقق من جوالك"
+          ? "إعداد بيانات الدخول"
           : mode === "password"
             ? "الدخول إلى أكلات جدتنا"
             : mode === "signup"
               ? "حساب جديد في أكلات جدتنا"
-              : "تعيين أو استعادة كلمة المرور"}
+              : "نسيت كلمة المرور"}
       </h1>
       <p className={s.muted}>
         {verified
-          ? showCredentials
-            ? "يمكنك إعداد كلمة مرور خلال عشر دقائق من التحقق. سيؤدي الحفظ إلى إنهاء جلسات الدخول السابقة."
-            : "يمكنك المتابعة الآن. تعيين اسم مستخدم وكلمة مرور اختياري."
+          ? "تحققنا من جوالك لإعداد كلمة المرور. احفظ كلمة مرور خلال عشر دقائق لإكمال الدخول. اسم المستخدم اختياري."
           : mode === "password"
             ? "ادخل باسم المستخدم أو جوالك المتحقق منه وكلمة المرور. نفتح حسابك بحسب صلاحياته المعتمدة."
-            : "نرسل رمزًا من أربعة أرقام إلى جوالك. لا تشارك الرمز مع أي شخص."}
+            : mode === "recover"
+              ? "نرسل رمزًا إلى الجوال المسجل لاستعادة كلمة المرور. إذا لم تعيّن كلمة مرور لحسابك سابقًا، يمكنك إعدادها بهذه الخطوة مرة واحدة."
+              : "نرسل رمزًا من أربعة أرقام لإنشاء حسابك لأول مرة، ثم تعيّن كلمة مرور للدخول. لا تشارك الرمز مع أي شخص."}
       </p>
       {register && (
         <p className={s.notice}>
@@ -289,26 +284,7 @@ export function LoginForm({
         onSubmit={submit}
         key={verified ? "credentials" : mode}
       >
-        {verified && !showCredentials ? (
-          <>
-            <button className={s.button} disabled={busy}>
-              متابعة التسجيل
-            </button>
-            <button
-              type="button"
-              className={s.button}
-              disabled={busy || !canSetCredentials}
-              onClick={() => setShowCredentials(true)}
-            >
-              تعيين كلمة مرور اختياريًا
-            </button>
-            {!canSetCredentials && (
-              <p className={s.muted}>
-                أعد التحقق من الجوال إذا رغبت في تعيين كلمة مرور.
-              </p>
-            )}
-          </>
-        ) : verified ? (
+        {verified ? (
           <>
             <label className={s.field}>
               اسم مستخدم اختياري
@@ -480,17 +456,6 @@ export function LoginForm({
           </>
         )}
       </form>
-      {verified && showCredentials && mode === "signup" && (
-        <button
-          type="button"
-          className={s.button}
-          disabled={busy}
-          style={{ marginTop: 16 }}
-          onClick={() => finish(verified)}
-        >
-          متابعة التسجيل
-        </button>
-      )}
       {!verified && (
         <div className={s.actions} style={{ marginTop: 20 }}>
           {mode !== "password" && (
@@ -520,7 +485,7 @@ export function LoginForm({
               disabled={busy}
               onClick={() => switchMode("recover")}
             >
-              تعيين أو استعادة كلمة المرور
+              نسيت كلمة المرور
             </button>
           )}
         </div>

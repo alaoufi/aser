@@ -7,7 +7,7 @@ test("dairy and drinks are prominent with all child names and searchable options
   const cards = page.locator(".category-card");
   await expect(cards.nth(0).getByRole("heading")).toHaveText("منتجات الألبان");
   await expect(cards.nth(1).getByRole("heading")).toHaveText("المشروبات");
-  for (const name of ["لبن", "أقط", "سمن", "قشد", "زبد"])
+  for (const name of ["ألبان", "أقط", "سمن", "قشد", "زبد", "منتجات ألبان أخرى"])
     await expect(cards.first()).toContainText(name);
   for (const name of ["مشروبات ساخنة", "مشروبات باردة"])
     await expect(cards.nth(1)).toContainText(name);
@@ -28,12 +28,31 @@ test("dairy and drinks are prominent with all child names and searchable options
   await page.goto("/browse");
   await expect(
     page.locator("select[name=category] option[value=dairy-laban]"),
-  ).toHaveText("منتجات الألبان — لبن");
+  ).toHaveText("منتجات الألبان — ألبان");
+  await expect(
+    page.locator("select[name=category] option[value=hot-tea]"),
+  ).toHaveText("المشروبات — مشروبات ساخنة — شاهي");
   await expect(
     page.locator("select[name=category] option[value=drinks-cold]"),
   ).toHaveText("المشروبات — مشروبات باردة");
+  await page.goto("/browse?category=14");
+  await page
+    .getByRole("navigation", { name: "فروع القسم" })
+    .getByRole("link", { name: "مشروبات ساخنة", exact: true })
+    .click();
+  await expect(page).toHaveURL(/category=drinks-hot/);
+  const branches = page.getByRole("navigation", { name: "فروع القسم" });
+  for (const name of ["شاهي", "قهوة", "حليب"])
+    await expect(
+      branches.getByRole("link", { name, exact: true }),
+    ).toBeVisible();
+  await branches.getByRole("link", { name: "شاهي", exact: true }).click();
+  await expect(page).toHaveURL(/category=hot-tea/);
+  await expect(
+    page.getByRole("navigation", { name: "فروع القسم" }),
+  ).toContainText("المشروبات — مشروبات ساخنة — شاهي");
 });
-test("admin assigns a subsection to an existing main section", async ({
+test("admin assigns deep subsection and excludes its own descendants as parents", async ({
   page,
 }) => {
   await page.route("**/api/session", (r) =>
@@ -65,8 +84,20 @@ test("admin assigns a subsection to an existing main section", async ({
     .click();
   await page.getByLabel("اسم القسم").fill("حليب");
   await page.getByLabel("الرابط المختصر").fill("milk-test");
-  await page.locator("select[name=parentId]").selectOption("13");
+  await page.locator("select[name=parentId]").selectOption("drinks-hot");
   await page.getByRole("button", { name: "حفظ التصنيف", exact: true }).click();
   await expect(page.getByRole("status")).toBeVisible();
-  expect(saved.parentId).toBe("13");
+  expect(saved.parentId).toBe("drinks-hot");
+  await page
+    .getByRole("button", { name: "تعديل مشروبات ساخنة", exact: true })
+    .click();
+  await expect(
+    page.locator("select[name=parentId] option[value=drinks-hot]"),
+  ).toHaveCount(0);
+  await expect(
+    page.locator("select[name=parentId] option[value=hot-tea]"),
+  ).toHaveCount(0);
+  await expect(
+    page.locator("select[name=parentId] option[value=drinks-cold]"),
+  ).toHaveText("المشروبات — مشروبات باردة");
 });

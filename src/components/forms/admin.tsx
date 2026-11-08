@@ -10,6 +10,7 @@ import { AccountShell, Guard, Message, api, s, useSession } from "./shared";
 type Application = {
   id: string;
   name: string;
+  tradeName?: string | null;
   status: string;
   cityName?: string;
   description?: string;
@@ -75,6 +76,7 @@ function Review({
         )[producer.status] || producer.status}
       </span>
       <h2>{producer.name}</h2>
+      {producer.tradeName && <p>الاسم التجاري: {producer.tradeName}</p>}
       <p>{producer.cityName}</p>
       <p>{producer.description}</p>
       {producer.nationalId && (

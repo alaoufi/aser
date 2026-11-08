@@ -38,13 +38,17 @@ export const categories: Category[] = [
   ][i],
 }));
 export const categoryChildren: Category[] = [
-  ["dairy-laban", "لبن", "13", "🥛"],
+  ["dairy-laban", "ألبان", "13", "🥛"],
   ["dairy-aqt", "أقط", "13", "🧀"],
   ["dairy-ghee", "سمن", "13", "🧈"],
   ["dairy-qeshed", "قشد", "13", "🥛"],
   ["dairy-butter", "زبد", "13", "🧈"],
   ["drinks-hot", "مشروبات ساخنة", "14", "☕"],
   ["drinks-cold", "مشروبات باردة", "14", "🥤"],
+  ["dairy-other", "منتجات ألبان أخرى", "13", "🥛"],
+  ["hot-tea", "شاهي", "drinks-hot", "🍵"],
+  ["hot-coffee", "قهوة", "drinks-hot", "☕"],
+  ["hot-milk", "حليب", "drinks-hot", "🥛"],
 ].map(([id, name, parentId, icon]) => ({ id, name, parentId, icon, slug: id }));
 categories.push(...categoryChildren);
 const initialCities: City[] = [

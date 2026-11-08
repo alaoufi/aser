@@ -360,7 +360,7 @@ test(
               .update(challengeId + ":" + code)
               .digest("hex");
             await db().query(
-              "INSERT INTO jdatna.otp_challenges(id,phone,code_hash,expires_at) VALUES($1,$2,$3,now()+interval '5 minutes')",
+              "INSERT INTO jdatna.otp_challenges(id,phone,code_hash,expires_at,purpose) VALUES($1,$2,$3,now()+interval '5 minutes','reset')",
               [challengeId, users[0].phone, codeHash],
             );
             assert.equal(await verifyOtp(challengeId, "9999"), null);
@@ -429,7 +429,7 @@ test(
             await db().query(
               "INSERT INTO jdatna.rate_limits(key,count,reset_at) VALUES('otp-global',100,now()+interval '1 hour'),('verify-global',800,now()+interval '1 hour') ON CONFLICT(key) DO UPDATE SET count=EXCLUDED.count,reset_at=EXCLUDED.reset_at",
             );
-            await assert.rejects(requestOtp(phone), /محاولات كثيرة/);
+            await assert.rejects(requestOtp(phone, "signup"), /محاولات كثيرة/);
             for (const id of ids)
               await assert.rejects(verifyOtp(id, "1234"), /محاولات كثيرة/);
             assert.equal(
@@ -473,7 +473,7 @@ test(
             [expiredKey, validKey],
           );
           await db().query(
-            "INSERT INTO jdatna.otp_challenges(id,phone,code_hash,expires_at) VALUES($1,$3,$4,'2000-01-01'),($2,$3,$4,now()+interval '1 hour')",
+            "INSERT INTO jdatna.otp_challenges(id,phone,code_hash,expires_at,purpose) VALUES($1,$3,$4,'2000-01-01','reset'),($2,$3,$4,now()+interval '1 hour','reset')",
             [expiredChallenge, validChallenge, users[0].phone, "00".repeat(32)],
           );
           await db().query(

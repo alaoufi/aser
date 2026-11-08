@@ -1,4 +1,5 @@
 import { createOtp } from "./otp";
+import { z } from "zod";
 import { sendSms, smsTransportConfigured } from "./sms";
 import {
   randomBytes,
@@ -11,6 +12,8 @@ import type { SessionUser } from "../lib/types";
 import { db, transaction, databaseConfigured } from "./db";
 import { HttpError, normalizePhone } from "./security";
 export const cookieName = "jdatna_session";
+export const otpPurposeSchema = z.enum(["signup", "reset"]);
+export type OtpPurpose = z.infer<typeof otpPurposeSchema>;
 export const hash = (value: string) =>
   createHash("sha256").update(value).digest("hex");
 export function storageConfigured() {
@@ -51,9 +54,7 @@ export function sessionToken(request: Request) {
     ?.slice(cookieName.length + 1);
   return token && /^[a-f0-9]{64}$/.test(token) ? token : null;
 }
-export async function sessionInfo(
-  request: Request,
-): Promise<{
+export async function sessionInfo(request: Request): Promise<{
   user: SessionUser;
   hasPassword: boolean;
   canSetCredentials: boolean;
@@ -63,7 +64,7 @@ export async function sessionInfo(
   if (!token) return null;
   const row = (
     await db().query(
-      'SELECT u.id,u.name,u.phone,u.role,u.username,(u.password_hash IS NOT NULL) AS "hasPassword",COALESCE(s.setup_until>now(),false) AS "canSetCredentials" FROM jdatna.sessions s JOIN jdatna.users u ON u.id=s.user_id WHERE s.token_hash=$1 AND s.expires_at>now()',
+      'SELECT u.id,u.name,u.phone,u.role,u.username,(u.password_hash IS NOT NULL) AS "hasPassword",false AS "canSetCredentials" FROM jdatna.sessions s JOIN jdatna.users u ON u.id=s.user_id WHERE s.token_hash=$1 AND s.expires_at>now() AND NOT s.setup_only',
       [hash(token)],
     )
   ).rows[0];
@@ -94,7 +95,8 @@ export function otpMessage(code: string) {
   if (!/^\d{4}$/.test(code)) throw new Error("Invalid OTP format");
   return `رمز التحقق للتسجيل في موقع أكلات جدتنا ${code}`;
 }
-export async function requestOtp(phoneValue: string) {
+export async function requestOtp(phoneValue: string, purpose: OtpPurpose) {
+  otpPurposeSchema.parse(purpose);
   if (!registrationOpen())
     throw new HttpError(
       503,
@@ -103,11 +105,22 @@ export async function requestOtp(phoneValue: string) {
   const phone = normalizePhone(phoneValue);
   await rateLimit("otp-global", 100, 3600);
   await rateLimit("otp-phone:" + hash(phone), 3, 900);
+  const exists = Boolean(
+    (await db().query("SELECT id FROM jdatna.users WHERE phone=$1", [phone]))
+      .rowCount,
+  );
+  if (purpose === "signup" && exists)
+    throw new HttpError(
+      409,
+      "الجوال مسجل؛ ادخل بكلمة المرور أو استخدم نسيت كلمة المرور",
+    );
+  if (purpose === "reset" && !exists)
+    throw new HttpError(400, "لا يوجد حساب لهذا الجوال؛ أنشئ حسابًا جديدًا");
   const id = randomUUID(),
     code = createOtp();
   await db().query(
-    "INSERT INTO jdatna.otp_challenges(id,phone,code_hash,expires_at) VALUES($1,$2,$3,now()+interval '5 minutes')",
-    [id, phone, otpHash(id, code)],
+    "INSERT INTO jdatna.otp_challenges(id,phone,code_hash,expires_at,purpose) VALUES($1,$2,$3,now()+interval '5 minutes',$4)",
+    [id, phone, otpHash(id, code), purpose],
   );
   try {
     await sendSms(phone, otpMessage(code));
@@ -117,7 +130,12 @@ export async function requestOtp(phoneValue: string) {
   }
   return { challengeId: id };
 }
-export async function verifyOtp(id: string, code: string, name?: string) {
+export async function verifyOtp(
+  id: string,
+  code: string,
+  name?: string,
+  purpose?: OtpPurpose,
+) {
   if (!registrationOpen()) throw new HttpError(503, "خدمة التحقق غير متاحة");
   await rateLimit("verify-global", 800, 3600);
   await rateLimit("verify:" + id, 8, 900);
@@ -133,7 +151,9 @@ export async function verifyOtp(id: string, code: string, name?: string) {
         !challenge ||
         challenge.consumed_at ||
         new Date(challenge.expires_at).getTime() < Date.now() ||
-        challenge.attempts >= 5
+        challenge.attempts >= 5 ||
+        !otpPurposeSchema.safeParse(challenge.purpose).success ||
+        (purpose !== undefined && challenge.purpose !== purpose)
       )
         return null;
       await client.query(
@@ -151,15 +171,31 @@ export async function verifyOtp(id: string, code: string, name?: string) {
         "UPDATE jdatna.otp_challenges SET consumed_at=now() WHERE id=$1",
         [id],
       );
-      const user = (
-        await client.query(
-          `INSERT INTO jdatna.users(id,phone,name,phone_verified_at) VALUES($1,$2,$3,now()) ON CONFLICT(phone) DO UPDATE SET phone_verified_at=now() RETURNING id,name,phone,role,username`,
-          [randomUUID(), challenge.phone, name?.trim() || "مستخدم"],
-        )
-      ).rows[0] as SessionUser;
+      // Serialize competing challenges for this phone; signup never upgrades into reset/login.
+      await client.query(
+        "SELECT pg_advisory_xact_lock(hashtextextended($1,2))",
+        [challenge.phone],
+      );
+      let user: SessionUser | undefined;
+      if (challenge.purpose === "signup") {
+        user = (
+          await client.query(
+            `INSERT INTO jdatna.users(id,phone,name,phone_verified_at) VALUES($1,$2,$3,now()) ON CONFLICT(phone) DO NOTHING RETURNING id,name,phone,role,username`,
+            [randomUUID(), challenge.phone, name?.trim() || "مستخدم"],
+          )
+        ).rows[0];
+      } else {
+        user = (
+          await client.query(
+            "UPDATE jdatna.users SET phone_verified_at=now() WHERE phone=$1 RETURNING id,name,phone,role,username",
+            [challenge.phone],
+          )
+        ).rows[0];
+      }
+      if (!user) return null;
       const token = randomBytes(32).toString("hex");
       await client.query(
-        "INSERT INTO jdatna.sessions(token_hash,user_id,expires_at,setup_until) VALUES($1,$2,now()+interval '7 days',now()+interval '10 minutes')",
+        "INSERT INTO jdatna.sessions(token_hash,user_id,expires_at,setup_until,setup_only) VALUES($1,$2,now()+interval '10 minutes',now()+interval '10 minutes',true)",
         [hash(token), user.id],
       );
       return { user, token };

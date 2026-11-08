@@ -2222,3 +2222,32 @@ main {
   line-height: 1.7;
   margin-top: 4px;
 }
+
+.category-branches {
+  margin: 18px 0;
+  overflow-wrap: anywhere;
+}
+.category-branches p {
+  color: var(--muted);
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+.category-branches > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.category-branches a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: var(--surface);
+  color: var(--olive);
+  font-size: 14px;
+}
+.category-branches a:hover {
+  border-color: var(--olive);
+}

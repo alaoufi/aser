@@ -67,18 +67,22 @@ test("family saves only basic fields in one form and retries without reuploading
   await expect(page.getByLabel("الاسم", { exact: true })).toHaveValue(
     user.name,
   );
+  await expect(
+    page.getByLabel("الاسم التجاري (اختياري)", { exact: true }),
+  ).not.toHaveAttribute("required", "");
+  await page
+    .getByLabel("الاسم التجاري (اختياري)", { exact: true })
+    .fill("مذاق الأسرة التجريبي");
   await page.getByLabel("رقم الهوية", { exact: true }).fill("١٢٣٤٥٦٧٨٩٠");
   await expect(page.locator("input[name=phone]")).toHaveAttribute(
     "readonly",
     "",
   );
-  await page
-    .locator("input[name=file]")
-    .setInputFiles({
-      name: "activity-license.pdf",
-      mimeType: "application/pdf",
-      buffer: Buffer.from("%PDF-1.4 private test"),
-    });
+  await page.locator("input[name=file]").setInputFiles({
+    name: "activity-license.pdf",
+    mimeType: "application/pdf",
+    buffer: Buffer.from("%PDF-1.4 private test"),
+  });
   await page
     .getByRole("combobox", { name: "المنطقة", exact: true })
     .selectOption("riyadh");
@@ -105,6 +109,7 @@ test("family saves only basic fields in one form and retries without reuploading
   expect(attempts).toBe(2);
   expect(posted).toEqual({
     name: user.name,
+    tradeName: "مذاق الأسرة التجريبي",
     phone: user.phone,
     cityId: city.id,
     nationalId: "١٢٣٤٥٦٧٨٩٠",
