@@ -264,7 +264,7 @@ test("public branding uses one login entry and the updated logo and name", async
   await expect(page.locator('header a[href="/register"]')).toHaveCount(0);
   await expect(page.locator(".brand-logo")).toHaveAttribute(
     "src",
-    /aklaat-jdatna-logo/,
+    /jdatna-symbol/,
   );
   await expect(
     page.getByRole("heading", { name: "الدخول إلى أكلات جدتنا" }),

@@ -1,9 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 export const metadata: Metadata = { title: "حكايتنا" };
 export default function About() {
   return (
     <article className="wrap prose page-space">
+      <Image
+        className="about-brand-logo"
+        src="/brand/jdatna-main.webp"
+        alt="شعار جدتنا: الجدة تطبخ، واسم جدتنا، أكل شعبي سعودي"
+        width={480}
+        height={600}
+        sizes="192px"
+        loading="eager"
+      />
       <p className="eyebrow">موروث نحبه، وخير نقرّبه</p>
       <h1>
         لكل بيت حكاية.

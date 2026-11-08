@@ -16,8 +16,11 @@ export const metadata: Metadata = {
   applicationName: "أكلات جدتنا",
   icons: {
     icon: {
-      url: "/_next/image?url=%2Fbrand%2Faklaat-jdatna-logo.png&w=64&q=75",
+      url: "/brand/jdatna-icon.png",
+      type: "image/png",
+      sizes: "64x64",
     },
+    apple: { url: "/brand/jdatna-apple-icon.png", sizes: "180x180" },
   },
 };
 export default function RootLayout({
@@ -36,10 +39,10 @@ export default function RootLayout({
           <Link href="/" className="brand">
             <Image
               className="brand-logo"
-              src="/brand/aklaat-jdatna-logo.png"
+              src="/brand/jdatna-symbol.webp"
               alt=""
-              width={80}
-              height={80}
+              width={256}
+              height={219}
               sizes="80px"
               loading="eager"
             />
@@ -68,11 +71,11 @@ export default function RootLayout({
               <Link className="footer-brand" href="/">
                 <Image
                   className="footer-logo"
-                  src="/brand/aklaat-jdatna-logo.png"
+                  src="/brand/jdatna-white.webp"
                   alt=""
-                  width={96}
-                  height={96}
-                  sizes="96px"
+                  width={320}
+                  height={400}
+                  sizes="112px"
                   loading="lazy"
                 />
                 <span>أكلات جدتنا</span>

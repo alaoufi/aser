@@ -2002,12 +2002,12 @@ label:has(> select) {
 .footer-logo {
   flex-shrink: 0;
   object-fit: contain;
-  background: #fff;
-  border-radius: 12px;
+  background: transparent;
+  border-radius: 0;
 }
 .brand-logo {
   width: 80px;
-  height: 80px;
+  height: auto;
 }
 .footer-brand {
   display: inline-flex;
@@ -2016,13 +2016,20 @@ label:has(> select) {
   line-height: 1.5;
 }
 .footer-logo {
-  width: 96px;
-  height: 96px;
+  width: 112px;
+  height: auto;
+}
+.about-brand-logo {
+  display: block;
+  width: 192px;
+  max-width: 100%;
+  height: auto;
+  margin: 0 0 24px;
 }
 @media (max-width: 850px) {
   .brand-logo {
     width: 64px;
-    height: 64px;
+    height: auto;
   }
   .brand {
     min-width: 0;
@@ -2032,8 +2039,8 @@ label:has(> select) {
 }
 @media (max-width: 600px) {
   .footer-logo {
-    width: 76px;
-    height: 76px;
+    width: 96px;
+    height: auto;
   }
   .footer-brand {
     gap: 10px;
@@ -2042,7 +2049,7 @@ label:has(> select) {
 @media (max-width: 380px) {
   .brand-logo {
     width: 56px;
-    height: 56px;
+    height: auto;
   }
   .brand {
     font-size: 12px;
