@@ -1,15 +1,15 @@
 {
   "verified_on": "2026-11-08",
-  "code_commit": "37050470ce372664c7c5f16cfe74ca702026b04a",
-  "image": "jdatna-application:37050470ce372664c7c5f16cfe74ca702026b04a",
+  "code_commit": "f24550a51b30c729be1d9c51710716f7b0627258",
+  "image": "jdatna-application:f24550a51b30c729be1d9c51710716f7b0627258",
   "url": "https://jdatna.com",
   "checks": {
     "unit_integration": "43/43 on preceding backend release;no backend changes",
-    "browser_chromium": "Current CSS:home,browse,register at1440/768/390/320;preceding responsive food regression passed",
+    "browser_chromium": "Targeted numbered-food responsive regression passed;TypeScript/build passed",
     "typecheck": "passed",
     "build": "passed",
     "infrastructure_and_backup_restore": "passed after deployment; Aykdmh unchanged",
-    "live_browser": "Exact HTTPS release;new paper/footer colors confirmed on3 routes at4 widths;registration enabled;no overflow/page errors",
+    "live_browser": "Exact HTTPS release;numbered1..5 images loaded at10 widths320..1600;no overlap/overflow/page errors;all5 optimized responses preserve alpha",
     "otp_endpoint": "Four-digit code format; secure generation1000..9999; existing expiry and retry limits retained"
   },
   "registrationOpen": true,
@@ -25,7 +25,7 @@
   ],
   "sms_provider": "Same active Taqnyat credentials as Aykdmh; enabled at explicit owner request to test delivery on own phone",
   "footer_verification": "Affiliation retained",
-  "image_id": "sha256:da803d2d346cf2b350e6f2e77f011ea4e53a8f1f8147e55eeddb992d112d4e8c",
+  "image_id": "sha256:1f2fbdb5484541650bf5f892b8117e90cb293540df2628d776a6eb7d437d450b",
   "sms_delivery_confirmed": true,
   "sms_delivery_evidence": "Owner reported receipt of previous6-digit SMS;4-digit release deployed afterwards, not physically re-tested by agent",
   "otp_digits": 4,
@@ -73,7 +73,29 @@
         "sha256": "dcc5abf27cbb425ee047c2cf5ad64e4db06efa635fe126436dd20be815056504"
       }
     ],
-    "presentation": "Next/Image responsive optimization; originals unchanged; decorative gallery, no product records"
+    "presentation": "Numbered1..5 transparent cutouts edited using built-in imagegen;CSS shadows;original JPEGs retained",
+    "cutouts": [
+      {
+        "path": "/food/clay-pot-cutout.png",
+        "sha256": "581f7598202e8aeefc7266f07238be21bcc56a54be74dc697cb532135569a88f"
+      },
+      {
+        "path": "/food/fish-tray-cutout.png",
+        "sha256": "191ad974431c612ba831c727689740926477245f7f62b4b635daca8c3a54e645"
+      },
+      {
+        "path": "/food/grain-plate-cutout.png",
+        "sha256": "87c645aa52efbf4cee8407de009c958eef3fd9bee80917cd09586d284ffa8acf"
+      },
+      {
+        "path": "/food/rice-plate-cutout.png",
+        "sha256": "d82cb47760496e3921c97bbbdf29e5c4272cd7e8e07742422bc96e97d770316f"
+      },
+      {
+        "path": "/food/traditional-platter-cutout.png",
+        "sha256": "06ae51f79ff39dbdea98ed385d5e870f45708060bf17fe59fcc13abe3194237b"
+      }
+    ]
   },
   "background_theme": {
     "paper": "#fcf8f0",
