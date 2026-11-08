@@ -12,6 +12,7 @@ export const metadata: Metadata = {
   description:
     "اكتشف الأكلات التراثية والمنتجات الغذائية من الأسر المنتجة السعودية، وتواصل مع الأسرة مباشرة.",
   applicationName: "أكلات وغذاء الأجداد",
+  icons: { icon: { url: "/brand/jdatna-logo.jpeg", type: "image/jpeg" } },
 };
 export default function RootLayout({
   children,
@@ -29,9 +30,13 @@ export default function RootLayout({
         </div>
         <header className="site-header">
           <Link href="/" className="brand">
-            <span className="brand-mark" aria-hidden="true">
-              ✳
-            </span>
+            <img
+              className="brand-logo"
+              src="/brand/jdatna-logo.jpeg"
+              alt=""
+              width={80}
+              height={80}
+            />
             <span>
               أكلات وغذاء الأجداد<small>أصالة تُصنع بحب</small>
             </span>
@@ -57,7 +62,15 @@ export default function RootLayout({
           <div className="footer-top">
             <div>
               <Link className="footer-brand" href="/">
-                ✳ أكلات وغذاء الأجداد
+                <img
+                  className="footer-logo"
+                  src="/brand/jdatna-logo.jpeg"
+                  alt=""
+                  width={96}
+                  height={96}
+                  loading="lazy"
+                />
+                <span>أكلات وغذاء الأجداد</span>
               </Link>
               <p>
                 نكهات تحكي حكايتنا، وأيادٍ تحفظ موروثنا.
