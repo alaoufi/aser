@@ -1,15 +1,15 @@
 {
   "verified_on": "2026-11-08",
-  "code_commit": "454a61ba579367d872c093c5b28a19d34ba1211c",
-  "image": "jdatna-application:454a61ba579367d872c093c5b28a19d34ba1211c",
+  "code_commit": "3874780bf15692e8057dbe0b164edbc8656f4fe7",
+  "image": "jdatna-application:3874780bf15692e8057dbe0b164edbc8656f4fe7",
   "url": "https://jdatna.com",
   "checks": {
-    "unit_integration": "40/40, no skips; includes region SQL filters and region/city mismatch",
-    "browser_chromium": "23 passed,1 desktop skip for mobile-only navigation; includes profile region/city reset; 40 integration passed",
+    "unit_integration": "40/40 on preceding backend release; no backend changes",
+    "browser_chromium": "23 passed;1 intentional desktop skip for mobile-only navigation",
     "typecheck": "passed",
     "build": "passed",
     "infrastructure_and_backup_restore": "passed after deployment; Aykdmh unchanged",
-    "live_browser": "HTTPS release exact;desktop/mobile registration send button enabled, dependent region/city search retained, no overflow at320px or page errors",
+    "live_browser": "HTTPS release matched;desktop/mobile dropdown headings visually hidden, accessible names retained, dependent location fields work, no overflow",
     "otp_endpoint": "Invalid phone400 before send; no real SMS sent by agent"
   },
   "registrationOpen": true,
@@ -25,6 +25,6 @@
   ],
   "sms_provider": "Same active Taqnyat credentials as Aykdmh; enabled at explicit owner request to test delivery on own phone",
   "footer_verification": "Affiliation retained",
-  "image_id": "sha256:d6dd1605bc6fead238ffdc0a80a09701e4ce4cb1cfac52ab31ad3204a67adf10",
+  "image_id": "sha256:a40db1b58579996003e8006f64ba0f3f49ada3c50ade3b3cadee41cdafdc28d4",
   "sms_delivery_confirmed": false
 }
