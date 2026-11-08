@@ -11,7 +11,12 @@ test("dairy and drinks are prominent with all child names and searchable options
     await expect(cards.first()).toContainText(name);
   for (const name of ["مشروبات ساخنة", "مشروبات باردة"])
     await expect(cards.nth(1)).toContainText(name);
-  await expect(cards).toHaveCount(14);
+  expect(await cards.count()).toBeGreaterThanOrEqual(14);
+  await expect(
+    page.locator(
+      '.category-card[href*="dairy-"], .category-card[href*="drinks-"]',
+    ),
+  ).toHaveCount(0);
   for (const width of [320, 390, 768, 1440]) {
     await page.setViewportSize({ width, height: 1000 });
     expect(

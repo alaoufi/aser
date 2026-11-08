@@ -151,6 +151,8 @@ test("profile validates working hours and sends optional links and city fees", a
           categoryIds: ["food"],
           documentId: "private-doc",
           documentType: "producer_certificate",
+          nationalId: "1234567890",
+          workLocation: "موقع عمل تجريبي خاص",
           delivery: true,
           pickup: true,
           socialLinks: [],
@@ -169,7 +171,11 @@ test("profile validates working hours and sends optional links and city fees", a
       },
     });
   });
+  await page.route("**/api/producer/availability", (r) =>
+    r.fulfill({ json: { day: "2026-11-08", notCookingToday: false } }),
+  );
   await page.goto("/dashboard");
+  await page.getByText("تفاصيل إضافية (اختيارية)", { exact: true }).click();
   await expect(
     page.getByRole("combobox", { name: "المنطقة", exact: true }),
   ).toHaveValue("central");
@@ -208,9 +214,12 @@ test("profile validates working hours and sends optional links and city fees", a
     .check();
   await page.getByLabel("رسوم توصيل الرياض (ر.س)").fill("15");
   await page.getByRole("button", { name: "حفظ وإرسال للمراجعة" }).click();
-  await expect(page.locator("main").getByRole("status")).toContainText(
-    "تم حفظ بيانات الأسرة",
-  );
+  await expect(
+    page
+      .locator("main")
+      .getByRole("status")
+      .filter({ hasText: "تم حفظ البيانات" }),
+  ).toContainText("تم حفظ البيانات");
   expect(saved).toMatchObject({
     socialLinks: [
       { platform: "instagram", url: "https://www.instagram.com/example" },

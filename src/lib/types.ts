@@ -12,6 +12,7 @@ export type City = {
   regionName: string;
 };
 export type Producer = {
+  notCookingToday?: boolean;
   id: string;
   slug: string;
   name: string;
@@ -33,6 +34,7 @@ export type Producer = {
   deliveryAreas?: { cityId: string; cityName: string; fee: number | null }[];
 };
 export type Product = {
+  notCookingToday?: boolean;
   id: string;
   producerId: string;
   producerName: string;

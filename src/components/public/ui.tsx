@@ -61,7 +61,9 @@ export function ProductCard({ product: p }: { product: Product }) {
         ) : (
           <span aria-hidden="true">♧</span>
         )}
-        <span className="badge">{availability[p.status]}</span>
+        <span className="badge">
+          {p.notCookingToday ? "لا يوجد طبخ اليوم" : availability[p.status]}
+        </span>
       </div>
       <div className="card-body">
         <small>
@@ -99,6 +101,7 @@ export function ProducerCard({ producer: p }: { producer: Producer }) {
           <p className="producer-description">{p.description}</p>
         )}
         <div className="producer-tags">
+          {p.notCookingToday && <span>لا يوجد طبخ اليوم</span>}
           {p.verified && (
             <span className="producer-verified">
               <span aria-hidden="true">✓</span> تمت مراجعتها

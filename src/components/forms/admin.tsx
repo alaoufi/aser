@@ -24,6 +24,8 @@ type Application = {
   }[];
   documentId?: string;
   reviewReason?: string;
+  nationalId?: string | null;
+  workLocation?: string | null;
 };
 function Review({
   producer,
@@ -75,6 +77,16 @@ function Review({
       <h2>{producer.name}</h2>
       <p>{producer.cityName}</p>
       <p>{producer.description}</p>
+      {producer.nationalId && (
+        <p>
+          رقم الهوية (خاص): <bdi>{producer.nationalId}</bdi>
+        </p>
+      )}
+      {producer.workLocation && (
+        <p style={{ overflowWrap: "anywhere" }}>
+          موقع العمل (خاص): {producer.workLocation}
+        </p>
+      )}
       <p>نوع الإثبات: {producer.documentType || "راجع المستند المرفق"}</p>
       {producer.documentType === "exception" && (
         <p>تفاصيل طلب الاستثناء: {producer.reviewReason || "دون تفاصيل"}</p>

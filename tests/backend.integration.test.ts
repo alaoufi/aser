@@ -61,6 +61,11 @@ test(
         "Integration fixtures require a dedicated jdatna_test_ database",
       );
     }
+    const encryptionKey = process.env.DOCUMENT_ENCRYPTION_KEY;
+    assert.ok(
+      /^[a-f0-9]{64}$/i.test(encryptionKey ?? ""),
+      "A dedicated shared integration encryption key must be configured",
+    );
     const userIds = [randomUUID(), randomUUID(), randomUUID()],
       producerIds: string[] = [],
       docIds = [randomUUID(), randomUUID()],
@@ -112,6 +117,8 @@ test(
           ],
         );
       const profileData = (i: number) => ({
+        nationalId: "1234567890",
+        workLocation: "عنوان اختبار خاص ومعزول",
         name: "أسرة اختبار خاصة " + i,
         description: "ليس منتجًا حقيقيًا",
         cityId: "riyadh",
@@ -345,7 +352,7 @@ test(
               S3_REGION: "test",
               S3_ACCESS_KEY_ID: "test",
               S3_SECRET_ACCESS_KEY: "test",
-              DOCUMENT_ENCRYPTION_KEY: "01".repeat(32),
+              DOCUMENT_ENCRYPTION_KEY: encryptionKey,
             });
             assert.equal(registrationOpen(), true);
             const code = "1234";
@@ -417,7 +424,7 @@ test(
               S3_REGION: "test",
               S3_ACCESS_KEY_ID: "test",
               S3_SECRET_ACCESS_KEY: "test",
-              DOCUMENT_ENCRYPTION_KEY: "01".repeat(32),
+              DOCUMENT_ENCRYPTION_KEY: encryptionKey,
             });
             await db().query(
               "INSERT INTO jdatna.rate_limits(key,count,reset_at) VALUES('otp-global',100,now()+interval '1 hour'),('verify-global',800,now()+interval '1 hour') ON CONFLICT(key) DO UPDATE SET count=EXCLUDED.count,reset_at=EXCLUDED.reset_at",
@@ -546,7 +553,7 @@ test(
             S3_REGION: "test",
             S3_ACCESS_KEY_ID: "test",
             S3_SECRET_ACCESS_KEY: "test",
-            DOCUMENT_ENCRYPTION_KEY: "02".repeat(32),
+            DOCUMENT_ENCRYPTION_KEY: encryptionKey,
           });
           (S3Client.prototype as any).send = async (command: any) => {
             if (command instanceof PutObjectCommand) {
@@ -726,7 +733,7 @@ test(
             S3_REGION: "test",
             S3_ACCESS_KEY_ID: "test",
             S3_SECRET_ACCESS_KEY: "test",
-            DOCUMENT_ENCRYPTION_KEY: "03".repeat(32),
+            DOCUMENT_ENCRYPTION_KEY: encryptionKey,
           });
           (S3Client.prototype as any).send = async (command: any) => {
             const key = command.input.Key;

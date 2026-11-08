@@ -15,6 +15,7 @@ const statuses: Record<string, string> = {
   cancelled: "ملغى",
 };
 type Draft = {
+  notCookingToday?: boolean;
   productId: string;
   productName: string;
   quantity: number;
@@ -50,17 +51,24 @@ const today = () =>
     day: "2-digit",
   }).format(new Date());
 export function OrderRequestForm({
+  notCookingToday = false,
   productId,
   productName,
   offerId,
   initialDraft,
 }: {
+  notCookingToday?: boolean;
   productId: string;
   productName: string;
   offerId?: string;
   initialDraft?: Draft;
 }) {
   const session = useSession();
+  const minStart = notCookingToday
+    ? new Date(new Date(today() + "T00:00:00Z").getTime() + 86400000)
+        .toISOString()
+        .slice(0, 10)
+    : today();
   const [mode, setMode] = useState("days");
   const [selectedOffer, setSelectedOffer] = useState<{
     id: string;
@@ -164,6 +172,11 @@ export function OrderRequestForm({
       style={{ minWidth: 0, overflowWrap: "anywhere" }}
     >
       <h2>طلب {productName}</h2>
+      {notCookingToday && (
+        <p role="status" className={s.notice}>
+          لا يوجد طبخ اليوم؛ اختر تاريخ بداية من الغد.
+        </p>
+      )}
       <p className={s.notice}>
         إرسال طلب مبدئي للأسرة. تأكيد التوفر والاتفاق والسداد خارج الموقع؛ لا
         دفع أو تجديد تلقائي.
@@ -270,7 +283,7 @@ export function OrderRequestForm({
             </label>
             <label className={s.field}>
               تاريخ البداية
-              <input name="startDate" type="date" required min={today()} />
+              <input name="startDate" type="date" required min={minStart} />
             </label>
             <label className={s.field}>
               <span className="sr-only">طريقة تحديد المدة</span>
@@ -301,7 +314,7 @@ export function OrderRequestForm({
             {mode === "endDate" && (
               <label className={s.field}>
                 تاريخ النهاية (شامل)
-                <input name="endDate" type="date" min={today()} required />
+                <input name="endDate" type="date" min={minStart} required />
               </label>
             )}
           </div>

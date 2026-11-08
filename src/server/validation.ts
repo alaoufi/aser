@@ -54,22 +54,42 @@ const time = z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/);
 const hoursSchema = z
   .object({ day: z.number().int().min(0).max(6), opens: time, closes: time })
   .refine((v) => v.opens < v.closes, "وقت الإغلاق يجب أن يلي وقت الفتح");
+const nationalIdSchema = z
+  .string()
+  .trim()
+  .max(30)
+  .transform((value) =>
+    value.replace(/[٠-٩۰-۹]/g, (digit) =>
+      String(digit.charCodeAt(0) - (digit >= "۰" ? 0x6f0 : 0x660)),
+    ),
+  )
+  .pipe(z.string().regex(/^\d{10}$/, "رقم الهوية عشرة أرقام فقط"));
+export function normalizeNationalId(value: string) {
+  return nationalIdSchema.parse(value);
+}
 export const profileSchema = z
   .object({
     name: z.string().trim().min(2).max(120),
-    description: z.string().trim().max(2000).default(""),
+    description: z.string().trim().max(2000).optional(),
     cityId: z.string().min(1).max(50),
     neighborhood: optionalText(120),
     phone: z.string().max(25),
     whatsapp: optionalText(25),
-    delivery: z.boolean().default(false),
-    pickup: z.boolean().default(true),
+    delivery: z.boolean().optional(),
+    pickup: z.boolean().optional(),
+    nationalId: nationalIdSchema.optional(),
+    workLocation: z
+      .string()
+      .trim()
+      .min(5, "أدخل مكان مزاولة العمل بالتفصيل")
+      .max(2000)
+      .optional(),
     documentType,
     documentId: z.uuid().nullable().optional(),
     exceptionReason: optionalText(2000),
     documentNumber: optionalText(100),
     documentExpiresAt: z.iso.date().nullable().optional(),
-    categoryIds: z.array(z.string().min(1).max(30)).min(1).max(100),
+    categoryIds: z.array(z.string().min(1).max(30)).min(1).max(100).optional(),
     website: safeHttps.nullable().optional(),
     socialLinks: z
       .array(socialSchema)
@@ -111,7 +131,7 @@ export const profileSchema = z
         "أرفق مستند الأهلية، أو اشرح طلب الاستثناء في عشرة أحرف على الأقل",
     },
   )
-  .refine((x) => x.delivery || x.pickup, {
+  .refine((x) => x.delivery !== false || x.pickup !== false, {
     message: "حدد وسيلة استلام واحدة على الأقل",
   });
 export const productSchema = z.object({

@@ -3,6 +3,12 @@ import { z } from "zod";
 import type { SessionUser } from "../lib/types";
 import { db, transaction } from "./db";
 import { HttpError, normalizePhone } from "./security";
+import {
+  assertCookingStart,
+  notCookingTodaySql,
+  riyadhDate,
+  riyadhTodaySql,
+} from "./cooking-availability";
 
 const date = z
   .string()
@@ -35,12 +41,7 @@ const schema = z
   );
 export function parseOrderRequest(input: unknown, now = new Date()) {
   const value = schema.parse(input);
-  const today = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Riyadh",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(now);
+  const today = riyadhDate(now);
   const start = new Date(value.startDate + "T00:00:00Z").getTime();
   const days =
     value.days ??
@@ -62,6 +63,7 @@ export function parseOrderRequest(input: unknown, now = new Date()) {
   };
 }
 type OrderProduct = {
+  notCookingToday?: boolean;
   name: string;
   unit: string;
   price: string | number | null;
@@ -137,6 +139,13 @@ export async function submitOrder(user: SessionUser | null, input: unknown) {
       )
     ).rows[0];
     assertOrderProduct(product);
+    const cooking = (
+      await client.query(
+        `SELECT ${notCookingTodaySql()} AS closed,${riyadhTodaySql}::text AS day FROM jdatna.producer_profiles p WHERE p.id=$1`,
+        [product.producerId],
+      )
+    ).rows[0];
+    assertCookingStart(cooking.closed, value.startDate, cooking.day);
     let offer:
       { label: string; price: number | null; meal: string } | undefined;
     if (value.offerId) {
@@ -195,12 +204,16 @@ export async function reorderDraft(user: SessionUser, id: string) {
   if (!previous) throw new HttpError(404, "الطلب غير موجود");
   const product = (
     await db().query(
-      `SELECT x.name,x.status,x.visible,p.status AS "producerStatus" FROM jdatna.products x JOIN jdatna.producer_profiles p ON p.id=x.producer_id WHERE x.id=$1`,
+      `SELECT x.name,x.status,x.visible,p.status AS "producerStatus",${notCookingTodaySql()} AS "notCookingToday" FROM jdatna.products x JOIN jdatna.producer_profiles p ON p.id=x.producer_id WHERE x.id=$1`,
       [previous.productId],
     )
   ).rows[0];
   assertOrderProduct(product);
-  return { ...previous, productName: product.name };
+  return {
+    ...previous,
+    productName: product.name,
+    notCookingToday: product.notCookingToday,
+  };
 }
 export async function producerOrders(user: SessionUser) {
   return (

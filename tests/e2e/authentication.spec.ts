@@ -47,7 +47,7 @@ test("password login works while SMS unavailable and follows server destination"
     password: "correct-password",
   });
 });
-test("family signup verifies OTP then creates credentials before application", async ({
+test("family signup can optionally create credentials before application", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 320, height: 900 });
@@ -74,6 +74,12 @@ test("family signup verifies OTP then creates credentials before application", a
   await page.getByLabel("رمز التحقق", { exact: true }).fill("1234");
   await page.getByRole("button", { name: "تحقق ومتابعة" }).click();
   await expect(page).toHaveURL(/\/login$/);
+  await expect(
+    page.getByLabel("كلمة المرور الجديدة", { exact: true }),
+  ).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "تعيين كلمة مرور اختياريًا", exact: true })
+    .click();
   await page.getByLabel("اسم مستخدم اختياري").fill("family.user");
   await page
     .getByLabel("كلمة المرور الجديدة", { exact: true })
@@ -91,6 +97,71 @@ test("family signup verifies OTP then creates credentials before application", a
     password: "new-password-123",
   });
 });
+
+for (const scenario of [
+  { intent: "customer", role: "customer", destination: "orders", proof: true },
+  { intent: "family", role: "customer", destination: "register", proof: true },
+  { intent: "family", role: "producer", destination: "dashboard", proof: true },
+  { intent: "customer", role: "admin", destination: "admin", proof: true },
+  { intent: "customer", role: "customer", destination: "orders", proof: false },
+])
+  test(`OTP signup continues without mandatory credentials: ${scenario.intent}/${scenario.role}/${scenario.proof}`, async ({
+    page,
+  }) => {
+    await page.route("**/api/session", (r) =>
+      r.fulfill({ json: { user: null, registrationOpen: true } }),
+    );
+    await page.route("**/api/auth/request-otp", (r) =>
+      r.fulfill({ json: { challengeId: "test-challenge" } }),
+    );
+    await page.route("**/api/auth/verify-otp", (r) =>
+      r.fulfill({
+        json: {
+          user: { ...user, role: scenario.role },
+          next: "/orders",
+          canSetCredentials: scenario.proof,
+        },
+      }),
+    );
+    let credentialCalls = 0;
+    await page.route("**/api/auth/credentials", (r) => {
+      credentialCalls++;
+      return r.fulfill({
+        status: 400,
+        json: { error: "Must not set credentials" },
+      });
+    });
+    await page.goto("/login");
+    await page
+      .getByRole("button", { name: "إنشاء حساب جديد", exact: true })
+      .click();
+    await page.getByLabel("نوع الحساب المطلوب").selectOption(scenario.intent);
+    await page.getByLabel("رقم الجوال", { exact: true }).fill("0500000001");
+    await page
+      .getByRole("button", { name: "أرسل رمز التحقق", exact: true })
+      .click();
+    await page.getByLabel("اسم صاحب الحساب").fill("عميل الاختبار");
+    await page.getByLabel("رمز التحقق", { exact: true }).fill("1234");
+    await page
+      .getByRole("button", { name: "تحقق ومتابعة", exact: true })
+      .click();
+    await expect(
+      page.getByLabel("كلمة المرور الجديدة", { exact: true }),
+    ).toHaveCount(0);
+    await expect(page.getByLabel("اسم مستخدم اختياري")).toHaveCount(0);
+    if (!scenario.proof)
+      await expect(
+        page.getByRole("button", {
+          name: "تعيين كلمة مرور اختياريًا",
+          exact: true,
+        }),
+      ).toBeDisabled();
+    await page
+      .getByRole("button", { name: "متابعة التسجيل", exact: true })
+      .click();
+    await expect(page).toHaveURL(new RegExp("/" + scenario.destination + "$"));
+    expect(credentialCalls).toBe(0);
+  });
 test("password recovery requires matching passwords and reports credential error", async ({
   page,
 }) => {

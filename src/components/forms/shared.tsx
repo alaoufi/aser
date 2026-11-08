@@ -139,6 +139,8 @@ export function LoginForm({
   const [intent, setIntent] = useState("customer");
   const [challenge, setChallenge] = useState("");
   const [verified, setVerified] = useState<SessionUser | null>(null);
+  const [showCredentials, setShowCredentials] = useState(false);
+  const [canSetCredentials, setCanSetCredentials] = useState(false);
   const [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const [phone, setPhone] = useState("");
@@ -148,6 +150,8 @@ export function LoginForm({
     setMode(next);
     setChallenge("");
     setVerified(null);
+    setShowCredentials(false);
+    setCanSetCredentials(false);
     setError("");
     setUsername("");
     setClearUsername(false);
@@ -176,6 +180,12 @@ export function LoginForm({
     const f = new FormData(e.currentTarget);
     try {
       if (verified) {
+        if (!showCredentials) {
+          finish(verified);
+          return;
+        }
+        if (!canSetCredentials)
+          throw new Error("أعد التحقق من الجوال لتعيين كلمة المرور");
         const password = String(f.get("password") ?? "");
         if (password !== f.get("confirmPassword"))
           throw new Error("كلمتا المرور غير متطابقتين");
@@ -220,11 +230,13 @@ export function LoginForm({
             ...(mode === "signup" ? { name: f.get("name") } : {}),
           }),
         });
-        if (!d.canSetCredentials)
+        if (mode === "recover" && !d.canSetCredentials)
           throw new Error(
             "تعذر اعتماد إذن إعداد كلمة المرور؛ أعد التحقق من الجوال",
           );
         setVerified(d.user);
+        setCanSetCredentials(d.canSetCredentials === true);
+        setShowCredentials(mode === "recover");
         setUsername(
           (d.user as SessionUser & { username?: string | null }).username ?? "",
         );
@@ -242,7 +254,9 @@ export function LoginForm({
     >
       <h1>
         {verified
-          ? "إعداد بيانات الدخول"
+          ? showCredentials
+            ? "إعداد بيانات الدخول"
+            : "تم التحقق من جوالك"
           : mode === "password"
             ? "الدخول إلى أكلات جدتنا"
             : mode === "signup"
@@ -251,7 +265,9 @@ export function LoginForm({
       </h1>
       <p className={s.muted}>
         {verified
-          ? "تحققنا من جوالك. أنشئ كلمة مرور خلال عشر دقائق. سيؤدي الحفظ إلى إنهاء جلسات الدخول السابقة."
+          ? showCredentials
+            ? "يمكنك إعداد كلمة مرور خلال عشر دقائق من التحقق. سيؤدي الحفظ إلى إنهاء جلسات الدخول السابقة."
+            : "يمكنك المتابعة الآن. تعيين اسم مستخدم وكلمة مرور اختياري."
           : mode === "password"
             ? "ادخل باسم المستخدم أو جوالك المتحقق منه وكلمة المرور. نفتح حسابك بحسب صلاحياته المعتمدة."
             : "نرسل رمزًا من أربعة أرقام إلى جوالك. لا تشارك الرمز مع أي شخص."}
@@ -273,7 +289,26 @@ export function LoginForm({
         onSubmit={submit}
         key={verified ? "credentials" : mode}
       >
-        {verified ? (
+        {verified && !showCredentials ? (
+          <>
+            <button className={s.button} disabled={busy}>
+              متابعة التسجيل
+            </button>
+            <button
+              type="button"
+              className={s.button}
+              disabled={busy || !canSetCredentials}
+              onClick={() => setShowCredentials(true)}
+            >
+              تعيين كلمة مرور اختياريًا
+            </button>
+            {!canSetCredentials && (
+              <p className={s.muted}>
+                أعد التحقق من الجوال إذا رغبت في تعيين كلمة مرور.
+              </p>
+            )}
+          </>
+        ) : verified ? (
           <>
             <label className={s.field}>
               اسم مستخدم اختياري
@@ -445,6 +480,17 @@ export function LoginForm({
           </>
         )}
       </form>
+      {verified && showCredentials && mode === "signup" && (
+        <button
+          type="button"
+          className={s.button}
+          disabled={busy}
+          style={{ marginTop: 16 }}
+          onClick={() => finish(verified)}
+        >
+          متابعة التسجيل
+        </button>
+      )}
       {!verified && (
         <div className={s.actions} style={{ marginTop: 20 }}>
           {mode !== "password" && (

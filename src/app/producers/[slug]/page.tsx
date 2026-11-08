@@ -45,6 +45,12 @@ export default async function ProducerDetail({
             {p.regionName} · {p.cityName}
           </p>
           <h1>{p.name}</h1>
+          {p.notCookingToday && (
+            <p role="status" className="muted">
+              لا يوجد طبخ اليوم. طلبات المواعيد القادمة متاحة بالاتفاق مع
+              الأسرة.
+            </p>
+          )}
           {p.verified && (
             <span className="badge inline">تمت مراجعتها إداريًا</span>
           )}

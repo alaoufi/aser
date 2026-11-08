@@ -5,6 +5,8 @@ import { profileSchema } from "../src/server/validation";
 import { saveProfile, reviewProducer } from "../src/server/management";
 import { db } from "../src/server/db";
 const profile = {
+  nationalId: "1234567890",
+  workLocation: "عنوان اختبار أهلية خاص ومعزول",
   name: "أسرة اختبار الاستثناء",
   cityId: "riyadh",
   phone: "0500000017",

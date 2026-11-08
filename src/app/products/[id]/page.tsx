@@ -43,6 +43,11 @@ export default async function ProductDetail({
           <p className="eyebrow">{p.cityName}</p>
           <span className="badge inline">{availability[p.status]}</span>
           <h1>{p.name}</h1>
+          {p.notCookingToday && (
+            <p role="status" className="muted">
+              لا يوجد طبخ اليوم لدى هذه الأسرة. يمكنك طلب موعد يبدأ من الغد.
+            </p>
+          )}
           <Link className="text-link" href={`/producers/${p.producerSlug}`}>
             من مائدة {p.producerName} ←
           </Link>
@@ -81,6 +86,7 @@ export default async function ProductDetail({
         <OrderRequestForm
           productId={p.id}
           productName={p.name}
+          notCookingToday={p.notCookingToday}
           offerId={Array.isArray(offer) ? "invalid" : offer}
         />
       )}

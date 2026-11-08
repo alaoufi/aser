@@ -1,9 +1,51 @@
 import { randomUUID } from "node:crypto";
 import type { SessionUser } from "../lib/types";
 import { db, transaction } from "./db";
-import { HttpError, normalizePhone } from "./security";
+import {
+  HttpError,
+  normalizePhone,
+  encryptDocument,
+  decryptDocument,
+} from "./security";
 import { profileSchema, productSchema, reviewSchema } from "./validation";
 import { productSelect, mapProduct } from "./catalog";
+type ProducerPrivate = { nationalId: string; workLocation: string };
+export function mergeProducerPrivate(
+  existing: ProducerPrivate | null,
+  input: { nationalId?: string; workLocation?: string },
+  creating: boolean,
+): ProducerPrivate | null {
+  if (
+    !creating &&
+    !existing &&
+    input.nationalId === undefined &&
+    input.workLocation === undefined
+  )
+    return null;
+  const nationalId = input.nationalId ?? existing?.nationalId,
+    workLocation = input.workLocation ?? existing?.workLocation;
+  if (!nationalId || !workLocation)
+    throw new HttpError(400, "أدخل رقم الهوية ومكان مزاولة العمل للأسرة");
+  return { nationalId, workLocation };
+}
+function privateKey() {
+  const key = process.env.DOCUMENT_ENCRYPTION_KEY ?? "";
+  if (!/^[a-f0-9]{64}$/i.test(key))
+    throw new HttpError(503, "إعداد حفظ البيانات الخاصة غير مكتمل");
+  return Buffer.from(key, "hex");
+}
+function decryptPrivate(payload: Buffer): ProducerPrivate {
+  const value = JSON.parse(
+    decryptDocument(payload, privateKey()).toString("utf8"),
+  );
+  if (
+    value.version !== 1 ||
+    typeof value.nationalId !== "string" ||
+    typeof value.workLocation !== "string"
+  )
+    throw new Error("Invalid private profile");
+  return { nationalId: value.nationalId, workLocation: value.workLocation };
+}
 export async function ownProfile(user: SessionUser) {
   const profile = (
     await db().query(
@@ -11,15 +53,29 @@ export async function ownProfile(user: SessionUser) {
       [user.id],
     )
   ).rows[0];
-  return profile ?? null;
+  if (!profile) return null;
+  const privateRow = (
+    await db().query(
+      "SELECT encrypted_payload FROM jdatna.producer_private WHERE producer_id=$1",
+      [profile.id],
+    )
+  ).rows[0];
+  const data = privateRow ? decryptPrivate(privateRow.encrypted_payload) : null;
+  return {
+    ...profile,
+    nationalId: data?.nationalId ?? null,
+    workLocation: data?.workLocation ?? null,
+  };
 }
 export async function saveProfile(user: SessionUser, input: unknown) {
   const value = profileSchema.parse(input);
   const phone = normalizePhone(value.phone);
   if (phone !== user.phone)
     throw new HttpError(400, "رقم الملف يجب أن يطابق الجوال المتحقق منه");
-  const whatsapp = value.whatsapp ? normalizePhone(value.whatsapp) : null;
   return transaction(async (client) => {
+    await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1,1))", [
+      user.id,
+    ]);
     const document = (
       await client.query(
         "SELECT id,type FROM jdatna.producer_documents WHERE id=$1 AND user_id=$2",
@@ -30,11 +86,40 @@ export async function saveProfile(user: SessionUser, input: unknown) {
       throw new HttpError(400, "مستند الأهلية غير صالح أو غير مملوك لك");
     const existing = (
       await client.query(
-        "SELECT id,status FROM jdatna.producer_profiles WHERE user_id=$1 FOR UPDATE",
+        "SELECT * FROM jdatna.producer_profiles WHERE user_id=$1 FOR UPDATE",
         [user.id],
       )
     ).rows[0];
     const id = existing?.id ?? randomUUID();
+    const delivery = value.delivery ?? existing?.delivery ?? false,
+      pickup = value.pickup ?? existing?.pickup ?? true;
+    if (!delivery && !pickup)
+      throw new HttpError(400, "حدد وسيلة استلام واحدة على الأقل");
+    let encrypted: Buffer | undefined;
+    if (
+      !existing ||
+      value.nationalId !== undefined ||
+      value.workLocation !== undefined
+    ) {
+      const stored = existing
+        ? (
+            await client.query(
+              "SELECT encrypted_payload FROM jdatna.producer_private WHERE producer_id=$1",
+              [id],
+            )
+          ).rows[0]
+        : null;
+      const data = mergeProducerPrivate(
+        stored ? decryptPrivate(stored.encrypted_payload) : null,
+        value,
+        !existing,
+      );
+      if (data)
+        encrypted = encryptDocument(
+          Buffer.from(JSON.stringify({ version: 1, ...data })),
+          privateKey(),
+        );
+    }
     await client.query(
       `INSERT INTO jdatna.producer_profiles(id,user_id,slug,name,description,city_id,neighborhood,phone,whatsapp,delivery,pickup) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) ON CONFLICT(user_id) DO UPDATE SET name=EXCLUDED.name,description=EXCLUDED.description,city_id=EXCLUDED.city_id,neighborhood=EXCLUDED.neighborhood,phone=EXCLUDED.phone,whatsapp=EXCLUDED.whatsapp,delivery=EXCLUDED.delivery,pickup=EXCLUDED.pickup,status='pending',verified=false,updated_at=now()`,
       [
@@ -42,24 +127,48 @@ export async function saveProfile(user: SessionUser, input: unknown) {
         user.id,
         "family-" + id,
         value.name,
-        value.description,
+        value.description ?? existing?.description ?? "",
         value.cityId,
-        value.neighborhood ?? null,
+        value.neighborhood === undefined
+          ? (existing?.neighborhood ?? null)
+          : value.neighborhood,
         phone,
-        whatsapp,
-        value.delivery,
-        value.pickup,
+        value.whatsapp === undefined
+          ? (existing?.whatsapp ?? null)
+          : value.whatsapp
+            ? normalizePhone(value.whatsapp)
+            : null,
+        delivery,
+        pickup,
       ],
     );
-    await client.query(
-      "DELETE FROM jdatna.producer_categories WHERE producer_id=$1",
-      [id],
-    );
-    for (const category of new Set(value.categoryIds))
+    if (encrypted)
       await client.query(
-        "INSERT INTO jdatna.producer_categories(producer_id,category_id) VALUES($1,$2)",
-        [id, category],
+        "INSERT INTO jdatna.producer_private(producer_id,encrypted_payload) VALUES($1,$2) ON CONFLICT(producer_id) DO UPDATE SET encrypted_payload=EXCLUDED.encrypted_payload,updated_at=now()",
+        [id, encrypted],
       );
+    if (value.categoryIds !== undefined || !existing) {
+      await client.query(
+        "DELETE FROM jdatna.producer_categories WHERE producer_id=$1",
+        [id],
+      );
+      for (const category of new Set(value.categoryIds ?? ["12"]))
+        await client.query(
+          "INSERT INTO jdatna.producer_categories(producer_id,category_id) VALUES($1,$2)",
+          [id, category],
+        );
+    }
+    const previous = existing
+      ? (
+          await client.query(
+            "SELECT document_id,document_type,document_number,document_expires_at FROM jdatna.producer_verifications WHERE producer_id=$1 ORDER BY created_at DESC LIMIT 1",
+            [id],
+          )
+        ).rows[0]
+      : null;
+    const sameDocument =
+      previous?.document_id === value.documentId &&
+      previous?.document_type === value.documentType;
     await client.query(
       "INSERT INTO jdatna.producer_verifications(id,producer_id,document_id,document_type,document_number,document_expires_at,reason) VALUES($1,$2,$3,$4,$5,$6,$7)",
       [
@@ -67,8 +176,12 @@ export async function saveProfile(user: SessionUser, input: unknown) {
         id,
         value.documentId,
         value.documentType,
-        value.documentNumber ?? null,
-        value.documentExpiresAt ?? null,
+        value.documentNumber === undefined && sameDocument
+          ? previous.document_number
+          : (value.documentNumber ?? null),
+        value.documentExpiresAt === undefined && sameDocument
+          ? previous.document_expires_at
+          : (value.documentExpiresAt ?? null),
         value.documentType === "exception" ? value.exceptionReason : null,
       ],
     );
@@ -109,12 +222,12 @@ export async function saveProfile(user: SessionUser, input: unknown) {
           [id, hours.day, hours.opens, hours.closes],
         );
     }
-    if (!value.delivery || value.deliveryAreas !== undefined) {
+    if (value.deliveryAreas !== undefined) {
       await client.query(
         "DELETE FROM jdatna.delivery_areas WHERE producer_id=$1",
         [id],
       );
-      if (value.delivery)
+      if (delivery)
         for (const area of value.deliveryAreas ?? [])
           await client.query(
             "INSERT INTO jdatna.delivery_areas(producer_id,city_id,fee) VALUES($1,$2,$3)",
@@ -211,12 +324,32 @@ export async function saveProduct(
     return { id };
   });
 }
-export async function adminProducers() {
-  return (
+export async function adminProducers(user: SessionUser) {
+  if (user.role !== "admin")
+    throw new HttpError(403, "لا تملك صلاحية المراجعة");
+  const profiles = (
     await db().query(
       `SELECT p.*,p.city_id AS "cityId",c.name AS "cityName",u.name AS "ownerName",v.document_id AS "documentId",v.document_type AS "documentType",v.reason AS "reviewReason",v.document_number AS "documentNumber",v.document_expires_at::text AS "documentExpiresAt",ARRAY(SELECT category_id FROM jdatna.producer_categories WHERE producer_id=p.id) AS "categoryIds" FROM jdatna.producer_profiles p JOIN jdatna.users u ON u.id=p.user_id JOIN jdatna.cities c ON c.id=p.city_id LEFT JOIN LATERAL(SELECT document_id,document_type,reason,document_number,document_expires_at FROM jdatna.producer_verifications WHERE producer_id=p.id ORDER BY created_at DESC LIMIT 1)v ON true ORDER BY p.created_at DESC LIMIT 200`,
     )
   ).rows;
+  if (!profiles.length) return profiles;
+  const privateRows = (
+    await db().query(
+      "SELECT producer_id,encrypted_payload FROM jdatna.producer_private WHERE producer_id=ANY($1::uuid[])",
+      [profiles.map((profile) => profile.id)],
+    )
+  ).rows;
+  const data = new Map<string, ProducerPrivate>(
+    privateRows.map((row) => [
+      row.producer_id,
+      decryptPrivate(row.encrypted_payload),
+    ]),
+  );
+  return profiles.map((profile) => ({
+    ...profile,
+    nationalId: data.get(profile.id)?.nationalId ?? null,
+    workLocation: data.get(profile.id)?.workLocation ?? null,
+  }));
 }
 export async function reviewProducer(
   user: SessionUser,
