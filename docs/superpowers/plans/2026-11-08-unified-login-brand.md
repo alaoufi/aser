@@ -22,3 +22,5 @@ User explicitly authorizes name أكلات جدتنا everywhere, edited logo te
 - Username conflicts reported without replacing other identity; setuptransaction rollback retains old credentials on failure.
 - Test password reset and role routing, disabledSMS versus workingpassword path, onepublicentry and exact4digit SMS wording via mockedtransport.
 - Preserve phoneverification, producerdocumentreview, guestorders, membershippreferences and categorycoverage behaviors.
+
+Status: complete. Backend and UI independently reviewed;80server/DB tests pass, focusedcredentials/SMS10pass after usernamealiasfix, finalauthenticationbrowser10pass afterscopedalertselector; fullotherbrowser54pass+2intentional skips; productionbuildpass. Deployment1a60e1710e65f14bcdd7541dddead135790a56c2 verified live with20page/viewport cases and auth/error/CSRF checks. Before/after encrypted backups restored successfully. Realowner credentials andSMS were not exercised or changed; existingusers can OTPsetupfirstpassword.
