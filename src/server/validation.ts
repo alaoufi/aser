@@ -4,6 +4,7 @@ export const documentType = z.enum([
   "freelance",
   "producer_certificate",
   "national_id",
+  "other_document",
   "exception",
 ]);
 const optionalText = (max: number) =>
@@ -67,7 +68,7 @@ export const profileSchema = z
     documentId: z.uuid(),
     documentNumber: optionalText(100),
     documentExpiresAt: z.iso.date().nullable().optional(),
-    categoryIds: z.array(z.string().min(1).max(30)).min(1).max(12),
+    categoryIds: z.array(z.string().min(1).max(30)).min(1).max(100),
     website: safeHttps.nullable().optional(),
     socialLinks: z
       .array(socialSchema)
@@ -109,7 +110,7 @@ export const productSchema = z.object({
   price: z.number().min(0).max(1000000).nullable(),
   unit: z.string().trim().min(1).max(60),
   status: z.enum(["available", "unavailable", "preorder"]),
-  categoryIds: z.array(z.string().min(1).max(30)).min(1).max(12),
+  categoryIds: z.array(z.string().min(1).max(30)).min(1).max(100),
   allergens: z.array(z.string().trim().min(1).max(100)).max(30).default([]),
   ingredients: optionalText(2000),
   storage: optionalText(1000),

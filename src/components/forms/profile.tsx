@@ -38,6 +38,7 @@ const documentTypes = [
   ["freelance", "وثيقة عمل حر"],
   ["producer_certificate", "شهادة أسرة منتجة"],
   ["national_id", "هوية وطنية للمراجعة فقط"],
+  ["other_document", "مستند أهلية آخر للمراجعة"],
   ["exception", "طلب استثناء إداري"],
 ];
 export function ProfileForm({

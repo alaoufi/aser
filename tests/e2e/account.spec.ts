@@ -103,8 +103,10 @@ test("admin category validates slug before sending and preserves errors from ser
       : route.fulfill({ status: 409, json: { error: "التصنيف مسجل مسبقًا" } }),
   );
   await page.goto("/admin");
-  await page.getByRole("button", { name: "التصنيفات", exact: true }).click();
-  await page.getByLabel("اسم التصنيف").fill("الخبز");
+  await page
+    .getByRole("button", { name: "إدارة الأقسام", exact: true })
+    .click();
+  await page.getByLabel("اسم القسم").fill("الخبز");
   const slug = page.getByLabel("الرابط المختصر");
   await slug.fill("Invalid Slug");
   expect(
@@ -115,7 +117,7 @@ test("admin category validates slug before sending and preserves errors from ser
   await expect(page.locator("main").getByRole("alert")).toHaveText(
     "التصنيف مسجل مسبقًا",
   );
-  await expect(page.getByLabel("اسم التصنيف")).toHaveValue("الخبز");
+  await expect(page.getByLabel("اسم القسم")).toHaveValue("الخبز");
 });
 
 test("profile validates working hours and sends optional links and city fees", async ({

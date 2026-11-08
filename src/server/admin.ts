@@ -45,7 +45,7 @@ export const moderationSchema = z
     id: z.uuid(),
     visible: z.boolean().optional(),
     featured: z.boolean().optional(),
-    categoryIds: z.array(z.string().min(1).max(30)).min(1).max(12).optional(),
+    categoryIds: z.array(z.string().min(1).max(30)).min(1).max(100).optional(),
     reason: z.string().trim().min(5).max(2000),
   })
   .refine(

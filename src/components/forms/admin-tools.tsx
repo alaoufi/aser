@@ -49,17 +49,17 @@ export function CategoriesAdmin() {
   }
   return (
     <section>
-      <h2>تصنيفات الأكلات</h2>
+      <h2>إدارة الأقسام</h2>
       <Message error={r.error} success={r.success} />
       <form
         key={editing?.id || "new"}
         onSubmit={save}
         className={`${s.card} ${s.form}`}
       >
-        <h3>{editing ? "تعديل التصنيف" : "تصنيف جديد"}</h3>
+        <h3>{editing ? "تعديل القسم" : "قسم جديد"}</h3>
         <div className={s.grid}>
           <label className={s.field}>
-            اسم التصنيف
+            اسم القسم
             <input
               name="name"
               required

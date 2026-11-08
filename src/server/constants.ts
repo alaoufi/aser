@@ -14,6 +14,8 @@ export const categories: Category[] = [
   "القهوة ومستلزماتها",
   "الأكلات الموسمية",
   "المنتجات الغذائية الأخرى المسموح بها",
+  "مشتقات الألبان",
+  "المشروبات",
 ].map((name, i) => ({
   id: String(i + 1),
   name,
@@ -31,6 +33,8 @@ export const categories: Category[] = [
     "☕",
     "🌙",
     "🍽️",
+    "🧀",
+    "🥤",
   ][i],
 }));
 const initialCities: City[] = [

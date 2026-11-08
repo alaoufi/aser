@@ -157,7 +157,7 @@ export function Admin() {
             {[
               ["producers", "مراجعة الأسر"],
               ["products", "المنتجات"],
-              ["categories", "التصنيفات"],
+              ["categories", "إدارة الأقسام"],
               ["locations", "المواقع"],
               ["reports", "البلاغات"],
             ].map(([id, label]) => (
