@@ -11,6 +11,13 @@ test("food photography stays visible and separate from search across tablet brea
     await page.goto("/");
     await page.evaluate(() => document.fonts.ready);
     await expect(page.locator(".food-showcase img")).toHaveCount(5);
+    await expect(page.locator(".food-showcase .food-dish-name")).toHaveText([
+      "الأرز",
+      "مطازيز",
+      "مرقوق",
+      "جريش",
+      "طبق سمك",
+    ]);
     await expect(page.locator(".food-showcase .dish-number")).toHaveText([
       "1",
       "2",

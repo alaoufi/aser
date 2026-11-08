@@ -3,13 +3,13 @@
 المالك طلب إزالة الخلفية وتنعيم الحواف ومظهرًا عائمًا وترقيمًا لتحديد المسميات لاحقًا.
 الأرقام تخص هوية الصورة داخل العرض، ولا تُعد أسماء أصناف أو ربطًا بمنتجات أسر.
 
-| الرقم | وصف للتعرّف فقط           | الملف الأصلي                         | النسخة المستخدمة                           |
-| ----- | ------------------------- | ------------------------------------ | ------------------------------------------ |
-| 1     | أرز في صحن أحمر الحافة    | public/food/rice-plate.jpeg          | public/food/rice-plate-cutout.png          |
-| 2     | صحن معدني باللحم والخضار  | public/food/traditional-platter.jpeg | public/food/traditional-platter-cutout.png |
-| 3     | إناء فخاري                | public/food/clay-pot.jpeg            | public/food/clay-pot-cutout.png            |
-| 4     | صحن مزين بالليمون والفلفل | public/food/grain-plate.jpeg         | public/food/grain-plate-cutout.png         |
-| 5     | صينية السمك               | public/food/fish-tray.jpeg           | public/food/fish-tray-cutout.png           |
+| الرقم | المسمى المعتمد | الملف الأصلي                         | النسخة المستخدمة                           |
+| ----- | -------------- | ------------------------------------ | ------------------------------------------ |
+| 1     | الأرز          | public/food/rice-plate.jpeg          | public/food/rice-plate-cutout.png          |
+| 2     | مطازيز         | public/food/traditional-platter.jpeg | public/food/traditional-platter-cutout.png |
+| 3     | مرقوق          | public/food/clay-pot.jpeg            | public/food/clay-pot-cutout.png            |
+| 4     | جريش           | public/food/grain-plate.jpeg         | public/food/grain-plate-cutout.png         |
+| 5     | طبق سمك        | public/food/fish-tray.jpeg           | public/food/fish-tray-cutout.png           |
 
 المجلد النهائي داخل هذا المستودع: public/food، والنسخ الأصلية JPEG محفوظة.
 المحرر المستخدم: أداة imagegen المدمجة، وليس CLI أو API مدفوعًا منفصلًا.
@@ -32,3 +32,9 @@
 على10 مقاسات320..1600، دون تداخل البحث والصور أو تجاوز عرض الشاشة.
 اختبار food.spec.ts المخصص للترقيم والهندسة وTypeScript ناجحان.
 لوحة الترقيم المرجعية: artifacts/numbered-dishes.png (لقطة HTML، ليست منتجًا في القاعدة).
+
+## اعتماد المسميات
+
+المالك اعتمد1 الأرز،2 مطازيز،3 مرقوق،4 جريش،5 طبق سمك. الأسماء تظهر
+تحت الصور وفي النص البديل. تعديل الشكل الحالي عرض CSS بدوران طفيف وتحجيم
+متناسب وظل، دون قص أو تمديد أو إعادة تحرير الأصول الشفافة أو تغيير الطعام.

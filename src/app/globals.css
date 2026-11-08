@@ -2026,7 +2026,7 @@ label:has(> select) {
   gap: 10px;
   margin-top: 12px;
 }
-.food-showcase-strip > div {
+.food-dish-visual {
   position: relative;
   aspect-ratio: 1.25;
   background: transparent;
@@ -2049,7 +2049,7 @@ label:has(> select) {
     gap: 6px;
     margin-top: 8px;
   }
-  .food-showcase-strip > div {
+  .food-dish-visual {
     border-radius: 8px;
   }
 }
@@ -2117,5 +2117,47 @@ main {
     font-size: 12px;
     top: 0;
     inset-inline-start: 0;
+  }
+}
+
+.food-showcase-main img {
+  transform: rotate(-3deg) scale(0.95);
+}
+.food-dish {
+  min-width: 0;
+  text-align: center;
+}
+.food-dish-name {
+  display: block;
+  text-align: center;
+  margin-top: 6px;
+  color: var(--olive);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+.food-dish-name-featured {
+  margin-top: 0;
+  font-size: 17px;
+}
+.food-dish:nth-child(1) img {
+  transform: rotate(3deg) scale(0.92);
+}
+.food-dish:nth-child(2) img {
+  transform: rotate(-3deg) scale(0.94);
+}
+.food-dish:nth-child(3) img {
+  transform: rotate(2deg) scale(0.93);
+}
+.food-dish:nth-child(4) img {
+  transform: rotate(-2deg) scale(0.92);
+}
+@media (max-width: 600px) {
+  .food-dish-name {
+    font-size: 11px;
+    margin-top: 4px;
+  }
+  .food-dish-name-featured {
+    font-size: 15px;
   }
 }
