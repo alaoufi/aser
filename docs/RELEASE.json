@@ -1,15 +1,16 @@
 {
   "verified_on": "2026-11-08",
-  "code_commit": "0aeac909e4c696a08d91bf82f3e36fbbd71e3599",
-  "image": "jdatna-application:0aeac909e4c696a08d91bf82f3e36fbbd71e3599",
+  "code_commit": "474e074e25eee789e80c1b11634b620e5d17a5d3",
+  "image": "jdatna-application:474e074e25eee789e80c1b11634b620e5d17a5d3",
   "url": "https://jdatna.com",
   "checks": {
-    "unit_integration": "40/40",
-    "browser_chromium": "18/18 on preceding UI release; UI unchanged by SMS update",
+    "unit_integration": "40/40 on preceding SMS backend release; no backend change in this release",
+    "browser_chromium": "21 passed;1 intentionally skipped (mobile-only test in desktop project);3 targeted passed after fixture refinement",
     "typecheck": "passed",
     "build": "passed",
-    "infrastructure_and_backup_restore": "passed",
-    "live_browser": "desktop/mobile HTTP200; no overflow/page errors"
+    "infrastructure_and_backup_restore": "passed after deployment; Aykdmh unchanged",
+    "live_browser": "HTTPS exact release;desktop/mobile font loaded, navigation closed after selection/Escape/outside, no overflow at320px, no page errors",
+    "current_targeted_unit": "7/7 public safety and SMS"
   },
   "registrationOpen": false,
   "SMS": false,
@@ -23,5 +24,6 @@
     "Logo/cover/video/QR; orders/mobile apps pending"
   ],
   "sms_provider": "taqnyat; authenticated active account with positive balance; no real delivery test yet",
-  "footer_verification": "Live desktop/mobile: exact text,11px,no horizontal overflow; production build passed"
+  "footer_verification": "Affiliation retained",
+  "image_id": "sha256:0c851582b91d2e3f3ca43c3110e1d0c726416f95a3ef38b6e236bde165027dec"
 }
