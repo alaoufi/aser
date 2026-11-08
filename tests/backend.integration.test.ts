@@ -348,7 +348,7 @@ test(
               DOCUMENT_ENCRYPTION_KEY: "01".repeat(32),
             });
             assert.equal(registrationOpen(), true);
-            const code = "123456";
+            const code = "1234";
             const codeHash = createHmac("sha256", process.env.OTP_HASH_SECRET!)
               .update(challengeId + ":" + code)
               .digest("hex");
@@ -356,7 +356,7 @@ test(
               "INSERT INTO jdatna.otp_challenges(id,phone,code_hash,expires_at) VALUES($1,$2,$3,now()+interval '5 minutes')",
               [challengeId, users[0].phone, codeHash],
             );
-            assert.equal(await verifyOtp(challengeId, "999999"), null);
+            assert.equal(await verifyOtp(challengeId, "9999"), null);
             assert.equal(
               (
                 await db().query(
@@ -424,7 +424,7 @@ test(
             );
             await assert.rejects(requestOtp(phone), /محاولات كثيرة/);
             for (const id of ids)
-              await assert.rejects(verifyOtp(id, "123456"), /محاولات كثيرة/);
+              await assert.rejects(verifyOtp(id, "1234"), /محاولات كثيرة/);
             assert.equal(
               (
                 await db().query(

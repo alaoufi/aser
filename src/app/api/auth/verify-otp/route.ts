@@ -1,3 +1,4 @@
+import { otpCodePattern } from "@/server/otp";
 import { z } from "zod";
 import { api, jsonBody } from "@/server/http";
 import { verifyOtp, sessionCookie } from "@/server/auth";
@@ -6,7 +7,7 @@ export const POST = api(async (request) => {
   const body = z
     .object({
       challengeId: z.uuid(),
-      code: z.string().regex(/^\d{6}$/),
+      code: z.string().regex(otpCodePattern),
       name: z.string().trim().min(2).max(120).optional(),
     })
     .parse(await jsonBody(request));

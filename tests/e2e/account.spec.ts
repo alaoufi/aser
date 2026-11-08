@@ -62,7 +62,15 @@ test("phone verification moves to code entry and reports server failure", async 
   await page.goto("/login");
   await page.getByLabel("رقم الجوال").fill("0500000000");
   await page.getByRole("button", { name: "أرسل رمز التحقق" }).click();
-  await page.getByLabel("رمز التحقق", { exact: true }).fill("123456");
+  await expect(page.getByLabel("رمز التحقق", { exact: true })).toHaveAttribute(
+    "maxlength",
+    "4",
+  );
+  await expect(page.getByLabel("رمز التحقق", { exact: true })).toHaveAttribute(
+    "pattern",
+    "[0-9]{4}",
+  );
+  await page.getByLabel("رمز التحقق", { exact: true }).fill("1234");
   await page.getByRole("button", { name: "تحقق ومتابعة" }).click();
   await expect(page.locator("main").getByRole("alert")).toHaveText(
     "رمز التحقق غير صحيح",

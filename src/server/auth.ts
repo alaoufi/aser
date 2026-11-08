@@ -1,7 +1,7 @@
+import { createOtp } from "./otp";
 import { sendSms, smsTransportConfigured } from "./sms";
 import {
   randomBytes,
-  randomInt,
   randomUUID,
   createHash,
   createHmac,
@@ -86,7 +86,7 @@ export async function requestOtp(phoneValue: string) {
   await rateLimit("otp-global", 100, 3600);
   await rateLimit("otp-phone:" + hash(phone), 3, 900);
   const id = randomUUID(),
-    code = String(randomInt(100000, 1000000));
+    code = createOtp();
   await db().query(
     "INSERT INTO jdatna.otp_challenges(id,phone,code_hash,expires_at) VALUES($1,$2,$3,now()+interval '5 minutes')",
     [id, phone, otpHash(id, code)],

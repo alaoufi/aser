@@ -181,9 +181,9 @@ export function LoginForm({
               name="code"
               inputMode="numeric"
               autoComplete="one-time-code"
-              pattern="[0-9]{4,8}"
+              pattern="[0-9]{4}"
               minLength={4}
-              maxLength={8}
+              maxLength={4}
               required
               autoFocus
             />
