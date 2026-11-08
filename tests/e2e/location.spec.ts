@@ -7,6 +7,20 @@ test("region precedes city, restricts cities and resets stale selection in all s
     const region = page.locator('select[name="region"]');
     const city = page.locator('select[name="city"]');
     await expect(region).toBeVisible();
+    expect(
+      (
+        await region
+          .locator("option")
+          .evaluateAll((options) =>
+            options.map((o) => (o as HTMLOptionElement).value),
+          )
+      ).slice(1, 5),
+    ).toEqual(["riyadh", "makkah", "madinah", "qassim"]);
+    await region.selectOption("qassim");
+    const qassimCities = await city.locator("option").allTextContents();
+    for (const name of ["بريدة", "عنيزة", "الرس", "البكيرية", "البدائع"])
+      expect(qassimCities).toContain(name);
+    await region.selectOption("");
     await expect(city).toBeDisabled();
     await region.selectOption("makkah");
     await expect(city).toBeEnabled();

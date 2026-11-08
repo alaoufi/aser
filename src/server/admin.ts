@@ -1,3 +1,4 @@
+import { compareRegions } from "../lib/regions";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import type { PoolClient } from "pg";
@@ -162,7 +163,11 @@ export async function adminLocations(user: SessionUser) {
       'SELECT id,name,city_id AS "cityId" FROM jdatna.neighborhoods ORDER BY name LIMIT 1000',
     ),
   ]);
-  return { regions: regions.rows, cities, neighborhoods: neighborhoods.rows };
+  return {
+    regions: regions.rows.sort(compareRegions),
+    cities,
+    neighborhoods: neighborhoods.rows,
+  };
 }
 export async function createLocation(user: SessionUser, input: unknown) {
   assertAdmin(user);

@@ -1,4 +1,5 @@
 "use client";
+import { regionOptions } from "@/lib/regions";
 import { useState } from "react";
 import type { City } from "@/lib/types";
 export function LocationFields({
@@ -18,9 +19,7 @@ export function LocationFields({
   regionName?: string;
   className?: string;
 }) {
-  const regions = Array.from(
-    new Map(cities.map((c) => [c.regionId, c.regionName])),
-  );
+  const regions = regionOptions(cities);
   const initialRegion =
     defaultRegion || cities.find((c) => c.id === defaultCity)?.regionId || "";
   const [region, setRegion] = useState(initialRegion);

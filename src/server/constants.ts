@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+import { locationNames } from "./location-names";
 import type { Category, City } from "../lib/types";
 export const categories: Category[] = [
   "الأكلات الشعبية والتراثية",
@@ -31,7 +33,7 @@ export const categories: Category[] = [
     "🍽️",
   ][i],
 }));
-export const cities: City[] = [
+const initialCities: City[] = [
   ["riyadh", "الرياض", "riyadh", "منطقة الرياض"],
   ["jeddah", "جدة", "makkah", "منطقة مكة المكرمة"],
   ["makkah", "مكة المكرمة", "makkah", "منطقة مكة المكرمة"],
@@ -55,3 +57,25 @@ export const cities: City[] = [
   regionId,
   regionName,
 }));
+
+export const cities: City[] = Object.entries(locationNames).flatMap(
+  ([regionId, names]) =>
+    names.map((name) => {
+      const existing = initialCities.find(
+        (c) => c.regionId === regionId && c.name === name,
+      );
+      const region = initialCities.find((c) => c.regionId === regionId)!;
+      return (
+        existing ?? {
+          id:
+            "sa-" +
+            regionId +
+            "-" +
+            createHash("sha256").update(name).digest("hex").slice(0, 12),
+          name,
+          regionId,
+          regionName: region.regionName,
+        }
+      );
+    }),
+);
