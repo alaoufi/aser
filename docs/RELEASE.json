@@ -1,15 +1,15 @@
 {
   "verified_on": "2026-11-08",
-  "code_commit": "083273e8ab39454928edac74274b1d7015b62d0c",
-  "image": "jdatna-application:083273e8ab39454928edac74274b1d7015b62d0c",
+  "code_commit": "37050470ce372664c7c5f16cfe74ca702026b04a",
+  "image": "jdatna-application:37050470ce372664c7c5f16cfe74ca702026b04a",
   "url": "https://jdatna.com",
   "checks": {
     "unit_integration": "43/43 on preceding backend release;no backend changes",
-    "browser_chromium": "Targeted responsive food/search geometry regression passed;preceding full UI suite23 passed",
+    "browser_chromium": "Current CSS:home,browse,register at1440/768/390/320;preceding responsive food regression passed",
     "typecheck": "passed",
     "build": "passed",
     "infrastructure_and_backup_restore": "passed after deployment; Aykdmh unchanged",
-    "live_browser": "Exact release;5 optimized photos loaded at10 widths320..1600;no search/photo overlap, horizontal overflow or page errors;5 original asset hashes match",
+    "live_browser": "Exact HTTPS release;new paper/footer colors confirmed on3 routes at4 widths;registration enabled;no overflow/page errors",
     "otp_endpoint": "Four-digit code format; secure generation1000..9999; existing expiry and retry limits retained"
   },
   "registrationOpen": true,
@@ -25,7 +25,7 @@
   ],
   "sms_provider": "Same active Taqnyat credentials as Aykdmh; enabled at explicit owner request to test delivery on own phone",
   "footer_verification": "Affiliation retained",
-  "image_id": "sha256:2e5e12b6cccfab606127856973cbc102ae56085c01f51d4435b6ca58ade76199",
+  "image_id": "sha256:da803d2d346cf2b350e6f2e77f011ea4e53a8f1f8147e55eeddb992d112d4e8c",
   "sms_delivery_confirmed": true,
   "sms_delivery_evidence": "Owner reported receipt of previous6-digit SMS;4-digit release deployed afterwards, not physically re-tested by agent",
   "otp_digits": 4,
@@ -74,5 +74,13 @@
       }
     ],
     "presentation": "Next/Image responsive optimization; originals unchanged; decorative gallery, no product records"
+  },
+  "background_theme": {
+    "paper": "#fcf8f0",
+    "surface": "#fffdf8",
+    "sage": "#edf1e7",
+    "footer": "#422d21",
+    "footer_text": "#e3d0b7",
+    "additional_image_assets": false
   }
 }
