@@ -59,19 +59,27 @@ export function Message({
     </>
   );
 }
-export function AccountShell({ children }: { children: React.ReactNode }) {
+export function AccountShell({
+  children,
+  navigation = true,
+}: {
+  children: React.ReactNode;
+  navigation?: boolean;
+}) {
   return (
     <section className={s.shell}>
-      <nav aria-label="حسابي" className={s.nav}>
-        <Link href="/">الرئيسية</Link>
-        <Link href="/dashboard">لوحة الأسرة</Link>
-        <Link href="/dashboard/products">المنتجات</Link>
-        <Link href="/dashboard/offers">عروض الأسرة</Link>
-        <Link href="/dashboard/orders">طلبات الأسرة</Link>
-        <Link href="/dashboard/coverage">مناطق التغطية</Link>
-        <Link href="/orders">طلباتي</Link>
-        <Link href="/register">تسجيل أسرة</Link>
-      </nav>
+      {navigation && (
+        <nav aria-label="حسابي" className={s.nav}>
+          <Link href="/">الرئيسية</Link>
+          <Link href="/dashboard">لوحة الأسرة</Link>
+          <Link href="/dashboard/products">المنتجات</Link>
+          <Link href="/dashboard/offers">عروض الأسرة</Link>
+          <Link href="/dashboard/orders">طلبات الأسرة</Link>
+          <Link href="/dashboard/coverage">مناطق التغطية</Link>
+          <Link href="/orders">طلباتي</Link>
+          <Link href="/register">تسجيل أسرة</Link>
+        </nav>
+      )}
       {children}
     </section>
   );

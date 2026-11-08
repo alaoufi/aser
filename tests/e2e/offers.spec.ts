@@ -134,6 +134,9 @@ test("member saves declared interests before targeted offers appear", async ({
     }),
   );
   await page.goto("/offers");
+  await expect(
+    page.getByRole("navigation", { name: "حسابي", exact: true }),
+  ).toHaveCount(0);
   await expect(page.getByText("لا توجد عروض متاحة حاليًا.")).toBeVisible();
   await expect(page.getByText(/اختيارك تصريح اهتمام شخصي/)).toBeVisible();
   await page.getByLabel("المهتمون بعروض الطلاب").check();

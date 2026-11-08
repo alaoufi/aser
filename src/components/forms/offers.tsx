@@ -133,7 +133,7 @@ export function Offers({ manage = false }: { manage?: boolean }) {
     }
   }
   return (
-    <AccountShell>
+    <AccountShell navigation={manage}>
       <h1>{manage ? "عروض أسرتي" : "عروض الأسر المنتجة"}</h1>
       <p>
         الاتفاق والتحقق من شروط الاستحقاق والدفع مباشرة مع الأسرة خارج الموقع.
