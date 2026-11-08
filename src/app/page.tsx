@@ -1,3 +1,4 @@
+import { FoodPhotos } from "@/components/public/food-photos";
 import { LocationFields } from "@/components/public/location-fields";
 import Link from "next/link";
 import {
@@ -8,7 +9,6 @@ import {
 } from "@/server/catalog";
 import {
   EmptyState,
-  FoodArt,
   ProductCard,
   ProducerCard,
   SectionHeading,
@@ -54,13 +54,7 @@ export default async function Home() {
           </div>
         </div>
         <div className="hero-visual">
-          <span className="art-label">على سفرة الأصالة</span>
-          <FoodArt />
-          <span className="art-stamp">
-            صنعة بيت
-            <br />
-            <strong>وروح تراث</strong>
-          </span>
+          <FoodPhotos />
         </div>
       </section>
       <section className="value-strip">

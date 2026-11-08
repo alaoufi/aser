@@ -294,41 +294,6 @@ img {
 .hero-visual {
   position: relative;
 }
-.food-art {
-  width: 100%;
-  height: auto;
-  display: block;
-}
-.art-label {
-  position: absolute;
-  top: 3%;
-  right: 18%;
-  font-size: 12px;
-  color: var(--olive);
-  border-bottom: 1px solid #b6b8a4;
-  padding-bottom: 7px;
-  transform: rotate(-7deg);
-}
-.art-stamp {
-  position: absolute;
-  bottom: 17%;
-  left: 1%;
-  border: 1px solid #b6a88a;
-  border-radius: 50%;
-  height: 92px;
-  width: 92px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  color: var(--olive);
-  background: #f9f6efdd;
-  transform: rotate(12deg);
-}
-.art-stamp strong {
-  font-size: 13px;
-}
 .value-strip {
   border-block: 1px solid var(--line);
   background: #f1ece2;
@@ -1085,20 +1050,6 @@ hr {
   .hero-notes {
     font-size: 9px;
   }
-  .art-stamp {
-    width: 70px;
-    height: 70px;
-    font-size: 10px;
-    left: 0;
-    bottom: 10%;
-  }
-  .art-stamp strong {
-    font-size: 10px;
-  }
-  .art-label {
-    font-size: 10px;
-    top: 0;
-  }
   .value-grid {
     gap: 15px;
   }
@@ -1278,16 +1229,6 @@ hr {
     width: 85%;
     max-width: 360px;
     margin: 15px 0 0;
-  }
-  .food-art {
-    margin-bottom: -15px;
-  }
-  .art-label {
-    top: 8%;
-  }
-  .art-stamp {
-    bottom: 16%;
-    left: 0;
   }
   .value-grid {
     padding-block: 20px;
@@ -2055,5 +1996,56 @@ label:has(> select) {
   }
   .brand small {
     display: none;
+  }
+}
+
+.food-showcase {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+}
+.food-showcase-main {
+  position: relative;
+  aspect-ratio: 4/3;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow: 0 12px 32px #32291f08;
+}
+.food-showcase img {
+  object-fit: contain;
+}
+.food-showcase-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+.food-showcase-strip > div {
+  position: relative;
+  aspect-ratio: 1.25;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.food-showcase figcaption {
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+  margin-top: 10px;
+  line-height: 1.5;
+}
+@media (max-width: 600px) {
+  .food-showcase-main {
+    border-radius: 16px;
+  }
+  .food-showcase-strip {
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .food-showcase-strip > div {
+    border-radius: 8px;
   }
 }
