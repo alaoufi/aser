@@ -23,6 +23,7 @@ type Application = {
     createdAt?: string;
   }[];
   documentId?: string;
+  reviewReason?: string;
 };
 function Review({
   producer,
@@ -48,6 +49,7 @@ function Review({
             decision: f.get("decision"),
             reason: f.get("reason"),
             eligibilityConfirmed: f.has("eligibilityConfirmed"),
+            exceptionApproved: f.has("exceptionApproved"),
           }),
         },
       );
@@ -74,6 +76,9 @@ function Review({
       <p>{producer.cityName}</p>
       <p>{producer.description}</p>
       <p>نوع الإثبات: {producer.documentType || "راجع المستند المرفق"}</p>
+      {producer.documentType === "exception" && (
+        <p>تفاصيل طلب الاستثناء: {producer.reviewReason || "دون تفاصيل"}</p>
+      )}
       <p>
         رقم المستند: {producer.documentNumber || "غير مسجل"} · تاريخ الانتهاء:{" "}
         {producer.documentExpiresAt?.slice(0, 10) || "غير مسجل"}
@@ -123,6 +128,17 @@ function Review({
           />
           تحققت من أهلية النشاط واستيفاء التراخيص الإلزامية قبل الاعتماد.
         </label>
+        {producer.documentType === "exception" && !producer.documentId && (
+          <label className={s.checks}>
+            <input
+              type="checkbox"
+              name="exceptionApproved"
+              required={decision === "approved"}
+            />
+            أمنح استثناءً إداريًا بعد مراجعة الأهلية، والسبب الموثق أعلاه لا يقل
+            عن عشرة أحرف.
+          </label>
+        )}
         <button disabled={busy} className={s.button}>
           {busy ? "جارٍ حفظ القرار…" : "حفظ قرار المراجعة"}
         </button>
@@ -154,6 +170,9 @@ export function Admin() {
       {session.user?.role === "admin" && (
         <>
           <nav className={s.actions} aria-label="أقسام الإدارة">
+            <a className={s.button} href="/admin/coverage">
+              إدارة التغطية التفصيلية
+            </a>
             {[
               ["producers", "مراجعة الأسر"],
               ["products", "المنتجات"],

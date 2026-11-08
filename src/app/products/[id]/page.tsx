@@ -1,4 +1,5 @@
 import { ReportButton } from "@/components/public/report-button";
+import { OrderRequestForm } from "@/components/forms/orders";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getProduct } from "@/server/catalog";
@@ -14,11 +15,14 @@ export async function generateMetadata({
 }
 export default async function ProductDetail({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ offer?: string | string[] }>;
 }) {
   const p = await getProduct((await params).id);
   if (!p) notFound();
+  const offer = (await searchParams).offer;
   return (
     <div className="wrap page-space">
       <Link href="/browse" className="text-link">
@@ -73,6 +77,13 @@ export default async function ProductDetail({
         </section>
       </div>
       <ReportButton productId={p.id} />
+      {p.status !== "unavailable" && (
+        <OrderRequestForm
+          productId={p.id}
+          productName={p.name}
+          offerId={Array.isArray(offer) ? "invalid" : offer}
+        />
+      )}
       <section className="food-information">
         <h2>اعرف أكثر قبل ما تختار</h2>
         <div className="information-grid">

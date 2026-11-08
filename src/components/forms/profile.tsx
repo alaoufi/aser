@@ -79,6 +79,12 @@ export function ProfileForm({
     setBusy(true);
     setError("");
     const f = new FormData(e.currentTarget);
+    if (documentType === "exception") {
+      setDocumentId("");
+      setStep(2);
+      setBusy(false);
+      return;
+    }
     const file = f.get("file");
     if (!(file instanceof File) || !file.size) {
       setError("اختر مستند الأهلية.");
@@ -144,7 +150,8 @@ export function ProfileForm({
           pickup: f.has("pickup"),
           categoryIds,
           documentType,
-          documentId,
+          documentId: documentId || null,
+          exceptionReason: f.get("exceptionReason") || null,
           documentNumber: f.get("documentNumber") || null,
           documentExpiresAt: f.get("documentExpiresAt") || null,
         }),
@@ -206,7 +213,10 @@ export function ProfileForm({
             <span className="sr-only">نوع المستند</span>
             <select
               value={documentType}
-              onChange={(e) => setDocumentType(e.target.value)}
+              onChange={(e) => {
+                setDocumentType(e.target.value);
+                setDocumentId("");
+              }}
             >
               <option value="" disabled>
                 اختر نوع المستند
@@ -218,17 +228,23 @@ export function ProfileForm({
               ))}
             </select>
           </label>
-          <label className={s.field}>
-            المستند الخاص · حتى 10 ميجابايت
-            <input
-              name="file"
-              type="file"
-              accept=".pdf,.jpg,.jpeg,.png"
-              required
-            />
-          </label>
+          {documentType !== "exception" && (
+            <label className={s.field}>
+              المستند الخاص · حتى 10 ميجابايت
+              <input
+                name="file"
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                required
+              />
+            </label>
+          )}
           <button disabled={busy || !session.open} className={s.button}>
-            {busy ? "جارٍ الرفع الآمن…" : "رفع المستند ومتابعة"}
+            {busy
+              ? "جارٍ المتابعة…"
+              : documentType === "exception"
+                ? "متابعة طلب الاستثناء"
+                : "رفع المستند ومتابعة"}
           </button>
         </form>
       ) : (
@@ -237,6 +253,22 @@ export function ProfileForm({
           className={`${s.form} ${s.card}`}
           onSubmit={save}
         >
+          {documentType === "exception" && (
+            <label className={s.field}>
+              سبب طلب الاستثناء الإداري
+              <textarea
+                name="exceptionReason"
+                required
+                minLength={10}
+                maxLength={2000}
+                defaultValue={profile?.reviewReason || ""}
+              />
+              <small>
+                يظل الملف قيد المراجعة حتى موافقة الإدارة؛ اختيار الاستثناء لا
+                يعني اعتماده.
+              </small>
+            </label>
+          )}
           <div className={s.grid}>
             <label className={s.field}>
               رقم المستند (إن وجد)
@@ -349,13 +381,16 @@ export function ProfileForm({
             </p>
           </fieldset>
           <AdvancedFields profile={profile} cities={cities} />
-          {!documentId && (
+          {!documentId && documentType !== "exception" && (
             <p className={s.notice}>
               أرفق مستند الأهلية قبل إرسال طلب التسجيل.
             </p>
           )}
           <div className={s.actions}>
-            <button className={s.button} disabled={busy || !documentId}>
+            <button
+              className={s.button}
+              disabled={busy || (!documentId && documentType !== "exception")}
+            >
               {busy ? "جارٍ الحفظ…" : "حفظ وإرسال للمراجعة"}
             </button>
             <button

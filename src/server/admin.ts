@@ -189,6 +189,22 @@ export async function createLocation(user: SessionUser, input: unknown) {
         "INSERT INTO jdatna.neighborhoods(id,name,city_id) VALUES($1,$2,$3)",
         [id, value.name, value.cityId],
       );
+    if (value.kind === "region")
+      await client.query(
+        "INSERT INTO jdatna.coverage_nodes(id,kind,name,region_id) VALUES($1,'region',$2,$3)",
+        ["region:" + id, value.name, id],
+      );
+    if (value.kind === "city")
+      await client.query(
+        "INSERT INTO jdatna.coverage_nodes(id,kind,name,parent_id,region_id,city_id) VALUES($1,'city',$2,$3,$4,$5)",
+        [
+          "city:" + id,
+          value.name,
+          "region:" + value.regionId,
+          value.regionId,
+          id,
+        ],
+      );
     await audit(client, user, "location.create", null, { ...value, id });
     return { id };
   });

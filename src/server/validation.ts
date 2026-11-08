@@ -65,7 +65,8 @@ export const profileSchema = z
     delivery: z.boolean().default(false),
     pickup: z.boolean().default(true),
     documentType,
-    documentId: z.uuid(),
+    documentId: z.uuid().nullable().optional(),
+    exceptionReason: optionalText(2000),
     documentNumber: optionalText(100),
     documentExpiresAt: z.iso.date().nullable().optional(),
     categoryIds: z.array(z.string().min(1).max(30)).min(1).max(100),
@@ -100,6 +101,16 @@ export const profileSchema = z
       )
       .optional(),
   })
+  .refine(
+    (x) =>
+      x.documentType === "exception"
+        ? Boolean(x.exceptionReason && x.exceptionReason.length >= 10)
+        : Boolean(x.documentId),
+    {
+      message:
+        "أرفق مستند الأهلية، أو اشرح طلب الاستثناء في عشرة أحرف على الأقل",
+    },
+  )
   .refine((x) => x.delivery || x.pickup, {
     message: "حدد وسيلة استلام واحدة على الأقل",
   });
@@ -123,6 +134,7 @@ export const reviewSchema = z
     decision: z.enum(["approved", "rejected", "suspended"]),
     reason: z.string().trim().min(5).max(2000),
     eligibilityConfirmed: z.boolean().optional(),
+    exceptionApproved: z.boolean().optional(),
   })
   .refine((x) => x.decision !== "approved" || x.eligibilityConfirmed === true, {
     message: "يجب تأكيد الأهلية النظامية للنشاط قبل الاعتماد",

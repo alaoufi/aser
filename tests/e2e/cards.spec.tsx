@@ -19,13 +19,16 @@ test("family cards keep long Arabic names, description and delivery badges reada
   } as Producer;
   const html = renderToStaticMarkup(createElement(ProducerCard, { producer }));
   await page.goto("/producers");
-  await page.locator(".empty-state").evaluate((element, html) => {
-    const grid = document.createElement("div");
-    grid.className = "producer-grid";
-    grid.setAttribute("data-testid", "test-only-card-grid");
-    grid.innerHTML = html + html.replace("تمت مراجعتها", "بيانات اختبار");
-    element.replaceWith(grid);
-  }, html);
+  await page
+    .locator(".empty-state, .producer-grid")
+    .first()
+    .evaluate((element, html) => {
+      const grid = document.createElement("div");
+      grid.className = "producer-grid";
+      grid.setAttribute("data-testid", "test-only-card-grid");
+      grid.innerHTML = html + html.replace("تمت مراجعتها", "بيانات اختبار");
+      element.replaceWith(grid);
+    }, html);
   await page.evaluate(() => document.fonts.ready);
   const card = page.locator(".producer-card").first();
   await expect(card.getByRole("heading")).toBeVisible();

@@ -1,4 +1,5 @@
 import { ReportButton } from "@/components/public/report-button";
+import { getPublicCoverage } from "@/server/coverage";
 import { ShareButton } from "@/components/public/share-button";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -27,6 +28,7 @@ export default async function ProducerDetail({
   const p = await getProducer((await params).slug);
   if (!p) notFound();
   const products = await getProducerProducts(p.id);
+  const coverage = p.delivery ? await getPublicCoverage(p.id) : [];
   const phone = phoneNumber(p.phone);
   const whatsapp = p.whatsapp ? phoneNumber(p.whatsapp) : null;
   return (
@@ -95,11 +97,11 @@ export default async function ProducerDetail({
               : "التوصيل غير متاح."}
           </p>
           <p>{p.pickup ? "الاستلام متاح بالتنسيق المباشر." : ""}</p>
-          {p.delivery && Boolean(p.deliveryAreas?.length) && (
+          {p.delivery && Boolean(coverage.length) && (
             <ul>
-              {p.deliveryAreas!.map((area) => (
-                <li key={area.cityId}>
-                  {area.cityName} —{" "}
+              {coverage.map((area) => (
+                <li key={area.nodeId}>
+                  {area.label} —{" "}
                   {area.fee === null
                     ? "رسوم التوصيل بالاتفاق"
                     : area.fee === 0

@@ -19,6 +19,6 @@ test("mobile navigation closes after selection, same-route selection, outside cl
   await expect(menu).not.toHaveAttribute("open", "");
   await expect(toggle).toBeFocused();
   await toggle.click();
-  await page.locator(".announcement").click();
+  await page.locator(".about-ticker-window").click();
   await expect(menu).not.toHaveAttribute("open", "");
 });

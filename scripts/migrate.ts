@@ -69,6 +69,13 @@ async function main() {
         "INSERT INTO jdatna.categories(id,name,slug,icon) SELECT id,name,slug,icon FROM json_to_recordset($1::json) AS x(id text,name text,slug text,icon text) ON CONFLICT DO NOTHING",
         [JSON.stringify(categories)],
       );
+      // Lookup seeds run after migrations on clean installations. Preserve curated parents.
+      await client.query(
+        "INSERT INTO jdatna.coverage_nodes(id,kind,name,region_id) SELECT 'region:'||id,'region',name,id FROM jdatna.regions ON CONFLICT DO NOTHING",
+      );
+      await client.query(
+        "INSERT INTO jdatna.coverage_nodes(id,kind,name,parent_id,region_id,city_id) SELECT 'city:'||id,'city',name,'region:'||region_id,region_id,id FROM jdatna.cities ON CONFLICT DO NOTHING",
+      );
       await client.query("COMMIT");
     } catch (error) {
       await client.query("ROLLBACK");

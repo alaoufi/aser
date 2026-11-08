@@ -44,6 +44,7 @@ export default function RootLayout({
             <Link href="/">الرئيسية</Link>
             <Link href="/browse">اكتشف الأكلات</Link>
             <Link href="/producers">الأسر المنتجة</Link>
+            <Link href="/offers">العروض الخاصة</Link>
             <Link href="/about">حكايتنا</Link>
           </nav>
           <div className="header-actions">
@@ -81,6 +82,8 @@ export default function RootLayout({
               <h3>اكتشف</h3>
               <Link href="/browse">الأكلات والمنتجات</Link>
               <Link href="/producers">الأسر المنتجة</Link>
+              <Link href="/offers">العروض الخاصة</Link>
+              <Link href="/orders">طلباتي</Link>
               <Link href="/register">انضم كأسرة منتجة</Link>
             </div>
             <div>

@@ -66,6 +66,10 @@ export function AccountShell({ children }: { children: React.ReactNode }) {
         <Link href="/">الرئيسية</Link>
         <Link href="/dashboard">لوحة الأسرة</Link>
         <Link href="/dashboard/products">المنتجات</Link>
+        <Link href="/dashboard/offers">عروض الأسرة</Link>
+        <Link href="/dashboard/orders">طلبات الأسرة</Link>
+        <Link href="/dashboard/coverage">مناطق التغطية</Link>
+        <Link href="/orders">طلباتي</Link>
         <Link href="/register">تسجيل أسرة</Link>
       </nav>
       {children}

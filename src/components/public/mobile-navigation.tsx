@@ -67,6 +67,8 @@ export function MobileNavigation() {
         <Link href="/">الرئيسية</Link>
         <Link href="/browse">اكتشف الأكلات</Link>
         <Link href="/producers">الأسر المنتجة</Link>
+        <Link href="/offers">العروض الخاصة</Link>
+        <Link href="/orders">طلباتي</Link>
         <Link href="/about">حكايتنا</Link>
         <Link href="/login">تسجيل الدخول</Link>
         <Link href="/register">سجّل كأسرة منتجة</Link>

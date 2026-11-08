@@ -26,7 +26,7 @@ export async function saveProfile(user: SessionUser, input: unknown) {
         [value.documentId, user.id],
       )
     ).rows[0];
-    if (!document || document.type !== value.documentType)
+    if (value.documentId && (!document || document.type !== value.documentType))
       throw new HttpError(400, "مستند الأهلية غير صالح أو غير مملوك لك");
     const existing = (
       await client.query(
@@ -61,7 +61,7 @@ export async function saveProfile(user: SessionUser, input: unknown) {
         [id, category],
       );
     await client.query(
-      "INSERT INTO jdatna.producer_verifications(id,producer_id,document_id,document_type,document_number,document_expires_at) VALUES($1,$2,$3,$4,$5,$6)",
+      "INSERT INTO jdatna.producer_verifications(id,producer_id,document_id,document_type,document_number,document_expires_at,reason) VALUES($1,$2,$3,$4,$5,$6,$7)",
       [
         randomUUID(),
         id,
@@ -69,6 +69,7 @@ export async function saveProfile(user: SessionUser, input: unknown) {
         value.documentType,
         value.documentNumber ?? null,
         value.documentExpiresAt ?? null,
+        value.documentType === "exception" ? value.exceptionReason : null,
       ],
     );
     if (value.socialLinks !== undefined || value.website !== undefined) {
@@ -228,11 +229,13 @@ export async function reviewProducer(
   return transaction(async (client) => {
     const producer = (
       await client.query(
-        "SELECT id FROM jdatna.producer_profiles WHERE id=$1 FOR UPDATE",
+        "SELECT id,user_id FROM jdatna.producer_profiles WHERE id=$1 FOR UPDATE",
         [id],
       )
     ).rows[0];
     if (!producer) throw new HttpError(404, "الأسرة غير موجودة");
+    if (producer.user_id === user.id)
+      throw new HttpError(403, "لا يمكن مراجعة ملف أسرتك بنفسك");
     const verification = (
       await client.query(
         "SELECT *,document_expires_at<CURRENT_DATE AS expired FROM jdatna.producer_verifications WHERE producer_id=$1 ORDER BY created_at DESC LIMIT 1",
@@ -241,8 +244,19 @@ export async function reviewProducer(
     ).rows[0];
     if (value.decision === "approved" && verification?.expired === true)
       throw new HttpError(400, "المستند منتهي الصلاحية ويجب تحديثه");
-    if (value.decision === "approved" && !verification?.document_id)
-      throw new HttpError(400, "يلزم مستند أهلية ومراجعة قبل الاعتماد");
+    if (
+      value.decision === "approved" &&
+      !verification?.document_id &&
+      !(
+        verification?.document_type === "exception" &&
+        value.exceptionApproved === true &&
+        value.reason.length >= 10
+      )
+    )
+      throw new HttpError(
+        400,
+        "يلزم مستند أهلية أو اعتماد استثناء إداري صريح بسبب موثق",
+      );
     await client.query(
       "UPDATE jdatna.producer_profiles SET status=$2,verified=$3,updated_at=now() WHERE id=$1",
       [id, value.decision, value.decision === "approved"],

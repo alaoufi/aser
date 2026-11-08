@@ -680,6 +680,15 @@ test(
           );
           const locations = await adminLocations(users[2]);
           assert.ok(locations.cities.some((c) => c.id === city.id));
+          assert.equal(
+            (
+              await db().query(
+                "SELECT parent_id FROM jdatna.coverage_nodes WHERE id=$1",
+                ["city:" + city.id],
+              )
+            ).rows[0].parent_id,
+            "region:" + region.id,
+          );
           const report = await submitReport(users[1], {
             productId: product.id,
             reason: "بلاغ اختبار معزول ببيانات واضحة",
@@ -793,6 +802,14 @@ test(
       await db().query(
         "DELETE FROM jdatna.neighborhoods WHERE id=ANY($1::uuid[])",
         [neighborhoodIds],
+      );
+      await db().query(
+        "DELETE FROM jdatna.coverage_nodes WHERE city_id=ANY($1::text[])",
+        [cityIds],
+      );
+      await db().query(
+        "DELETE FROM jdatna.coverage_nodes WHERE id=ANY($1::text[])",
+        [regionIds.map((id) => "region:" + id)],
       );
       await db().query("DELETE FROM jdatna.cities WHERE id=ANY($1::text[])", [
         cityIds,
