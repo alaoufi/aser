@@ -1,15 +1,15 @@
 {
   "verified_on": "2026-11-09",
-  "code_commit": "aa698502aa84a8eeb8f4b34ad52622468526af19",
-  "image": "jdatna-application:aa698502aa84a8eeb8f4b34ad52622468526af19",
+  "code_commit": "ed21228b4be0f328172a74c92d3a40bf59535bcd",
+  "image": "jdatna-application:ed21228b4be0f328172a74c92d3a40bf59535bcd",
   "url": "https://jdatna.com",
   "checks": {
     "unit_integration": "94 distinct tests covered successfully across full run and SSH-timeout retries; full run 92 pass/2 connection failures, retry16/16",
-    "browser_chromium": "36 distinct targeted checks passed across initial35 plus one connection retry",
+    "browser_chromium": "Branding2/2; targeted four-width visual check; preceding backend suite unchanged",
     "typecheck": "passed",
     "build": "passed",
     "infrastructure_and_backup_restore": "passed after deployment; Aykdmh unchanged",
-    "live_browser": "Exact release verified; nested drinks/dairy branches; widths320/390/768/1440; password login; zero pageerrors",
+    "live_browser": "Exact release; three transparent logo variants load undistorted at320/390/768/1440 without overflow/pageerrors; five assets HTTPS200 SHA256 exact",
     "otp_endpoint": "Missing purpose and login purpose rejected400; OTP only signup/reset; fresh setup grant requires password"
   },
   "registrationOpen": true,
@@ -24,7 +24,7 @@
   ],
   "sms_provider": "Same active Taqnyat credentials as Aykdmh; enabled at explicit owner request to test delivery on own phone",
   "footer_verification": "Affiliation retained",
-  "image_id": "sha256:e417324b3594cea00526ac9c718717c7a3daab18bbfa6e4144ba7827e42426b5",
+  "image_id": "sha256:3ff75334d37e7cb622101d6e41867444f40a258fe88897ec87d7b993205b88df",
   "sms_delivery_confirmed": true,
   "sms_delivery_evidence": "Owner reported receipt of previous6-digit SMS;4-digit release deployed afterwards, not physically re-tested by agent",
   "otp_digits": 4,
@@ -42,10 +42,16 @@
     ]
   },
   "brand_logo": {
-    "path": "/brand/aklaat-jdatna-logo.png",
-    "sha256": "3B2D929C5140128D42890A6018EB31154CDABABF35E76C84BE268020199F80D2",
+    "path": "/brand/jdatna-main.webp",
+    "sha256": "E10DC8581E812B1B81CBA85B9537348ED2138174F73F2D9608554BDF5DC25407",
     "owner_supplied": true,
-    "pixels_unchanged": false
+    "pixels_unchanged": false,
+    "variants": {
+      "favicon": "/brand/jdatna-icon.png",
+      "apple": "/brand/jdatna-apple-icon.png",
+      "footer": "/brand/jdatna-white.webp",
+      "header": "/brand/jdatna-symbol.webp"
+    }
   },
   "food_photography": {
     "count": 5,
