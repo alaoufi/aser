@@ -1,29 +1,30 @@
 {
   "verified_on": "2026-11-08",
-  "code_commit": "474e074e25eee789e80c1b11634b620e5d17a5d3",
-  "image": "jdatna-application:474e074e25eee789e80c1b11634b620e5d17a5d3",
+  "code_commit": "454a61ba579367d872c093c5b28a19d34ba1211c",
+  "image": "jdatna-application:454a61ba579367d872c093c5b28a19d34ba1211c",
   "url": "https://jdatna.com",
   "checks": {
-    "unit_integration": "40/40 on preceding SMS backend release; no backend change in this release",
-    "browser_chromium": "21 passed;1 intentionally skipped (mobile-only test in desktop project);3 targeted passed after fixture refinement",
+    "unit_integration": "40/40, no skips; includes region SQL filters and region/city mismatch",
+    "browser_chromium": "23 passed,1 desktop skip for mobile-only navigation; includes profile region/city reset; 40 integration passed",
     "typecheck": "passed",
     "build": "passed",
     "infrastructure_and_backup_restore": "passed after deployment; Aykdmh unchanged",
-    "live_browser": "HTTPS exact release;desktop/mobile font loaded, navigation closed after selection/Escape/outside, no overflow at320px, no page errors",
-    "current_targeted_unit": "7/7 public safety and SMS"
+    "live_browser": "HTTPS release exact;desktop/mobile registration send button enabled, dependent region/city search retained, no overflow at320px or page errors",
+    "otp_endpoint": "Invalid phone400 before send; no real SMS sent by agent"
   },
-  "registrationOpen": false,
-  "SMS": false,
+  "registrationOpen": true,
+  "SMS": true,
   "privateStorage": true,
   "aykdmh_hosting_commit": "a2a6cfe",
   "source_pushed": false,
   "limitations": [
-    "Real SMS and first verified admin pending",
+    "Owner physical SMS receipt and first verified admin still pending",
     "Off-server backup pending",
     "No physical-phone/WebKit verification or proven speed improvement",
     "Logo/cover/video/QR; orders/mobile apps pending"
   ],
-  "sms_provider": "taqnyat; authenticated active account with positive balance; no real delivery test yet",
+  "sms_provider": "Same active Taqnyat credentials as Aykdmh; enabled at explicit owner request to test delivery on own phone",
   "footer_verification": "Affiliation retained",
-  "image_id": "sha256:0c851582b91d2e3f3ca43c3110e1d0c726416f95a3ef38b6e236bde165027dec"
+  "image_id": "sha256:d6dd1605bc6fead238ffdc0a80a09701e4ce4cb1cfac52ab31ad3204a67adf10",
+  "sms_delivery_confirmed": false
 }
