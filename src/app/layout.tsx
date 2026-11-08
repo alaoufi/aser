@@ -1,3 +1,5 @@
+import { MobileNavigation } from "@/components/public/mobile-navigation";
+import "./fonts.css";
 import type { Metadata } from "next";
 import Link from "next/link";
 import "./globals.css";
@@ -17,7 +19,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ar" dir="rtl">
+    <html lang="ar" dir="rtl" data-scroll-behavior="smooth">
       <body>
         <a href="#main" className="skip-link">
           انتقل إلى المحتوى
@@ -48,17 +50,7 @@ export default function RootLayout({
               سجّل كأسرة منتجة <span aria-hidden="true">↗</span>
             </Link>
           </div>
-          <details className="mobile-nav">
-            <summary aria-label="فتح قائمة التنقل">☰</summary>
-            <nav aria-label="التنقل للجوال">
-              <Link href="/">الرئيسية</Link>
-              <Link href="/browse">اكتشف الأكلات</Link>
-              <Link href="/producers">الأسر المنتجة</Link>
-              <Link href="/about">حكايتنا</Link>
-              <Link href="/login">تسجيل الدخول</Link>
-              <Link href="/register">سجّل كأسرة منتجة</Link>
-            </nav>
-          </details>
+          <MobileNavigation />
         </header>
         <main id="main">{children}</main>
         <footer className="site-footer">

@@ -78,24 +78,38 @@ export function ProductCard({ product: p }: { product: Product }) {
 export function ProducerCard({ producer: p }: { producer: Producer }) {
   return (
     <Link href={`/producers/${p.slug}`} className="producer-card">
-      <div className="producer-avatar">
-        {p.logoUrl && safeUrl(p.logoUrl) ? (
+      <div className="producer-avatar" aria-hidden="true">
+        {p.logoUrl && safeMediaUrl(p.logoUrl) ? (
           <img src={p.logoUrl} alt="" loading="lazy" />
         ) : (
-          "⌂"
+          p.name
+            .trim()
+            .split(/\s+/)
+            .slice(0, 2)
+            .map((word) => word[0])
+            .join(" ")
         )}
       </div>
-      <div>
-        <small>
+      <div className="producer-card-content">
+        <small className="producer-location">
           {p.regionName} · {p.cityName}
         </small>
         <h3>{p.name}</h3>
-        <p>
-          {p.verified ? "تمت مراجعتها إداريًا" : "أسرة منتجة"} ·{" "}
-          {p.delivery ? "توصيل متاح" : "استلام بالتنسيق"}
-        </p>
+        {p.description && (
+          <p className="producer-description">{p.description}</p>
+        )}
+        <div className="producer-tags">
+          {p.verified && (
+            <span className="producer-verified">
+              <span aria-hidden="true">✓</span> تمت مراجعتها
+            </span>
+          )}
+          <span>{p.delivery ? "توصيل متاح" : "استلام بالتنسيق"}</span>
+        </div>
       </div>
-      <span aria-hidden="true">←</span>
+      <span className="producer-card-arrow" aria-hidden="true">
+        ←
+      </span>
     </Link>
   );
 }
