@@ -40,22 +40,36 @@ export function registrationOpen() {
 export async function sessionUser(
   request: Request,
 ): Promise<SessionUser | null> {
-  if (!databaseConfigured()) return null;
+  return (await sessionInfo(request))?.user ?? null;
+}
+export function sessionToken(request: Request) {
   const token = request.headers
     .get("cookie")
     ?.split(";")
     .map((s) => s.trim())
     .find((s) => s.startsWith(cookieName + "="))
     ?.slice(cookieName.length + 1);
-  if (!token || !/^[a-f0-9]{64}$/.test(token)) return null;
-  return (
-    (
-      await db().query(
-        "SELECT u.id,u.name,u.phone,u.role FROM jdatna.sessions s JOIN jdatna.users u ON u.id=s.user_id WHERE s.token_hash=$1 AND s.expires_at>now()",
-        [hash(token)],
-      )
-    ).rows[0] ?? null
-  );
+  return token && /^[a-f0-9]{64}$/.test(token) ? token : null;
+}
+export async function sessionInfo(
+  request: Request,
+): Promise<{
+  user: SessionUser;
+  hasPassword: boolean;
+  canSetCredentials: boolean;
+} | null> {
+  if (!databaseConfigured()) return null;
+  const token = sessionToken(request);
+  if (!token) return null;
+  const row = (
+    await db().query(
+      'SELECT u.id,u.name,u.phone,u.role,u.username,(u.password_hash IS NOT NULL) AS "hasPassword",COALESCE(s.setup_until>now(),false) AS "canSetCredentials" FROM jdatna.sessions s JOIN jdatna.users u ON u.id=s.user_id WHERE s.token_hash=$1 AND s.expires_at>now()',
+      [hash(token)],
+    )
+  ).rows[0];
+  if (!row) return null;
+  const { hasPassword, canSetCredentials, ...user } = row;
+  return { user, hasPassword, canSetCredentials };
 }
 export async function requireUser(request: Request, roles?: string[]) {
   const user = await sessionUser(request);
@@ -76,6 +90,10 @@ const otpHash = (id: string, code: string) =>
   createHmac("sha256", process.env.OTP_HASH_SECRET!)
     .update(id + ":" + code)
     .digest("hex");
+export function otpMessage(code: string) {
+  if (!/^\d{4}$/.test(code)) throw new Error("Invalid OTP format");
+  return `رمز التحقق للتسجيل في موقع أكلات جدتنا ${code}`;
+}
 export async function requestOtp(phoneValue: string) {
   if (!registrationOpen())
     throw new HttpError(
@@ -92,7 +110,7 @@ export async function requestOtp(phoneValue: string) {
     [id, phone, otpHash(id, code)],
   );
   try {
-    await sendSms(phone, `رمز التحقق لمنصة أكلات وغذاء الأجداد: ${code}`);
+    await sendSms(phone, otpMessage(code));
   } catch {
     await db().query("DELETE FROM jdatna.otp_challenges WHERE id=$1", [id]);
     throw new HttpError(503, "تعذر إرسال رمز التحقق");
@@ -135,13 +153,13 @@ export async function verifyOtp(id: string, code: string, name?: string) {
       );
       const user = (
         await client.query(
-          `INSERT INTO jdatna.users(id,phone,name,phone_verified_at) VALUES($1,$2,$3,now()) ON CONFLICT(phone) DO UPDATE SET phone_verified_at=now() RETURNING id,name,phone,role`,
+          `INSERT INTO jdatna.users(id,phone,name,phone_verified_at) VALUES($1,$2,$3,now()) ON CONFLICT(phone) DO UPDATE SET phone_verified_at=now() RETURNING id,name,phone,role,username`,
           [randomUUID(), challenge.phone, name?.trim() || "مستخدم"],
         )
       ).rows[0] as SessionUser;
       const token = randomBytes(32).toString("hex");
       await client.query(
-        "INSERT INTO jdatna.sessions(token_hash,user_id,expires_at) VALUES($1,$2,now()+interval '7 days')",
+        "INSERT INTO jdatna.sessions(token_hash,user_id,expires_at,setup_until) VALUES($1,$2,now()+interval '7 days',now()+interval '10 minutes')",
         [hash(token), user.id],
       );
       return { user, token };

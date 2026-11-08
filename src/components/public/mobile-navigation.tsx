@@ -71,7 +71,6 @@ export function MobileNavigation() {
         <Link href="/orders">طلباتي</Link>
         <Link href="/about">حكايتنا</Link>
         <Link href="/login">تسجيل الدخول</Link>
-        <Link href="/register">سجّل كأسرة منتجة</Link>
       </nav>
     </details>
   );

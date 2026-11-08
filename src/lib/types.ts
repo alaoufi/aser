@@ -67,4 +67,5 @@ export type SessionUser = {
   name: string;
   phone: string;
   role: "customer" | "producer" | "admin";
+  username?: string | null;
 };

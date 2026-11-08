@@ -8,6 +8,7 @@ test("unavailable verification disables sending and explains registration status
   );
   for (const path of ["/login", "/register"]) {
     await page.goto(path);
+    await page.getByRole("button", { name: "إنشاء حساب جديد" }).click();
     await expect(
       page.getByRole("button", { name: "أرسل رمز التحقق" }),
     ).toBeDisabled();
@@ -60,6 +61,9 @@ test("phone verification moves to code entry and reports server failure", async 
     route.fulfill({ status: 400, json: { error: "رمز التحقق غير صحيح" } }),
   );
   await page.goto("/login");
+  await page
+    .getByRole("button", { name: "تعيين أو استعادة كلمة المرور" })
+    .click();
   await page.getByLabel("رقم الجوال").fill("0500000000");
   await page.getByRole("button", { name: "أرسل رمز التحقق" }).click();
   await expect(page.getByLabel("رمز التحقق", { exact: true })).toHaveAttribute(

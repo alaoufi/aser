@@ -3,12 +3,12 @@
 import { useState } from "react";
 
 const introduction =
-  "أكلات وغذاء الأجداد — نكهات أصيلة تحفظ موروثنا، تجمع الأسر المنتجة ومحبي الأكل التراثي، وتقرّبكم من أكلات أهلنا ومنتجاتهم الغذائية.";
+  "أكلات جدتنا — نكهات أصيلة تحفظ موروثنا، تجمع الأسر المنتجة ومحبي الأكل التراثي، وتقرّبكم من أكلات أهلنا ومنتجاتهم الغذائية.";
 
 export function AboutTicker() {
   const [paused, setPaused] = useState(false);
   return (
-    <aside className="about-ticker" aria-label="نبذة عن أكلات الأجداد">
+    <aside className="about-ticker" aria-label="نبذة عن أكلات جدتنا">
       <p className="sr-only">{introduction}</p>
       <div className="about-ticker-window" aria-hidden="true">
         <div className="about-ticker-track" data-paused={paused}>

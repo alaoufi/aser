@@ -1,12 +1,35 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { sendSms, smsTransportConfigured } from "../src/server/sms";
+import { otpMessage } from "../src/server/auth";
+import { createOtp } from "../src/server/otp";
 const env = {
   SMS_PROVIDER: "taqnyat",
   SMS_WEBHOOK_URL: "https://api.taqnyat.sa/v1/messages",
   SMS_WEBHOOK_TOKEN: "test-token",
   SMS_SENDER: "approved-sender",
 };
+test("registration transport receives exact brand wording and four-digit OTP", async () => {
+  let delivered = "";
+  await sendSms(
+    "+966500000000",
+    otpMessage(createOtp()),
+    env,
+    async (_url, init) => {
+      delivered = JSON.parse(String(init?.body)).body;
+      return new Response(
+        JSON.stringify({
+          statusCode: 201,
+          messageId: 123,
+          accepted: "[966500000000,]",
+          rejected: "[]",
+        }),
+        { status: 201 },
+      );
+    },
+  );
+  assert.match(delivered, /^رمز التحقق للتسجيل في موقع أكلات جدتنا \d{4}$/);
+});
 test("Taqnyat sends Saudi recipient and approved sender, accepts documented receipt", async () => {
   let called = false;
   await sendSms("+966500000000", "test", env, async (url, init) => {

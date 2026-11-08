@@ -5,7 +5,7 @@ test("intro ticker moves, pauses and respects reduced motion without overflow", 
 }) => {
   await page.goto("/");
   const ticker = page.getByRole("complementary", {
-    name: "نبذة عن أكلات الأجداد",
+    name: "نبذة عن أكلات جدتنا",
   });
   const track = ticker.locator(".about-ticker-track");
   await expect(ticker).toBeVisible();

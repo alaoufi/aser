@@ -59,6 +59,31 @@ export function Message({
     </>
   );
 }
+function AccountNavigation() {
+  const { user } = useSession();
+  if (!user) return null;
+  return (
+    <nav aria-label="حسابي" className={s.nav}>
+      <Link href="/">الرئيسية</Link>
+      <Link href="/orders">طلباتي</Link>
+      {user.role === "customer" ? (
+        <>
+          <Link href="/offers">العروض الخاصة</Link>
+          <Link href="/register">طلب انضمام كأسرة</Link>
+        </>
+      ) : (
+        <>
+          <Link href="/dashboard">لوحة الأسرة</Link>
+          <Link href="/dashboard/products">المنتجات</Link>
+          <Link href="/dashboard/offers">عروض الأسرة</Link>
+          <Link href="/dashboard/orders">طلبات الأسرة</Link>
+          <Link href="/dashboard/coverage">مناطق التغطية</Link>
+        </>
+      )}
+      {user.role === "admin" && <Link href="/admin">الإدارة</Link>}
+    </nav>
+  );
+}
 export function AccountShell({
   children,
   navigation = true,
@@ -68,18 +93,7 @@ export function AccountShell({
 }) {
   return (
     <section className={s.shell}>
-      {navigation && (
-        <nav aria-label="حسابي" className={s.nav}>
-          <Link href="/">الرئيسية</Link>
-          <Link href="/dashboard">لوحة الأسرة</Link>
-          <Link href="/dashboard/products">المنتجات</Link>
-          <Link href="/dashboard/offers">عروض الأسرة</Link>
-          <Link href="/dashboard/orders">طلبات الأسرة</Link>
-          <Link href="/dashboard/coverage">مناطق التغطية</Link>
-          <Link href="/orders">طلباتي</Link>
-          <Link href="/register">تسجيل أسرة</Link>
-        </nav>
-      )}
+      {navigation && <AccountNavigation />}
       {children}
     </section>
   );
@@ -119,33 +133,101 @@ export function LoginForm({
   onVerified?: (user: SessionUser) => void;
 }) {
   const session = useSession();
+  const [mode, setMode] = useState<"password" | "signup" | "recover">(
+    "password",
+  );
+  const [intent, setIntent] = useState("customer");
   const [challenge, setChallenge] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
+  const [verified, setVerified] = useState<SessionUser | null>(null);
+  const [busy, setBusy] = useState(false),
+    [error, setError] = useState("");
   const [phone, setPhone] = useState("");
+  const [username, setUsername] = useState("");
+  const [clearUsername, setClearUsername] = useState(false);
+  function switchMode(next: typeof mode) {
+    setMode(next);
+    setChallenge("");
+    setVerified(null);
+    setError("");
+    setUsername("");
+    setClearUsername(false);
+  }
+  function finish(user: SessionUser, next?: string) {
+    if (onVerified) {
+      onVerified(user);
+      return;
+    }
+    const destination =
+      user.role === "admin"
+        ? "/admin"
+        : user.role === "producer"
+          ? "/dashboard"
+          : "/orders";
+    if (mode === "signup" && intent === "family" && user.role === "customer") {
+      window.location.assign("/register");
+      return;
+    }
+    window.location.assign(next === destination ? next : destination);
+  }
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setBusy(true);
     setError("");
     const f = new FormData(e.currentTarget);
     try {
-      if (!challenge) {
+      if (verified) {
+        const password = String(f.get("password") ?? "");
+        if (password !== f.get("confirmPassword"))
+          throw new Error("كلمتا المرور غير متطابقتين");
+        const payload: { password: string; username?: string | null } = {
+          password,
+        };
+        if (clearUsername) payload.username = null;
+        else if (username.trim()) payload.username = username.trim();
+        const d = await api<{ user: SessionUser; next: string }>(
+          "/api/auth/credentials",
+          { method: "POST", body: JSON.stringify(payload) },
+        );
+        finish(d.user, d.next);
+      } else if (mode === "password") {
+        const d = await api<{ user: SessionUser; next: string }>(
+          "/api/auth/password-login",
+          {
+            method: "POST",
+            body: JSON.stringify({
+              identifier: String(f.get("identifier") ?? "").trim(),
+              password: f.get("password"),
+            }),
+          },
+        );
+        finish(d.user, d.next);
+      } else if (!challenge) {
         const d = await api<{ challengeId: string }>("/api/auth/request-otp", {
           method: "POST",
           body: JSON.stringify({ phone }),
         });
         setChallenge(d.challengeId);
       } else {
-        const d = await api<{ user: SessionUser }>("/api/auth/verify-otp", {
+        const d = await api<{
+          user: SessionUser;
+          next: string;
+          canSetCredentials: boolean;
+        }>("/api/auth/verify-otp", {
           method: "POST",
           body: JSON.stringify({
             challengeId: challenge,
             code: f.get("code"),
-            name: f.get("name") || undefined,
+            ...(mode === "signup" ? { name: f.get("name") } : {}),
           }),
         });
-        if (onVerified) onVerified(d.user);
-        else window.location.assign("/dashboard");
+        if (!d.canSetCredentials)
+          throw new Error(
+            "تعذر اعتماد إذن إعداد كلمة المرور؛ أعد التحقق من الجوال",
+          );
+        setVerified(d.user);
+        setUsername(
+          (d.user as SessionUser & { username?: string | null }).username ?? "",
+        );
       }
     } catch (e) {
       setError((e as Error).message);
@@ -154,73 +236,260 @@ export function LoginForm({
     }
   }
   return (
-    <section className={s.card}>
-      <h1>{register ? "لنبدأ برقم جوالك" : "أهلًا بعودتك"}</h1>
+    <section
+      className={s.card}
+      style={{ minWidth: 0, overflowWrap: "anywhere" }}
+    >
+      <h1>
+        {verified
+          ? "إعداد بيانات الدخول"
+          : mode === "password"
+            ? "الدخول إلى أكلات جدتنا"
+            : mode === "signup"
+              ? "حساب جديد في أكلات جدتنا"
+              : "تعيين أو استعادة كلمة المرور"}
+      </h1>
       <p className={s.muted}>
-        رمز تحقق يحافظ على أمان حسابك. لا تشارك الرمز مع أي شخص.
+        {verified
+          ? "تحققنا من جوالك. أنشئ كلمة مرور خلال عشر دقائق. سيؤدي الحفظ إلى إنهاء جلسات الدخول السابقة."
+          : mode === "password"
+            ? "ادخل باسم المستخدم أو جوالك المتحقق منه وكلمة المرور. نفتح حسابك بحسب صلاحياته المعتمدة."
+            : "نرسل رمزًا من أربعة أرقام إلى جوالك. لا تشارك الرمز مع أي شخص."}
       </p>
-      <Message error={error || session.error} />
-      {session.ready && !session.open && (
-        <p role="status" className={s.notice}>
-          التسجيل والتحقق برقم الجوال غير متاحين حاليًا حتى اكتمال جاهزية
-          الخدمات. يمكنك تصفح الأسر والمنتجات دون حساب.
+      {register && (
+        <p className={s.notice}>
+          بعد الدخول يمكنك استكمال طلب الأسرة؛ يخضع الاعتماد لمراجعة الإدارة.
         </p>
       )}
-      <form className={s.form} onSubmit={submit}>
-        {register && (
-          <label className={s.field}>
-            اسم صاحب الحساب
-            <input name="name" autoComplete="name" required maxLength={120} />
-          </label>
-        )}
-        <label className={s.field}>
-          رقم الجوال
-          <input
-            type="tel"
-            dir="ltr"
-            autoComplete="tel"
-            placeholder="05xxxxxxxx"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            required
-            disabled={!!challenge}
-          />
-        </label>
-        {challenge && (
-          <label className={s.field}>
-            رمز التحقق
-            <input
-              name="code"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              pattern="[0-9]{4}"
-              minLength={4}
-              maxLength={4}
-              required
-              autoFocus
-            />
-          </label>
-        )}
-        <button
-          className={s.button}
-          disabled={busy || !session.ready || !session.open}
-        >
-          {busy
-            ? "جارٍ المتابعة…"
-            : challenge
-              ? "تحقق ومتابعة"
-              : "أرسل رمز التحقق"}
-        </button>
-        {challenge && (
-          <button
-            type="button"
-            className={s.button}
-            onClick={() => setChallenge("")}
-          >
-            تغيير الرقم
-          </button>
+      <Message error={error || session.error} />
+      {mode !== "password" && !verified && session.ready && !session.open && (
+        <p role="status" className={s.notice}>
+          التسجيل والتحقق برقم الجوال غير متاحين حاليًا حتى اكتمال جاهزية
+          الخدمات. الدخول بكلمة المرور متاح للحسابات التي أعدتها مسبقًا.
+        </p>
+      )}
+      <form
+        className={s.form}
+        onSubmit={submit}
+        key={verified ? "credentials" : mode}
+      >
+        {verified ? (
+          <>
+            <label className={s.field}>
+              اسم مستخدم اختياري
+              <input
+                name="username"
+                aria-label="اسم مستخدم اختياري"
+                dir="ltr"
+                autoComplete="username"
+                minLength={3}
+                maxLength={40}
+                value={username}
+                disabled={clearUsername}
+                onChange={(e) => setUsername(e.target.value)}
+              />
+              <small>
+                حروف وأرقام ونقطة وشرطة فقط. يمكنك الدخول برقم جوالك دون اسم
+                مخصص.
+              </small>
+            </label>
+            {(verified as SessionUser & { username?: string | null })
+              .username && (
+              <div className={s.checks}>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={clearUsername}
+                    onChange={(e) => setClearUsername(e.target.checked)}
+                  />
+                  إلغاء اسم المستخدم المخصص واستخدام الجوال
+                </label>
+              </div>
+            )}
+            <label className={s.field}>
+              كلمة المرور الجديدة
+              <input
+                name="password"
+                aria-label="كلمة المرور الجديدة"
+                type="password"
+                dir="ltr"
+                autoComplete="new-password"
+                minLength={10}
+                maxLength={128}
+                required
+              />
+              <small>عشرة أحرف على الأقل.</small>
+            </label>
+            <label className={s.field}>
+              تأكيد كلمة المرور
+              <input
+                name="confirmPassword"
+                type="password"
+                dir="ltr"
+                autoComplete="new-password"
+                minLength={10}
+                maxLength={128}
+                required
+              />
+            </label>
+            <button className={s.button} disabled={busy}>
+              حفظ بيانات الدخول
+            </button>
+          </>
+        ) : mode === "password" ? (
+          <>
+            <label className={s.field}>
+              اسم المستخدم أو رقم الجوال
+              <input
+                name="identifier"
+                dir="ltr"
+                autoComplete="username"
+                required
+                maxLength={100}
+              />
+            </label>
+            <label className={s.field}>
+              كلمة المرور
+              <input
+                name="password"
+                type="password"
+                dir="ltr"
+                autoComplete="current-password"
+                required
+                maxLength={128}
+              />
+            </label>
+            <button className={s.button} disabled={busy || !session.ready}>
+              {busy ? "جارٍ الدخول…" : "دخول"}
+            </button>
+          </>
+        ) : (
+          <>
+            {mode === "signup" && !challenge && (
+              <label className={s.field}>
+                <span className="sr-only">نوع الحساب المطلوب</span>
+                <select
+                  aria-label="نوع الحساب المطلوب"
+                  value={intent}
+                  onChange={(e) => setIntent(e.target.value)}
+                >
+                  <option value="" disabled>
+                    نوع الحساب المطلوب
+                  </option>
+                  <option value="customer">عميل</option>
+                  <option value="family">أسرة منتجة — تقديم طلب أهلية</option>
+                </select>
+              </label>
+            )}
+            {mode === "signup" && challenge && (
+              <label className={s.field}>
+                اسم صاحب الحساب
+                <input
+                  name="name"
+                  autoComplete="name"
+                  required
+                  minLength={2}
+                  maxLength={120}
+                />
+              </label>
+            )}
+            <label className={s.field}>
+              رقم الجوال
+              <input
+                type="tel"
+                dir="ltr"
+                autoComplete="tel"
+                placeholder="05xxxxxxxx"
+                maxLength={30}
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                required
+                disabled={!!challenge}
+              />
+            </label>
+            {challenge && (
+              <label className={s.field}>
+                رمز التحقق
+                <input
+                  name="code"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  pattern="[0-9]{4}"
+                  minLength={4}
+                  maxLength={4}
+                  required
+                  autoFocus
+                />
+              </label>
+            )}
+            <button
+              className={s.button}
+              disabled={busy || !session.ready || !session.open}
+            >
+              {busy
+                ? "جارٍ المتابعة…"
+                : challenge
+                  ? "تحقق ومتابعة"
+                  : "أرسل رمز التحقق"}
+            </button>
+            {challenge && (
+              <button
+                type="button"
+                className={s.button}
+                disabled={busy}
+                onClick={() => setChallenge("")}
+              >
+                تغيير الرقم
+              </button>
+            )}
+          </>
         )}
       </form>
+      {!verified && (
+        <div className={s.actions} style={{ marginTop: 20 }}>
+          {mode !== "password" && (
+            <button
+              type="button"
+              className={s.button}
+              disabled={busy}
+              onClick={() => switchMode("password")}
+            >
+              الدخول بكلمة المرور
+            </button>
+          )}
+          {mode !== "signup" && (
+            <button
+              type="button"
+              className={s.button}
+              disabled={busy}
+              onClick={() => switchMode("signup")}
+            >
+              إنشاء حساب جديد
+            </button>
+          )}
+          {mode !== "recover" && (
+            <button
+              type="button"
+              className={s.button}
+              disabled={busy}
+              onClick={() => switchMode("recover")}
+            >
+              تعيين أو استعادة كلمة المرور
+            </button>
+          )}
+        </div>
+      )}
+      {verified && (
+        <button
+          type="button"
+          className={s.button}
+          style={{ marginTop: 16 }}
+          disabled={busy}
+          onClick={() => switchMode("recover")}
+        >
+          إعادة التحقق من الجوال
+        </button>
+      )}
     </section>
   );
 }

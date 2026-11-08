@@ -3,6 +3,7 @@ import { z } from "zod";
 import { api, jsonBody } from "@/server/http";
 import { verifyOtp, sessionCookie } from "@/server/auth";
 import { HttpError } from "@/server/security";
+import { roleDestination } from "@/server/credentials";
 export const POST = api(async (request) => {
   const body = z
     .object({
@@ -15,7 +16,11 @@ export const POST = api(async (request) => {
   if (!result)
     throw new HttpError(400, "رمز التحقق غير صحيح أو منتهي الصلاحية");
   return Response.json(
-    { user: result.user },
+    {
+      user: result.user,
+      next: roleDestination(result.user.role),
+      canSetCredentials: true,
+    },
     {
       headers: {
         "Set-Cookie": sessionCookie(result.token),

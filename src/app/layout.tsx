@@ -3,17 +3,22 @@ import { AboutTicker } from "@/components/public/about-ticker";
 import "./fonts.css";
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import "./globals.css";
 export const metadata: Metadata = {
   metadataBase: new URL("https://jdatna.com"),
   title: {
-    default: "أكلات وغذاء الأجداد | من بيوت أهلنا",
-    template: "%s | أكلات وغذاء الأجداد",
+    default: "أكلات جدتنا | من بيوت أهلنا",
+    template: "%s | أكلات جدتنا",
   },
   description:
     "اكتشف الأكلات التراثية والمنتجات الغذائية من الأسر المنتجة السعودية، وتواصل مع الأسرة مباشرة.",
-  applicationName: "أكلات وغذاء الأجداد",
-  icons: { icon: { url: "/brand/jdatna-logo-v2.jpeg", type: "image/jpeg" } },
+  applicationName: "أكلات جدتنا",
+  icons: {
+    icon: {
+      url: "/_next/image?url=%2Fbrand%2Faklaat-jdatna-logo.png&w=64&q=75",
+    },
+  },
 };
 export default function RootLayout({
   children,
@@ -29,15 +34,17 @@ export default function RootLayout({
         <AboutTicker />
         <header className="site-header">
           <Link href="/" className="brand">
-            <img
+            <Image
               className="brand-logo"
-              src="/brand/jdatna-logo-v2.jpeg"
+              src="/brand/aklaat-jdatna-logo.png"
               alt=""
               width={80}
               height={80}
+              sizes="80px"
+              loading="eager"
             />
             <span>
-              أكلات وغذاء الأجداد<small>أصالة تُصنع بحب</small>
+              أكلات جدتنا<small>أصالة تُصنع بحب</small>
             </span>
           </Link>
           <nav className="desktop-nav" aria-label="التنقل الرئيسي">
@@ -48,11 +55,8 @@ export default function RootLayout({
             <Link href="/about">حكايتنا</Link>
           </nav>
           <div className="header-actions">
-            <Link href="/login" className="account-link">
-              دخول
-            </Link>
-            <Link href="/register" className="button small">
-              سجّل كأسرة منتجة <span aria-hidden="true">↗</span>
+            <Link href="/login" className="button small">
+              تسجيل الدخول
             </Link>
           </div>
           <MobileNavigation />
@@ -62,15 +66,16 @@ export default function RootLayout({
           <div className="footer-top">
             <div>
               <Link className="footer-brand" href="/">
-                <img
+                <Image
                   className="footer-logo"
-                  src="/brand/jdatna-logo-v2.jpeg"
+                  src="/brand/aklaat-jdatna-logo.png"
                   alt=""
                   width={96}
                   height={96}
+                  sizes="96px"
                   loading="lazy"
                 />
-                <span>أكلات وغذاء الأجداد</span>
+                <span>أكلات جدتنا</span>
               </Link>
               <p>
                 نكهات تحكي حكايتنا، وأيادٍ تحفظ موروثنا.
@@ -84,7 +89,7 @@ export default function RootLayout({
               <Link href="/producers">الأسر المنتجة</Link>
               <Link href="/offers">العروض الخاصة</Link>
               <Link href="/orders">طلباتي</Link>
-              <Link href="/register">انضم كأسرة منتجة</Link>
+              <Link href="/login">تسجيل الدخول</Link>
             </div>
             <div>
               <h3>عن المنصة</h3>
@@ -95,7 +100,7 @@ export default function RootLayout({
           </div>
           <div className="footer-bottom">
             <span>
-              © {new Date().getFullYear()} أكلات وغذاء الأجداد
+              © {new Date().getFullYear()} أكلات جدتنا
               <small className="footer-affiliation">أحد فروع مواقع تربح</small>
             </span>
             <span>
