@@ -1,21 +1,21 @@
 .shell {
   max-width: 1000px;
-  margin: 40px auto;
+  margin: 24px auto;
   padding: 24px;
   color: #3c2b20;
 }
 .nav {
   display: flex;
-  gap: 20px;
+  gap: 16px;
   flex-wrap: wrap;
-  margin-bottom: 32px;
+  margin-bottom: 20px;
 }
 .card {
   background: #fffdf7;
   border: 1px solid #dfd5c3;
-  border-radius: 20px;
-  padding: 28px;
-  margin: 20px 0;
+  border-radius: 14px;
+  padding: 24px;
+  margin: 16px 0;
 }
 .form {
   display: grid;
@@ -28,7 +28,9 @@
 }
 .field {
   display: grid;
-  gap: 8px;
+  gap: 6px;
+  font-size: 14px;
+  line-height: 1.5;
   font-weight: 600;
 }
 .field input,
@@ -41,6 +43,7 @@
   padding: 10px;
   background: #fff;
   font: inherit;
+  font-size: 16px;
   color: inherit;
 }
 .field textarea {
@@ -70,7 +73,7 @@
   padding: 16px;
   border-radius: 10px;
   background: #f2ecdd;
-  line-height: 1.9;
+  line-height: 1.65;
 }
 .error {
   color: #9d2929;
@@ -115,4 +118,15 @@
   .card {
     padding: 20px;
   }
+}
+
+.shell h1 {
+  font-size: clamp(1.65rem, 3vw, 2.1rem);
+  line-height: 1.4;
+  margin-bottom: 12px;
+}
+.shell h2 {
+  font-size: 1.25rem;
+  line-height: 1.45;
+  margin-bottom: 12px;
 }

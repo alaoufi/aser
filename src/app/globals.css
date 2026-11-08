@@ -18,7 +18,7 @@ body {
   background: var(--paper);
   color: var(--ink);
   font-family: "Noto Sans Arabic", "Segoe UI", Tahoma, sans-serif;
-  line-height: 1.7;
+  line-height: 1.65;
   font-size: 16px;
 }
 a {
@@ -69,10 +69,10 @@ p {
 h1,
 h2,
 h3 {
-  line-height: 1.45;
+  line-height: 1.35;
 }
 h1 {
-  font-size: clamp(2.4rem, 4.5vw, 4.6rem);
+  font-size: clamp(2rem, 3.8vw, 3.5rem);
   letter-spacing: 0;
   margin-bottom: 24px;
 }
@@ -207,8 +207,8 @@ img {
   grid-template-columns: 1.1fr 1fr;
   align-items: center;
   gap: 28px;
-  padding-block: 64px 66px;
-  min-height: 650px;
+  padding-block: 44px 46px;
+  min-height: 550px;
 }
 .eyebrow {
   color: var(--rust);
@@ -228,7 +228,7 @@ img {
   background: var(--rust);
 }
 .hero h1 {
-  font-size: clamp(2.4rem, 4vw, 3.8rem);
+  font-size: clamp(2.25rem, 3.6vw, 3.4rem);
   line-height: 1.35;
   margin-bottom: 20px;
   font-weight: 700;
@@ -240,7 +240,7 @@ img {
 .hero-description {
   color: var(--muted);
   font-size: 17px;
-  line-height: 1.8;
+  line-height: 1.65;
 }
 .hero-search {
   padding: 10px;
@@ -495,7 +495,7 @@ img {
   border: 1px dashed #cec3b1;
   background: #f2ede2;
   text-align: center;
-  padding: 42px 20px;
+  padding: 28px 20px;
   border-radius: 9px;
 }
 .empty-icon {
@@ -619,8 +619,8 @@ img {
   height: 100%;
 }
 .join-banner {
-  margin-block: 70px 80px;
-  padding: 50px 60px;
+  margin-block: 44px 48px;
+  padding: 36px 44px;
   border-radius: 12px;
   background: var(--olive);
   color: #fff;
@@ -649,13 +649,13 @@ img {
 }
 .site-footer {
   background: #eee8db;
-  padding: 50px max(48px, calc((100% - 1240px) / 2)) 0;
+  padding: 36px max(48px, calc((100% - 1240px) / 2)) 0;
 }
 .footer-top {
   display: grid;
   grid-template-columns: 2fr 1fr 1fr;
-  gap: 40px;
-  padding-bottom: 38px;
+  gap: 28px;
+  padding-bottom: 26px;
 }
 .footer-brand {
   font-size: 22px;
@@ -678,7 +678,7 @@ img {
 }
 .footer-bottom {
   border-top: 1px solid #d9d0bf;
-  padding-block: 22px;
+  padding-block: 16px;
   display: flex;
   justify-content: space-between;
   font-size: 10px;
@@ -690,14 +690,14 @@ img {
   font-size: 11px;
 }
 .page-space {
-  padding-block: 50px 80px;
+  padding-block: 32px 48px;
   min-height: 60vh;
 }
 .page-intro {
   margin-bottom: 35px;
 }
 .page-intro h1 {
-  font-size: 42px;
+  font-size: 34px;
   margin: 0 0 12px;
 }
 .page-intro p:not(.eyebrow) {
@@ -1231,7 +1231,7 @@ hr {
     width: 100%;
   }
   .hero h1 {
-    font-size: clamp(2rem, 8vw, 2.6rem);
+    font-size: clamp(1.9rem, 7.8vw, 2.4rem);
     line-height: 1.4;
     margin-bottom: 18px;
     letter-spacing: 0;
@@ -1321,7 +1321,7 @@ hr {
     margin: 0;
   }
   .section {
-    padding-block: 42px 8px;
+    padding-block: 30px 8px;
   }
   .section-heading {
     gap: 12px;
@@ -1750,8 +1750,8 @@ hr {
   align-items: stretch;
 }
 .producer-card {
-  padding: 24px;
-  gap: 18px;
+  padding: 20px;
+  gap: 14px;
   border-radius: 16px;
   background: #fff;
   transition:
@@ -1768,7 +1768,7 @@ hr {
   min-width: 0;
 }
 .producer-card h3 {
-  font-size: 20px;
+  font-size: 18px;
   line-height: 1.5;
   margin: 5px 0 8px;
   overflow-wrap: anywhere;
@@ -1780,7 +1780,7 @@ hr {
 }
 .producer-card .producer-description {
   font-size: 14px;
-  line-height: 1.75;
+  line-height: 1.65;
   margin-bottom: 12px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -1789,8 +1789,8 @@ hr {
   overflow-wrap: anywhere;
 }
 .producer-avatar {
-  width: 68px;
-  height: 68px;
+  width: 60px;
+  height: 60px;
   border-radius: 18px;
   font-size: 22px;
   font-weight: 600;
@@ -1853,7 +1853,7 @@ hr {
     height: 78px;
   }
   .hero {
-    padding-block: 28px;
+    padding-block: 22px;
   }
   .hero .eyebrow {
     margin-bottom: 12px;
@@ -1861,7 +1861,7 @@ hr {
   }
   .hero-description {
     font-size: 15px;
-    line-height: 1.8;
+    line-height: 1.65;
   }
   .hero-search input,
   .hero-search select {
@@ -1889,7 +1889,7 @@ hr {
     line-height: 1.6;
   }
   .category-card {
-    min-height: 116px;
+    min-height: 100px;
     border-radius: 12px;
   }
   .value-grid strong {
@@ -1904,7 +1904,7 @@ hr {
     line-height: 1.8;
   }
   .producer-card {
-    padding: 18px 14px;
+    padding: 16px 14px;
     gap: 12px;
   }
   .producer-avatar {
@@ -1914,7 +1914,7 @@ hr {
     font-size: 18px;
   }
   .producer-card h3 {
-    font-size: 18px;
+    font-size: 17px;
     margin-bottom: 6px;
   }
   .producer-card .producer-location {
@@ -1922,7 +1922,7 @@ hr {
   }
   .producer-card .producer-description {
     font-size: 13px;
-    line-height: 1.75;
+    line-height: 1.65;
     margin-bottom: 10px;
   }
   .producer-card-arrow {
