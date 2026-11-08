@@ -1,3 +1,4 @@
+import { LocationFields } from "@/components/public/location-fields";
 import type { Metadata } from "next";
 import { getCities, searchProducers } from "@/server/catalog";
 import { EmptyState, ProducerCard } from "@/components/public/ui";
@@ -11,9 +12,10 @@ export default async function Producers({
   const params = await searchParams;
   const q = typeof params.q === "string" ? params.q : "";
   const city = typeof params.city === "string" ? params.city : "";
+  const region = typeof params.region === "string" ? params.region : "";
   const [cities, producers] = await Promise.all([
     getCities(),
-    searchProducers({ q, city }),
+    searchProducers({ q, city, region }),
   ]);
   return (
     <div className="wrap page-space">
@@ -27,17 +29,12 @@ export default async function Producers({
           اسم الأسرة
           <input name="q" defaultValue={q} placeholder="ابحث باسم الأسرة" />
         </label>
-        <label>
-          المدينة
-          <select name="city" defaultValue={city}>
-            <option value="">كل المدن</option>
-            {cities.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </label>
+        <LocationFields
+          key={`${region}:${city}`}
+          cities={cities}
+          defaultRegion={region}
+          defaultCity={city}
+        />
         <button className="button">ابحث عن أسرة</button>
       </form>
       {producers.length ? (

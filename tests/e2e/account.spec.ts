@@ -156,6 +156,27 @@ test("profile validates working hours and sends optional links and city fees", a
     });
   });
   await page.goto("/dashboard");
+  await expect(
+    page.getByRole("combobox", { name: "المنطقة", exact: true }),
+  ).toHaveValue("central");
+  await expect(
+    page.getByRole("combobox", { name: "المدينة", exact: true }),
+  ).toHaveValue("riyadh");
+  await page
+    .getByRole("combobox", { name: "المنطقة", exact: true })
+    .selectOption("");
+  await expect(
+    page.getByRole("combobox", { name: "المدينة", exact: true }),
+  ).toBeDisabled();
+  await page
+    .getByRole("combobox", { name: "المنطقة", exact: true })
+    .selectOption("central");
+  await expect(
+    page.getByRole("combobox", { name: "المدينة", exact: true }),
+  ).toHaveValue("");
+  await page
+    .getByRole("combobox", { name: "المدينة", exact: true })
+    .selectOption("riyadh");
   await page.getByRole("checkbox", { name: "الأحد", exact: true }).check();
   await page.getByLabel("بداية الأحد").fill("18:00");
   await page.getByLabel("نهاية الأحد").fill("09:00");

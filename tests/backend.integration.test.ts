@@ -216,6 +216,21 @@ test(
           const published = (
             await searchProducers({ q: "اختبار", category: "1" })
           ).find((p) => p.id === producerIds[0]);
+          assert.ok(
+            (await searchProducts({ region: "riyadh" })).some(
+              (p) => p.id === product.id,
+            ),
+          );
+          assert.ok(
+            !(await searchProducts({ city: "riyadh", region: "makkah" })).some(
+              (p) => p.id === product.id,
+            ),
+          );
+          assert.ok(
+            !(await searchProducers({ region: "makkah" })).some(
+              (p) => p.id === producerIds[0],
+            ),
+          );
           assert.equal(published?.website, "https://example.com");
           assert.equal(published?.deliveryAreas?.[0].cityId, "riyadh");
           assert.equal(published?.deliveryAreas?.[0].fee, 15);

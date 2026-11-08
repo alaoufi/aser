@@ -48,6 +48,7 @@ export type Product = {
   delivery: boolean;
 };
 export type Filters = {
+  region?: string;
   q?: string;
   city?: string;
   category?: string;

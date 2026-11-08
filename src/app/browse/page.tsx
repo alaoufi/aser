@@ -1,3 +1,4 @@
+import { LocationFields } from "@/components/public/location-fields";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getCategories, getCities, searchProducts } from "@/server/catalog";
@@ -15,6 +16,7 @@ export default async function Browse({
   const filters = {
     q: val("q"),
     city: val("city"),
+    region: val("region"),
     category: val("category"),
     status: val("status"),
     delivery: val("delivery"),
@@ -40,17 +42,12 @@ export default async function Browse({
             placeholder="اسم الأكلة أو الأسرة"
           />
         </label>
-        <label>
-          المدينة
-          <select name="city" defaultValue={filters.city}>
-            <option value="">كل المدن</option>
-            {cities.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.regionName} — {c.name}
-              </option>
-            ))}
-          </select>
-        </label>
+        <LocationFields
+          key={`${filters.region}:${filters.city}`}
+          cities={cities}
+          defaultRegion={filters.region}
+          defaultCity={filters.city}
+        />
         <label>
           التصنيف
           <select name="category" defaultValue={filters.category}>

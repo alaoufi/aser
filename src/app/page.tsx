@@ -1,3 +1,4 @@
+import { LocationFields } from "@/components/public/location-fields";
 import Link from "next/link";
 import {
   getCategories,
@@ -42,17 +43,7 @@ export default async function Home() {
               <span>وش تشتهي اليوم؟</span>
               <input name="q" placeholder="جريش، معمول، قهوة…" />
             </label>
-            <label className="city-field">
-              <span>مدينتك</span>
-              <select name="city" defaultValue="">
-                <option value="">كل المدن</option>
-                {cities.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <LocationFields cities={cities} className="city-field" />
             <button className="button" type="submit">
               اكتشف <span aria-hidden="true">←</span>
             </button>

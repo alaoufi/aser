@@ -53,6 +53,11 @@ function conditions(f: Filters, products: boolean) {
         : "(p.name ILIKE ? OR p.description ILIKE ?)",
       `%${f.q.slice(0, 120).replace(/[\\%_]/g, "\\$&")}%`,
     );
+  if (f.region)
+    add(
+      "EXISTS(SELECT 1 FROM jdatna.cities rc WHERE rc.id=p.city_id AND rc.region_id=?)",
+      f.region,
+    );
   if (f.city) add("p.city_id=?", f.city);
   if (f.category)
     add(

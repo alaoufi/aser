@@ -1,4 +1,5 @@
 "use client";
+import { LocationFields } from "@/components/public/location-fields";
 import { useEffect, useState } from "react";
 import type { Category, City, SessionUser } from "@/lib/types";
 import {
@@ -258,21 +259,14 @@ export function ProfileForm({
                 maxLength={120}
               />
             </label>
-            <label className={s.field}>
-              المدينة والمنطقة
-              <select
-                name="cityId"
-                defaultValue={profile?.cityId || ""}
-                required
-              >
-                <option value="">اختر المدينة</option>
-                {cities.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name} — {c.regionName}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <LocationFields
+              cities={cities}
+              defaultCity={profile?.cityId}
+              cityName="cityId"
+              regionName="regionId"
+              required
+              className={s.field}
+            />
             <label className={s.field}>
               الحي (اختياري)
               <input
