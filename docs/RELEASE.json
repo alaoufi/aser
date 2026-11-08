@@ -1,15 +1,15 @@
 {
   "verified_on": "2026-11-08",
-  "code_commit": "b4132f0d5490e6a98fead0b0a5d71b05d9aff29f",
-  "image": "jdatna-application:b4132f0d5490e6a98fead0b0a5d71b05d9aff29f",
+  "code_commit": "4aa6b36f83df0ad6e7bb475ffed95205cc5c7912",
+  "image": "jdatna-application:4aa6b36f83df0ad6e7bb475ffed95205cc5c7912",
   "url": "https://jdatna.com",
   "checks": {
-    "unit_integration": "43/43, no skips",
-    "browser_chromium": "23 passed;1 intentional desktop skip for mobile-only interaction",
+    "unit_integration": "43/43 on preceding backend release;no backend changes",
+    "browser_chromium": "Current logo:live viewport checks1440/390/320;preceding full UI suite23 passed",
     "typecheck": "passed",
     "build": "passed",
     "infrastructure_and_backup_restore": "passed after deployment; Aykdmh unchanged",
-    "live_browser": "HTTPS current release;desktop/mobile verify13 ordered regions,14 Qassim options on homepage/browse/producers, no overflow",
+    "live_browser": "Exact release;header/footer/favicon load;published image byte-identical to supplied original;no overflow or page errors at1440/390/320",
     "otp_endpoint": "Four-digit code format; secure generation1000..9999; existing expiry and retry limits retained"
   },
   "registrationOpen": true,
@@ -25,7 +25,7 @@
   ],
   "sms_provider": "Same active Taqnyat credentials as Aykdmh; enabled at explicit owner request to test delivery on own phone",
   "footer_verification": "Affiliation retained",
-  "image_id": "sha256:56a275f54854cc764794b06917a0259b72fd7b668c336645997275ca41eb975f",
+  "image_id": "sha256:93b4c2479b9a7dfb9b6d04864446397be58da7bbc71a49964cedee187dea971d",
   "sms_delivery_confirmed": true,
   "sms_delivery_evidence": "Owner reported receipt of previous6-digit SMS;4-digit release deployed afterwards, not physically re-tested by agent",
   "otp_digits": 4,
@@ -36,5 +36,11 @@
     "existingCityRecordsUnchanged": true,
     "coverage": "cities/governorates; not all villages or administrative centers",
     "firstRegions": ["riyadh", "makkah", "madinah", "qassim"]
+  },
+  "brand_logo": {
+    "path": "/brand/jdatna-logo.jpeg",
+    "sha256": "6787df925e8c0bb62cac4a4422962a88097e2fb79650b4ce4f4363ad71c83fd8",
+    "owner_supplied": true,
+    "pixels_unchanged": true
   }
 }
