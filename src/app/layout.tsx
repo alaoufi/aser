@@ -1,4 +1,5 @@
 import { MobileNavigation } from "@/components/public/mobile-navigation";
+import { AboutTicker } from "@/components/public/about-ticker";
 import "./fonts.css";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -25,9 +26,7 @@ export default function RootLayout({
         <a href="#main" className="skip-link">
           انتقل إلى المحتوى
         </a>
-        <div className="announcement">
-          من بيوت أهلنا، وبطعم تراثنا <span>✦</span> منصة للأسر المنتجة الغذائية
-        </div>
+        <AboutTicker />
         <header className="site-header">
           <Link href="/" className="brand">
             <img

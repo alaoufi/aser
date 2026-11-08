@@ -96,17 +96,77 @@ img {
   width: min(1240px, calc(100% - 96px));
   margin-inline: auto;
 }
-.announcement {
+.about-ticker {
+  position: relative;
   background: #603c24;
-  color: #fff;
-  text-align: center;
+  color: #fff8ea;
+  padding: 8px 50px 8px 16px;
   font-size: 12px;
-  padding: 7px 16px;
-  letter-spacing: 0.2px;
+  line-height: 1.8;
 }
-.announcement span {
-  margin-inline: 15px;
-  color: #d9c79f;
+.about-ticker-window {
+  overflow: hidden;
+}
+.about-ticker-track {
+  display: flex;
+  width: max-content;
+  direction: ltr;
+  animation: about-ticker-scroll 38s linear infinite;
+}
+.about-ticker-copy {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: 40px;
+  min-width: calc(100vw - 66px);
+  padding-inline: 20px;
+  direction: rtl;
+  white-space: nowrap;
+}
+.ticker-star {
+  color: #e9c58b;
+}
+.about-ticker-toggle {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 38px;
+  height: 32px;
+  background: transparent;
+  color: inherit;
+  border: 1px solid #b39470;
+  border-radius: 6px;
+  font-size: 13px;
+}
+.about-ticker:hover .about-ticker-track,
+.about-ticker:focus-within .about-ticker-track,
+.about-ticker-track[data-paused="true"] {
+  animation-play-state: paused;
+}
+@keyframes about-ticker-scroll {
+  to {
+    transform: translateX(-50%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .about-ticker {
+    padding: 8px 16px;
+  }
+  .about-ticker-track {
+    animation: none;
+    width: auto;
+  }
+  .about-ticker-copy {
+    min-width: 0;
+    padding: 0;
+    white-space: normal;
+  }
+  .about-ticker-copy + .about-ticker-copy,
+  .about-ticker-toggle,
+  .ticker-star {
+    display: none;
+  }
 }
 .site-header {
   height: 104px;
@@ -1152,13 +1212,6 @@ hr {
   body {
     font-size: 15px;
   }
-  .announcement {
-    font-size: 10px;
-    padding-block: 8px;
-  }
-  .announcement span {
-    margin-inline: 7px;
-  }
   .site-header {
     height: 82px;
     width: calc(100% - 36px);
@@ -1778,10 +1831,6 @@ hr {
   }
 }
 @media (max-width: 600px) {
-  .announcement {
-    font-size: 11px;
-    line-height: 1.6;
-  }
   .brand {
     font-size: 14px;
     line-height: 1.5;
