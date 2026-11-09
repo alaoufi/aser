@@ -25,20 +25,11 @@ export default async function Home() {
     <>
       <section className="hero wrap">
         <div className="hero-copy">
-          <p className="eyebrow">
-            <span className="tiny-line" /> من موروثنا، بكل حب
-          </p>
-          <h1>
-            للأصالة طعم، ولكل بيت <em>حكاية.</em>
-          </h1>
-          <p className="hero-description">
-            اكتشف نكهات الأجداد من أيدي الأسر المنتجة.
-            <br />
-            أكلات أصيلة، ومنتجات بلدية، وتواصل يقرّبكم.
-          </p>
+          {/* عنوان الصفحة لقارئات الشاشة ومحركات البحث فقط؛ النصوص التعريفية حُذفت بطلب المالك. */}
+          <h1 className="sr-only">أكلات جدتنا وأصالة الماضي</h1>
           <form action="/browse" className="hero-search" autoComplete="off">
             <label>
-              <span>وش طلبك اليوم؟</span>
+              <span>وش تطلب اليوم؟</span>
               <input
                 type="search"
                 name="q"

@@ -16,7 +16,7 @@ test("browse offers four search methods: word, available, family and category", 
     "aria-current",
     "page",
   );
-  await expect(page.getByLabel("وش طلبك اليوم؟")).toBeVisible();
+  await expect(page.getByLabel("وش تطلب اليوم؟")).toBeVisible();
 
   await modes.getByRole("link", { name: "حسب القسم" }).click();
   await expect(page).toHaveURL(/by=category/);
