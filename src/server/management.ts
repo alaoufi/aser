@@ -419,3 +419,16 @@ export async function reviewProducer(
     return { status: value.decision };
   });
 }
+// حالة حساب الأسرة للشريط أعلى الصفحة: بيانات المالك فقط، دون بيانات خاصة.
+export async function familyStatus(user: SessionUser) {
+  const row = (
+    await db().query(
+      `SELECT p.status,p.verified,v.document_id AS "documentId",v.document_type AS "documentType",v.document_expires_at::text AS "documentExpiresAt",v.reason AS "reviewReason"
+       FROM jdatna.producer_profiles p
+       LEFT JOIN LATERAL(SELECT document_id,document_type,document_expires_at,reason FROM jdatna.producer_verifications WHERE producer_id=p.id ORDER BY created_at DESC LIMIT 1)v ON true
+       WHERE p.user_id=$1`,
+      [user.id],
+    )
+  ).rows[0];
+  return row ?? null;
+}

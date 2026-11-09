@@ -19,6 +19,7 @@ import {
   s,
   useSession,
 } from "./shared";
+import { FAMILY_STATUS_CHANGED } from "./family-status";
 type Profile = AdvancedProfile & {
   id?: string;
   name: string;
@@ -172,7 +173,13 @@ export function ProfileForm({
         }),
       });
       await load();
-      setSuccess("تم حفظ البيانات وإرسالها للمراجعة.");
+      setSuccess(
+        registration || !profile
+          ? "تم تسجيل أسرتك بنجاح ✓ طلبك الآن تحت المراجعة، وستظهر حالة الحساب أعلى الصفحة. يمكنك إضافة منتجاتك خلال المراجعة."
+          : "تم حفظ البيانات وإرسالها للمراجعة.",
+      );
+      await load().catch(() => {});
+      window.dispatchEvent(new Event(FAMILY_STATUS_CHANGED));
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -199,20 +206,6 @@ export function ProfileForm({
         البيانات الأساسية فقط؛ يمكنك إضافة التفاصيل الأخرى لاحقًا.
       </p>
       <Message error={error} success={success} />
-      {profile?.status && (
-        <p className={s.notice}>
-          حالة الطلب:{" "}
-          {(
-            {
-              pending: "قيد المراجعة",
-              approved: "معتمد",
-              rejected: "مرفوض",
-              suspended: "معلق",
-            } as Record<string, string>
-          )[profile.status] || profile.status}
-          {profile.reviewReason && ` — ${profile.reviewReason}`}
-        </p>
-      )}
       {!loaded ? (
         <p role="status">جارٍ تحميل البيانات…</p>
       ) : (

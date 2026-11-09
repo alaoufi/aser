@@ -1,6 +1,7 @@
 import { MobileNavigation } from "@/components/public/mobile-navigation";
 import { AboutTicker } from "@/components/public/about-ticker";
 import { AccountLink } from "@/components/public/account-link";
+import { OrderAlert } from "@/components/public/order-alert";
 import "./fonts.css";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -65,6 +66,7 @@ export default function RootLayout({
           <MobileNavigation />
         </header>
         <main id="main">{children}</main>
+        <OrderAlert />
         <footer className="site-footer">
           <div className="footer-top">
             <div>

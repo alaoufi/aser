@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # نشر جدتنا من الخادم نفسه — يُستدعى عبر مفتاح SSH مقيد (أمر إجباري) من GitHub Actions.
-# الأوامر المسموحة فقط:  deploy <sha40>  |  rollback  |  status
-# لا يغيّر قاعدة البيانات ولا ينفذ ترحيلات؛ يرفض أي إصدار فيه ترحيل جديد.
+# الأوامر المسموحة فقط:  deploy <sha40>  |  deploy-migrate <sha40>  |  rollback  |  status
+# deploy يرفض أي إصدار فيه ترحيل جديد. deploy-migrate يطبّق الترحيلات الجديدة عبر MIGRATE_CMD
+# (حساب migrator) بعد النسخة الاحتياطية والبناء وقبل التحويل؛ الترحيلات يجب أن تبقى متوافقة مع الإصدار السابق.
 # التثبيت والإعداد: infra/deploy/README.md
 set -euo pipefail
 umask 077
@@ -14,6 +15,7 @@ source "$CONFIG"
 BRANCH=${BRANCH:-codex/jdatna-platform}
 IMAGE=${IMAGE:-jdatna-application}
 VERIFY_CMD=${VERIFY_CMD:-}
+MIGRATE_CMD=${MIGRATE_CMD:-}
 STATE_DIR=${STATE_DIR:-/var/lib/jdatna-deploy}
 LOG=${LOG:-/var/log/jdatna-deploy.log}
 HEALTH_TIMEOUT=${HEALTH_TIMEOUT:-240}
@@ -85,7 +87,7 @@ rollback)
   log "rolled back to $prev"
   ;;
 
-deploy)
+deploy|deploy-migrate)
   sha=${arg:-}
   [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || { log "deploy needs a full 40-char commit sha"; exit 2; }
   current=$(live_version)
@@ -97,9 +99,17 @@ deploy)
   git -C "$REPO_DIR" merge-base --is-ancestor "$sha" "origin/$BRANCH" \
     || { log "$sha is not on $BRANCH"; exit 4; }
   if git -C "$REPO_DIR" cat-file -e "$current^{commit}" 2>/dev/null; then
-    if [[ -n "$(git -C "$REPO_DIR" diff --name-only "$current" "$sha" -- migrations)" ]]; then
-      log "refused: new migrations since $current — deploy manually with the migrator role"
+    new_migrations=$(git -C "$REPO_DIR" diff --name-only --diff-filter=AM "$current" "$sha" -- migrations)
+    if [[ -n "$(git -C "$REPO_DIR" diff --name-only --diff-filter=DR "$current" "$sha" -- migrations)" ]]; then
+      log "refused: migrations were deleted or renamed since $current"; exit 5
+    fi
+    if [[ -n "$new_migrations" && "$action" != "deploy-migrate" ]]; then
+      log "refused: new migrations since $current — use deploy-migrate"
+      printf '%s\n' "$new_migrations"
       exit 5
+    fi
+    if [[ "$action" == "deploy-migrate" && -n "$new_migrations" && -z "$MIGRATE_CMD" ]]; then
+      log "refused: MIGRATE_CMD is not configured in $CONFIG"; exit 5
     fi
   else
     log "refused: live commit $current not found in $REPO_DIR"; exit 5
@@ -118,6 +128,16 @@ deploy)
   docker image inspect "$IMAGE:$sha" >/dev/null
   docker image inspect "$IMAGE:$current" >/dev/null 2>&1 || log "warning: previous image $IMAGE:$current missing; auto-rollback impossible"
   guard_up "$sha"
+
+  if [[ "$action" == "deploy-migrate" && -n "${new_migrations:-}" ]]; then
+    log "apply migrations: $(echo $new_migrations)"
+    if ! $MIGRATE_CMD "$dir"; then
+      log "migration failed — live version unchanged ($current); restore from the pre-deploy backup if needed"
+      guard_down "$sha"
+      exit 7
+    fi
+    log "migrations applied"
+  fi
 
   if switch_to "$IMAGE:$sha" && wait_for "$sha"; then
     printf '%s\n' "$current" >"$STATE_DIR/previous"

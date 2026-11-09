@@ -5,9 +5,9 @@ on:
   workflow_dispatch:
     inputs:
       action:
-        description: "deploy = نشر آخر الفرع، rollback = رجوع للإصدار السابق، status = الحالة"
+        description: "deploy = نشر، deploy-migrate = نشر مع ترحيلات قاعدة البيانات، rollback = رجوع، status = الحالة"
         type: choice
-        options: [deploy, rollback, status]
+        options: [deploy, deploy-migrate, rollback, status]
         default: deploy
       ref:
         description: "commit للنشر (اتركه فارغًا لآخر codex/jdatna-platform)"
@@ -56,7 +56,7 @@ jobs:
           printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key && chmod 600 ~/.ssh/deploy_key
           printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
           case "$ACTION" in
-            deploy) remote="deploy $SHA" ;;
+            deploy|deploy-migrate) remote="$ACTION $SHA" ;;
             rollback|status) remote="$ACTION" ;;
             *) echo "::error::أمر غير معروف"; exit 1 ;;
           esac
@@ -64,7 +64,7 @@ jobs:
             -o ServerAliveInterval=30 -o ServerAliveCountMax=6 "$SSH_HOST" "$remote"
 
       - name: التحقق العام من الموقع
-        if: inputs.action == 'deploy'
+        if: inputs.action == 'deploy' || inputs.action == 'deploy-migrate'
         env:
           SHA: ${{ steps.target.outputs.sha }}
         run: |

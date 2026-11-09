@@ -99,7 +99,9 @@ export function orderSnapshot(
 export function assertOrderTransition(from: string, to: string) {
   const transitions: Record<string, string[]> = {
     pending: ["accepted", "declined", "cancelled"],
-    accepted: ["completed", "cancelled"],
+    accepted: ["preparing", "ready", "completed", "cancelled"],
+    preparing: ["ready", "completed", "cancelled"],
+    ready: ["completed", "cancelled"],
     declined: [],
     completed: [],
     cancelled: [],
@@ -218,7 +220,7 @@ export async function reorderDraft(user: SessionUser, id: string) {
 export async function producerOrders(user: SessionUser) {
   return (
     await db().query(
-      `SELECT ${fields} FROM jdatna.order_requests o JOIN jdatna.producer_profiles p ON p.id=o.producer_id WHERE p.user_id=$1 ORDER BY o.created_at DESC LIMIT 200`,
+      `SELECT ${fields},o.producer_seen_at IS NULL AS "isNew" FROM jdatna.order_requests o JOIN jdatna.producer_profiles p ON p.id=o.producer_id WHERE p.user_id=$1 ORDER BY o.created_at DESC LIMIT 200`,
       [user.id],
     )
   ).rows;
@@ -227,7 +229,14 @@ export async function updateOrder(user: SessionUser, input: unknown) {
   const value = z
     .object({
       id: z.uuid(),
-      status: z.enum(["accepted", "declined", "completed", "cancelled"]),
+      status: z.enum([
+        "accepted",
+        "preparing",
+        "ready",
+        "declined",
+        "completed",
+        "cancelled",
+      ]),
     })
     .strict()
     .parse(input);
@@ -241,9 +250,42 @@ export async function updateOrder(user: SessionUser, input: unknown) {
     if (!order) throw new HttpError(404, "الطلب غير موجود");
     assertOrderTransition(order.status, value.status);
     await client.query(
-      "UPDATE jdatna.order_requests SET status=$2,updated_at=now() WHERE id=$1",
+      "UPDATE jdatna.order_requests SET status=$2,updated_at=now(),producer_seen_at=coalesce(producer_seen_at,now()) WHERE id=$1",
       [order.id, value.status],
     );
     return { id: order.id, status: value.status };
   });
+}
+
+// تنبيه «طلب جديد» للأسرة: الطلبات المعلقة التي لم تُعرض بعد، للأسرة المالكة فقط.
+export async function producerOrderAlerts(user: SessionUser) {
+  const result = await db().query(
+    `SELECT o.id,o.snapshot->>'productName' AS "productName",o.customer_name AS name,o.quantity,o.snapshot->>'unit' AS unit,o.meal,o.start_date::text AS "startDate",o.created_at AS "createdAt"
+     FROM jdatna.order_requests o JOIN jdatna.producer_profiles p ON p.id=o.producer_id
+     WHERE p.user_id=$1 AND o.status='pending' AND o.producer_seen_at IS NULL
+     ORDER BY o.created_at DESC LIMIT 20`,
+    [user.id],
+  );
+  const pending = (
+    await db().query(
+      `SELECT count(*)::int AS n FROM jdatna.order_requests o JOIN jdatna.producer_profiles p ON p.id=o.producer_id WHERE p.user_id=$1 AND o.status='pending'`,
+      [user.id],
+    )
+  ).rows[0].n as number;
+  return { alerts: result.rows, pending };
+}
+export async function markOrdersSeen(user: SessionUser, input: unknown) {
+  const value = z
+    .object({ ids: z.array(z.uuid()).min(1).max(50) })
+    .strict()
+    .parse(input);
+  // الملكية من الجلسة فقط؛ معرّفات طلبات أسرة أخرى تُتجاهل.
+  const result = await db().query(
+    `UPDATE jdatna.order_requests o SET producer_seen_at=now()
+     FROM jdatna.producer_profiles p
+     WHERE p.id=o.producer_id AND p.user_id=$1 AND o.id=ANY($2::uuid[]) AND o.producer_seen_at IS NULL
+     RETURNING o.id`,
+    [user.id, value.ids],
+  );
+  return { seen: result.rows.map((r) => r.id as string) };
 }
