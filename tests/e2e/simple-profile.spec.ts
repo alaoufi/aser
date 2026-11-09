@@ -18,6 +18,20 @@ test("family saves only basic fields in one form and retries without reuploading
   await page.route("**/api/session", (r) =>
     r.fulfill({ json: { user, registrationOpen: true } }),
   );
+  // حالة الحساب: لا ملف قبل التسجيل، ثم «تحت المراجعة» بعده.
+  await page.route("**/api/producer/status", (r) =>
+    r.fulfill({
+      json: {
+        state: profile
+          ? {
+              key: "review",
+              label: "تحت المراجعة",
+              detail: "تم التسجيل وطلبك الآن تحت المراجعة.",
+            }
+          : null,
+      },
+    }),
+  );
   let profile: any = null,
     posted: any,
     attempts = 0,
@@ -105,6 +119,9 @@ test("family saves only basic fields in one form and retries without reuploading
   await expect(
     page.getByRole("status").filter({ hasText: "تم تسجيل أسرتك بنجاح" }),
   ).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "حالة حساب الأسرة" }),
+  ).toContainText("حالة الحساب: تحت المراجعة");
   expect(uploads).toBe(1);
   expect(attempts).toBe(2);
   expect(posted).toEqual({
