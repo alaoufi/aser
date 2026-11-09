@@ -16,7 +16,7 @@
   "SMS": true,
   "privateStorage": true,
   "aykdmh_hosting_commit": "a2a6cfe",
-  "source_pushed": false,
+  "source_pushed": true,
   "limitations": [
     "Off-server backup pending",
     "No physical-phone/WebKit verification or new SMS delivery test",
@@ -156,5 +156,13 @@
     "input": "Producer-entered center/neighborhood names under existing city",
     "combined_limit": 100,
     "global_geography_unchanged": true
+  },
+  "source_repository": "https://github.com/alaoufi/aser",
+  "source_branch": "codex/jdatna-platform",
+  "repository_save": {
+    "runtime_release_unchanged": true,
+    "auto_deploy_enabled": false,
+    "verified_remote_commit_before_this_record": "8314ea2219b9d95aecb20032add7710af76943c9",
+    "verified_on": "2026-11-09"
   }
 }
