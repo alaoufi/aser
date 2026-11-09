@@ -6,6 +6,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import "./globals.css";
+import "./heritage.css";
 export const metadata: Metadata = {
   metadataBase: new URL("https://jdatna.com"),
   title: {

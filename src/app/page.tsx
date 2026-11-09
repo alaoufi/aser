@@ -54,8 +54,8 @@ export default async function Home() {
             </button>
           </form>
           <div className="hero-notes">
-            <span>✧ تصفّح بدون تسجيل</span>
-            <span>✧ تواصل مباشر مع الأسرة</span>
+            <span>◆ تصفّح بدون تسجيل</span>
+            <span>◆ تواصل مباشر مع الأسرة</span>
           </div>
         </div>
         <div className="hero-visual">

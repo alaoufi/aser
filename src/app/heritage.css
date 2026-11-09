@@ -1,0 +1,422 @@
+/*
+ * الطابع التراثي النجدي (سدو وطين) — يُحمَّل بعد globals.css ويتقدم عليه.
+ * Reem Kufi وAmiri: SIL Open Font License (public/fonts/OFL-*.txt). مستضافة ذاتيًا.
+ * للتراجع: احذف استيراد هذا الملف من layout.tsx.
+ */
+@font-face {
+  font-family: "Reem Kufi";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(/fonts/reem-kufi-arabic-700.woff2) format("woff2");
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891,
+    U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41,
+    U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
+}
+@font-face {
+  font-family: "Amiri";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/fonts/amiri-arabic-400.woff2) format("woff2");
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891,
+    U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41,
+    U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
+}
+
+:root {
+  --paper: #f4ead9;
+  --cream: #efe0c6;
+  --surface: #fbf5ea;
+  --sage-panel: #2e1d12;
+  --footer: #3a2618;
+  --ink: #2e1d12;
+  --muted: #6b5440;
+  --olive: #4f5d36;
+  --rust: #9c2f1e;
+  --line: #dcc4a0;
+  --sadu-black: #1f1a17;
+  --sadu-white: #efe3cc;
+  --gold: #d6a35c;
+  --display: "Reem Kufi", "Noto Sans Arabic", Tahoma, sans-serif;
+  --accent-serif: "Amiri", "Noto Sans Arabic", serif;
+  --mud-texture:
+    radial-gradient(#5e3a1e1a 1px, transparent 1.4px) 0 0 / 7px 7px,
+    radial-gradient(#ffffff59 1px, transparent 1.6px) 3px 5px / 11px 11px;
+  --sadu-band: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='52' height='22'%3E%3Crect width='52' height='22' fill='%239c2f1e'/%3E%3Crect width='52' height='3' fill='%231f1a17'/%3E%3Crect y='19' width='52' height='3' fill='%231f1a17'/%3E%3Cpolygon points='0,19 13,6 26,19' fill='%231f1a17'/%3E%3Cpolygon points='26,3 39,16 52,3' fill='%23efe3cc'/%3E%3Cpolygon points='13,14 16,11 19,14 16,17' fill='%23efe3cc'/%3E%3Cpolygon points='36,8 39,5 42,8 39,11' fill='%239c2f1e'/%3E%3C/svg%3E");
+  --sadu-thin: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='16'%3E%3Crect width='36' height='16' fill='%239c2f1e'/%3E%3Cpolygon points='0,16 9,3 18,16' fill='%23efe3cc'/%3E%3Cpolygon points='18,0 27,13 36,0' fill='%231f1a17'/%3E%3C/svg%3E");
+  --shurfa: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='14'%3E%3Cpolygon points='4,14 14,2 24,14' fill='%233a2618'/%3E%3C/svg%3E");
+}
+
+/* أسطر متقاربة */
+body {
+  background: var(--paper);
+  line-height: 1.4;
+}
+h1,
+h2,
+h3 {
+  line-height: 1.15;
+}
+h1,
+h2 {
+  font-family: var(--display);
+  font-weight: 700;
+}
+.eyebrow {
+  font-family: var(--accent-serif);
+  font-size: 17px;
+  font-weight: 400;
+  letter-spacing: 0;
+  margin-bottom: 6px;
+}
+.about-ticker {
+  background: var(--ink);
+  line-height: 1.4;
+}
+.brand {
+  line-height: 1.2;
+}
+.brand > span,
+.brand strong {
+  font-family: var(--display);
+}
+.brand small {
+  font-family: var(--accent-serif);
+  font-size: 13px;
+  letter-spacing: 0;
+}
+.hero-description,
+.producer-card .producer-description {
+  line-height: 1.45;
+}
+.category-card h3 {
+  line-height: 1.3;
+}
+.category-title small,
+.producer-card .producer-location,
+.producer-tags {
+  line-height: 1.35;
+}
+.profile-description,
+.prose .lead,
+.prose p,
+.page-intro p:not(.eyebrow),
+.footer-top p {
+  line-height: 1.6;
+}
+.section {
+  padding-block: 44px 8px;
+}
+.section-heading {
+  margin-bottom: 18px;
+}
+
+/* الترويسة: ملمس الطين، وتحتها حزام السدو بعرض الصفحة */
+body > header.site-header,
+.site-header {
+  width: 100%;
+  max-width: none;
+  padding-inline: max(24px, calc((100% - 1300px) / 2));
+  box-sizing: border-box;
+  background: var(--mud-texture), #e9d7bb;
+  border-bottom: 1px solid #c9a87c;
+  height: auto;
+  min-height: 92px;
+  padding-block: 6px;
+}
+main::before {
+  content: "";
+  display: block;
+  height: 22px;
+  background: var(--sadu-band) repeat-x;
+}
+.desktop-nav a {
+  font-weight: 500;
+}
+
+/* الأزرار: أحمر السدو مع حافة سفلية كالخيط المنسوج */
+.button {
+  border-radius: 4px;
+  box-shadow: inset 0 -3px 0 #00000033;
+}
+.site-header .button {
+  background: var(--rust);
+  border-color: var(--rust);
+}
+.site-header .button:hover {
+  background: #7e2416;
+}
+
+/* البطل */
+.hero h1 {
+  line-height: 1.1;
+  color: var(--ink);
+}
+.hero h1 em {
+  font-style: normal;
+}
+.hero .eyebrow {
+  margin-bottom: 10px;
+}
+.hero-search {
+  border-radius: 6px;
+  border-color: #c9a87c;
+  background: var(--surface);
+  box-shadow: 0 6px 0 -3px #e3cfae;
+}
+.hero-notes {
+  margin-top: 10px;
+}
+
+/* القوس النجدي وطبق الخوص حول الطبق الرئيسي */
+.food-showcase-main {
+  aspect-ratio: 0.95;
+  border-radius: 999px 999px 8px 8px;
+  border: 2px solid #b48a5c;
+  background: var(--mud-texture), #e9d7bb;
+  box-shadow:
+    inset 0 0 0 10px var(--paper),
+    inset 0 0 0 12px #b48a5c;
+  overflow: hidden;
+}
+.food-showcase-main::before {
+  content: "";
+  position: absolute;
+  inset-inline: 14%;
+  bottom: 9%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: repeating-radial-gradient(
+    circle,
+    #c99a5b 0 3px,
+    #b5823f 3px 5px,
+    #d9b27a 5px 8px
+  );
+  box-shadow:
+    0 0 0 6px #8b5a2b,
+    0 14px 22px #2e1d1240;
+}
+.food-showcase-main img {
+  z-index: 1;
+  object-position: 50% 85%;
+  transform: rotate(-3deg) scale(0.8) translateY(6%);
+}
+.food-showcase-main .dish-number {
+  z-index: 2;
+  top: 18%;
+  inset-inline-start: 12%;
+}
+.food-dish-visual {
+  border-radius: 50%;
+  background: #efe0c6;
+  border: 2px solid #d6b98d;
+}
+.dish-number {
+  background: var(--rust);
+}
+.food-dish-name {
+  color: var(--ink);
+  line-height: 1.3;
+}
+.food-dish-name-featured {
+  display: block;
+  width: fit-content;
+  margin: 8px auto 0;
+  padding: 2px 14px;
+  background: var(--ink);
+  color: var(--sadu-white);
+  font-family: var(--display);
+  border-radius: 3px;
+}
+.food-showcase figcaption {
+  font-family: var(--accent-serif);
+  font-size: 15px;
+  line-height: 1.3;
+}
+
+/* شريط المزايا: داكن كبيت الشعر */
+.value-strip {
+  background: var(--ink);
+  border: 0;
+  color: var(--sadu-white);
+}
+.value-grid {
+  padding-block: 16px;
+}
+.value-grid > div {
+  border-color: #ffffff1f;
+  justify-content: flex-start;
+}
+.value-grid > div > span {
+  color: var(--gold);
+  font-size: 28px;
+}
+.value-grid strong {
+  font-size: 15px;
+}
+.value-grid small {
+  color: #cdb898;
+  font-size: 12.5px;
+  margin-top: 2px;
+}
+
+/* الأقسام */
+.category-grid {
+  gap: 10px;
+}
+.category-card {
+  border-color: var(--line);
+  border-radius: 6px;
+  padding: 12px 14px;
+  min-height: 70px;
+}
+.category-card:hover {
+  border-color: var(--rust);
+}
+.category-card h3 {
+  font-size: 14px;
+}
+.category-icon {
+  border-radius: 4px;
+  width: 42px;
+  height: 42px;
+  font-size: 22px;
+  border: 1px solid #c9a87c;
+}
+.category-icon,
+.tone-1,
+.tone-2,
+.tone-3 {
+  background:
+    radial-gradient(#9c2f1e26 2px, transparent 2.5px) 0 0 / 12px 12px,
+    #f0dcc0;
+  color: var(--rust);
+}
+
+/* جاهز اليوم / على موعد: بطاقات على هيئة أقواس */
+.availability-section {
+  margin-top: 40px;
+  gap: 14px;
+}
+.availability-card {
+  background: var(--olive);
+  color: var(--paper);
+  border-radius: 140px 140px 8px 8px;
+  padding: 40px 26px 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.availability-card.warm {
+  background: var(--rust);
+  color: #fbf3e4;
+}
+.availability-card h3 {
+  font-family: var(--display);
+  font-size: 26px;
+  margin: 6px 0 4px;
+}
+.availability-card p {
+  color: inherit;
+  opacity: 0.88;
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+.availability-card .text-link {
+  color: inherit;
+}
+.status-dot {
+  background: var(--gold);
+  box-shadow: 0 0 0 6px #d6a35c33;
+  margin: 0;
+}
+
+.empty-state {
+  border: 2px dashed #c9a87c;
+  background: var(--surface);
+  border-radius: 6px;
+  padding: 22px 18px;
+}
+.empty-icon {
+  margin-bottom: 8px;
+}
+.empty-state h3 {
+  font-family: var(--display);
+  margin-bottom: 4px;
+}
+
+/* دعوة الأسر: بيت شعر بحزام سدو */
+.join-banner {
+  background: var(--ink);
+  color: var(--sadu-white);
+  border-radius: 8px;
+  padding: 44px 36px 30px;
+  margin-block: 36px 44px;
+}
+.join-banner::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 16px;
+  background: var(--sadu-thin) repeat-x;
+}
+.join-banner .eyebrow {
+  color: var(--gold);
+}
+.join-banner p:not(.eyebrow) {
+  color: #cdb898;
+  line-height: 1.4;
+}
+.join-banner .button.light {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--ink);
+}
+.join-ornament {
+  color: var(--gold);
+  opacity: 0.25;
+}
+
+/* التذييل: شُرَف الطين */
+.site-footer {
+  position: relative;
+  background: var(--footer);
+  margin-top: 14px;
+}
+.site-footer::before {
+  content: "";
+  position: absolute;
+  inset: -13px 0 auto;
+  height: 14px;
+  background: var(--shurfa) repeat-x;
+}
+.footer-top h3 {
+  color: var(--gold);
+  margin-bottom: 8px;
+}
+.footer-top > div > a:not(.footer-brand) {
+  margin: 4px 0;
+}
+
+@media (max-width: 850px) {
+  .site-header {
+    min-height: 76px;
+  }
+  .availability-card {
+    border-radius: 110px 110px 8px 8px;
+  }
+}
+@media (max-width: 600px) {
+  .site-header {
+    padding-inline: 16px;
+  }
+  main::before {
+    height: 16px;
+    background-size: 38px 16px;
+  }
+  .join-banner {
+    padding: 34px 20px 24px;
+  }
+}
