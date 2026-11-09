@@ -11,25 +11,61 @@ const steps: FamilyState["key"][] = [
   "trusted",
 ];
 
-/** شريط حالة حساب الأسرة أعلى صفحات الحساب؛ لا يظهر لمن ليس له ملف أسرة. */
-export function FamilyStatusBanner() {
+// طلب واحد مشترك لكل مكونات الصفحة (الترويسة، القائمة، الشريط)، ويُعاد عند تغيّر الحالة.
+let shared: Promise<FamilyState | null> | null = null;
+function fetchState(force = false) {
+  if (!shared || force)
+    // الزوار والعملاء لا يطلبون حالة الأسرة أصلًا: نتحقق من دور الجلسة أولًا.
+    shared = fetch("/api/session")
+      .then((r) => (r.ok ? r.json() : { user: null }))
+      .then((d: { user: { role?: string } | null }) =>
+        d.user?.role === "producer"
+          ? fetch("/api/producer/status")
+              .then((r) => (r.ok ? r.json() : { state: null }))
+              .then((x: { state: FamilyState | null }) => x.state)
+          : null,
+      )
+      .catch(() => null);
+  return shared;
+}
+export function useFamilyState() {
   const [state, setState] = useState<FamilyState | null>(null);
   useEffect(() => {
     let active = true;
-    const load = () =>
-      fetch("/api/producer/status")
-        .then((r) => (r.ok ? r.json() : { state: null }))
-        .then((d: { state: FamilyState | null }) => {
-          if (active) setState(d.state);
-        })
-        .catch(() => {});
-    load();
-    window.addEventListener(FAMILY_STATUS_CHANGED, load);
+    const apply = (force: boolean) =>
+      fetchState(force).then((v) => {
+        if (active) setState(v);
+      });
+    apply(false);
+    const refresh = () => apply(true);
+    window.addEventListener(FAMILY_STATUS_CHANGED, refresh);
     return () => {
       active = false;
-      window.removeEventListener(FAMILY_STATUS_CHANGED, load);
+      window.removeEventListener(FAMILY_STATUS_CHANGED, refresh);
     };
   }, []);
+  return state;
+}
+
+/** شارة حالة الحساب المختصرة: في الترويسة (حيث يتسع) وأعلى قائمة الجوال. */
+export function FamilyStatusChip({ place }: { place: "header" | "menu" }) {
+  const state = useFamilyState();
+  if (!state) return null;
+  return (
+    <a
+      href="/dashboard"
+      className={`family-chip family-chip-${state.key} family-chip-${place}`}
+      title={state.detail}
+    >
+      <span className="family-chip-dot" aria-hidden="true" />
+      حالة الحساب: <strong>{state.label}</strong>
+    </a>
+  );
+}
+
+/** شريط حالة الحساب المفصّل (الشرح والمراحل وملاحظة الإدارة) — في لوحة الأسرة والتسجيل. */
+export function FamilyStatusBanner() {
+  const state = useFamilyState();
   if (!state) return null;
   const reached = steps.indexOf(state.key);
   return (

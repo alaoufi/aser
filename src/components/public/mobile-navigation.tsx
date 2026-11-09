@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { AccountLink } from "./account-link";
+import { FamilyStatusChip } from "@/components/forms/family-status";
 import { useEffect, useRef } from "react";
 export function MobileNavigation() {
   const ref = useRef<HTMLDetailsElement>(null);
@@ -66,6 +67,7 @@ export function MobileNavigation() {
             ref.current.open = false;
         }}
       >
+        <FamilyStatusChip place="menu" />
         <Link href="/">الرئيسية</Link>
         <Link href="/browse">اكتشف الأكلات</Link>
         <Link href="/producers">الأسر المنتجة</Link>
