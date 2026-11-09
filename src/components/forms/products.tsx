@@ -13,6 +13,7 @@ export function Products() {
   const session = useSession();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [mine, setMine] = useState<string[]>([]);
   const [editing, setEditing] = useState<Product | null | undefined>(undefined);
   const [busy, setBusy] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -22,10 +23,14 @@ export function Products() {
   async function load() {
     const [p, c] = await Promise.all([
       api<{ products: Product[] }>("/api/producer/products"),
-      api<{ categories: Category[] }>("/api/producer/profile"),
+      api<{
+        categories: Category[];
+        profile: { categoryIds?: string[] } | null;
+      }>("/api/producer/profile"),
     ]);
     setProducts(p.products);
     setCategories(c.categories);
+    setMine(c.profile?.categoryIds ?? []);
   }
   useEffect(() => {
     if (session.user?.role === "producer" || session.user?.role === "admin")
@@ -182,19 +187,26 @@ export function Products() {
                 />
               </label>
               <fieldset>
-                <legend>التصنيفات</legend>
+                <legend>القسم (من أقسامك)</legend>
+                {mine.length === 0 && (
+                  <p className={s.notice}>
+                    اختر أقسام منتجاتك أولًا من صفحة بيانات الأسرة.
+                  </p>
+                )}
                 <div className={s.checks}>
-                  {categories.map((c) => (
-                    <label key={c.id}>
-                      <input
-                        type="checkbox"
-                        name="categoryIds"
-                        value={c.id}
-                        defaultChecked={editing?.categoryIds.includes(c.id)}
-                      />
-                      {categoryLabel(c, categories)}
-                    </label>
-                  ))}
+                  {categories
+                    .filter((c) => mine.includes(c.id))
+                    .map((c) => (
+                      <label key={c.id}>
+                        <input
+                          type="checkbox"
+                          name="categoryIds"
+                          value={c.id}
+                          defaultChecked={editing?.categoryIds.includes(c.id)}
+                        />
+                        {categoryLabel(c, categories)}
+                      </label>
+                    ))}
                 </div>
               </fieldset>
               <label className={s.field}>

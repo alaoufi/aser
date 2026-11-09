@@ -96,9 +96,13 @@ export function ProfileForm({
     const form = e.currentTarget;
     const f = new FormData(form);
     let optional: Record<string, unknown> = {};
+    const categoryIds = f.getAll("categoryIds").map(String);
+    if (!profile && !categoryIds.length) {
+      setError("اختر قسمًا واحدًا على الأقل لمنتجاتك.");
+      return;
+    }
     try {
       if (extrasOpen) {
-        const categoryIds = f.getAll("categoryIds").map(String);
         if (!f.has("delivery") && !f.has("pickup"))
           throw Error("حدد التوصيل أو الاستلام.");
         optional = {
@@ -108,11 +112,6 @@ export function ProfileForm({
           whatsapp: f.get("whatsapp"),
           delivery: f.has("delivery"),
           pickup: f.has("pickup"),
-          ...(categoryIds.length
-            ? { categoryIds }
-            : !profile
-              ? { categoryIds: ["12"] }
-              : {}),
           documentNumber: f.get("documentNumber") || null,
           documentExpiresAt: f.get("documentExpiresAt") || null,
         };
@@ -159,6 +158,7 @@ export function ProfileForm({
         method: "POST",
         body: JSON.stringify({
           ...optional,
+          ...(!profile ? { categoryIds } : {}),
           name: f.get("name"),
           tradeName: f.get("tradeName") || null,
           phone: user.phone,
@@ -201,6 +201,13 @@ export function ProfileForm({
         <Link className={s.button} href="/dashboard/coverage">
           تحديد نطاق التغطية: المدن والمراكز والأحياء
         </Link>
+      )}
+      {profile && (
+        <FamilyCategories
+          categories={categories}
+          selected={profile.categoryIds}
+          onSaved={(ids) => setProfile({ ...profile, categoryIds: ids })}
+        />
       )}
       <h1>
         {registration ? "تسجيل أسرة في أكلات جدتنا" : "بيانات الأسرة المنتجة"}
@@ -310,6 +317,22 @@ export function ProfileForm({
               للزوار اسم المدينة فقط.
             </p>
           </fieldset>
+          {!profile && (
+            <fieldset>
+              <legend>أقسام منتجاتك (اختر قسمًا واحدًا على الأقل)</legend>
+              <div className={s.checks}>
+                {categories.map((c) => (
+                  <label key={c.id}>
+                    <input name="categoryIds" type="checkbox" value={c.id} />
+                    {categoryLabel(c, categories)}
+                  </label>
+                ))}
+              </div>
+              <small>
+                يمكنك تعديلها لاحقًا من لوحة الأسرة دون إعادة مراجعة.
+              </small>
+            </fieldset>
+          )}
           {documentType === "exception" && (
             <label className={s.field}>
               سبب طلب الاستثناء الإداري
@@ -394,24 +417,6 @@ export function ProfileForm({
                   />
                 </label>
                 <fieldset>
-                  <legend>تصنيفات المنتجات (اختيارية)</legend>
-                  <div className={s.checks}>
-                    {categories.map((c) => (
-                      <label key={c.id}>
-                        <input
-                          name="categoryIds"
-                          type="checkbox"
-                          value={c.id}
-                          defaultChecked={(
-                            profile?.categoryIds || ["12"]
-                          ).includes(c.id)}
-                        />
-                        {categoryLabel(c, categories)}
-                      </label>
-                    ))}
-                  </div>
-                </fieldset>
-                <fieldset>
                   <legend>التوصيل والاستلام</legend>
                   <div className={s.checks}>
                     <label>
@@ -442,6 +447,71 @@ export function ProfileForm({
         </form>
       )}
     </>
+  );
+}
+/** أقسام منتجات الأسرة: تُعدَّل في أي وقت دون إعادة الملف للمراجعة. */
+function FamilyCategories({
+  categories,
+  selected,
+  onSaved,
+}: {
+  categories: Category[];
+  selected: string[];
+  onSaved: (ids: string[]) => void;
+}) {
+  const [busy, setBusy] = useState(false),
+    [error, setError] = useState(""),
+    [success, setSuccess] = useState("");
+  async function save(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const ids = new FormData(e.currentTarget).getAll("categoryIds").map(String);
+    setError("");
+    setSuccess("");
+    if (!ids.length) {
+      setError("اختر قسمًا واحدًا على الأقل.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const d = await api<{ categoryIds: string[] }>(
+        "/api/producer/categories",
+        { method: "PUT", body: JSON.stringify({ categoryIds: ids }) },
+      );
+      onSaved(d.categoryIds);
+      setSuccess("تم حفظ أقسام منتجاتك.");
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <section aria-label="أقسام منتجاتي">
+      <form className={`${s.form} ${s.card}`} onSubmit={save}>
+        <h2>أقسام منتجاتي</h2>
+        <p className={s.muted}>
+          تختار منها عند إضافة منتج. لا يظهر القسم للزوار إلا إذا كان عليه منتج
+          منشور.
+        </p>
+        <Message error={error} success={success} />
+        <div className={s.checks}>
+          {categories.map((c) => (
+            <label key={c.id}>
+              <input
+                name="categoryIds"
+                type="checkbox"
+                value={c.id}
+                defaultChecked={selected.includes(c.id)}
+              />
+              {categoryLabel(c, categories)}
+            </label>
+          ))}
+        </div>
+        <button className={s.button} disabled={busy}>
+          {busy ? "جارٍ الحفظ…" : "حفظ أقسامي"}
+        </button>
+      </form>
+    </section>
   );
 }
 export function Dashboard() {

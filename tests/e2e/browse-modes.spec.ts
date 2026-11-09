@@ -20,10 +20,10 @@ test("browse offers four search methods: word, available, family and category", 
 
   await modes.getByRole("link", { name: "حسب القسم" }).click();
   await expect(page).toHaveURL(/by=category/);
+  // لا تظهر أقسام بلا منتجات منشورة؛ صفحة القسم نفسها تبقى تعمل برابطها.
   const sections = page.getByRole("region", { name: "الأقسام" });
-  await expect(sections.getByRole("link").first()).toBeVisible();
-  await sections.getByRole("link").first().click();
-  await expect(page).toHaveURL(/by=category.*category=|category=.*by=category/);
+  await expect(sections).toContainText("لا توجد أقسام فيها منتجات بعد");
+  await page.goto("/browse?by=category&category=1");
   await expect(page.getByRole("region", { name: "الأقسام" })).toHaveCount(0);
 
   // داخل القسم: العنوان اسم القسم، ولا أزرار طرق البحث، ورابط «كل الأقسام» للرجوع.

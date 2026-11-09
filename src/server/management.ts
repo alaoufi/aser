@@ -1,3 +1,5 @@
+import { z } from "zod";
+import type { PoolClient } from "pg";
 import { randomUUID } from "node:crypto";
 import type { SessionUser } from "../lib/types";
 import { db, transaction } from "./db";
@@ -70,6 +72,68 @@ export async function ownProfile(user: SessionUser) {
     workLocation: data?.workLocation ?? null,
   };
 }
+type Query = { query: PoolClient["query"] };
+/** يستبدل أقسام الأسرة، ويرفض إزالة قسم ما زالت عليه منتجاتها. */
+async function replaceProducerCategories(
+  client: Query,
+  producerId: string,
+  categoryIds: string[],
+) {
+  const ids = [...new Set(categoryIds)];
+  const known = (
+    await client.query(
+      "SELECT count(*)::int AS n FROM jdatna.categories WHERE id=ANY($1::text[])",
+      [ids],
+    )
+  ).rows[0].n;
+  if (known !== ids.length) throw new HttpError(400, "قسم غير موجود");
+  const stranded = (
+    await client.query(
+      `SELECT DISTINCT c.name FROM jdatna.product_categories pc
+       JOIN jdatna.products x ON x.id=pc.product_id AND x.producer_id=$1
+       JOIN jdatna.categories c ON c.id=pc.category_id
+       WHERE NOT pc.category_id=ANY($2::text[])`,
+      [producerId, ids],
+    )
+  ).rows.map((r) => r.name as string);
+  if (stranded.length)
+    throw new HttpError(
+      409,
+      `لا يمكن إزالة «${stranded.join("، ")}» وعليه منتجات لك؛ انقلها أو احذفها أولًا`,
+    );
+  await client.query(
+    "DELETE FROM jdatna.producer_categories WHERE producer_id=$1",
+    [producerId],
+  );
+  for (const category of ids)
+    await client.query(
+      "INSERT INTO jdatna.producer_categories(producer_id,category_id) VALUES($1,$2)",
+      [producerId, category],
+    );
+}
+/** تغيير أقسام الأسرة بعد التسجيل لا يعيد الملف للمراجعة. */
+export async function saveProducerCategories(
+  user: SessionUser,
+  input: unknown,
+) {
+  const { categoryIds } = z
+    .object({
+      categoryIds: z.array(z.string().min(1).max(30)).min(1).max(100),
+    })
+    .strict()
+    .parse(input);
+  return transaction(async (client) => {
+    const producer = (
+      await client.query(
+        "SELECT id FROM jdatna.producer_profiles WHERE user_id=$1 FOR UPDATE",
+        [user.id],
+      )
+    ).rows[0];
+    if (!producer) throw new HttpError(404, "سجّل ملف الأسرة المنتجة أولًا");
+    await replaceProducerCategories(client, producer.id, categoryIds);
+    return { categoryIds: [...new Set(categoryIds)] };
+  });
+}
 export async function saveProfile(user: SessionUser, input: unknown) {
   const value = profileSchema.parse(input);
   const phone = normalizePhone(value.phone);
@@ -93,6 +157,8 @@ export async function saveProfile(user: SessionUser, input: unknown) {
         [user.id],
       )
     ).rows[0];
+    if (!existing && !value.categoryIds?.length)
+      throw new HttpError(400, "اختر قسمًا واحدًا على الأقل لمنتجاتك");
     const id = existing?.id ?? randomUUID();
     const delivery = value.delivery ?? existing?.delivery ?? false,
       pickup = value.pickup ?? existing?.pickup ?? true;
@@ -153,17 +219,8 @@ export async function saveProfile(user: SessionUser, input: unknown) {
         "INSERT INTO jdatna.producer_private(producer_id,encrypted_payload) VALUES($1,$2) ON CONFLICT(producer_id) DO UPDATE SET encrypted_payload=EXCLUDED.encrypted_payload,updated_at=now()",
         [id, encrypted],
       );
-    if (value.categoryIds !== undefined || !existing) {
-      await client.query(
-        "DELETE FROM jdatna.producer_categories WHERE producer_id=$1",
-        [id],
-      );
-      for (const category of new Set(value.categoryIds ?? ["12"]))
-        await client.query(
-          "INSERT INTO jdatna.producer_categories(producer_id,category_id) VALUES($1,$2)",
-          [id, category],
-        );
-    }
+    if (value.categoryIds !== undefined)
+      await replaceProducerCategories(client, id, value.categoryIds);
     const previous = existing
       ? (
           await client.query(
@@ -275,6 +332,19 @@ export async function saveProduct(
       producer.status === "rejected"
     )
       throw new HttpError(403, "لا يمكنك إدارة المنتجات قبل تقديم ملف صالح");
+    const chosen = new Set(
+      (
+        await client.query(
+          "SELECT category_id FROM jdatna.producer_categories WHERE producer_id=$1",
+          [producer.id],
+        )
+      ).rows.map((r) => r.category_id as string),
+    );
+    if (value.categoryIds.some((c) => !chosen.has(c)))
+      throw new HttpError(
+        400,
+        "اختر للمنتج من أقسامك فقط؛ أضف القسم لأقسامك أولًا من لوحة الأسرة",
+      );
     const id = editing ? value.id! : randomUUID();
     if (editing) {
       const owned = (

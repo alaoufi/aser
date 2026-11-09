@@ -69,6 +69,7 @@ test(
         cityId: city,
         documentId: doc,
         name: "اسم-شخصي-" + uid,
+        categoryIds: ["12"],
       };
       pid = (await saveProfile(user, { ...data, tradeName: "تجاري-" + uid }))
         .id;

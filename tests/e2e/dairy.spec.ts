@@ -1,22 +1,14 @@
 import { test, expect } from "@playwright/test";
 import { categories } from "../../src/server/constants";
-test("dairy and drinks are prominent with all child names and searchable options", async ({
+test("categories stay hidden publicly until a family chose them and published a product", async ({
   page,
 }) => {
+  // بيئة الاختبار بلا منتجات منشورة: لا أقسام على الرئيسية ولا في القوائم العامة.
   await page.goto("/");
-  const cards = page.locator(".category-card");
-  await expect(cards.nth(0).getByRole("heading")).toHaveText("منتجات الألبان");
-  await expect(cards.nth(1).getByRole("heading")).toHaveText("المشروبات");
-  for (const name of ["ألبان", "أقط", "سمن", "قشد", "زبد", "منتجات ألبان أخرى"])
-    await expect(cards.first()).toContainText(name);
-  for (const name of ["مشروبات ساخنة", "مشروبات باردة"])
-    await expect(cards.nth(1)).toContainText(name);
-  expect(await cards.count()).toBeGreaterThanOrEqual(14);
+  await expect(page.locator(".category-card")).toHaveCount(0);
   await expect(
-    page.locator(
-      '.category-card[href*="dairy-"], .category-card[href*="drinks-"]',
-    ),
-  ).toHaveCount(0);
+    page.locator("main").getByRole("link", { name: "متوفر الآن" }),
+  ).toBeVisible();
   for (const width of [320, 390, 768, 1440]) {
     await page.setViewportSize({ width, height: 1000 });
     expect(
@@ -26,28 +18,14 @@ test("dairy and drinks are prominent with all child names and searchable options
     ).toBe(true);
   }
   await page.goto("/browse");
-  await expect(
-    page.locator("select[name=category] option[value=dairy-laban]"),
-  ).toHaveText("منتجات الألبان — ألبان");
-  await expect(
-    page.locator("select[name=category] option[value=hot-tea]"),
-  ).toHaveText("المشروبات — مشروبات ساخنة — شاهي");
-  await expect(
-    page.locator("select[name=category] option[value=drinks-cold]"),
-  ).toHaveText("المشروبات — مشروبات باردة");
-  await page.goto("/browse?category=14");
-  await page
-    .getByRole("navigation", { name: "فروع القسم" })
-    .getByRole("link", { name: "مشروبات ساخنة", exact: true })
-    .click();
-  await expect(page).toHaveURL(/category=drinks-hot/);
-  const branches = page.getByRole("navigation", { name: "فروع القسم" });
-  for (const name of ["شاهي", "قهوة", "حليب"])
-    await expect(
-      branches.getByRole("link", { name, exact: true }),
-    ).toBeVisible();
-  await branches.getByRole("link", { name: "شاهي", exact: true }).click();
-  await expect(page).toHaveURL(/category=hot-tea/);
+  await expect(page.locator("select[name=category] option")).toHaveCount(1);
+  await page.goto("/browse?by=category");
+  await expect(page.getByText("لا توجد أقسام فيها منتجات بعد")).toBeVisible();
+});
+test("an opened category page still names its full path even before it has products", async ({
+  page,
+}) => {
+  await page.goto("/browse?category=hot-tea");
   // الصفحة كلها للقسم: العنوان اسمه، ومساره الكامل فوقه، وعنوان التبويب.
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("شاهي");
   await expect(page.locator(".section-intro .eyebrow")).toHaveText(
