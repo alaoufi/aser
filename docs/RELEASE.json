@@ -1,15 +1,15 @@
 {
   "verified_on": "2026-11-09",
-  "code_commit": "8d298b6955a3f61d991a9decd55d5589773c6567",
-  "image": "jdatna-application:8d298b6955a3f61d991a9decd55d5589773c6567",
+  "code_commit": "029fd95700caef3cd59e8dded1bb38b68072819c",
+  "image": "jdatna-application:029fd95700caef3cd59e8dded1bb38b68072819c",
   "url": "https://jdatna.com",
   "checks": {
     "unit_integration": "6/6 credentials DB checks on preceding password release; current real isolated DB/browser1234 login retains HttpOnly cookie across navigation/reload",
-    "browser_chromium": "Food geometry test passed at8 widths; existing auth/backend unchanged",
+    "browser_chromium": "6/6 public catalogue checks passed",
     "typecheck": "passed",
     "build": "passed",
     "infrastructure_and_backup_restore": "passed after deployment; Aykdmh unchanged",
-    "live_browser": "Exact release; five matching asset hashes and loaded images; names preserved;8 widths no overflow/search overlap/pageerror",
+    "live_browser": "Exact release;3 input/form autocomplete off; food GET search succeeds; unrelated shoes query returns0 product cards; owner browser history not inspected",
     "otp_endpoint": "Unchanged signup/reset-only OTP; min password4 with no composition requirement; salted scrypt and limits retained"
   },
   "registrationOpen": true,
@@ -24,7 +24,7 @@
   ],
   "sms_provider": "Same active Taqnyat credentials as Aykdmh; enabled at explicit owner request to test delivery on own phone",
   "footer_verification": "Affiliation retained",
-  "image_id": "sha256:76edbb108b97ef0008bc8312af1cecd9e5a1509677a53fc58b751ff1b04f1be2",
+  "image_id": "sha256:99740a1454b97866f020fecdbe672365646daf4b6608c123faa34aafb0f2aeee",
   "sms_delivery_confirmed": true,
   "sms_delivery_evidence": "Owner reported receipt of previous6-digit SMS;4-digit release deployed afterwards, not physically re-tested by agent",
   "otp_digits": 4,
