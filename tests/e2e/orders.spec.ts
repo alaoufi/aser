@@ -87,14 +87,36 @@ test.describe("requests on a real isolated catalog product", () => {
   async function fillGuest(page: Page) {
     const form = page.getByRole("region", { name: "طلب المنتج" });
     await form.getByLabel("الاسم", { exact: true }).fill("طالب اختبار");
-    await form.getByLabel("الجوال", { exact: true }).fill("0500000001");
+    await expect(form.getByLabel("الجوال", { exact: true })).toHaveValue(
+      "+966500000001",
+    );
     await form.getByLabel("تاريخ البداية", { exact: true }).fill(dateAfter(2));
     return form;
   }
-  test("guest week, month and inclusive end-date submit clear non-payment requests", async ({
+  test("a visitor browses the product but must verify a phone before ordering", async ({
     page,
   }) => {
     await session(page);
+    let sent = 0;
+    await page.route("**/api/orders", (route) => {
+      sent++;
+      return route.fulfill({ status: 500, json: { error: "Unexpected" } });
+    });
+    await page.goto(`/products/${productId}`);
+    await expect(
+      page.getByRole("heading", { name: productName, level: 1 }),
+    ).toBeVisible();
+    const form = page.getByRole("region", { name: "طلب المنتج" });
+    await expect(form).toContainText("سجّل برقم جوالك لإرسال الطلب");
+    await expect(
+      form.getByRole("button", { name: "مراجعة الطلب قبل الإرسال" }),
+    ).toHaveCount(0);
+    expect(sent).toBe(0);
+  });
+  test("member week, month and inclusive end-date submit clear non-payment requests", async ({
+    page,
+  }) => {
+    await session(page, true);
     const sent: Record<string, unknown>[] = [];
     await page.route("**/api/orders", (route) => {
       sent.push(route.request().postDataJSON());
@@ -148,7 +170,7 @@ test.describe("requests on a real isolated catalog product", () => {
   test("selected offer displays terms and locks its meal in the submitted payload", async ({
     page,
   }) => {
-    await session(page);
+    await session(page, true);
     await page.route("**/api/offers/**", (route) =>
       route.fulfill({
         json: {
@@ -195,7 +217,7 @@ test.describe("requests on a real isolated catalog product", () => {
         ? "repeated offer query fails closed"
         : "inaccessible offer fails closed",
       async ({ page }) => {
-        await session(page);
+        await session(page, true);
         await page.route("**/api/offers/**", (route) =>
           route.fulfill({ status: 404, json: { error: "العرض غير متاح" } }),
         );

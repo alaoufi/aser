@@ -26,7 +26,7 @@ const schema = z
     offerId: z.uuid().optional(),
     requestKey: z.uuid(),
     name: z.string().trim().min(2).max(120),
-    phone: z.string().max(30),
+    phone: z.string().max(30).optional(),
     quantity: z.number().int().min(1).max(1000),
     meal: z.enum(["breakfast", "lunch", "dinner", "occasion"]),
     startDate: date,
@@ -57,7 +57,7 @@ export function parseOrderRequest(input: unknown, now = new Date()) {
     throw new HttpError(400, "اختر بداية خلال سنة ومدة من يوم إلى 366 يومًا");
   return {
     ...value,
-    phone: normalizePhone(value.phone),
+    phone: value.phone ? normalizePhone(value.phone) : undefined,
     days,
     endDate: new Date(start + (days - 1) * 86400000).toISOString().slice(0, 10),
   };
@@ -114,7 +114,10 @@ export function assertOfferMeal(requestMeal: string, offerMeal: string) {
     throw new HttpError(400, "اختر وجبة العرض المحددة");
 }
 export async function submitOrder(user: SessionUser | null, input: unknown) {
-  const value = parseOrderRequest(input);
+  // الطلب للمسجّلين فقط بجوال متحقق منه؛ والجوال يؤخذ من الحساب لا من النموذج.
+  if (!user)
+    throw new HttpError(401, "سجّل برقم جوالك وتحقق منه أولًا لإرسال الطلب");
+  const value = { ...parseOrderRequest(input), phone: user.phone };
   const fingerprint = createHash("sha256")
     .update(JSON.stringify({ ...value, userId: user?.id ?? null }))
     .digest("hex");

@@ -1,7 +1,15 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { ORDERS_CHANGED } from "@/components/public/order-alert";
-import { AccountShell, Guard, Message, api, s, useSession } from "./shared";
+import {
+  AccountShell,
+  Guard,
+  LoginForm,
+  Message,
+  api,
+  s,
+  useSession,
+} from "./shared";
 const meals: Record<string, string> = {
   breakfast: "فطور",
   lunch: "غداء",
@@ -407,9 +415,7 @@ export function OrderRequestForm({
           <p>
             رقم الطلب: <bdi dir="ltr">{receipt.slice(0, 8)}</bdi>
           </p>
-          {!session.user && (
-            <p>احتفظ برقم الطلب، واذكره عند التواصل مع الأسرة المنتجة.</p>
-          )}
+          <p>اذكر رقم الطلب عند التواصل مع الأسرة المنتجة.</p>
           {sent && summaryOf(sent)}
           <h4>الخطوة التالية</h4>
           <p>
@@ -437,6 +443,17 @@ export function OrderRequestForm({
               <a href={`/producers/${producerSlug}`}>صفحة الأسرة المنتجة ←</a>
             </p>
           )}
+        </div>
+      ) : !session.ready ? (
+        <p role="status">جارٍ التحقق من الدخول…</p>
+      ) : !session.user ? (
+        <div className={s.confirmation}>
+          <h3>سجّل برقم جوالك لإرسال الطلب</h3>
+          <p className={s.muted}>
+            التصفح متاح للجميع، والطلب للمسجّلين فقط بعد التحقق من رقم الجوال
+            برمز يصلك برسالة.
+          </p>
+          <LoginForm onVerified={() => window.location.reload()} />
         </div>
       ) : (
         <>
@@ -471,12 +488,6 @@ export function OrderRequestForm({
             </section>
           )}
           <form className={s.form} onSubmit={prepare} hidden={Boolean(review)}>
-            {!session.user && (
-              <p className={s.muted}>
-                يمكنك الطلب كضيف. <a href="/login">سجّل الدخول أولًا</a> لحفظ
-                الطلب في سجلك.
-              </p>
-            )}
             <div
               className={s.grid}
               style={{
@@ -504,7 +515,7 @@ export function OrderRequestForm({
                   type="tel"
                   dir="ltr"
                   autoComplete="tel"
-                  required
+                  readOnly
                   maxLength={30}
                   defaultValue={session.user?.phone}
                 />
