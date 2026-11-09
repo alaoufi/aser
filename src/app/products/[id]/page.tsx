@@ -1,5 +1,6 @@
 import { ReportButton } from "@/components/public/report-button";
 import { OrderRequestForm } from "@/components/forms/orders";
+import { ChatButton } from "@/components/forms/chat";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getProducer, getProduct } from "@/server/catalog";
@@ -84,6 +85,7 @@ export default async function ProductDetail({
               </span>
             </p>
           </div>
+          <ChatButton producerSlug={p.producerSlug} />
           <Link className="button" href={`/producers/${p.producerSlug}`}>
             {p.price === null
               ? "استفسر عن السعر من الأسرة المنتجة"

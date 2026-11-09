@@ -66,6 +66,7 @@ function AccountNavigation() {
     <nav aria-label="حسابي" className={s.nav}>
       <Link href="/">الرئيسية</Link>
       <Link href="/orders">طلباتي</Link>
+      <Link href="/messages">المحادثات</Link>
       {user.role === "customer" ? (
         <>
           <Link href="/offers">العروض الخاصة</Link>
