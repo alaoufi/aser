@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # نشر جدتنا من الخادم نفسه — يُستدعى عبر مفتاح SSH مقيد (أمر إجباري) من GitHub Actions.
 # الأوامر المسموحة فقط:  deploy <sha40>  |  deploy-migrate <sha40>  |  rollback  |  status
-# deploy يرفض أي إصدار فيه ترحيل جديد. deploy-migrate يطبّق الترحيلات الجديدة عبر MIGRATE_CMD
-# (حساب migrator) بعد النسخة الاحتياطية والبناء وقبل التحويل؛ الترحيلات يجب أن تبقى متوافقة مع الإصدار السابق.
+# deploy يرفض أي إصدار فيه ترحيل جديد. deploy-migrate يبني صورة الترحيل (Dockerfile --target migrator)
+# ويمررها إلى MIGRATE_CMD (حساب migrator، دون تنزيل وقت التشغيل) بعد النسخة الاحتياطية والبناء وقبل التحويل.
+# كل أمر يغيّر الإنتاج يشترط نسخة احتياطية مع اختبار استعادة ناجح (VERIFY_CMD إلزامي).
+# صورة الرجوع (الإصدار السابق) محمية بحاوية حارس من التنظيف، والرجوع يُرفض إذا استُخدمت حالات لا يفهمها الإصدار السابق.
 # التثبيت والإعداد: infra/deploy/README.md
 set -euo pipefail
 umask 077
@@ -16,6 +18,10 @@ BRANCH=${BRANCH:-codex/jdatna-platform}
 IMAGE=${IMAGE:-jdatna-application}
 VERIFY_CMD=${VERIFY_CMD:-}
 MIGRATE_CMD=${MIGRATE_CMD:-}
+MIGRATOR_IMAGE=${MIGRATOR_IMAGE:-jdatna-migrator}
+DB_QUERY_CMD=${DB_QUERY_CMD:-docker exec -i jdatna-db psql -X -At -v ON_ERROR_STOP=1 -U jdatna_admin -d jdatna}
+# بيانات لا يفهمها إصدار أقدم من الترحيلات الأحدث: إن وُجدت يُرفض الرجوع إليه.
+ROLLBACK_CHECK_SQL=${ROLLBACK_CHECK_SQL:-SELECT count(*) FROM jdatna.order_requests WHERE status IN ('preparing','ready')}
 STATE_DIR=${STATE_DIR:-/var/lib/jdatna-deploy}
 LOG=${LOG:-/var/log/jdatna-deploy.log}
 HEALTH_TIMEOUT=${HEALTH_TIMEOUT:-240}
@@ -50,10 +56,8 @@ backup() {
   after=$(ls -1t /var/backups/jdatna/jdatna-*.tar.gpg 2>/dev/null | head -1 || true)
   [[ -n "$after" && "$after" != "$before" ]] || { log "backup ($label) produced no new archive"; return 1; }
   log "backup ($label): $after"
-  if [[ -n "$VERIFY_CMD" ]]; then
-    log "restore verification ($label)"
-    $VERIFY_CMD
-  fi
+  log "restore verification ($label)"
+  $VERIFY_CMD || { log "restore verification ($label) FAILED"; return 1; }
 }
 
 guard_up() {
@@ -64,10 +68,22 @@ guard_up() {
   log "image guard up for $1"
 }
 guard_down() { docker rm -f "jdatna-guard-$1" >/dev/null 2>&1 || true; log "image guard removed for $1"; }
+# يبقي حارسًا لصورة الرجوع فقط ويزيل حراس الإصدارات الأقدم.
+keep_rollback_guard() {
+  local keep=$1 name
+  guard_up "$keep"
+  for name in $(docker ps -a --format '{{.Names}}' | grep '^jdatna-guard-' || true); do
+    [[ "$name" == "jdatna-guard-$keep" ]] || { docker rm -f "$name" >/dev/null 2>&1 || true; log "removed old guard $name"; }
+  done
+}
 
 cmd=${SSH_ORIGINAL_COMMAND:-${*:-}}
 read -r action arg extra <<<"$cmd" || true
 [[ -z "${extra:-}" ]] || { log "rejected command"; exit 2; }
+case "$action" in
+deploy|deploy-migrate|rollback)
+  [[ -n "$VERIFY_CMD" ]] || { log "refused: VERIFY_CMD (restore verification) is required in $CONFIG"; exit 5; } ;;
+esac
 
 case "$action" in
 status)
@@ -79,8 +95,17 @@ rollback)
   prev=$(cat "$STATE_DIR/previous" 2>/dev/null || true)
   [[ "$prev" =~ ^[0-9a-f]{40}$ ]] || { log "no recorded previous version"; exit 4; }
   docker image inspect "$IMAGE:$prev" >/dev/null || { log "image $IMAGE:$prev is gone"; exit 4; }
-  backup pre-rollback
   current=$(live_version)
+  # إذا أُضيفت ترحيلات بعد الإصدار السابق فقد لا يفهم بياناتها الجديدة.
+  git -C "$REPO_DIR" fetch --quiet origin "$BRANCH" || true
+  if [[ -n "$(git -C "$REPO_DIR" diff --name-only "$prev" "$current" -- migrations 2>/dev/null || echo unknown)" ]]; then
+    in_use=$($DB_QUERY_CMD -c "$ROLLBACK_CHECK_SQL" 2>/dev/null | tr -d '[:space:]' || echo unknown)
+    if [[ "$in_use" != "0" ]]; then
+      log "refused: rollback to $prev is unsafe — data uses states it does not understand (count=$in_use). Fix forward instead."
+      exit 8
+    fi
+  fi
+  backup pre-rollback
   switch_to "$IMAGE:$prev"
   wait_for "$prev"
   printf '%s\n' "$current" >"$STATE_DIR/previous"
@@ -130,8 +155,10 @@ deploy|deploy-migrate)
   guard_up "$sha"
 
   if [[ "$action" == "deploy-migrate" && -n "${new_migrations:-}" ]]; then
+    log "build $MIGRATOR_IMAGE:$sha"
+    docker build --pull=false --target migrator -t "$MIGRATOR_IMAGE:$sha" "$dir"
     log "apply migrations: $(echo $new_migrations)"
-    if ! $MIGRATE_CMD "$dir"; then
+    if ! $MIGRATE_CMD "$MIGRATOR_IMAGE:$sha"; then
       log "migration failed — live version unchanged ($current); restore from the pre-deploy backup if needed"
       guard_down "$sha"
       exit 7
@@ -142,6 +169,7 @@ deploy|deploy-migrate)
   if switch_to "$IMAGE:$sha" && wait_for "$sha"; then
     printf '%s\n' "$current" >"$STATE_DIR/previous"
     guard_down "$sha"
+    if docker image inspect "$IMAGE:$current" >/dev/null 2>&1; then keep_rollback_guard "$current"; fi
     backup post-deploy || log "warning: post-deploy backup failed; check manually"
     log "DEPLOYED $sha (previous $current)"
   else

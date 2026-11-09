@@ -10,6 +10,12 @@ COPY --from=dependencies /app/node_modules ./node_modules
 COPY . .
 RUN npm run build && ./node_modules/.bin/esbuild scripts/cleanup-auth.ts --bundle --platform=node --format=cjs --external:pg --outfile=cleanup-auth.cjs
 
+# صورة الترحيل: تُبنى مع الإصدار نفسه وتشغّل scripts/migrate.ts دون أي تنزيل وقت التشغيل.
+# لا تُبنى افتراضيًا؛ تُطلب بـ --target migrator من سكربت النشر.
+FROM build AS migrator
+USER node
+CMD ["node_modules/.bin/tsx", "scripts/migrate.ts"]
+
 FROM node:24-alpine AS runtime
 WORKDIR /app
 ARG SOURCE_COMMIT=local

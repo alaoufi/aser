@@ -10,7 +10,7 @@
 - تنبيه «لديك طلب جديد» للأسرة، ومراحل تنفيذ الطلب.
 - مراجعة الطلب ورسالة التأكيد للعميل.
 - البحث بأربع طرق: بالكلمة، والمتاح الآن، وحسب الأسرة، وحسب القسم.
-- الترحيلان الجديدان **`017_order_fulfillment.sql`** و**`018_admin_login_otp.sql`**.
+- الترحيلان الجديدان `017_order_fulfillment.sql` و`018_admin_login_otp.sql`.
 - إصلاحات الإدارة: دخول المدير برمز SMS، وملخص، وتبويب الطلبات، وتصفية الأسر.
 
 الترحيل `017` إضافي ومتوافق مع الإصدار الحي `30b97ec`: يوسّع قيد الحالة، ويضيف عمود `producer_seen_at`، ويعلّم الطلبات القديمة كمطّلع عليها. لا يحذف بيانات.
@@ -20,9 +20,10 @@
 ## الطريقة (أ): تجهيز زر الجوال ثم النشر به — موصى بها
 
 1. نفّذ التجهيز لمرة واحدة في `infra/deploy/README.md`:
-   - `jdatna-deploy` و`jdatna-switch` و`jdatna-migrate`.
+   - `jdatna-deploy` و`jdatna-deploy-gate` و`jdatna-switch` و`jdatna-migrate` وأمر اختبار الاستعادة `VERIFY_CMD` (إلزامي).
+   - حساب النشر المخصص `jdatna-deploy` بلا shell عام ولا Docker، مع sudo مقيد بسكربت النشر وحده.
    - ملف `/etc/jdatna/deploy.env` مع `MIGRATE_CMD`.
-   - مفتاح SSH المقيد.
+   - مفتاح SSH المقيد على حساب `jdatna-deploy` (لا root).
    - بيئة `production` في GitHub بأسرارها الثلاثة.
 2. جرّب `jdatna-switch` و`jdatna-migrate` يدويًا مرة: التحويل إلى الإصدار الحالي نفسه، والترحيل على قاعدة `jdatna_test_`.
 3. من GitHub: Actions ← «نشر جدتنا (يدوي)» ← `status`. يجب أن يظهر `30b97ec`.
