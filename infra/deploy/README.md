@@ -1,67 +1,96 @@
 # النشر المباشر — تلقائي بعد كل دمج، ويدوي من الجوال عند الحاجة
 
-الهدف: بعد كل دمج في `codex/jdatna-platform` ونجاح CI ينشر GitHub الإصدار تلقائيًا بأمر `deploy-migrate`، كما في المشاريع الأخرى. ويبقى زر «Run workflow» للتشغيل اليدوي (رجوع، حالة، أو إعادة نشر). يتصل GitHub بالخادم بمفتاح مقيد وينفذ السكربت `jdatna-deploy` على الخادم نفسه.
+**الهدف:** بعد كل دمج في `codex/jdatna-platform` ونجاح CI، ينشر GitHub الإصدار تلقائيًا بأمر `deploy-migrate`. ويبقى زر «Run workflow» للتشغيل اليدوي: رجوع، أو حالة، أو إعادة نشر.
 
-الخطوات التي ينفذها السكربت على الخادم: يتحقق أن الإصدار من الفرع `codex/jdatna-platform`، ويأخذ نسخة احتياطية ويتحقق منها، ويبني الصورة، ويحميها بحاوية حارس، ويطبّق الترحيلات الجديدة إن وجدت (بأمر `deploy-migrate`؛ أمر `deploy` العادي يرفض إصدارًا فيه ترحيل)، ثم يحوّل الموقع إلى الصورة الجديدة. بعدها يتحقق من `/api/health`، وإذا فشل الفحص يرجع للإصدار السابق تلقائيًا. في النهاية يزيل الحارس ويأخذ نسخة احتياطية بعد النشر.
+**الاتصال:** يتصل GitHub بالخادم بحساب نشر مخصص (`jdatna-deploy`):
+- مفتاحه يشغّل بوابة واحدة فقط (`jdatna-deploy-gate`).
+- لا shell عام، ولا عضوية Docker.
+- البوابة تقبل أربعة أوامر، وتشغّل `jdatna-deploy` عبر sudo مقيد بهذا الملف وحده.
 
-النشر التلقائي يحدث فقط بعد نجاح CI على دمج في الفرع الأساسي، لا عند طلبات الدمج أو الفروع الأخرى. قبل تجهيز الأسرار يتخطى بهدوء. الترحيلات الجديدة تُطبَّق قبل التحويل بحساب migrator، وفشلها يوقف النشر دون تغيير الموقع. لا يلمس السكربت أي خدمة أخرى.
+**ما ينفذه السكربت على الخادم، بالترتيب:**
+1. يتحقق أن الإصدار من الفرع `codex/jdatna-platform`، ويرفض حذف ترحيلات أو إعادة تسميتها.
+2. **نسخة احتياطية مع اختبار استعادة إلزامي** (`VERIFY_CMD`). إن فشل الاختبار يتوقف كل شيء.
+3. يبني صورة التطبيق من `git archive`، ويحميها بحاوية حارس.
+4. إن وُجدت ترحيلات جديدة (أمر `deploy-migrate`): يبني صورة الترحيل من نفس المصدر (`Dockerfile --target migrator`)، ويشغّلها بحساب migrator دون أي تنزيل وقت التشغيل. أمر `deploy` العادي يرفض إصدارًا فيه ترحيل.
+5. يحوّل الموقع ويتحقق من `/api/health`. عند الفشل يرجع تلقائيًا للصورة السابقة.
+6. عند النجاح يحمي **صورة الرجوع** (الإصدار السابق) بحارس دائم من التنظيف، ويزيل حراس الإصدارات الأقدم، ثم يأخذ نسخة احتياطية بعد النشر مع اختبار استعادتها.
+7. **الرجوع اليدوي (`rollback`) يُرفض** إذا أُضيفت ترحيلات بعد الإصدار السابق وكانت البيانات تستخدم ما لا يفهمه. مثلًا: طلبات بحالة «قيد التجهيز» أو «جاهز» لا يعرفها إصدار ما قبل 017. عندها الحل إصلاح للأمام لا الرجوع.
+
+لا يلمس السكربت أي خدمة أخرى. النشر التلقائي لا يعمل على طلبات الدمج ولا الفروع الأخرى، وقبل تجهيز الأسرار يتخطى بهدوء.
 
 ## التجهيز لمرة واحدة (بصلاحية root على الخادم)
 
-1. **نسخة من المصدر للبناء** (المستودع عام، والنسخة للقراءة فقط):
+1. **نسخة المصدر للبناء** (المستودع عام، والنسخة للقراءة فقط):
    ```sh
    git clone --filter=blob:none https://github.com/alaoufi/aser /opt/jdatna/deploy-src
    install -m 750 -o root -g root /opt/jdatna/deploy-src/infra/deploy/jdatna-deploy.sh /usr/local/sbin/jdatna-deploy
+   install -m 755 -o root -g root /opt/jdatna/deploy-src/infra/deploy/jdatna-deploy-gate.sh /usr/local/sbin/jdatna-deploy-gate
    ```
-2. **أمر التحويل `SWITCH_CMD`**: سكربت صغير يأخذ وسم الصورة (مثل `jdatna-application:<sha>`) ويحوّل خدمة جدتنا في Coolify إليه، بنفس الطريقة المعتمدة يدويًا: تحديث وسم الصورة في Source Compose ثم Deploy مع `pull_policy: never`. يكتبه من نفّذ النشرات السابقة لأنه يعرف الطريقة المجربة. يُحفظ في `/usr/local/sbin/jdatna-switch` بملكية root وصلاحية 700. أي رمز API يحتاجه يُحفظ في ملف root فقط تحت `/etc/jdatna/`، ولا يُحفظ في Git ولا في GitHub. جرّبه يدويًا مرة بإرجاع الإصدار الحالي نفسه.
-3. **ملف الإعداد** `/etc/jdatna/deploy.env` بصلاحية 600:
+
+2. **أمر التحويل `/usr/local/sbin/jdatna-switch`** (root، 700):
+   - يأخذ وسم الصورة، مثل `jdatna-application:<sha>`، ويحوّل خدمة جدتنا في Coolify إليه بالطريقة المعتمدة يدويًا: تحديث وسم الصورة في Source Compose ثم Deploy، مع `pull_policy: never`.
+   - أي رمز API يُحفظ في ملف root فقط تحت `/etc/jdatna/`.
+   - جرّبه مرة بإرجاع الإصدار الحالي نفسه.
+
+3. **أمر الترحيل `/usr/local/sbin/jdatna-migrate`** (root، 700): يتلقى وسم صورة الترحيل في `$1`. مثال:
+   ```sh
+   #!/usr/bin/env bash
+   set -euo pipefail
+   # migrator.env فيه DATABASE_URL لحساب migrator فقط (root، 600)، ولا يُحفظ في Git.
+   docker run --rm --network jdatna_database --env-file /etc/jdatna/migrator.env \
+     --read-only --tmpfs /tmp:size=64m --cap-drop ALL --security-opt no-new-privileges:true \
+     --memory 256m --pids-limit 64 "$1"
+   ```
+   جرّبه أولًا على قاعدة `jdatna_test_` بنسخة من `migrator.env` تشير إليها.
+
+4. **ملف الإعداد `/etc/jdatna/deploy.env`** (root، 600):
    ```sh
    REPO_DIR=/opt/jdatna/deploy-src
    RELEASES_DIR=/opt/jdatna/releases
    SWITCH_CMD=/usr/local/sbin/jdatna-switch
-   PUBLIC_HEALTH=https://jdatna.com/api/health
-   # اختياري: أمر اختبار استعادة النسخة الاحتياطية المعتمد
-   VERIFY_CMD=
-   # لأمر deploy-migrate: يطبّق ترحيلات مجلد الإصدار ($1) بحساب migrator
    MIGRATE_CMD=/usr/local/sbin/jdatna-migrate
+   PUBLIC_HEALTH=https://jdatna.com/api/health
+   # إلزامي: أمر اختبار استعادة أحدث نسخة مشفرة في قاعدة مؤقتة معزولة (المستخدم سابقًا بعد كل نشر)
+   VERIFY_CMD=/usr/local/sbin/jdatna-verify-restore
    ```
-   مثال لـ `/usr/local/sbin/jdatna-migrate` (root، 700). يعدّله المنفّذ حسب طريقة الترحيل المعتمدة لديه، ويجربه مرة على قاعدة `jdatna_test_` قبل الاعتماد:
+
+5. **حساب النشر المخصص**، بلا shell عام وبلا Docker:
    ```sh
-   #!/usr/bin/env bash
-   set -euo pipefail
-   # migrator.env يحتوي DATABASE_URL لحساب migrator فقط (root، 600)، ولا يُحفظ في Git.
-   docker run --rm --network jdatna_database --env-file /etc/jdatna/migrator.env \
-     -v "$1":/src:ro -w /tmp/m node:24-alpine \
-     sh -c 'cp -r /src/. . && npm ci --no-audit --no-fund && npx tsx scripts/migrate.ts'
-   ```
-4. **مفتاح النشر المقيد**: يُنشأ على الخادم، ويُسمح له بتشغيل السكربت فقط:
-   ```sh
+   useradd --system --create-home --shell /bin/sh jdatna-deploy
+   echo 'jdatna-deploy ALL=(root) NOPASSWD: /usr/local/sbin/jdatna-deploy' > /etc/sudoers.d/jdatna-deploy
+   chmod 440 /etc/sudoers.d/jdatna-deploy && visudo -cf /etc/sudoers.d/jdatna-deploy
+   install -d -m 700 -o jdatna-deploy -g jdatna-deploy /home/jdatna-deploy/.ssh
    ssh-keygen -t ed25519 -N '' -C jdatna-github-deploy -f /root/jdatna-deploy-key
-   echo "command=\"/usr/local/sbin/jdatna-deploy\",restrict $(cat /root/jdatna-deploy-key.pub)" >> /root/.ssh/authorized_keys
-   cat /root/jdatna-deploy-key      # انسخه إلى سر GitHub في الخطوة 5 ثم احذفه:
+   echo "command=\"/usr/local/sbin/jdatna-deploy-gate\",restrict $(cat /root/jdatna-deploy-key.pub)" > /home/jdatna-deploy/.ssh/authorized_keys
+   chown jdatna-deploy: /home/jdatna-deploy/.ssh/authorized_keys && chmod 600 /home/jdatna-deploy/.ssh/authorized_keys
+   cat /root/jdatna-deploy-key      # انسخه إلى سر GitHub في الخطوة 6 ثم:
    shred -u /root/jdatna-deploy-key
    ssh-keyscan -t ed25519 <عنوان الخادم>   # قيمة JDATNA_DEPLOY_KNOWN_HOSTS
    ```
-5. **في GitHub** (يمكن من متصفح الجوال): افتح Settings ثم Environments ثم New environment، وسمّها `production`.
-   - للنشر المباشر **لا تفعّل** Required reviewers. إن أردت موافقة يدوية قبل كل نشر ففعّلها وأضف حساب المالك، وعندها ينتظر النشر التلقائي موافقتك من الجوال.
-   - أضف أسرار البيئة الثلاثة:
-     - `JDATNA_DEPLOY_SSH_KEY`: المفتاح الخاص من الخطوة 4.
-     - `JDATNA_DEPLOY_HOST`: بالشكل `root@<عنوان الخادم>`.
+   تحقّق: `ssh -i <المفتاح> jdatna-deploy@<الخادم> status` يعمل، وأي أمر آخر (`id` أو `bash`) يرجع `rejected`.
+
+6. **في GitHub:** Settings ← Environments ← New environment باسم `production`.
+   - للنشر المباشر **لا تفعّل** Required reviewers. إن أردت موافقة قبل كل نشر ففعّلها.
+   - في Deployment branches اختر `codex/jdatna-platform` فقط.
+   - الأسرار الثلاثة:
+     - `JDATNA_DEPLOY_SSH_KEY`: المفتاح الخاص.
+     - `JDATNA_DEPLOY_HOST`: بالشكل `jdatna-deploy@<عنوان الخادم>`.
      - `JDATNA_DEPLOY_KNOWN_HOSTS`: ناتج `ssh-keyscan`.
-6. **تجربة**: شغّل الزر بالأمر `status` أولًا، ثم `deploy`.
+
+7. **تجربة:** شغّل الزر بالأمر `status`، ثم `deploy-migrate`.
 
 ## الاستخدام من الجوال
 
-افتح تطبيق GitHub أو المتصفح، ثم المستودع، ثم Actions، ثم «نشر جدتنا (يدوي)»، ثم Run workflow. اختر:
-- `deploy` لنشر آخر الفرع، ويمكن تحديد commit معيّن.
-- `rollback` للرجوع للإصدار السابق.
-- `deploy-migrate` لإصدار فيه ترحيلات قاعدة بيانات جديدة: نسخة احتياطية، ثم بناء، ثم الترحيل، ثم التحويل. إن فشل الترحيل لا يتغير الموقع.
-- `status` لمعرفة الإصدار الحي.
+GitHub ← المستودع ← Actions ← «نشر جدتنا» ← Run workflow:
+- `deploy-migrate`: نشر آخر الفرع مع الترحيلات (الافتراضي).
+- `deploy`: نشر بلا ترحيلات.
+- `rollback`: رجوع للإصدار السابق، ويُرفض إن لم يكن آمنًا.
+- `status`: الإصدار الحي والسابق.
 
-بعدها وافق على طلب بيئة `production`. السجل الكامل يظهر في GitHub، ويُحفظ على الخادم في `/var/log/jdatna-deploy.log`.
+السجل في GitHub، وعلى الخادم في `/var/log/jdatna-deploy.log`.
 
 ## التراجع
 
-- **من الجوال:** شغّل `rollback`، وهو يرجع إلى الإصدار السابق المسجل في `/var/lib/jdatna-deploy/previous`.
-- **يدويًا:** أرجع وسم الصورة في Coolify.
-- **لإيقاف الزر كليًا:** احذف سطر المفتاح من `authorized_keys`، أو عطّل workflow من GitHub.
+- **من الجوال:** `rollback`، وهو محمي بشرط التوافق أعلاه. إن رُفض، فالحل دمج إصلاح ينشر تلقائيًا.
+- **يدويًا:** أرجع وسم الصورة في Coolify. صورة الإصدار السابق محفوظة بحارس `jdatna-guard-<sha>`.
+- **لإيقاف النشر الآلي كليًا:** احذف `authorized_keys` لحساب `jdatna-deploy`، أو عطّل workflow «نشر جدتنا» من GitHub.
