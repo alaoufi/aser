@@ -29,9 +29,7 @@ export default async function Home() {
             <span className="tiny-line" /> من موروثنا، بكل حب
           </p>
           <h1>
-            للأصالة طعم.
-            <br />
-            ولكل بيت <em>حكاية.</em>
+            للأصالة طعم، ولكل بيت <em>حكاية.</em>
           </h1>
           <p className="hero-description">
             اكتشف نكهات الأجداد من أيدي الأسر المنتجة.
@@ -54,8 +52,8 @@ export default async function Home() {
             </button>
           </form>
           <div className="hero-notes">
-            <span>✧ تصفّح بدون تسجيل</span>
-            <span>✧ تواصل مباشر مع الأسرة</span>
+            <span>◆ تصفّح بدون تسجيل</span>
+            <span>◆ تواصل مباشر مع الأسرة</span>
           </div>
         </div>
         <div className="hero-visual">
