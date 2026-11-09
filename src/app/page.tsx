@@ -1,13 +1,29 @@
 import { FoodPhotos } from "@/components/public/food-photos";
 import Link from "next/link";
+import { cookies } from "next/headers";
+import { TodayTable, regionsOf } from "@/components/public/today-table";
 import {
+  getCities,
   publicCategories,
   searchProducts,
   searchProducers,
 } from "@/server/catalog";
 import { ProductCard, ProducerCard } from "@/components/public/ui";
 export const dynamic = "force-dynamic";
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const raw = await searchParams;
+  const cities = await getCities();
+  const regions = regionsOf(cities);
+  // منطقة المائدة: المختارة في الرابط، وإلا المحفوظة في الجهاز.
+  const asked = typeof raw.region === "string" ? raw.region : undefined;
+  const saved = (await cookies()).get("jdatna_region")?.value ?? "";
+  const region =
+    [asked ?? saved].find((r) => r && regions.some((x) => x.id === r)) ?? "";
+  const today = await searchProducts({ status: "available", region });
   // لا يظهر القسم للعامة إلا إذا اختارته أسرة معتمدة وعليه منتج منشور.
   const [categories, products, producers] = await Promise.all([
     publicCategories(),
@@ -39,6 +55,13 @@ export default async function Home() {
           <FoodPhotos />
         </div>
       </section>
+      <TodayTable
+        products={today}
+        regions={regions}
+        region={region}
+        capacity={6}
+        path="/"
+      />
       {categories.length > 0 && (
         <section className="section wrap" aria-label="الأقسام">
           <div className="category-grid">

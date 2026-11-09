@@ -1,6 +1,7 @@
 import { ReportButton } from "@/components/public/report-button";
 import { getPublicCoverage } from "@/server/coverage";
 import { ShareButton } from "@/components/public/share-button";
+import { ChatButton } from "@/components/forms/chat";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getProducer, getProducerProducts } from "@/server/catalog";
@@ -78,6 +79,7 @@ export default async function ProducerDetail({
           <ShareButton title={p.name} />
           <p>اتفق مباشرة على السعر والكمية ووقت التجهيز والاستلام.</p>
           <div className="contact-actions">
+            <ChatButton producerSlug={p.slug} />
             {phone && (
               <a href={`tel:+${phone}`} className="button">
                 اتصل بالأسرة المنتجة
@@ -93,7 +95,6 @@ export default async function ProducerDetail({
                 تواصل عبر واتساب ↗
               </a>
             )}
-            {!phone && !whatsapp && <p>لم تُنشر وسائل تواصل بعد.</p>}
           </div>
           <hr />
           <h3>التوصيل والاستلام</h3>
