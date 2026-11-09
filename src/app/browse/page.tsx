@@ -444,6 +444,20 @@ export default async function Browse({
                   ? "لا تطابق تام — نتائج قريبة"
                   : "نتائج المنتجات"}
             </h2>
+            <Link
+              href={
+                focus === "category" && currentCategory
+                  ? `/browse?category=${encodeURIComponent(currentCategory.id)}`
+                  : focus === "family" && family
+                    ? `/browse?producer=${encodeURIComponent(family.slug)}`
+                    : by === "word"
+                      ? "/browse"
+                      : `/browse?by=${by}`
+              }
+              className="text-link"
+            >
+              مسح فلتر البحث
+            </Link>
           </div>
           {products.length || widened.length ? (
             <div className="product-grid">
@@ -454,7 +468,7 @@ export default async function Browse({
           ) : (
             <EmptyState
               title="لم نجد منتجات بهذه الخيارات"
-              text="جرّب «حسب القسم» أو «حسب الأسرة المنتجة»، أو كلمة أقصر. تظهر المنتجات المعتمدة والمنشورة فقط."
+              text="جرّب «حسب القسم» أو «حسب الأسرة المنتجة»، أو كلمة أقصر، أو امسح فلتر البحث. تظهر المنتجات المعتمدة والمنشورة فقط."
             />
           )}
         </>

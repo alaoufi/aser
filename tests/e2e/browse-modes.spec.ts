@@ -53,7 +53,9 @@ test("browse offers four search methods: word, available, family and category", 
   // في «المتاح الآن»: لا حقل كلمة ولا «مسح المرشحات».
   await page.getByText("ابحث: المنطقة", { exact: false }).click();
   await expect(page.getByLabel("وش تطلب اليوم")).toHaveCount(0);
-  await expect(page.getByRole("link", { name: "مسح المرشحات" })).toHaveCount(0);
+  await expect(
+    page.getByRole("link", { name: "مسح فلتر البحث" }),
+  ).toHaveAttribute("href", "/browse?by=available");
   await expect(page.getByRole("combobox", { name: "التوفر" })).toContainText(
     "متوفر الآن",
   );

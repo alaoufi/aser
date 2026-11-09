@@ -33,7 +33,7 @@ const categories = [
   },
 ];
 
-test("categories are picked from a dropdown, edited in place, and deleted only when empty", async ({
+test("tapping a category opens it right below for editing, and it is deleted only when empty", async ({
   page,
 }) => {
   await page.route("**/api/session", (r) =>
@@ -61,12 +61,13 @@ test("categories are picked from a dropdown, edited in place, and deleted only w
   await page
     .getByRole("button", { name: "إدارة الأقسام", exact: true })
     .click();
-  const picker = page.getByLabel("اختر القسم");
-  await expect(picker.locator("option")).toHaveCount(4);
+  const row = (name: string) =>
+    page.getByRole("button", { name: new RegExp(name) }).first();
   await expect(page.getByRole("button", { name: "حذف القسم" })).toHaveCount(0);
 
-  // قسم له منتجات: يُعدَّل ولا يُحذف.
-  await picker.selectOption("1");
+  // قسم له منتجات: يفتح تحته مباشرة، يُعدَّل ولا يُحذف.
+  await row("الحلويات").click();
+  await expect(row("الحلويات")).toHaveAttribute("aria-expanded", "true");
   await expect(page.getByLabel("اسم القسم")).toHaveValue("الحلويات");
   await expect(page.getByRole("button", { name: "حذف القسم" })).toBeDisabled();
   await expect(
@@ -80,12 +81,13 @@ test("categories are picked from a dropdown, edited in place, and deleted only w
     body: { id: "1", name: "الحلويات الشعبية" },
   });
 
-  // قسم تحته فرعي: لا يُحذف.
-  await picker.selectOption("2");
+  // فتح قسم آخر يغلق السابق؛ قسم تحته فرعي لا يُحذف.
+  await row("^✦ المشروبات ").click();
+  await expect(page.getByLabel("اسم القسم")).toHaveCount(1);
   await expect(page.getByRole("button", { name: "حذف القسم" })).toBeDisabled();
 
   // قسم فارغ: حذف بتأكيد.
-  await picker.selectOption("3");
+  await row("مشروبات باردة").click();
   await page.getByRole("button", { name: "حذف القسم" }).click();
   await expect(
     page.getByText("سيُزال القسم من اختيارات 2 أسرة منتجة."),
@@ -93,5 +95,5 @@ test("categories are picked from a dropdown, edited in place, and deleted only w
   await page.getByRole("button", { name: "تأكيد حذف «مشروبات باردة»" }).click();
   await expect.poll(() => sent.length).toBe(2);
   expect(sent[1]).toEqual({ method: "DELETE", body: { id: "3" } });
-  await expect(picker).toHaveValue("");
+  await expect(page.getByLabel("اسم القسم")).toHaveCount(0);
 });

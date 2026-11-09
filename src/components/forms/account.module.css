@@ -364,3 +364,41 @@
   color: #fff;
   border-color: var(--ink);
 }
+.danger {
+  composes: button;
+  background: #9c2f1e;
+}
+.categoryRow {
+  width: 100%;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 0;
+  background: none;
+  padding: 4px 0;
+  font: inherit;
+  font-weight: 700;
+  color: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.categoryRow small {
+  font-weight: 400;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.categoryList {
+  padding-block: 6px;
+}
+.categoryItem {
+  padding-block: 6px;
+  border-bottom: 1px solid #e3d3b8;
+}
+.categoryItem:last-child {
+  border-bottom: 0;
+}
+.categoryItem > form {
+  padding-block: 8px 12px;
+}

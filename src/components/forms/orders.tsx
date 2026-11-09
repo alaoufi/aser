@@ -297,7 +297,7 @@ export function OrderRequestForm({
         <a
           className={s.contact}
           href={`https://wa.me/${contactWhatsapp}?text=${encodeURIComponent(
-            `السلام عليكم، أرسلت طلب (${productName}) من أكلات جدتنا${receipt ? ` — المرجع ${receipt.slice(0, 8)}` : ""}`,
+            `السلام عليكم، أرسلت طلب (${productName}) من أكلات جدتنا${receipt ? ` — رقم الطلب ${receipt.slice(0, 8)}` : ""}`,
           )}`}
           target="_blank"
           rel="noopener noreferrer"
@@ -405,8 +405,11 @@ export function OrderRequestForm({
             <span aria-hidden="true">✓</span> تم إرسال طلبك للأسرة المنتجة
           </h3>
           <p>
-            رقم المرجع: <bdi dir="ltr">{receipt.slice(0, 8)}</bdi>
+            رقم الطلب: <bdi dir="ltr">{receipt.slice(0, 8)}</bdi>
           </p>
+          {!session.user && (
+            <p>احتفظ برقم الطلب، واذكره عند التواصل مع الأسرة المنتجة.</p>
+          )}
           {sent && summaryOf(sent)}
           <h4>الخطوة التالية</h4>
           <p>
