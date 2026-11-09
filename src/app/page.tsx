@@ -216,11 +216,9 @@ export default async function Home() {
           <p>
             عرّف الناس بمنتجاتك، واحكِ حكايتك، وتواصل معهم مباشرة.
             <br />
-            التسجيل مجاني وبدون عمولات أو اشتراكات حاليًا.
+            التسجيل مجاني وبدون عمولات أو اشتراكات حاليًا، من زر الدخول أعلى
+            الصفحة.
           </p>
-          <Link href="/login" className="button light">
-            تسجيل الدخول <span aria-hidden="true">←</span>
-          </Link>
         </div>
         <div className="join-ornament" aria-hidden="true">
           ✳

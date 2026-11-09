@@ -38,7 +38,7 @@ export const dynamic = "force-dynamic";
 const modes = [
   ["word", "بالكلمة"],
   ["available", "المتاح الآن"],
-  ["family", "حسب الأسرة"],
+  ["family", "حسب الأسرة المنتجة"],
   ["category", "حسب القسم"],
 ] as const;
 type Mode = (typeof modes)[number][0];

@@ -96,7 +96,6 @@ export default function RootLayout({
               <Link href="/producers">الأسر المنتجة</Link>
               <Link href="/offers">العروض الخاصة</Link>
               <Link href="/orders">طلباتي</Link>
-              <AccountLink />
             </div>
             <div>
               <h3>عن المنصة</h3>

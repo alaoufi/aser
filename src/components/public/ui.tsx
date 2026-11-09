@@ -46,9 +46,6 @@ export function EmptyState({
       </span>
       <h3>{title}</h3>
       <p>{text}</p>
-      <Link className="text-link" href="/login">
-        تسجيل الدخول <span aria-hidden="true">←</span>
-      </Link>
     </div>
   );
 }

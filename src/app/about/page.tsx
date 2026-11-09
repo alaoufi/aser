@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import Image from "next/image";
 export const metadata: Metadata = { title: "حكايتنا" };
 export default function About() {
@@ -42,9 +41,6 @@ export default function About() {
         حكومي ولا تُغني عن المتطلبات النظامية للنشاط. لا تُنشر مستندات الأهلية
         أو عنوان المنزل للعامة.
       </p>
-      <Link className="button" href="/login">
-        تسجيل الدخول ←
-      </Link>
     </article>
   );
 }

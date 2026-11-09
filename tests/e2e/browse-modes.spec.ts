@@ -5,7 +5,12 @@ test("browse offers four search methods: word, available, family and category", 
 }) => {
   await page.goto("/browse");
   const modes = page.getByRole("navigation", { name: "طريقة البحث" });
-  for (const name of ["بالكلمة", "المتاح الآن", "حسب الأسرة", "حسب القسم"])
+  for (const name of [
+    "بالكلمة",
+    "المتاح الآن",
+    "حسب الأسرة المنتجة",
+    "حسب القسم",
+  ])
     await expect(modes.getByRole("link", { name })).toBeVisible();
   await expect(modes.getByRole("link", { name: "بالكلمة" })).toHaveAttribute(
     "aria-current",
@@ -35,7 +40,7 @@ test("browse offers four search methods: word, available, family and category", 
   await expect(page.getByRole("region", { name: "الأقسام" })).toBeVisible();
   await page
     .getByRole("navigation", { name: "طريقة البحث" })
-    .getByRole("link", { name: "حسب الأسرة" })
+    .getByRole("link", { name: "حسب الأسرة المنتجة" })
     .click();
   await expect(page).toHaveURL(/by=family/);
   await expect(page.getByRole("region", { name: "الأسر" })).toBeVisible();
