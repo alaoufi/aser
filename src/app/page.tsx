@@ -29,9 +29,7 @@ export default async function Home() {
             <span className="tiny-line" /> من موروثنا، بكل حب
           </p>
           <h1>
-            للأصالة طعم.
-            <br />
-            ولكل بيت <em>حكاية.</em>
+            للأصالة طعم، ولكل بيت <em>حكاية.</em>
           </h1>
           <p className="hero-description">
             اكتشف نكهات الأجداد من أيدي الأسر المنتجة.

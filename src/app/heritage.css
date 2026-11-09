@@ -1,18 +1,9 @@
 /*
  * الطابع التراثي النجدي (سدو وطين) — يُحمَّل بعد globals.css ويتقدم عليه.
- * Reem Kufi وAmiri: SIL Open Font License (public/fonts/OFL-*.txt). مستضافة ذاتيًا.
+ * Amiri للعبارات الصغيرة فقط: SIL Open Font License (public/fonts/OFL-amiri.txt). مستضاف ذاتيًا.
+ * العناوين والنص بخط واحد (Noto Sans Arabic) للتناسق.
  * للتراجع: احذف استيراد هذا الملف من layout.tsx.
  */
-@font-face {
-  font-family: "Reem Kufi";
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url(/fonts/reem-kufi-arabic-700.woff2) format("woff2");
-  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891,
-    U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41,
-    U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC;
-}
 @font-face {
   font-family: "Amiri";
   font-style: normal;
@@ -38,7 +29,7 @@
   --sadu-black: #1f1a17;
   --sadu-white: #efe3cc;
   --gold: #d6a35c;
-  --display: "Reem Kufi", "Noto Sans Arabic", Tahoma, sans-serif;
+  --display: "Noto Sans Arabic", "Segoe UI", Tahoma, sans-serif;
   --accent-serif: "Amiri", "Noto Sans Arabic", serif;
   --mud-texture:
     radial-gradient(#5e3a1e1a 1px, transparent 1.4px) 0 0 / 7px 7px,
@@ -150,8 +141,15 @@ main::before {
 
 /* البطل */
 .hero h1 {
-  line-height: 1.1;
+  line-height: 1.15;
   color: var(--ink);
+  white-space: nowrap;
+  font-size: clamp(1.3rem, 5.4vw, 2.7rem);
+}
+@media (min-width: 851px) {
+  .hero h1 {
+    font-size: clamp(1.9rem, 2.9vw, 2.7rem);
+  }
 }
 .hero h1 em {
   font-style: normal;
@@ -278,11 +276,21 @@ main::before {
   font-size: 14px;
 }
 .category-icon {
+  position: relative;
   border-radius: 4px;
   width: 42px;
   height: 42px;
-  font-size: 22px;
+  font-size: 0;
   border: 1px solid #c9a87c;
+}
+/* رمز موحد لكل الأقسام: معيّن السدو بدل رموز مختلطة الأشكال */
+.category-icon::before {
+  content: "";
+  width: 14px;
+  height: 14px;
+  transform: rotate(45deg);
+  background: var(--rust);
+  box-shadow: 0 0 0 3px #f0dcc0, 0 0 0 4px var(--rust);
 }
 .category-icon,
 .tone-1,
@@ -302,7 +310,7 @@ main::before {
 .availability-card {
   background: var(--olive);
   color: var(--paper);
-  border-radius: 140px 140px 8px 8px;
+  border-radius: 64px 64px 6px 6px;
   padding: 40px 26px 24px;
   text-align: center;
   display: flex;
@@ -405,7 +413,7 @@ main::before {
     min-height: 76px;
   }
   .availability-card {
-    border-radius: 110px 110px 8px 8px;
+    border-radius: 48px 48px 6px 6px;
   }
 }
 @media (max-width: 600px) {
@@ -419,4 +427,17 @@ main::before {
   .join-banner {
     padding: 34px 20px 24px;
   }
+}
+
+/* رموز شريط المزايا: نفس معيّن السدو */
+.value-grid > div > span {
+  font-size: 0;
+  flex: none;
+  min-width: 0;
+  width: 14px;
+  height: 14px;
+  margin-inline: 6px;
+  transform: rotate(45deg);
+  background: var(--gold);
+  box-shadow: 0 0 0 3px var(--ink), 0 0 0 4px var(--gold);
 }
