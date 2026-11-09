@@ -154,7 +154,7 @@ test(
         days: 1,
         notes: "",
       };
-      await assert.rejects(submitOrder(null, payload), { status: 409 });
+      await assert.rejects(submitOrder(users[1], payload), { status: 409 });
       const tomorrow = new Date(
         new Date(saved.day + "T00:00:00Z").getTime() + 86400000,
       )
@@ -198,7 +198,7 @@ test(
         "reopened product returns to available filter",
       );
       assert.equal(
-        (await submitOrder(null, { ...payload, requestKey: randomUUID() }))
+        (await submitOrder(users[1], { ...payload, requestKey: randomUUID() }))
           .status,
         "pending",
       );

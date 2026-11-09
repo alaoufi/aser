@@ -85,6 +85,7 @@ test("admin assigns deep subsection and excludes its own descendants as parents"
   await page
     .getByRole("button", { name: "إدارة الأقسام", exact: true })
     .click();
+  await page.getByRole("button", { name: "＋ قسم جديد" }).click();
   await page.getByLabel("اسم القسم").fill("حليب");
   await page.getByLabel("الرابط المختصر").fill("milk-test");
   await page.locator("select[name=parentId]").selectOption("drinks-hot");
@@ -92,8 +93,10 @@ test("admin assigns deep subsection and excludes its own descendants as parents"
   await expect(page.getByRole("status")).toBeVisible();
   expect(saved.parentId).toBe("drinks-hot");
   await page
-    .getByRole("button", { name: "تعديل مشروبات ساخنة", exact: true })
+    .getByRole("button", { name: /مشروبات ساخنة/ })
+    .first()
     .click();
+  await expect(page.getByLabel("اسم القسم")).toHaveValue("مشروبات ساخنة");
   await expect(
     page.locator("select[name=parentId] option[value=drinks-hot]"),
   ).toHaveCount(0);

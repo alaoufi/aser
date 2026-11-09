@@ -462,6 +462,14 @@ export function LoginForm({
                 </select>
               </label>
             )}
+            {mode === "signup" && !challenge && (
+              <p className={s.muted} data-testid="account-type-hint">
+                {intent === "family"
+                  ? "الأسرة المنتجة: بعد التحقق من الجوال ترفع التراخيص المطلوبة، ولا تظهر منتجاتها إلا بعد موافقة الإدارة."
+                  : "العميل: يتفعّل حسابه مباشرة بعد التحقق من الجوال."}{" "}
+                التصفح متاح للجميع، والطلب بعد التسجيل والتحقق من الجوال.
+              </p>
+            )}
             {mode === "signup" && challenge && (
               <label className={s.field}>
                 اسم صاحب الحساب

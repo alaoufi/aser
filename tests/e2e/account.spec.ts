@@ -111,6 +111,7 @@ test("admin category validates slug before sending and preserves errors from ser
   await page
     .getByRole("button", { name: "إدارة الأقسام", exact: true })
     .click();
+  await page.getByRole("button", { name: "＋ قسم جديد" }).click();
   await page.getByLabel("اسم القسم").fill("الخبز");
   const slug = page.getByLabel("الرابط المختصر");
   await slug.fill("Invalid Slug");

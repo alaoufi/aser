@@ -117,8 +117,19 @@ test.describe("public cooking-day availability on an isolated catalog", () => {
   test("public family stays published and order form offers tomorrow when today's cooking is off", async ({
     page,
   }) => {
+    // التصفح للجميع؛ نموذج الطلب نفسه للمسجّلين فقط.
     await page.route("**/api/session", (r) =>
-      r.fulfill({ json: { user: null, registrationOpen: false } }),
+      r.fulfill({
+        json: {
+          user: {
+            id: uid,
+            name: "عميل",
+            phone: "+966500000001",
+            role: "customer",
+          },
+          registrationOpen: false,
+        },
+      }),
     );
     await page.goto(`/producers/${slug}`);
     await expect(

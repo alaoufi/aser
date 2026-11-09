@@ -234,27 +234,29 @@ export default async function Browse({
       <details className="filter-wrap" open={by === "word" && !focus}>
         <summary>
           {focus === "category"
-            ? "ابحث داخل القسم: الكلمة، المنطقة، الأسرة المنتجة"
+            ? "ابحث داخل القسم: المنطقة، الأسرة المنتجة"
             : focus === "family"
-              ? "ابحث داخل منتجات الأسرة المنتجة: الكلمة، القسم"
-              : "ابحث: الكلمة، المنطقة، الأسرة المنتجة، القسم"}
+              ? "ابحث داخل منتجات الأسرة المنتجة: القسم"
+              : by === "word"
+                ? "ابحث: الكلمة، المنطقة، الأسرة المنتجة، القسم"
+                : "ابحث: المنطقة، الأسرة المنتجة، القسم"}
         </summary>
         <form className="filter-bar" action="/browse" autoComplete="off">
           {by !== "word" && <input type="hidden" name="by" value={by} />}
-          <label className="search-query">
-            وش تطلب اليوم
-            <input
-              type="search"
-              autoComplete="off"
-              name="q"
-              defaultValue={filters.q}
-              placeholder={
-                by === "word"
-                  ? "جريش، مرقوق، اسم الأسرة المنتجة، قهوة…"
-                  : "ابحث داخل القائمة (اختياري)"
-              }
-            />
-          </label>
+          {by === "word" && !focus ? (
+            <label className="search-query">
+              وش تطلب اليوم
+              <input
+                type="search"
+                autoComplete="off"
+                name="q"
+                defaultValue={filters.q}
+                placeholder="جريش، مرقوق، اسم الأسرة المنتجة، قهوة…"
+              />
+            </label>
+          ) : (
+            filters.q && <input type="hidden" name="q" value={filters.q} />
+          )}
           <LocationFields
             key={`${filters.region}:${filters.city}`}
             cities={cities}
@@ -448,11 +450,13 @@ export default async function Browse({
                   ? `/browse?category=${encodeURIComponent(currentCategory.id)}`
                   : focus === "family" && family
                     ? `/browse?producer=${encodeURIComponent(family.slug)}`
-                    : "/browse"
+                    : by === "word"
+                      ? "/browse"
+                      : `/browse?by=${by}`
               }
               className="text-link"
             >
-              مسح المرشحات
+              مسح فلتر البحث
             </Link>
           </div>
           {products.length || widened.length ? (
@@ -464,7 +468,7 @@ export default async function Browse({
           ) : (
             <EmptyState
               title="لم نجد منتجات بهذه الخيارات"
-              text="جرّب «حسب القسم» أو «حسب الأسرة المنتجة»، أو كلمة أقصر، أو امسح المرشحات. تظهر المنتجات المعتمدة والمنشورة فقط."
+              text="جرّب «حسب القسم» أو «حسب الأسرة المنتجة»، أو كلمة أقصر، أو امسح فلتر البحث. تظهر المنتجات المعتمدة والمنشورة فقط."
             />
           )}
         </>

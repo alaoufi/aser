@@ -236,10 +236,20 @@ test(
         status: 409,
       });
       await assert.rejects(submitOrder(users[3], payload), { status: 409 });
-      const guest = await submitOrder(null, {
+      // الزائر بلا حساب لا يرسل طلبًا؛ والجوال يؤخذ من الحساب المتحقق لا من النموذج.
+      await assert.rejects(
+        submitOrder(null, { ...payload, requestKey: randomUUID() }),
+        { status: 401 },
+      );
+      const guest = await submitOrder(users[3], {
         ...payload,
+        phone: "0500000999",
         requestKey: randomUUID(),
       });
+      assert.equal(
+        (await memberOrders(users[3])).find((o) => o.id === guest.id)?.phone,
+        users[3].phone,
+      );
       assert.ok(guest.id);
       assert.equal(
         (await memberOrders(users[2])).length,
@@ -352,7 +362,7 @@ test(
         [offerId, producerIds[0], productId],
       );
       const offered = { ...payload, offerId, requestKey: randomUUID() };
-      await assert.rejects(submitOrder(null, offered), { status: 404 });
+      await assert.rejects(submitOrder(users[3], offered), { status: 404 });
       await assert.rejects(submitOrder(users[2], offered), { status: 404 });
       await db().query(
         "INSERT INTO jdatna.offer_preferences(user_id,audience) VALUES($1,'students')",
@@ -392,7 +402,7 @@ test(
       ]) {
         await db().query(patch, [productId]);
         await assert.rejects(
-          submitOrder(null, { ...payload, requestKey: randomUUID() }),
+          submitOrder(users[3], { ...payload, requestKey: randomUUID() }),
           { status: 404 },
         );
         await assert.rejects(reorderDraft(users[2], receipts[0].id), {
@@ -407,7 +417,7 @@ test(
         [producerIds[0]],
       );
       await assert.rejects(
-        submitOrder(null, { ...payload, requestKey: randomUUID() }),
+        submitOrder(users[3], { ...payload, requestKey: randomUUID() }),
         { status: 404 },
       );
       assert.equal(
