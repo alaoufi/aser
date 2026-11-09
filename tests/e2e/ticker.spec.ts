@@ -64,7 +64,7 @@ test("ticker travels left to right with an identical seamless repeat", async ({
   expect(Math.abs(result.first - result.last)).toBeLessThan(1);
   expect(result.widths[0]).toBeCloseTo(result.widths[1], 2);
   expect(result.texts[0]).toBe(result.texts[1]);
-  await expect(
-    page.getByText("اكتشف المتاح في مدينتك", { exact: true }),
-  ).toBeVisible();
+  // شريط القيم وتعليق الصورة حُذفا من الرئيسية بطلب المالك.
+  await expect(page.locator(".value-strip")).toHaveCount(0);
+  await expect(page.getByText("من سفرتنا، ومن موروثنا")).toHaveCount(0);
 });

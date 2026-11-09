@@ -26,8 +26,13 @@ export default async function Home() {
           <h1 className="sr-only">أكلات جدتنا وأصالة الماضي</h1>
           <form action="/browse" className="hero-search" autoComplete="off">
             <label>
-              <span>وش تطلب اليوم</span>
-              <input type="search" name="q" autoComplete="off" />
+              <span className="sr-only">وش تطلب اليوم</span>
+              <input
+                type="search"
+                name="q"
+                autoComplete="off"
+                placeholder="وش تطلب اليوم"
+              />
             </label>
             <button className="button" type="submit">
               ابحث <span aria-hidden="true">←</span>
@@ -36,31 +41,6 @@ export default async function Home() {
         </div>
         <div className="hero-visual">
           <FoodPhotos />
-        </div>
-      </section>
-      <section className="value-strip">
-        <div className="wrap value-grid">
-          <div>
-            <span>⌂</span>
-            <p>
-              <strong>من بيوت أهلنا</strong>
-              <small>للأسر المنتجة الغذائية فقط</small>
-            </p>
-          </div>
-          <div>
-            <span>♧</span>
-            <p>
-              <strong>على ذوقك وقريب منك</strong>
-              <small>اكتشف المتاح في مدينتك</small>
-            </p>
-          </div>
-          <div>
-            <span>♡</span>
-            <p>
-              <strong>الخير لأهل الخير</strong>
-              <small>تسجيل مجاني وبدون عمولة</small>
-            </p>
-          </div>
         </div>
       </section>
       <section className="section wrap">

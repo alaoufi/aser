@@ -11,20 +11,9 @@ test("food photography stays visible and separate from search across tablet brea
     await page.goto("/");
     await page.evaluate(() => document.fonts.ready);
     await expect(page.locator(".food-showcase img")).toHaveCount(5);
-    await expect(page.locator(".food-showcase .food-dish-name")).toHaveText([
-      "الأرز",
-      "مطازيز",
-      "مرقوق",
-      "جريش",
-      "طبق سمك",
-    ]);
-    await expect(page.locator(".food-showcase .dish-number")).toHaveText([
-      "1",
-      "2",
-      "3",
-      "4",
-      "5",
-    ]);
+    // مسميات الصحون وأرقامها حُذفت بطلب المالك.
+    await expect(page.locator(".food-showcase .food-dish-name")).toHaveCount(0);
+    await expect(page.locator(".food-showcase .dish-number")).toHaveCount(0);
     const overlaps = await page.evaluate(() => {
       const a = document.querySelector(".hero-search")!.getBoundingClientRect(),
         b = document.querySelector(".food-showcase")!.getBoundingClientRect();
