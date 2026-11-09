@@ -91,9 +91,10 @@ test("admin assigns deep subsection and excludes its own descendants as parents"
   await page.getByRole("button", { name: "حفظ التصنيف", exact: true }).click();
   await expect(page.getByRole("status")).toBeVisible();
   expect(saved.parentId).toBe("drinks-hot");
-  await page
-    .getByRole("button", { name: "تعديل مشروبات ساخنة", exact: true })
-    .click();
+  await page.getByLabel("اختر القسم").selectOption("drinks-hot");
+  await expect(
+    page.getByRole("heading", { name: "تعديل «مشروبات ساخنة»" }),
+  ).toBeVisible();
   await expect(
     page.locator("select[name=parentId] option[value=drinks-hot]"),
   ).toHaveCount(0);

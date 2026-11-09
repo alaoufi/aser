@@ -113,9 +113,89 @@ export async function moderateProduct(user: SessionUser, input: unknown) {
     return { ok: true };
   });
 }
-export async function adminCategories(user: SessionUser) {
+export type AdminCategory = Category & {
+  productCount: number;
+  childCount: number;
+  familyCount: number;
+};
+export async function adminCategories(
+  user: SessionUser,
+): Promise<AdminCategory[]> {
   assertAdmin(user);
-  return getCategories();
+  const categories = await getCategories();
+  const counts = new Map(
+    (
+      await db().query(
+        `SELECT c.id,
+          (SELECT count(*)::int FROM jdatna.product_categories x WHERE x.category_id=c.id) AS "productCount",
+          (SELECT count(*)::int FROM jdatna.categories k WHERE k.parent_id=c.id) AS "childCount",
+          (SELECT count(*)::int FROM jdatna.producer_categories f WHERE f.category_id=c.id) AS "familyCount"
+        FROM jdatna.categories c`,
+      )
+    ).rows.map((r) => [r.id as string, r]),
+  );
+  return categories.map((c) => ({
+    ...c,
+    productCount: counts.get(c.id)?.productCount ?? 0,
+    childCount: counts.get(c.id)?.childCount ?? 0,
+    familyCount: counts.get(c.id)?.familyCount ?? 0,
+  }));
+}
+/** يحذف قسمًا فقط إذا لم يبقَ له منتجات ولا أقسام فرعية؛ واختيارات الأسر له تُزال معه. */
+export async function deleteCategory(user: SessionUser, input: unknown) {
+  assertAdmin(user);
+  const { id } = z.object({ id: z.string().min(1).max(30) }).parse(input);
+  return transaction(async (client) => {
+    await client.query(
+      "SELECT pg_advisory_xact_lock(hashtext('jdatna.category.ids'))",
+    );
+    const row = (
+      await client.query(
+        "SELECT id,name FROM jdatna.categories WHERE id=$1 FOR UPDATE",
+        [id],
+      )
+    ).rows[0];
+    if (!row) throw new HttpError(404, "القسم غير موجود");
+    const products = Number(
+      (
+        await client.query(
+          "SELECT count(*) AS n FROM jdatna.product_categories WHERE category_id=$1",
+          [id],
+        )
+      ).rows[0].n,
+    );
+    if (products)
+      throw new HttpError(
+        409,
+        `لا يمكن حذف «${row.name}» قبل حذف منتجاته أو نقلها لقسم آخر (${products} منتج).`,
+      );
+    const children = Number(
+      (
+        await client.query(
+          "SELECT count(*) AS n FROM jdatna.categories WHERE parent_id=$1",
+          [id],
+        )
+      ).rows[0].n,
+    );
+    if (children)
+      throw new HttpError(
+        409,
+        `لا يمكن حذف «${row.name}» وتحته ${children} قسم فرعي؛ احذفها أو انقلها أولًا.`,
+      );
+    const families = (
+      await client.query(
+        "DELETE FROM jdatna.producer_categories WHERE category_id=$1",
+        [id],
+      )
+    ).rowCount;
+    await client.query("DELETE FROM jdatna.categories WHERE id=$1", [id]);
+    await audit(client, user, "category.delete", null, {
+      id,
+      name: row.name,
+      familyLinksRemoved: families,
+    });
+    return { ok: true, familyLinksRemoved: families };
+  });
 }
 export async function saveCategory(
   user: SessionUser,

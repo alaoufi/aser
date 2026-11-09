@@ -34,6 +34,7 @@ import {
   moderateProduct,
   adminCategories,
   saveCategory,
+  deleteCategory,
   adminLocations,
   createLocation,
   adminReports,
@@ -654,6 +655,53 @@ test(
             reason: "إعادة إتاحة اختبار",
           });
           assert.ok(await getProduct(product.id));
+          // حذف القسم: ممنوع ما دام له منتجات أو أقسام فرعية، ويُسمح بعدها.
+          assert.equal(
+            (await adminCategories(users[2])).find((c) => c.id === category.id)
+              ?.productCount,
+            1,
+          );
+          await assert.rejects(
+            deleteCategory(users[2], { id: category.id }),
+            /قبل حذف منتجاته/,
+          );
+          await assert.rejects(
+            deleteCategory(users[0], { id: category.id }),
+            /صلاحية/,
+          );
+          const parent = await saveCategory(
+            users[2],
+            { name: "قسم أب للحذف", slug: slug + "-parent", icon: "✦" },
+            false,
+          );
+          categoryIds.push(parent.id);
+          const child = await saveCategory(
+            users[2],
+            {
+              name: "قسم فرعي للحذف",
+              slug: slug + "-child",
+              icon: "✦",
+              parentId: parent.id,
+            },
+            false,
+          );
+          categoryIds.push(child.id);
+          await assert.rejects(
+            deleteCategory(users[2], { id: parent.id }),
+            /قسم فرعي/,
+          );
+          await deleteCategory(users[2], { id: child.id });
+          await deleteCategory(users[2], { id: parent.id });
+          assert.equal(
+            (await adminCategories(users[2])).some((c) =>
+              [parent.id, child.id].includes(c.id),
+            ),
+            false,
+          );
+          await assert.rejects(
+            deleteCategory(users[2], { id: parent.id }),
+            /غير موجود/,
+          );
           const region = await createLocation(users[2], {
             kind: "region",
             name: "منطقة اختبار " + slug,

@@ -32,33 +32,72 @@ function useResource<T>(url: string) {
   }
   return { data, error, busy, success, write };
 }
+type AdminCategory = Category & {
+  productCount?: number;
+  childCount?: number;
+  familyCount?: number;
+};
 export function CategoriesAdmin() {
-  const r = useResource<{ categories: Category[] }>("/api/admin/categories");
-  const [editing, setEditing] = useState<Category | null>(null);
+  const r = useResource<{ categories: AdminCategory[] }>(
+    "/api/admin/categories",
+  );
+  const [selectedId, setSelectedId] = useState("");
+  const [confirming, setConfirming] = useState(false);
+  const all = r.data?.categories ?? [];
+  const editing = all.find((c) => c.id === selectedId) ?? null;
+  function choose(id: string) {
+    setSelectedId(id);
+    setConfirming(false);
+  }
   async function save(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const f = new FormData(e.currentTarget);
-    if (
-      await r.write(editing ? "PATCH" : "POST", {
-        id: editing?.id,
-        name: f.get("name"),
-        slug: f.get("slug"),
-        icon: f.get("icon"),
-        parentId: f.get("parentId") || null,
-      })
-    )
-      setEditing(null);
+    const form = e.currentTarget;
+    const f = new FormData(form);
+    const ok = await r.write(editing ? "PATCH" : "POST", {
+      id: editing?.id,
+      name: f.get("name"),
+      slug: f.get("slug"),
+      icon: f.get("icon"),
+      parentId: f.get("parentId") || null,
+    });
+    if (ok && !editing) form.reset();
   }
+  async function remove() {
+    if (!editing) return;
+    if (await r.write("DELETE", { id: editing.id })) choose("");
+  }
+  const products = editing?.productCount ?? 0;
+  const children = editing?.childCount ?? 0;
+  const blocked = products > 0 || children > 0;
   return (
     <section>
       <h2>إدارة الأقسام</h2>
       <Message error={r.error} success={r.success} />
+      <div className={`${s.card} ${s.form}`}>
+        <label className={s.field}>
+          اختر القسم
+          <select
+            value={selectedId}
+            onChange={(e) => choose(e.target.value)}
+            disabled={!r.data}
+          >
+            <option value="">＋ قسم جديد</option>
+            {all.map((c) => (
+              <option key={c.id} value={c.id}>
+                {categoryLabel(c, all)}
+                {c.productCount ? ` (${c.productCount} منتج)` : ""}
+              </option>
+            ))}
+          </select>
+        </label>
+        {!r.data && !r.error && <p role="status">جارٍ تحميل الأقسام…</p>}
+      </div>
       <form
         key={editing?.id || "new"}
         onSubmit={save}
         className={`${s.card} ${s.form}`}
       >
-        <h3>{editing ? "تعديل القسم" : "قسم جديد"}</h3>
+        <h3>{editing ? `تعديل «${editing.name}»` : "قسم جديد"}</h3>
         <div className={s.grid}>
           <label className={s.field}>
             اسم القسم
@@ -91,53 +130,72 @@ export function CategoriesAdmin() {
             />
           </label>
           <label className={s.field}>
-            <span className="sr-only">القسم الرئيسي</span>
+            القسم الرئيسي
             <select name="parentId" defaultValue={editing?.parentId || ""}>
               <option value="">قسم رئيسي مستقل</option>
-              {categoryParentOptions(r.data?.categories ?? [], editing?.id).map(
-                (c) => (
-                  <option key={c.id} value={c.id}>
-                    {categoryLabel(c, r.data?.categories ?? [])}
-                  </option>
-                ),
-              )}
+              {categoryParentOptions(all, editing?.id).map((c) => (
+                <option key={c.id} value={c.id}>
+                  {categoryLabel(c, all)}
+                </option>
+              ))}
             </select>
           </label>
         </div>
+        {editing && (
+          <p className={s.muted}>
+            {products} منتج · {children} قسم فرعي · {editing.familyCount ?? 0}{" "}
+            أسرة اختارته
+          </p>
+        )}
         <div className={s.actions}>
           <button className={s.button} disabled={r.busy}>
-            {r.busy ? "جارٍ الحفظ…" : "حفظ التصنيف"}
+            {r.busy ? "جارٍ الحفظ…" : editing ? "حفظ التعديل" : "حفظ التصنيف"}
           </button>
-          {editing && (
+          {editing && !confirming && (
             <button
               type="button"
               className={s.button}
-              onClick={() => setEditing(null)}
+              disabled={r.busy || blocked}
+              onClick={() => setConfirming(true)}
             >
-              إلغاء التعديل
+              حذف القسم
             </button>
           )}
-        </div>
-      </form>
-      {!r.data && !r.error ? (
-        <p role="status">جارٍ تحميل التصنيفات…</p>
-      ) : r.data?.categories.length ? (
-        <div className={s.list}>
-          {r.data.categories.map((c) => (
-            <article className={s.card} key={c.id}>
-              <h3>
-                {c.icon} {categoryLabel(c, r.data!.categories)}
-              </h3>
-              <p dir="ltr">{c.slug}</p>
-              <button className={s.button} onClick={() => setEditing(c)}>
-                تعديل {c.name}
+          {editing && confirming && (
+            <>
+              <button
+                type="button"
+                className={s.button}
+                disabled={r.busy}
+                onClick={remove}
+              >
+                تأكيد حذف «{editing.name}»
               </button>
-            </article>
-          ))}
+              <button
+                type="button"
+                className={s.button}
+                onClick={() => setConfirming(false)}
+              >
+                تراجع
+              </button>
+            </>
+          )}
         </div>
-      ) : (
-        <p className={s.notice}>لا توجد تصنيفات بعد.</p>
-      )}
+        {editing && blocked && (
+          <p className={s.notice}>
+            لا يمكن حذف هذا القسم الآن:{" "}
+            {products > 0 &&
+              `احذف منتجاته أو انقلها لقسم آخر أولًا (${products} منتج). `}
+            {children > 0 &&
+              `احذف أقسامه الفرعية أو انقلها أولًا (${children} قسم).`}
+          </p>
+        )}
+        {editing && confirming && (editing.familyCount ?? 0) > 0 && (
+          <p className={s.notice}>
+            سيُزال القسم من اختيارات {editing.familyCount} أسرة منتجة.
+          </p>
+        )}
+      </form>
     </section>
   );
 }
