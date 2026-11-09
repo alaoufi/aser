@@ -165,7 +165,7 @@ test(
         customAreas: [
           {
             cityNodeId: city.id,
-            center: "مركز الأسرة",
+            center: "مركز الأسرة المنتجة",
             neighborhood: "حي أول",
             fee: 12,
           },
@@ -177,7 +177,8 @@ test(
       assert.equal(own.customAreas.length, 3);
       assert.ok(
         own.customAreas.some(
-          (a) => a.label?.includes("مركز الأسرة / حي أول") && a.fee === 12,
+          (a) =>
+            a.label?.includes("مركز الأسرة المنتجة / حي أول") && a.fee === 12,
         ),
       );
       assert.equal(own.legacyAreas[0].fee, 7.5);

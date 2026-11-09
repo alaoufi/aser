@@ -69,7 +69,7 @@ export function MobileNavigation() {
       >
         <FamilyStatusChip place="menu" />
         <Link href="/">الرئيسية</Link>
-        <Link href="/browse">اكتشف الأكلات</Link>
+        <Link href="/browse">طبخات اليوم</Link>
         <Link href="/producers">الأسر المنتجة</Link>
         <Link href="/offers">العروض الخاصة</Link>
         <Link href="/orders">طلباتي</Link>

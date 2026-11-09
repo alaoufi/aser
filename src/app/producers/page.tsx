@@ -30,13 +30,13 @@ export default async function Producers({
         autoComplete="off"
       >
         <label>
-          اسم الأسرة
+          اسم الأسرة المنتجة
           <input
             type="search"
             name="q"
             autoComplete="off"
             defaultValue={q}
-            placeholder="ابحث باسم الأسرة"
+            placeholder="ابحث باسم الأسرة المنتجة"
           />
         </label>
         <LocationFields
@@ -56,7 +56,7 @@ export default async function Producers({
       ) : (
         <EmptyState
           title="حكايات الأسر تأتي قريبًا"
-          text="لا توجد أسر منشورة تطابق البحث حاليًا. تظهر الأسرة بعد مراجعة حسابها والموافقة على النشر."
+          text="لا توجد أسر منشورة تطابق البحث حاليًا. تظهر الأسرة المنتجة بعد مراجعة حسابها والموافقة على النشر."
         />
       )}
     </div>

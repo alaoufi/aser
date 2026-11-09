@@ -166,7 +166,10 @@ export async function saveOffer(
       )
     ).rows[0];
     if (!producer || producer.status !== "approved")
-      throw new HttpError(403, "إدارة العروض متاحة للأسرة المعتمدة فقط");
+      throw new HttpError(
+        403,
+        "إدارة العروض متاحة للأسرة المنتجة المعتمدة فقط",
+      );
     if (
       v.productId &&
       !(

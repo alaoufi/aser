@@ -134,7 +134,7 @@ test.describe("public cooking-day availability on an isolated catalog", () => {
       page
         .locator("main")
         .getByText(
-          "لا يوجد طبخ اليوم لدى هذه الأسرة. يمكنك طلب موعد يبدأ من الغد.",
+          "لا يوجد طبخ اليوم لدى هذه الأسرة المنتجة. يمكنك طلب موعد يبدأ من الغد.",
         ),
     ).toBeVisible();
     const today = new Intl.DateTimeFormat("en-CA", {

@@ -6,7 +6,7 @@ export default function NotFound() {
       <h1>يبدو أن الحكاية ليست هنا.</h1>
       <p>ربما تغير الرابط أو لم يعد المحتوى متاحًا للنشر.</p>
       <Link className="button" href="/browse">
-        اكتشف الأكلات ←
+        طبخات اليوم ←
       </Link>
       <Link className="text-link" href="/">
         العودة للرئيسية

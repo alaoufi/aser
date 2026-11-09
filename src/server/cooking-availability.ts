@@ -25,7 +25,7 @@ export function assertCookingStart(
   if (closed && startDate === today)
     throw new HttpError(
       409,
-      "لا يوجد طبخ اليوم لدى هذه الأسرة؛ اختر بداية من الغد",
+      "لا يوجد طبخ اليوم لدى هذه الأسرة المنتجة؛ اختر بداية من الغد",
     );
 }
 export async function ownCookingAvailability(user: SessionUser) {
@@ -35,7 +35,7 @@ export async function ownCookingAvailability(user: SessionUser) {
       [user.id],
     )
   ).rows[0];
-  if (!row) throw new HttpError(404, "أنشئ ملف الأسرة أولًا");
+  if (!row) throw new HttpError(404, "أنشئ ملف الأسرة المنتجة أولًا");
   return row as { day: string; notCookingToday: boolean };
 }
 export async function saveCookingAvailability(
@@ -51,7 +51,7 @@ export async function saveCookingAvailability(
         [user.id],
       )
     ).rows[0];
-    if (!producer) throw new HttpError(404, "أنشئ ملف الأسرة أولًا");
+    if (!producer) throw new HttpError(404, "أنشئ ملف الأسرة المنتجة أولًا");
     const day = (await client.query(`SELECT ${riyadhTodaySql}::text AS day`))
       .rows[0].day as string;
     if (value.notCookingToday)

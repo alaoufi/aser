@@ -18,7 +18,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }) {
   const p = await getProducer((await params).slug);
-  return { title: p?.name ?? "الأسرة غير موجودة" };
+  return { title: p?.name ?? "الأسرة المنتجة غير موجودة" };
 }
 export default async function ProducerDetail({
   params,
@@ -47,8 +47,8 @@ export default async function ProducerDetail({
           <h1>{p.name}</h1>
           {p.notCookingToday && (
             <p role="status" className="muted">
-              لا يوجد طبخ اليوم. طلبات المواعيد القادمة متاحة بالاتفاق مع
-              الأسرة.
+              لا يوجد طبخ اليوم. طلبات المواعيد القادمة متاحة بالاتفاق مع الأسرة
+              المنتجة.
             </p>
           )}
           {p.verified && (
@@ -59,7 +59,7 @@ export default async function ProducerDetail({
       </section>
       <div className="detail-grid">
         <section>
-          <h2>من مائدة الأسرة</h2>
+          <h2>من مائدة الأسرة المنتجة</h2>
           {products.length ? (
             <div className="product-grid two">
               {products.map((item) => (
@@ -69,18 +69,18 @@ export default async function ProducerDetail({
           ) : (
             <EmptyState
               title="لم تُنشر منتجات بعد"
-              text="تابع هذه الصفحة للتعرف على منتجات الأسرة عند نشرها."
+              text="تابع هذه الصفحة للتعرف على منتجات الأسرة المنتجة عند نشرها."
             />
           )}
         </section>
         <aside className="info-panel">
-          <h2>تواصل مع الأسرة</h2>
+          <h2>تواصل مع الأسرة المنتجة</h2>
           <ShareButton title={p.name} />
           <p>اتفق مباشرة على السعر والكمية ووقت التجهيز والاستلام.</p>
           <div className="contact-actions">
             {phone && (
               <a href={`tel:+${phone}`} className="button">
-                اتصل بالأسرة
+                اتصل بالأسرة المنتجة
               </a>
             )}
             {whatsapp && (
@@ -99,7 +99,7 @@ export default async function ProducerDetail({
           <h3>التوصيل والاستلام</h3>
           <p>
             {p.delivery
-              ? "التوصيل متاح بالتنسيق مع الأسرة."
+              ? "التوصيل متاح بالتنسيق مع الأسرة المنتجة."
               : "التوصيل غير متاح."}
           </p>
           <p>{p.pickup ? "الاستلام متاح بالتنسيق المباشر." : ""}</p>
@@ -129,7 +129,7 @@ export default async function ProducerDetail({
           )}
           {p.socialLinks.length > 0 && (
             <>
-              <h3>تابع الأسرة</h3>
+              <h3>تابع الأسرة المنتجة</h3>
               <div className="social-links">
                 {p.socialLinks.map((s, i) => {
                   const url = safeUrl(s.url);
@@ -155,7 +155,7 @@ export default async function ProducerDetail({
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                الموقع الإلكتروني للأسرة ↗
+                الموقع الإلكتروني للأسرة المنتجة ↗
               </a>
             </p>
           )}

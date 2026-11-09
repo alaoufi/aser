@@ -82,7 +82,7 @@ export function assertOrderProduct(
     product.producerStatus !== "approved" ||
     !["available", "preorder"].includes(product.status ?? "")
   )
-    throw new HttpError(404, "المنتج أو الأسرة غير متاح للطلب");
+    throw new HttpError(404, "المنتج أو الأسرة المنتجة غير متاح للطلب");
 }
 export function orderSnapshot(
   product: Pick<OrderProduct, "name" | "unit" | "price" | "producerName">,
@@ -257,7 +257,7 @@ export async function updateOrder(user: SessionUser, input: unknown) {
   });
 }
 
-// تنبيه «طلب جديد» للأسرة: الطلبات المعلقة التي لم تُعرض بعد، للأسرة المالكة فقط.
+// تنبيه «طلب جديد» للأسرة المنتجة: الطلبات المعلقة التي لم تُعرض بعد، للأسرة المنتجة المالكة فقط.
 export async function producerOrderAlerts(user: SessionUser) {
   const result = await db().query(
     `SELECT o.id,o.snapshot->>'productName' AS "productName",o.customer_name AS name,o.quantity,o.snapshot->>'unit' AS unit,o.meal,o.start_date::text AS "startDate",o.created_at AS "createdAt"

@@ -17,7 +17,7 @@ for (const width of [320, 1280]) {
     );
     await page.route("**/api/producer/products", (r) =>
       r.fulfill({
-        json: { products: [{ id: productId, name: "فطور الأسرة" }] },
+        json: { products: [{ id: productId, name: "فطور الأسرة المنتجة" }] },
       }),
     );
     let offers: Record<string, unknown>[] = [];
@@ -55,7 +55,7 @@ for (const width of [320, 1280]) {
     await form.getByLabel("وصف العرض").fill("وجبة فطور يومية");
     await form
       .getByLabel("الشروط والاستحقاق")
-      .fill("تتحقق الأسرة من الاستحقاق مباشرة");
+      .fill("تتحقق الأسرة المنتجة من الاستحقاق مباشرة");
     await form.getByLabel("السعر بالريال").fill("15");
     await form.locator('select[name="productId"]').selectOption(productId);
     await form.locator('select[name="audience"]').selectOption("students");
@@ -117,7 +117,7 @@ test("member saves declared interests before targeted offers appear", async ({
                 id: offerId,
                 title: "عرض الطلاب",
                 description: "فطور يومي",
-                terms: "التحقق لدى الأسرة",
+                terms: "التحقق لدى الأسرة المنتجة",
                 price: 15,
                 productId,
                 audience: "students",

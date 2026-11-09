@@ -105,7 +105,7 @@ test(
         [products[1]],
         "إدام without hamza",
       );
-      // اسم الأسرة يطابق منتجاتها، وفلتر الأسرة يعرض منتجاتها المتاحة فقط.
+      // اسم الأسرة المنتجة يطابق منتجاتها، وفلتر الأسرة المنتجة يعرض منتجاتها المتاحة فقط.
       assert.deepEqual(ids(await searchProducts({ producer: slugs[1] })), [
         products[3],
       ]);

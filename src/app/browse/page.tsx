@@ -13,7 +13,7 @@ import {
   searchWords,
 } from "@/server/catalog";
 import { EmptyState, ProducerCard, ProductCard } from "@/components/public/ui";
-// عنوان التبويب يتبع القسم أو الأسرة المفتوحة.
+// عنوان التبويب يتبع القسم أو الأسرة المنتجة المفتوحة.
 export async function generateMetadata({
   searchParams,
 }: {
@@ -30,7 +30,7 @@ export async function generateMetadata({
     const found = await getProducer(producer);
     if (found) return { title: `منتجات ${found.name}` };
   }
-  return { title: "اكتشف الأكلات" };
+  return { title: "طبخات اليوم" };
 }
 export const dynamic = "force-dynamic";
 
@@ -175,12 +175,12 @@ export default async function Browse({
           <h1>{family.name}</h1>
           <p>
             {filters.include
-              ? "كل منتجات الأسرة."
-              : "منتجات الأسرة المتاحة الآن وحسب الطلب."}
+              ? "كل منتجات الأسرة المنتجة."
+              : "منتجات الأسرة المنتجة المتاحة الآن وحسب الطلب."}
           </p>
           <div className="section-intro-links">
             <Link className="text-link" href={`/producers/${family.slug}`}>
-              صفحة الأسرة والتواصل
+              صفحة الأسرة المنتجة والتواصل
             </Link>
             <Link
               className="text-link"
@@ -192,8 +192,7 @@ export default async function Browse({
         </div>
       ) : (
         <div className="page-intro">
-          <p className="eyebrow">نكهات من بيوت أهلنا</p>
-          <h1>اكتشف الأكلات</h1>
+          <h1>طبخات اليوم</h1>
           <p>اختر طريقة البحث، ونعرض لك المتاح أولًا.</p>
         </div>
       )}
@@ -235,10 +234,10 @@ export default async function Browse({
       <details className="filter-wrap" open={by === "word" && !focus}>
         <summary>
           {focus === "category"
-            ? "تضييق داخل القسم: الكلمة، المنطقة، الأسرة، التوفر"
+            ? "ابحث داخل القسم: الكلمة، المنطقة، الأسرة المنتجة"
             : focus === "family"
-              ? "تضييق داخل منتجات الأسرة: الكلمة، القسم، التوفر"
-              : "تضييق البحث: الكلمة، المنطقة، الأسرة، القسم، التوفر"}
+              ? "ابحث داخل منتجات الأسرة المنتجة: الكلمة، القسم"
+              : "ابحث: الكلمة، المنطقة، الأسرة المنتجة، القسم"}
         </summary>
         <form className="filter-bar" action="/browse" autoComplete="off">
           {by !== "word" && <input type="hidden" name="by" value={by} />}
@@ -251,7 +250,7 @@ export default async function Browse({
               defaultValue={filters.q}
               placeholder={
                 by === "word"
-                  ? "جريش، مرقوق، اسم الأسرة، قهوة…"
+                  ? "جريش، مرقوق، اسم الأسرة المنتجة، قهوة…"
                   : "ابحث داخل القائمة (اختياري)"
               }
             />
@@ -263,7 +262,7 @@ export default async function Browse({
             defaultCity={filters.city}
           />
           <label>
-            <span className="sr-only">الأسرة</span>
+            <span className="sr-only">الأسرة المنتجة</span>
             <select name="producer" defaultValue={filters.producer}>
               <option value="">كل الأسر</option>
               {lists.families.map((f) => (
@@ -334,13 +333,13 @@ export default async function Browse({
                 {filters.include ? "" : " المتاحة"}
               </>
             ) : (
-              "الأسرة غير موجودة أو غير منشورة"
+              "الأسرة المنتجة غير موجودة أو غير منشورة"
             )}
           </p>
           <div>
             {family && (
               <Link className="text-link" href={`/producers/${family.slug}`}>
-                صفحة الأسرة ←
+                صفحة الأسرة المنتجة ←
               </Link>
             )}
             <Link className="text-link" href={href({ producer: "" })}>
@@ -465,7 +464,7 @@ export default async function Browse({
           ) : (
             <EmptyState
               title="لم نجد منتجات بهذه الخيارات"
-              text="جرّب «حسب القسم» أو «حسب الأسرة»، أو كلمة أقصر، أو امسح المرشحات. تظهر المنتجات المعتمدة والمنشورة فقط."
+              text="جرّب «حسب القسم» أو «حسب الأسرة المنتجة»، أو كلمة أقصر، أو امسح المرشحات. تظهر المنتجات المعتمدة والمنشورة فقط."
             />
           )}
         </>

@@ -136,7 +136,8 @@ export function Offers({ manage = false }: { manage?: boolean }) {
     <AccountShell navigation={manage}>
       <h1>{manage ? "عروض أسرتي" : "عروض الأسر المنتجة"}</h1>
       <p>
-        الاتفاق والتحقق من شروط الاستحقاق والدفع مباشرة مع الأسرة خارج الموقع.
+        الاتفاق والتحقق من شروط الاستحقاق والدفع مباشرة مع الأسرة المنتجة خارج
+        الموقع.
       </p>
       {manage && <Guard {...session} />}
       <Message error={error} />
@@ -147,7 +148,8 @@ export function Offers({ manage = false }: { manage?: boolean }) {
               <legend>اهتمامات العروض</legend>
               <p>
                 اختيارك تصريح اهتمام شخصي، ولا يعني تحقق الموقع من صفة طالب أو
-                موظف أو أي أهلية. تحدد الأسرة شروط العرض وتتحقق منها مباشرة.
+                موظف أو أي أهلية. تحدد الأسرة المنتجة شروط العرض وتتحقق منها
+                مباشرة.
               </p>
               {Object.entries(audiences)
                 .filter(([k]) => k !== "general")
@@ -330,7 +332,7 @@ export function Offers({ manage = false }: { manage?: boolean }) {
             <p style={{ whiteSpace: "pre-wrap" }}>الشروط: {o.terms}</p>
             <p>
               {o.price === null
-                ? "السعر بالاتفاق مع الأسرة"
+                ? "السعر بالاتفاق مع الأسرة المنتجة"
                 : `${o.price} ريال`}
             </p>
             <p>
@@ -363,7 +365,9 @@ export function Offers({ manage = false }: { manage?: boolean }) {
                     : `/producers/${o.producerSlug}`
                 }
               >
-                {o.productId ? "طلب المنتج بالعرض" : "التواصل مع الأسرة"}
+                {o.productId
+                  ? "طلب المنتج بالعرض"
+                  : "التواصل مع الأسرة المنتجة"}
               </Link>
             )}
           </article>

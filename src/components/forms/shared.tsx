@@ -73,10 +73,10 @@ function AccountNavigation() {
         </>
       ) : (
         <>
-          <Link href="/dashboard">لوحة الأسرة</Link>
+          <Link href="/dashboard">لوحة الأسرة المنتجة</Link>
           <Link href="/dashboard/products">المنتجات</Link>
-          <Link href="/dashboard/offers">عروض الأسرة</Link>
-          <Link href="/dashboard/orders">طلبات الأسرة</Link>
+          <Link href="/dashboard/offers">عروض الأسرة المنتجة</Link>
+          <Link href="/dashboard/orders">طلبات الأسرة المنتجة</Link>
           <Link href="/dashboard/coverage">مناطق التغطية</Link>
         </>
       )}
@@ -307,7 +307,8 @@ export function LoginForm({
       </p>
       {register && (
         <p className={s.notice}>
-          بعد الدخول يمكنك استكمال طلب الأسرة؛ يخضع الاعتماد لمراجعة الإدارة.
+          بعد الدخول يمكنك استكمال طلب الأسرة المنتجة؛ يخضع الاعتماد لمراجعة
+          الإدارة.
         </p>
       )}
       <Message error={error || session.error} />

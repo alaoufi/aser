@@ -53,7 +53,7 @@ export default async function Home() {
           </form>
           <div className="hero-notes">
             <span>◆ تصفّح بدون تسجيل</span>
-            <span>◆ تواصل مباشر مع الأسرة</span>
+            <span>◆ تواصل مباشر مع الأسرة المنتجة</span>
           </div>
         </div>
         <div className="hero-visual">
@@ -157,7 +157,7 @@ export default async function Home() {
         <Link href="/browse?status=available" className="availability-card">
           <span className="status-dot" />
           <h3>متوفر الآن</h3>
-          <p>اكتشف المنتجات المتاحة وتأكد من موعدها مع الأسرة.</p>
+          <p>اكتشف المنتجات المتاحة وتأكد من موعدها مع الأسرة المنتجة.</p>
           <span className="text-link">شوف المتوفر ←</span>
         </Link>
         <Link href="/browse?status=preorder" className="availability-card warm">
@@ -201,7 +201,7 @@ export default async function Home() {
         ) : (
           <EmptyState
             title="المائدة تنتظر أولى نكهاتها"
-            text="لا توجد منتجات منشورة حاليًا. كل منتج سيظهر بمعلوماته الحقيقية وسعره أو خيار الاستفسار من الأسرة."
+            text="لا توجد منتجات منشورة حاليًا. كل منتج سيظهر بمعلوماته الحقيقية وسعره أو خيار الاستفسار من الأسرة المنتجة."
           />
         )}
       </section>

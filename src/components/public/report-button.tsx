@@ -66,7 +66,7 @@ export function ReportButton(target: ReportTarget) {
         aria-controls={id}
         onClick={() => setOpen(!open)}
       >
-        الإبلاغ عن {target.productId ? "المنتج" : "الأسرة"}
+        الإبلاغ عن {target.productId ? "المنتج" : "الأسرة المنتجة"}
       </button>
       {open && (
         <div id={id} className="report-panel">

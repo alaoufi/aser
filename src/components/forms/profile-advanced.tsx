@@ -53,7 +53,8 @@ export function AdvancedFields({
           ))}
         </div>
         <p className={s.muted}>
-          أدخل روابط HTTPS الكاملة فقط. تظهر الروابط المحفوظة في صفحة الأسرة.
+          أدخل روابط HTTPS الكاملة فقط. تظهر الروابط المحفوظة في صفحة الأسرة
+          المنتجة.
         </p>
       </fieldset>
       <fieldset>

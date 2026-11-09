@@ -15,7 +15,7 @@ const steps: FamilyState["key"][] = [
 let shared: Promise<FamilyState | null> | null = null;
 function fetchState(force = false) {
   if (!shared || force)
-    // الزوار والعملاء لا يطلبون حالة الأسرة أصلًا: نتحقق من دور الجلسة أولًا.
+    // الزوار والعملاء لا يطلبون حالة الأسرة المنتجة أصلًا: نتحقق من دور الجلسة أولًا.
     shared = fetch("/api/session")
       .then((r) => (r.ok ? r.json() : { user: null }))
       .then((d: { user: { role?: string } | null }) =>
@@ -63,7 +63,7 @@ export function FamilyStatusChip({ place }: { place: "header" | "menu" }) {
   );
 }
 
-/** شريط حالة الحساب المفصّل (الشرح والمراحل وملاحظة الإدارة) — في لوحة الأسرة والتسجيل. */
+/** شريط حالة الحساب المفصّل (الشرح والمراحل وملاحظة الإدارة) — في لوحة الأسرة المنتجة والتسجيل. */
 export function FamilyStatusBanner() {
   const state = useFamilyState();
   if (!state) return null;
@@ -71,7 +71,7 @@ export function FamilyStatusBanner() {
   return (
     <section
       className={`${s.familyStatus} ${s["familyStatus_" + state.key] ?? ""}`}
-      aria-label="حالة حساب الأسرة"
+      aria-label="حالة حساب الأسرة المنتجة"
     >
       <p className={s.familyStatusHead}>
         حالة الحساب: <strong>{state.label}</strong>
@@ -83,7 +83,7 @@ export function FamilyStatusBanner() {
       {reached >= 0 && (
         <ol
           className={`${s.stepper} ${s.stepper4}`}
-          aria-label="مراحل اعتماد الأسرة"
+          aria-label="مراحل اعتماد الأسرة المنتجة"
         >
           {[
             ["incomplete", "إكمال المطلوب"],

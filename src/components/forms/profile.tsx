@@ -202,7 +202,9 @@ export function ProfileForm({
           تحديد نطاق التغطية: المدن والمراكز والأحياء
         </Link>
       )}
-      <h1>{registration ? "تسجيل أسرة في أكلات جدتنا" : "بيانات الأسرة"}</h1>
+      <h1>
+        {registration ? "تسجيل أسرة في أكلات جدتنا" : "بيانات الأسرة المنتجة"}
+      </h1>
       <p className={s.muted}>
         البيانات الأساسية فقط؛ يمكنك إضافة التفاصيل الأخرى لاحقًا.
       </p>
@@ -304,8 +306,8 @@ export function ProfileForm({
               />
             </label>
             <p className={s.muted}>
-              رقم الهوية والموقع الدقيق خاصان بالأسرة والإدارة. يظهر للزوار اسم
-              المدينة فقط.
+              رقم الهوية والموقع الدقيق خاصان بالأسرة المنتجة والإدارة. يظهر
+              للزوار اسم المدينة فقط.
             </p>
           </fieldset>
           {documentType === "exception" && (
@@ -384,7 +386,7 @@ export function ProfileForm({
                   </label>
                 </div>
                 <label className={s.field}>
-                  نبذة عن الأسرة
+                  نبذة عن الأسرة المنتجة
                   <textarea
                     name="description"
                     maxLength={2000}
