@@ -242,7 +242,7 @@ export default async function Browse({
         <form className="filter-bar" action="/browse" autoComplete="off">
           {by !== "word" && <input type="hidden" name="by" value={by} />}
           <label className="search-query">
-            وش تطلب اليوم؟
+            وش تطلب اليوم
             <input
               type="search"
               autoComplete="off"

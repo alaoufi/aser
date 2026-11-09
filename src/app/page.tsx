@@ -1,9 +1,7 @@
 import { FoodPhotos } from "@/components/public/food-photos";
-import { LocationFields } from "@/components/public/location-fields";
 import Link from "next/link";
 import {
   getCategories,
-  getCities,
   searchProducts,
   searchProducers,
 } from "@/server/catalog";
@@ -15,9 +13,8 @@ import {
 } from "@/components/public/ui";
 export const dynamic = "force-dynamic";
 export default async function Home() {
-  const [categories, cities, products, producers] = await Promise.all([
+  const [categories, products, producers] = await Promise.all([
     getCategories(),
-    getCities(),
     searchProducts({}),
     searchProducers({}),
   ]);
@@ -29,23 +26,13 @@ export default async function Home() {
           <h1 className="sr-only">أكلات جدتنا وأصالة الماضي</h1>
           <form action="/browse" className="hero-search" autoComplete="off">
             <label>
-              <span>وش تطلب اليوم؟</span>
-              <input
-                type="search"
-                name="q"
-                autoComplete="off"
-                placeholder="جريش، معمول، قهوة…"
-              />
+              <span>وش تطلب اليوم</span>
+              <input type="search" name="q" autoComplete="off" />
             </label>
-            <LocationFields cities={cities} className="city-field" />
             <button className="button" type="submit">
-              اكتشف <span aria-hidden="true">←</span>
+              ابحث <span aria-hidden="true">←</span>
             </button>
           </form>
-          <div className="hero-notes">
-            <span>◆ تصفّح بدون تسجيل</span>
-            <span>◆ تواصل مباشر مع الأسرة المنتجة</span>
-          </div>
         </div>
         <div className="hero-visual">
           <FoodPhotos />
