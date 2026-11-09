@@ -95,8 +95,12 @@ test("family chooses multiple hierarchical areas with fees and dependent resets"
   await page.getByLabel("الحي (اختياري)", { exact: true }).selectOption("h");
   await page.getByRole("button", { name: "أضف إلى التغطية" }).click();
   await page.getByLabel("المركز (اختياري)", { exact: true }).selectOption("b");
-  await expect(page.getByLabel("اسم المركز (اختياري)", { exact: true })).toHaveValue("مركز ثان");
-  await expect(page.getByLabel("الحي (اختياري)", { exact: true })).toHaveCount(0);
+  await expect(
+    page.getByLabel("اسم المركز (اختياري)", { exact: true }),
+  ).toHaveValue("مركز ثان");
+  await expect(page.getByLabel("الحي (اختياري)", { exact: true })).toHaveCount(
+    0,
+  );
   await page.getByRole("button", { name: "أضف إلى التغطية" }).click();
   await page
     .getByLabel("رسوم التوصيل (ريال، اختيارية)", { exact: true })

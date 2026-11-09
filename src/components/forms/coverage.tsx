@@ -296,7 +296,11 @@ export function CoverageForm() {
           {customAreas.map((area, index) => (
             <fieldset
               className={s.coverageArea}
-              key={JSON.stringify([area.cityNodeId, area.center, area.neighborhood])}
+              key={JSON.stringify([
+                area.cityNodeId,
+                area.center,
+                area.neighborhood,
+              ])}
             >
               <legend>
                 {[

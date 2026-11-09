@@ -9,7 +9,9 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "tsx --test tests/*.test.ts",
     "test:e2e": "playwright test",
-    "migrate": "tsx scripts/migrate.ts"
+    "migrate": "tsx scripts/migrate.ts",
+    "lint": "npx --yes @biomejs/biome@2.2.4 lint",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\" \"tests/**/*.ts\" \"scripts/**/*.{ts,cjs}\""
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.1164.0",
