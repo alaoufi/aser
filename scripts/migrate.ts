@@ -1,8 +1,8 @@
 import { readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
-import { createHash } from "node:crypto";
 import { db } from "../src/server/db";
 import { categories, cities } from "../src/server/constants";
+import { digestMatches, migrationSha256 } from "../src/lib/migration-digest";
 async function main() {
   if (!process.env.DATABASE_URL)
     throw new Error(
@@ -23,11 +23,14 @@ async function main() {
     await client.query(
       "CREATE TABLE IF NOT EXISTS jdatna.schema_migrations(name text PRIMARY KEY,sha256 text NOT NULL,applied_at timestamptz NOT NULL DEFAULT now())",
     );
+    const legacy: Record<string, string[]> = JSON.parse(
+      await readFile(join("migrations", "legacy-checksums.json"), "utf8"),
+    ).accepted;
     for (const name of (await readdir("migrations"))
       .filter((n) => /^\d+.*\.sql$/.test(n))
       .sort()) {
       const sql = await readFile(join("migrations", name), "utf8");
-      const digest = createHash("sha256").update(sql).digest("hex");
+      const digest = migrationSha256(sql);
       const existing = (
         await client.query(
           "SELECT sha256 FROM jdatna.schema_migrations WHERE name=$1",
@@ -35,7 +38,7 @@ async function main() {
         )
       ).rows[0];
       if (existing) {
-        if (existing.sha256 !== digest)
+        if (!digestMatches(existing.sha256, sql, legacy[name] ?? []))
           throw new Error("Migration checksum mismatch: " + name);
         continue;
       }
