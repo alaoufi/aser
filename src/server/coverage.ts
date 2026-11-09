@@ -21,6 +21,46 @@ export type CoverageArea = {
   fee: number | null;
   label?: string;
 };
+export type CustomCoverageArea = {
+  cityNodeId: string;
+  center?: string | null;
+  neighborhood?: string | null;
+  fee?: number | null;
+  label?: string;
+};
+const coverageFee = z
+  .number()
+  .min(0)
+  .max(99999999.99)
+  .multipleOf(0.01)
+  .nullable()
+  .optional();
+const coveragePlaceName = z
+  .string()
+  .trim()
+  .max(120)
+  .transform((name) => name.normalize("NFC") || null)
+  .nullable()
+  .optional();
+const customAreaSchema = z
+  .object({
+    cityNodeId: z.string().min(1).max(160),
+    center: coveragePlaceName,
+    neighborhood: coveragePlaceName,
+    fee: coverageFee,
+  })
+  .strict()
+  .refine(
+    (area) => Boolean(area.center || area.neighborhood),
+    "أدخل اسم المركز أو الحي",
+  );
+function customCoverageKey(area: CustomCoverageArea) {
+  return JSON.stringify([
+    area.cityNodeId,
+    area.center?.trim().normalize("NFC").toLowerCase() || "",
+    area.neighborhood?.trim().normalize("NFC").toLowerCase() || "",
+  ]);
+}
 export const coverageSchema = z
   .object({
     areas: z
@@ -39,11 +79,23 @@ export const coverageSchema = z
           .strict(),
       )
       .max(100),
+    customAreas: z.array(customAreaSchema).max(100).optional(),
   })
   .strict()
   .refine(
     (v) => new Set(v.areas.map((a) => a.nodeId)).size === v.areas.length,
     "لا تكرر نطاق التغطية",
+  )
+  .refine(
+    (value) => value.areas.length + (value.customAreas?.length ?? 0) <= 100,
+    "يمكن حفظ مئة نطاق تغطية كحد أقصى",
+  )
+  .refine(
+    (value) =>
+      !value.customAreas ||
+      new Set(value.customAreas.map(customCoverageKey)).size ===
+        value.customAreas.length,
+    "لا تكرر المركز أو الحي في المدينة نفسها",
   );
 export const nodeSchema = z
   .object({
@@ -111,27 +163,60 @@ export async function ownCoverage(user: SessionUser) {
       [producer.id],
     )
   ).rows;
-  return { areas, legacyAreas };
+  const customAreas = (
+    await db().query(
+      `SELECT d.city_node_id AS "cityNodeId",d.center,d.neighborhood,d.fee::float8 AS fee,
+     concat_ws(' / ',n.name,d.center,d.neighborhood) AS label
+     FROM jdatna.producer_coverage_details d JOIN jdatna.coverage_nodes n ON n.id=d.city_node_id
+     WHERE d.producer_id=$1 ORDER BY n.name,d.center,d.neighborhood`,
+      [producer.id],
+    )
+  ).rows as CustomCoverageArea[];
+  return { areas, legacyAreas, customAreas };
 }
 export async function saveCoverage(user: SessionUser, input: unknown) {
   const value = coverageSchema.parse(input);
   return transaction(async (client) => {
     const producer = (
       await client.query(
-        "SELECT id FROM jdatna.producer_profiles WHERE user_id=$1 FOR UPDATE",
+        `SELECT p.id,(SELECT count(*) FROM jdatna.producer_coverage_details d WHERE d.producer_id=p.id) AS "customCount"
+         FROM jdatna.producer_profiles p WHERE p.user_id=$1 FOR UPDATE`,
         [user.id],
       )
     ).rows[0];
     if (!producer) throw new HttpError(404, "أنشئ ملف الأسرة أولًا");
+    // Older clients omit customAreas; count their preserved rows under the same owner lock.
+    const customCount =
+      value.customAreas?.length ?? Number(producer.customCount ?? 0);
+    if (value.areas.length + customCount > 100)
+      throw new HttpError(400, "يمكن حفظ مئة نطاق تغطية كحد أقصى");
     const ids = value.areas.map((a) => a.nodeId);
     const found = (
       await client.query(
-        "SELECT id FROM jdatna.coverage_nodes WHERE id=ANY($1::text[]) AND kind IN ('city','center','neighborhood')",
-        [ids],
+        "SELECT id FROM jdatna.coverage_nodes WHERE id=ANY($1::text[]) AND kind IN ('city','center','neighborhood')" +
+          (value.customAreas === undefined
+            ? " AND ($2::int+(SELECT count(*) FROM jdatna.producer_coverage_details WHERE producer_id=$3))<=100"
+            : ""),
+        value.customAreas === undefined
+          ? [ids, ids.length, producer.id]
+          : [ids],
       )
     ).rows;
     if (found.length !== ids.length)
       throw new HttpError(400, "اختر مدينة أو مركزًا أو حيًا قائمًا");
+    if (value.customAreas !== undefined) {
+      const cityIds = [
+        ...new Set(value.customAreas.map((area) => area.cityNodeId)),
+      ];
+      const cities = (
+        await client.query(
+          "SELECT id FROM jdatna.coverage_nodes WHERE id=ANY($1::text[]) AND kind='city' FOR KEY SHARE",
+          [cityIds],
+        )
+      ).rows;
+      if (cities.length !== cityIds.length)
+        throw new HttpError(400, "اختر مدينة قائمة للأحياء والمراكز");
+    }
     await client.query(
       "DELETE FROM jdatna.producer_coverage WHERE producer_id=$1",
       [producer.id],
@@ -141,6 +226,23 @@ export async function saveCoverage(user: SessionUser, input: unknown) {
         "INSERT INTO jdatna.producer_coverage(producer_id,node_id,fee) VALUES($1,$2,$3)",
         [producer.id, a.nodeId, a.fee ?? null],
       );
+    if (value.customAreas !== undefined) {
+      await client.query(
+        "DELETE FROM jdatna.producer_coverage_details WHERE producer_id=$1",
+        [producer.id],
+      );
+      for (const area of value.customAreas)
+        await client.query(
+          "INSERT INTO jdatna.producer_coverage_details(producer_id,city_node_id,center,neighborhood,fee) VALUES($1,$2,$3,$4,$5)",
+          [
+            producer.id,
+            area.cityNodeId,
+            area.center ?? null,
+            area.neighborhood ?? null,
+            area.fee ?? null,
+          ],
+        );
+    }
     return { ok: true };
   });
 }
@@ -210,7 +312,11 @@ export async function getPublicCoverage(
   ).rows;
   const legacy = (
     await db().query(
-      `SELECT 'legacy:'||d.city_id AS "nodeId",c.name||' (تغطية التوصيل السابقة)' AS label,d.fee::float8 AS fee FROM jdatna.delivery_areas d JOIN jdatna.cities c ON c.id=d.city_id JOIN jdatna.producer_profiles p ON p.id=d.producer_id WHERE p.id=$1 AND p.status='approved' AND NOT EXISTS(SELECT 1 FROM jdatna.producer_coverage pc WHERE pc.producer_id=p.id AND pc.node_id='city:'||d.city_id)`,
+      `SELECT 'legacy:'||d.city_id AS "nodeId",c.name||' (تغطية التوصيل السابقة)' AS label,d.fee::float8 AS fee FROM jdatna.delivery_areas d JOIN jdatna.cities c ON c.id=d.city_id JOIN jdatna.producer_profiles p ON p.id=d.producer_id WHERE p.id=$1 AND p.status='approved' AND NOT EXISTS(SELECT 1 FROM jdatna.producer_coverage pc WHERE pc.producer_id=p.id AND pc.node_id='city:'||d.city_id)
+       UNION ALL
+       SELECT 'detail:'||d.id::text AS "nodeId",concat_ws(' / ',n.name,d.center,d.neighborhood) AS label,d.fee::float8 AS fee
+       FROM jdatna.producer_coverage_details d JOIN jdatna.coverage_nodes n ON n.id=d.city_node_id JOIN jdatna.producer_profiles p ON p.id=d.producer_id
+       WHERE p.id=$1 AND p.status='approved'`,
       [producerId],
     )
   ).rows;

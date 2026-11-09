@@ -2,6 +2,7 @@
 import { categoryLabel } from "@/lib/category-label";
 import { LocationFields } from "@/components/public/location-fields";
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import type { Category, City, SessionUser } from "@/lib/types";
 import {
   AdvancedFields,
@@ -188,6 +189,11 @@ export function ProfileForm({
   return (
     <>
       {profile && <CookingAvailability />}
+      {profile && (
+        <Link className={s.button} href="/dashboard/coverage">
+          تحديد نطاق التغطية: المدن والمراكز والأحياء
+        </Link>
+      )}
       <h1>{registration ? "تسجيل أسرة في أكلات جدتنا" : "بيانات الأسرة"}</h1>
       <p className={s.muted}>
         البيانات الأساسية فقط؛ يمكنك إضافة التفاصيل الأخرى لاحقًا.

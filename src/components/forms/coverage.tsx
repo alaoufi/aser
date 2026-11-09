@@ -4,6 +4,7 @@ import type {
   CoverageArea,
   CoverageNode,
   CoverageKind,
+  CustomCoverageArea,
 } from "@/server/coverage";
 import { api, s, AccountShell, Guard, Message, useSession } from "./shared";
 function Select({
@@ -38,18 +39,22 @@ function Select({
 function Picker({
   nodes,
   onPick,
+  onCustom,
 }: {
   nodes: CoverageNode[];
   onPick: (id: string) => void;
+  onCustom: (area: CustomCoverageArea) => void;
 }) {
   const [region, setRegion] = useState(""),
     [gov, setGov] = useState(""),
     [city, setCity] = useState(""),
     [center, setCenter] = useState(""),
-    [hood, setHood] = useState("");
+    [hood, setHood] = useState(""),
+    [centerName, setCenterName] = useState(""),
+    [neighborhoodName, setNeighborhoodName] = useState("");
   const descendants = (id: string) => nodes.filter((n) => n.parentId === id);
   const cities =
-    gov === "legacy"
+    gov === "legacy" || !gov
       ? descendants(region).filter((n) => n.kind === "city")
       : descendants(gov);
   return (
@@ -65,6 +70,8 @@ function Picker({
             setCity("");
             setCenter("");
             setHood("");
+            setCenterName("");
+            setNeighborhoodName("");
           }}
         />
         <label className={s.field}>
@@ -77,9 +84,11 @@ function Picker({
               setCity("");
               setCenter("");
               setHood("");
+              setCenterName("");
+              setNeighborhoodName("");
             }}
           >
-            <option value="">المحافظة</option>
+            <option value="">المحافظة (اختياري)</option>
             {descendants(region)
               .filter((n) => n.kind === "governorate")
               .map((n) => (
@@ -88,9 +97,7 @@ function Picker({
                 </option>
               ))}
             {descendants(region).some((n) => n.kind === "city") && (
-              <option value="legacy">
-                مدن القائمة السابقة — غير مصنفة لمحافظة
-              </option>
+              <option value="legacy">مدن المنطقة</option>
             )}
           </select>
         </label>
@@ -102,25 +109,33 @@ function Picker({
             setCity(v);
             setCenter("");
             setHood("");
+            setCenterName("");
+            setNeighborhoodName("");
           }}
         />
-        <Select
-          title="المركز (اختياري)"
-          nodes={descendants(city).filter((n) => n.kind === "center")}
-          value={center}
-          onChange={(v) => {
-            setCenter(v);
-            setHood("");
-          }}
-        />
-        <Select
-          title="الحي (اختياري)"
-          nodes={descendants(center || city).filter(
-            (n) => n.kind === "neighborhood",
-          )}
-          value={hood}
-          onChange={setHood}
-        />
+        {descendants(city).some((n) => n.kind === "center") && (
+          <Select
+            title="المركز (اختياري)"
+            nodes={descendants(city).filter((n) => n.kind === "center")}
+            value={center}
+            onChange={(v) => {
+              setCenter(v);
+              setHood("");
+              setCenterName(nodes.find((n) => n.id === v)?.name ?? "");
+              setNeighborhoodName("");
+            }}
+          />
+        )}
+        {descendants(center || city).some((n) => n.kind === "neighborhood") && (
+          <Select
+            title="الحي (اختياري)"
+            nodes={descendants(center || city).filter(
+              (n) => n.kind === "neighborhood",
+            )}
+            value={hood}
+            onChange={setHood}
+          />
+        )}
       </div>
       <button
         className={s.button}
@@ -128,8 +143,59 @@ function Picker({
         disabled={!city}
         onClick={() => onPick(hood || center || city)}
       >
-        أضف إلى التغطية
+        {hood || center ? "أضف إلى التغطية" : "أضف المدينة كاملة"}
       </button>
+      {city && (
+        <fieldset className={s.coverageArea}>
+          <legend>
+            الأحياء والمراكز التي تخدمها في{" "}
+            {nodes.find((n) => n.id === city)?.name}
+          </legend>
+          <p>
+            أدخل اسم حي أو مركز وأضفه، ثم كرر لإضافة بقية نطاقاتك. يمكنك ترك اسم
+            المركز فارغًا لإضافة حي تابع للمدينة مباشرة.
+          </p>
+          <div className={s.grid}>
+            <label className={s.field}>
+              اسم المركز (اختياري)
+              <input
+                value={centerName}
+                onChange={(e) => setCenterName(e.target.value)}
+                maxLength={120}
+                autoComplete="off"
+                placeholder="اسم المركز الذي تخدمه"
+              />
+            </label>
+            <label className={s.field}>
+              اسم الحي (اختياري)
+              <input
+                value={neighborhoodName}
+                onChange={(e) => setNeighborhoodName(e.target.value)}
+                maxLength={120}
+                autoComplete="off"
+                placeholder="اسم الحي الذي تخدمه"
+              />
+            </label>
+          </div>
+          <button
+            type="button"
+            className={s.button}
+            disabled={!centerName.trim() && !neighborhoodName.trim()}
+            onClick={() => {
+              onCustom({
+                cityNodeId: city,
+                center: centerName.trim() || null,
+                neighborhood: neighborhoodName.trim() || null,
+                fee: null,
+              });
+              setCenterName("");
+              setNeighborhoodName("");
+            }}
+          >
+            أضف الحي أو المركز
+          </button>
+        </fieldset>
+      )}
     </>
   );
 }
@@ -137,6 +203,7 @@ export function CoverageForm() {
   const session = useSession();
   const [nodes, setNodes] = useState<CoverageNode[]>([]),
     [areas, setAreas] = useState<CoverageArea[]>([]),
+    [customAreas, setCustomAreas] = useState<CustomCoverageArea[]>([]),
     [legacy, setLegacy] = useState<{ label: string; fee: number | null }[]>([]),
     [loaded, setLoaded] = useState(false),
     [busy, setBusy] = useState(false),
@@ -146,13 +213,16 @@ export function CoverageForm() {
     if (!session.user) return;
     Promise.all([
       api<{ nodes: CoverageNode[] }>("/api/coverage"),
-      api<{ areas: CoverageArea[]; legacyAreas: typeof legacy }>(
-        "/api/producer/coverage",
-      ),
+      api<{
+        areas: CoverageArea[];
+        customAreas?: CustomCoverageArea[];
+        legacyAreas: typeof legacy;
+      }>("/api/producer/coverage"),
     ])
       .then(([tree, data]) => {
         setNodes(tree.nodes);
         setAreas(data.areas);
+        setCustomAreas(data.customAreas ?? []);
         setLegacy(data.legacyAreas);
         setLoaded(true);
       })
@@ -174,7 +244,17 @@ export function CoverageForm() {
             try {
               await api("/api/producer/coverage", {
                 method: "PUT",
-                body: JSON.stringify({ areas }),
+                body: JSON.stringify({
+                  areas,
+                  customAreas: customAreas.map(
+                    ({ cityNodeId, center, neighborhood, fee }) => ({
+                      cityNodeId,
+                      center,
+                      neighborhood,
+                      fee,
+                    }),
+                  ),
+                }),
               });
               setSuccess("تم حفظ نطاقات التغطية");
             } catch (e) {
@@ -185,11 +265,26 @@ export function CoverageForm() {
           }}
         >
           <p>
-            اختر عدة مدن أو مراكز أو أحياء. رسوم التوصيل اختيارية والاتفاق
-            النهائي مع الأسرة خارج الموقع.
+            اختر المنطقة ثم المدينة، وأضف الأحياء والمراكز التي تخدمها. يمكنك
+            إضافة أكثر من نطاق. رسوم التوصيل اختيارية والاتفاق النهائي مع الأسرة
+            خارج الموقع.
           </p>
           <Picker
             nodes={nodes}
+            onCustom={(area) =>
+              setCustomAreas((old) =>
+                old.some(
+                  (a) =>
+                    a.cityNodeId === area.cityNodeId &&
+                    (a.center || "").normalize("NFC").toLowerCase() ===
+                      (area.center || "").normalize("NFC").toLowerCase() &&
+                    (a.neighborhood || "").normalize("NFC").toLowerCase() ===
+                      (area.neighborhood || "").normalize("NFC").toLowerCase(),
+                )
+                  ? old
+                  : [...old, area],
+              )
+            }
             onPick={(id) =>
               setAreas((a) =>
                 a.some((x) => x.nodeId === id)
@@ -198,8 +293,59 @@ export function CoverageForm() {
               )
             }
           />
+          {customAreas.map((area, index) => (
+            <fieldset
+              className={s.coverageArea}
+              key={JSON.stringify([area.cityNodeId, area.center, area.neighborhood])}
+            >
+              <legend>
+                {[
+                  nodes.find((n) => n.id === area.cityNodeId)?.name ||
+                    area.cityNodeId,
+                  area.center,
+                  area.neighborhood,
+                ]
+                  .filter(Boolean)
+                  .join(" / ")}
+              </legend>
+              <label className={s.field}>
+                رسوم التوصيل (ريال، اختيارية)
+                <input
+                  type="number"
+                  min="0"
+                  max="99999999.99"
+                  step="0.01"
+                  value={area.fee ?? ""}
+                  onChange={(e) =>
+                    setCustomAreas((old) =>
+                      old.map((a, i) =>
+                        i === index
+                          ? {
+                              ...a,
+                              fee:
+                                e.target.value === ""
+                                  ? null
+                                  : Number(e.target.value),
+                            }
+                          : a,
+                      ),
+                    )
+                  }
+                />
+              </label>
+              <button
+                type="button"
+                className={s.button}
+                onClick={() =>
+                  setCustomAreas((old) => old.filter((_, i) => i !== index))
+                }
+              >
+                إزالة {area.neighborhood || area.center}
+              </button>
+            </fieldset>
+          ))}
           {areas.map((a, i) => (
-            <fieldset key={a.nodeId}>
+            <fieldset className={s.coverageArea} key={a.nodeId}>
               <legend>
                 {nodes.find((n) => n.id === a.nodeId)?.label ?? a.nodeId}
               </legend>

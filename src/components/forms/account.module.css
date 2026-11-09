@@ -21,6 +21,26 @@
   display: grid;
   gap: 20px;
 }
+.coverageArea {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.coverageArea legend {
+  max-width: 100%;
+  padding-inline: 6px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.coverageArea p {
+  margin: 0;
+}
+.coverageArea .grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+}
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
