@@ -328,3 +328,39 @@
 .stepper4 {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
+
+/* ملخص الإدارة */
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+  margin: 0 0 20px;
+}
+.summaryCard {
+  display: grid;
+  gap: 2px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.summaryCard strong {
+  font-size: 26px;
+  line-height: 1.1;
+}
+.summaryCard span {
+  font-size: 13px;
+  color: var(--muted);
+}
+.summaryAlert {
+  border-color: var(--rust);
+  box-shadow: inset 0 3px 0 var(--rust);
+}
+.buttonSecondary[aria-pressed="true"] {
+  background: var(--ink);
+  color: #fff;
+  border-color: var(--ink);
+}

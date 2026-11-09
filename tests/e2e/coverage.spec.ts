@@ -163,7 +163,7 @@ test("admin must explicitly confirm exception when reviewing a document-free app
     .getByRole("combobox", { name: "القرار", exact: true })
     .selectOption("approved");
   await page
-    .getByLabel("سبب القرار (يُحفظ في سجل المراجعة)")
+    .getByLabel(/سبب القرار/)
     .fill("استثناء موثق بعد مراجعة أهلية الأسرة");
   await page
     .getByLabel(

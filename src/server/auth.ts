@@ -202,6 +202,78 @@ export async function verifyOtp(
     },
   );
 }
+// دخول الإدارة بخطوتين: بعد صحة كلمة المرور يُرسل رمز إلى جوال المدير.
+// ADMIN_LOGIN_OTP=off يعطّل الخطوة الثانية للطوارئ فقط (يتطلب وصولًا للخادم).
+export function adminOtpRequired() {
+  return process.env.ADMIN_LOGIN_OTP !== "off" && smsConfigured();
+}
+export async function startAdminChallenge(
+  client: { query: (sql: string, args: unknown[]) => Promise<unknown> },
+  phone: string,
+) {
+  const id = randomUUID(),
+    code = createOtp();
+  await client.query(
+    "INSERT INTO jdatna.otp_challenges(id,phone,code_hash,expires_at,purpose) VALUES($1,$2,$3,now()+interval '5 minutes','admin')",
+    [id, phone, otpHash(id, code)],
+  );
+  try {
+    await sendSms(phone, `رمز دخول إدارة أكلات جدتنا ${code}`);
+  } catch {
+    throw new HttpError(503, "تعذر إرسال رمز دخول الإدارة");
+  }
+  return id;
+}
+export async function verifyAdminLogin(id: string, code: string) {
+  await rateLimit("verify-global", 800, 3600);
+  await rateLimit("verify:" + id, 8, 900);
+  /* failed attempts must commit, not roll back */ return transaction(
+    async (client) => {
+      const challenge = (
+        await client.query(
+          "SELECT * FROM jdatna.otp_challenges WHERE id=$1 AND purpose='admin' FOR UPDATE",
+          [id],
+        )
+      ).rows[0];
+      if (
+        !challenge ||
+        challenge.consumed_at ||
+        new Date(challenge.expires_at).getTime() < Date.now() ||
+        challenge.attempts >= 5
+      )
+        return null;
+      await client.query(
+        "UPDATE jdatna.otp_challenges SET attempts=attempts+1 WHERE id=$1",
+        [id],
+      );
+      if (
+        !timingSafeEqual(
+          Buffer.from(challenge.code_hash, "hex"),
+          Buffer.from(otpHash(id, code), "hex"),
+        )
+      )
+        return null;
+      await client.query(
+        "UPDATE jdatna.otp_challenges SET consumed_at=now() WHERE id=$1",
+        [id],
+      );
+      const user = (
+        await client.query(
+          "SELECT id,name,phone,role,username FROM jdatna.users WHERE phone=$1 AND role='admin' AND phone_verified_at IS NOT NULL",
+          [challenge.phone],
+        )
+      ).rows[0] as SessionUser | undefined;
+      if (!user) return null;
+      const token = randomBytes(32).toString("hex");
+      await client.query(
+        "INSERT INTO jdatna.sessions(token_hash,user_id,expires_at) VALUES($1,$2,now()+interval '12 hours')",
+        [hash(token), user.id],
+      );
+      return { user, token };
+    },
+  );
+}
+export const ADMIN_SESSION_SECONDS = 43200;
 export function sessionCookie(token: string, maxAge = 604800) {
   return `${cookieName}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${process.env.NODE_ENV === "production" ? "; Secure" : ""}`;
 }

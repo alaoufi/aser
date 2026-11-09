@@ -140,6 +140,7 @@ export function LoginForm({
   );
   const [intent, setIntent] = useState("customer");
   const [challenge, setChallenge] = useState("");
+  const [adminChallenge, setAdminChallenge] = useState("");
   const [verified, setVerified] = useState<SessionUser | null>(null);
   const [canSetCredentials, setCanSetCredentials] = useState(false);
   const [busy, setBusy] = useState(false),
@@ -150,6 +151,7 @@ export function LoginForm({
   function switchMode(next: typeof mode) {
     setMode(next);
     setChallenge("");
+    setAdminChallenge("");
     setVerified(null);
     setCanSetCredentials(false);
     setError("");
@@ -195,17 +197,35 @@ export function LoginForm({
           { method: "POST", body: JSON.stringify(payload) },
         );
         finish(d.user, d.next);
-      } else if (mode === "password") {
+      } else if (mode === "password" && adminChallenge) {
         const d = await api<{ user: SessionUser; next: string }>(
-          "/api/auth/password-login",
+          "/api/auth/admin-verify",
           {
             method: "POST",
             body: JSON.stringify({
-              identifier: String(f.get("identifier") ?? "").trim(),
-              password: f.get("password"),
+              challengeId: adminChallenge,
+              code: String(f.get("adminCode") ?? ""),
             }),
           },
         );
+        finish(d.user, d.next);
+      } else if (mode === "password") {
+        const d = await api<{
+          user: SessionUser;
+          next: string;
+          otpRequired?: boolean;
+          challengeId?: string;
+        }>("/api/auth/password-login", {
+          method: "POST",
+          body: JSON.stringify({
+            identifier: String(f.get("identifier") ?? "").trim(),
+            password: f.get("password"),
+          }),
+        });
+        if (d.otpRequired && d.challengeId) {
+          setAdminChallenge(d.challengeId);
+          return;
+        }
         finish(d.user, d.next);
       } else if (!challenge) {
         const d = await api<{ challengeId: string }>("/api/auth/request-otp", {
@@ -367,6 +387,35 @@ export function LoginForm({
             </label>
             <button className={s.button} disabled={busy}>
               حفظ بيانات الدخول
+            </button>
+          </>
+        ) : mode === "password" && adminChallenge ? (
+          <>
+            <p className={s.notice} role="status">
+              حساب إدارة: أرسلنا رمز دخول إلى جوالك المسجل. أدخله لإكمال الدخول.
+            </p>
+            <label className={s.field}>
+              رمز دخول الإدارة
+              <input
+                name="adminCode"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                pattern="[0-9]{4}"
+                minLength={4}
+                maxLength={4}
+                required
+                autoFocus
+              />
+            </label>
+            <button className={s.button} disabled={busy}>
+              {busy ? "جارٍ التحقق…" : "تأكيد الدخول"}
+            </button>
+            <button
+              type="button"
+              className={s.button}
+              onClick={() => setAdminChallenge("")}
+            >
+              رجوع
             </button>
           </>
         ) : mode === "password" ? (
