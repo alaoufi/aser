@@ -756,10 +756,19 @@ main::before {
     left: auto;
     right: 0;
   }
-  /* الشعار أقصى اليسار، و«أكلات جدتنا» على يمينه */
+  /* الشعار أقصى اليسار، و«أكلات جدتنا» في الوسط بين زر القائمة والشعار */
+  body > header.site-header,
+  .site-header {
+    padding-inline: 8px;
+    gap: 8px;
+  }
   .site-header .brand {
+    flex: 1;
     flex-direction: row-reverse;
-    margin-right: auto;
+  }
+  .site-header .brand > span {
+    flex: 1;
+    text-align: center;
   }
 }
 
@@ -775,4 +784,65 @@ main::before {
   flex-wrap: wrap;
   gap: 18px;
   margin-top: 6px;
+}
+
+/* الرئيسية: بطاقتا التوفر بلا عنوان قسم */
+.availability-section {
+  grid-template-columns: 1fr 1fr;
+}
+.availability-section .availability-card {
+  min-height: 0;
+  padding: 18px 14px 16px;
+  border-radius: 40px 40px 6px 6px;
+  justify-content: center;
+}
+.availability-section .availability-card h3 {
+  font-size: 20px;
+  margin: 4px 0 0;
+}
+.availability-section {
+  margin-bottom: 48px;
+}
+
+/* الجوال: مسافات أقل، والبحث والزر في سطر واحد، وإطار الصورة أقصر */
+@media (max-width: 600px) {
+  .hero {
+    padding-block: 12px 18px;
+  }
+  .hero-search {
+    margin-top: 0;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 8px;
+    padding: 6px;
+  }
+  .hero-search label {
+    flex: 1;
+    flex-basis: auto;
+  }
+  .hero-search input {
+    min-height: 44px;
+  }
+  .hero-search .button {
+    width: auto;
+    min-width: 0;
+    min-height: 44px;
+    padding-inline: 18px;
+  }
+  .hero-visual {
+    margin-top: 12px;
+  }
+  .food-showcase-main {
+    aspect-ratio: 1.25;
+  }
+  .food-showcase-main::before {
+    inset-inline: 25%;
+    bottom: 7%;
+  }
+  .food-showcase-main img {
+    transform: rotate(-3deg) scale(0.66) translateY(10%);
+  }
+  .section {
+    padding-block: 14px 8px;
+  }
 }
