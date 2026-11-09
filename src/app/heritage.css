@@ -167,6 +167,19 @@ main::before {
 .hero-notes {
   margin-top: 10px;
 }
+/* «وش تطلب اليوم» داخل الحقل نفسه، بلا فراغ تحته */
+.hero-search label {
+  padding-block: 0;
+  justify-content: center;
+}
+.hero-search input {
+  min-height: 46px;
+  font-size: 16px;
+}
+.hero-search input::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
 
 /* القوس النجدي وطبق الخوص حول الطبق الرئيسي */
 .food-showcase-main {
