@@ -269,7 +269,7 @@ export async function adminSummary(user: SessionUser) {
   ).rows[0];
   return row as Record<string, number>;
 }
-// متابعة الطلبات للإدارة: قراءة فقط، آخر 200 طلب مع اسم الأسرة.
+// متابعة الطلبات للإدارة: قراءة فقط، آخر 200 طلب مع اسم الأسرة المنتجة.
 export async function adminOrders(user: SessionUser) {
   assertAdmin(user);
   return (

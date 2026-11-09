@@ -16,7 +16,7 @@ import {
 const value = {
   title: "عرض الغداء",
   description: "وجبة يومية",
-  terms: "الاتفاق مع الأسرة",
+  terms: "الاتفاق مع الأسرة المنتجة",
   audience: "general",
   meal: "lunch",
   startsAt: "2026-11-01T00:00:00Z",

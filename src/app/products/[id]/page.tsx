@@ -28,14 +28,14 @@ export default async function ProductDetail({
   const p = await getProduct((await params).id);
   if (!p) notFound();
   const offer = (await searchParams).offer;
-  // وسائل تواصل الأسرة المنشورة في صفحتها العامة فقط، لعرضها بعد إرسال الطلب.
+  // وسائل تواصل الأسرة المنتجة المنشورة في صفحتها العامة فقط، لعرضها بعد إرسال الطلب.
   const family = await getProducer(p.producerSlug);
   const familyPhone = family ? phoneNumber(family.phone) : null;
   const familyWhatsapp = family?.whatsapp ? phoneNumber(family.whatsapp) : null;
   return (
     <div className="wrap page-space">
       <Link href="/browse" className="text-link">
-        اكتشف الأكلات ←
+        طبخات اليوم ←
       </Link>
       <div className="product-detail">
         <div className="product-portrait">
@@ -54,7 +54,8 @@ export default async function ProductDetail({
           <h1>{p.name}</h1>
           {p.notCookingToday && (
             <p role="status" className="muted">
-              لا يوجد طبخ اليوم لدى هذه الأسرة. يمكنك طلب موعد يبدأ من الغد.
+              لا يوجد طبخ اليوم لدى هذه الأسرة المنتجة. يمكنك طلب موعد يبدأ من
+              الغد.
             </p>
           )}
           <Link className="text-link" href={`/producers/${p.producerSlug}`}>
@@ -78,15 +79,20 @@ export default async function ProductDetail({
             )}
             <p>
               <strong>التوصيل</strong>
-              <span>{p.delivery ? "متاح بالتنسيق مع الأسرة" : "غير متاح"}</span>
+              <span>
+                {p.delivery ? "متاح بالتنسيق مع الأسرة المنتجة" : "غير متاح"}
+              </span>
             </p>
           </div>
           <Link className="button" href={`/producers/${p.producerSlug}`}>
-            {p.price === null ? "استفسر عن السعر من الأسرة" : "تواصل مع الأسرة"}{" "}
+            {p.price === null
+              ? "استفسر عن السعر من الأسرة المنتجة"
+              : "تواصل مع الأسرة المنتجة"}{" "}
             ←
           </Link>
           <p className="muted">
-            التواصل والاتفاق مباشرة مع الأسرة. لا يوجد دفع إلكتروني داخل المنصة.
+            التواصل والاتفاق مباشرة مع الأسرة المنتجة. لا يوجد دفع إلكتروني داخل
+            المنصة.
           </p>
         </section>
       </div>
@@ -110,19 +116,21 @@ export default async function ProductDetail({
         <div className="information-grid">
           <div>
             <h3>المكونات</h3>
-            <p>{p.ingredients || "لم تُذكر. استفسر من الأسرة قبل الطلب."}</p>
+            <p>
+              {p.ingredients || "لم تُذكر. استفسر من الأسرة المنتجة قبل الطلب."}
+            </p>
           </div>
           <div>
             <h3>مسببات الحساسية</h3>
             <p>
               {p.allergens.length
                 ? p.allergens.join("، ")
-                : "لم تُذكر معلومات الحساسية. تحقق من الأسرة، خصوصًا عند وجود حساسية غذائية."}
+                : "لم تُذكر معلومات الحساسية. تحقق من الأسرة المنتجة، خصوصًا عند وجود حساسية غذائية."}
             </p>
           </div>
           <div>
             <h3>الحفظ والصلاحية</h3>
-            <p>{p.storage || "استفسر عن شروط الحفظ من الأسرة."}</p>
+            <p>{p.storage || "استفسر عن شروط الحفظ من الأسرة المنتجة."}</p>
             {p.shelfLife && <p>الصلاحية: {p.shelfLife}</p>}
           </div>
         </div>

@@ -1,9 +1,7 @@
 import { FoodPhotos } from "@/components/public/food-photos";
-import { LocationFields } from "@/components/public/location-fields";
 import Link from "next/link";
 import {
   getCategories,
-  getCities,
   searchProducts,
   searchProducers,
 } from "@/server/catalog";
@@ -15,9 +13,8 @@ import {
 } from "@/components/public/ui";
 export const dynamic = "force-dynamic";
 export default async function Home() {
-  const [categories, cities, products, producers] = await Promise.all([
+  const [categories, products, producers] = await Promise.all([
     getCategories(),
-    getCities(),
     searchProducts({}),
     searchProducers({}),
   ]);
@@ -25,36 +22,17 @@ export default async function Home() {
     <>
       <section className="hero wrap">
         <div className="hero-copy">
-          <p className="eyebrow">
-            <span className="tiny-line" /> من موروثنا، بكل حب
-          </p>
-          <h1>
-            للأصالة طعم، ولكل بيت <em>حكاية.</em>
-          </h1>
-          <p className="hero-description">
-            اكتشف نكهات الأجداد من أيدي الأسر المنتجة.
-            <br />
-            أكلات أصيلة، ومنتجات بلدية، وتواصل يقرّبكم.
-          </p>
+          {/* عنوان الصفحة لقارئات الشاشة ومحركات البحث فقط؛ النصوص التعريفية حُذفت بطلب المالك. */}
+          <h1 className="sr-only">أكلات جدتنا وأصالة الماضي</h1>
           <form action="/browse" className="hero-search" autoComplete="off">
             <label>
-              <span>وش طلبك اليوم؟</span>
-              <input
-                type="search"
-                name="q"
-                autoComplete="off"
-                placeholder="جريش، معمول، قهوة…"
-              />
+              <span>وش تطلب اليوم</span>
+              <input type="search" name="q" autoComplete="off" />
             </label>
-            <LocationFields cities={cities} className="city-field" />
             <button className="button" type="submit">
-              اكتشف <span aria-hidden="true">←</span>
+              ابحث <span aria-hidden="true">←</span>
             </button>
           </form>
-          <div className="hero-notes">
-            <span>◆ تصفّح بدون تسجيل</span>
-            <span>◆ تواصل مباشر مع الأسرة</span>
-          </div>
         </div>
         <div className="hero-visual">
           <FoodPhotos />
@@ -157,7 +135,7 @@ export default async function Home() {
         <Link href="/browse?status=available" className="availability-card">
           <span className="status-dot" />
           <h3>متوفر الآن</h3>
-          <p>اكتشف المنتجات المتاحة وتأكد من موعدها مع الأسرة.</p>
+          <p>اكتشف المنتجات المتاحة وتأكد من موعدها مع الأسرة المنتجة.</p>
           <span className="text-link">شوف المتوفر ←</span>
         </Link>
         <Link href="/browse?status=preorder" className="availability-card warm">
@@ -201,7 +179,7 @@ export default async function Home() {
         ) : (
           <EmptyState
             title="المائدة تنتظر أولى نكهاتها"
-            text="لا توجد منتجات منشورة حاليًا. كل منتج سيظهر بمعلوماته الحقيقية وسعره أو خيار الاستفسار من الأسرة."
+            text="لا توجد منتجات منشورة حاليًا. كل منتج سيظهر بمعلوماته الحقيقية وسعره أو خيار الاستفسار من الأسرة المنتجة."
           />
         )}
       </section>

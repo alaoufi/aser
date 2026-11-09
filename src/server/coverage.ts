@@ -150,7 +150,7 @@ export async function ownCoverage(user: SessionUser) {
       [user.id],
     )
   ).rows[0];
-  if (!producer) throw new HttpError(404, "أنشئ ملف الأسرة أولًا");
+  if (!producer) throw new HttpError(404, "أنشئ ملف الأسرة المنتجة أولًا");
   const areas = (
     await db().query(
       'SELECT node_id AS "nodeId",fee::float8 AS fee FROM jdatna.producer_coverage WHERE producer_id=$1',
@@ -184,7 +184,7 @@ export async function saveCoverage(user: SessionUser, input: unknown) {
         [user.id],
       )
     ).rows[0];
-    if (!producer) throw new HttpError(404, "أنشئ ملف الأسرة أولًا");
+    if (!producer) throw new HttpError(404, "أنشئ ملف الأسرة المنتجة أولًا");
     // Older clients omit customAreas; count their preserved rows under the same owner lock.
     const customCount =
       value.customAreas?.length ?? Number(producer.customCount ?? 0);

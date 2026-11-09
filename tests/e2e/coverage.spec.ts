@@ -164,7 +164,7 @@ test("admin must explicitly confirm exception when reviewing a document-free app
     .selectOption("approved");
   await page
     .getByLabel(/سبب القرار/)
-    .fill("استثناء موثق بعد مراجعة أهلية الأسرة");
+    .fill("استثناء موثق بعد مراجعة أهلية الأسرة المنتجة");
   await page
     .getByLabel(
       "تحققت من أهلية النشاط واستيفاء التراخيص الإلزامية قبل الاعتماد.",

@@ -64,7 +64,7 @@ for (const [key, label, detail] of states)
     }
     // الشريط المفصّل لا يتكرر في كل صفحة.
     await expect(
-      page.getByRole("region", { name: "حالة حساب الأسرة" }),
+      page.getByRole("region", { name: "حالة حساب الأسرة المنتجة" }),
     ).toHaveCount(0);
   });
 
@@ -76,7 +76,7 @@ test("detailed status with the admin note stays on the family dashboard", async 
     r.fulfill({ json: { profile: null, categories: [], cities: [] } }),
   );
   await page.goto("/dashboard");
-  const banner = page.getByRole("region", { name: "حالة حساب الأسرة" });
+  const banner = page.getByRole("region", { name: "حالة حساب الأسرة المنتجة" });
   await expect(banner).toContainText("حالة الحساب: بانتظار إكمال المطلوب");
   await expect(banner).toContainText("ملاحظة الإدارة: ارفع صورة أوضح");
 });

@@ -222,7 +222,7 @@ test(
         assert.equal(publicJSON.includes(secret), false);
       const advanced = {
         ...base,
-        description: "وصف الأسرة الموجود",
+        description: "وصف الأسرة المنتجة الموجود",
         neighborhood: "حي موجود",
         whatsapp: users[0].phone,
         delivery: true,
@@ -241,7 +241,10 @@ test(
         documentExpiresAt: "2035-12-31",
       };
       await saveProfile(users[0], advanced);
-      await saveProfile(users[0], { ...base, name: "اسم الأسرة المعدل" });
+      await saveProfile(users[0], {
+        ...base,
+        name: "اسم الأسرة المنتجة المعدل",
+      });
       const retained = await ownProfile(users[0]);
       assert.equal(retained.description, advanced.description);
       assert.equal(retained.neighborhood, advanced.neighborhood);

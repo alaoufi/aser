@@ -9,15 +9,15 @@ const meals: Record<string, string> = {
   occasion: "مناسبة",
 };
 const statuses: Record<string, string> = {
-  pending: "بانتظار اتفاق الأسرة",
-  accepted: "قبلته الأسرة",
-  preparing: "قيد التجهيز لدى الأسرة",
+  pending: "بانتظار اتفاق الأسرة المنتجة",
+  accepted: "قبلته الأسرة المنتجة",
+  preparing: "قيد التجهيز لدى الأسرة المنتجة",
   ready: "جاهز للتسليم",
-  declined: "اعتذرت الأسرة",
+  declined: "اعتذرت الأسرة المنتجة",
   completed: "مكتمل",
   cancelled: "ملغى",
 };
-// مراحل تنفيذ الطلب كما تراها الأسرة، وأزرار الانتقال من كل مرحلة.
+// مراحل تنفيذ الطلب كما تراها الأسرة المنتجة، وأزرار الانتقال من كل مرحلة.
 const stages = [
   ["pending", "جديد"],
   ["accepted", "مقبول"],
@@ -290,7 +290,7 @@ export function OrderRequestForm({
     <div className={s.actions}>
       {contactPhone && (
         <a className={s.contact} href={`tel:+${contactPhone}`}>
-          اتصال بالأسرة
+          اتصال بالأسرة المنتجة
         </a>
       )}
       {contactWhatsapp && (
@@ -302,7 +302,7 @@ export function OrderRequestForm({
           target="_blank"
           rel="noopener noreferrer"
         >
-          واتساب الأسرة
+          واتساب الأسرة المنتجة
         </a>
       )}
     </div>
@@ -346,7 +346,7 @@ export function OrderRequestForm({
         <dt>السعر</dt>
         <dd>
           {(selectedOffer ? selectedOffer.price : price) == null
-            ? "بالاتفاق مع الأسرة"
+            ? "بالاتفاق مع الأسرة المنتجة"
             : `${selectedOffer ? selectedOffer.price : price} ر.س للوحدة، قبل الاتفاق`}
         </dd>
       </div>
@@ -381,8 +381,8 @@ export function OrderRequestForm({
         </p>
       )}
       <p className={s.notice}>
-        إرسال طلب مبدئي للأسرة. تأكيد التوفر والاتفاق والسداد خارج الموقع؛ لا
-        دفع أو تجديد تلقائي.
+        إرسال طلب مبدئي للأسرة المنتجة. تأكيد التوفر والاتفاق والسداد خارج
+        الموقع؛ لا دفع أو تجديد تلقائي.
       </p>
       {offerId && !offerReady && <p role="status">جارٍ التحقق من العرض…</p>}
       {selectedOffer && (
@@ -394,15 +394,15 @@ export function OrderRequestForm({
               ? "بالاتفاق"
               : `${selectedOffer.price} ر.س`}
           </p>
-          <p>شروط الأسرة: {selectedOffer.terms}</p>
-          <p>تتحقق الأسرة من شروط الاستحقاق خارج الموقع.</p>
+          <p>شروط الأسرة المنتجة: {selectedOffer.terms}</p>
+          <p>تتحقق الأسرة المنتجة من شروط الاستحقاق خارج الموقع.</p>
         </div>
       )}
       <Message error={offerError || error} />
       {receipt ? (
         <div role="status" className={s.confirmation}>
           <h3 ref={receiptHeading} tabIndex={-1}>
-            <span aria-hidden="true">✓</span> تم إرسال طلبك للأسرة
+            <span aria-hidden="true">✓</span> تم إرسال طلبك للأسرة المنتجة
           </h3>
           <p>
             رقم المرجع: <bdi dir="ltr">{receipt.slice(0, 8)}</bdi>
@@ -410,12 +410,12 @@ export function OrderRequestForm({
           {sent && summaryOf(sent)}
           <h4>الخطوة التالية</h4>
           <p>
-            ستراجع الأسرة طلبك وتتواصل معك على جوالك لتأكيد التوفر والسعر
-            والاستلام. السداد والاتفاق خارج الموقع.
+            ستراجع الأسرة المنتجة طلبك وتتواصل معك على جوالك لتأكيد التوفر
+            والسعر والاستلام. السداد والاتفاق خارج الموقع.
           </p>
           {(contactPhone || contactWhatsapp) && (
             <>
-              <p>للاستعجال أو الاستفسار تواصل مع الأسرة مباشرة:</p>
+              <p>للاستعجال أو الاستفسار تواصل مع الأسرة المنتجة مباشرة:</p>
               {contact}
             </>
           )}
@@ -431,7 +431,7 @@ export function OrderRequestForm({
           )}
           {producerSlug && (
             <p>
-              <a href={`/producers/${producerSlug}`}>صفحة الأسرة ←</a>
+              <a href={`/producers/${producerSlug}`}>صفحة الأسرة المنتجة ←</a>
             </p>
           )}
         </div>
@@ -444,7 +444,8 @@ export function OrderRequestForm({
               </h3>
               {summaryOf(review.summary)}
               <p className={s.muted}>
-                بالإرسال يصل الطلب للأسرة كطلب مبدئي، وتتواصل معك لتأكيده.
+                بالإرسال يصل الطلب للأسرة المنتجة كطلب مبدئي، وتتواصل معك
+                لتأكيده.
               </p>
               <div className={s.actions}>
                 <button
@@ -652,14 +653,14 @@ export function Orders({ producer = false }: { producer?: boolean }) {
   }
   return (
     <AccountShell>
-      <h1>{producer ? "طلبات الأسرة" : "طلباتي"}</h1>
+      <h1>{producer ? "طلبات الأسرة المنتجة" : "طلباتي"}</h1>
       <Guard {...session} />
       <Message error={error} />
       {session.user && (
         <>
           <p className={s.muted}>
-            آخر 200 طلب. الاتفاق والسداد خارج الموقع. قبول الأسرة لا يعني دفع
-            المبلغ.
+            آخر 200 طلب. الاتفاق والسداد خارج الموقع. قبول الأسرة المنتجة لا
+            يعني دفع المبلغ.
           </p>
           {loaded && !orders.length && <p>لا توجد طلبات حتى الآن.</p>}
           {draft && (
@@ -679,7 +680,7 @@ export function Orders({ producer = false }: { producer?: boolean }) {
                 <a href={`/products/${draft.productId}`}>
                   راجع المنتج والسعر الحالي قبل إرسال المسودة
                 </a>
-                . السعر النهائي بالاتفاق مع الأسرة.
+                . السعر النهائي بالاتفاق مع الأسرة المنتجة.
               </p>
               <OrderRequestForm
                 key={draft.productId + JSON.stringify(draft)}

@@ -124,10 +124,10 @@ test.describe("requests on a real isolated catalog product", () => {
       await form.getByRole("button", { name: "تأكيد وإرسال الطلب" }).click();
       const receipt = form.getByRole("status");
       await expect(receipt).toContainText(receiptId.slice(0, 8));
-      await expect(receipt).toContainText("تم إرسال طلبك للأسرة");
+      await expect(receipt).toContainText("تم إرسال طلبك للأسرة المنتجة");
       await expect(receipt).toContainText("الخطوة التالية");
       await expect(
-        receipt.getByRole("link", { name: "اتصال بالأسرة" }),
+        receipt.getByRole("link", { name: "اتصال بالأسرة المنتجة" }),
       ).toHaveAttribute("href", /^tel:\+9665\d{8}$/);
       const payload = sent.at(-1)!;
       expect(payload.productId).toBe(productId);
@@ -157,7 +157,7 @@ test.describe("requests on a real isolated catalog product", () => {
             productId,
             title: "عرض فطور محدد",
             price: 15,
-            terms: "شرط الأسرة الواضح",
+            terms: "شرط الأسرة المنتجة الواضح",
             meal: "breakfast",
           },
         },
@@ -174,7 +174,7 @@ test.describe("requests on a real isolated catalog product", () => {
     await page.goto(`/products/${productId}?offer=${offerId}`);
     const form = await fillGuest(page);
     await expect(form).toContainText("عرض فطور محدد");
-    await expect(form).toContainText("شرط الأسرة الواضح");
+    await expect(form).toContainText("شرط الأسرة المنتجة الواضح");
     await expect(
       form.getByRole("combobox", { name: "الوجبة", exact: true }),
     ).toHaveValue("breakfast");

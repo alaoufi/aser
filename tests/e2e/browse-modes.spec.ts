@@ -16,7 +16,7 @@ test("browse offers four search methods: word, available, family and category", 
     "aria-current",
     "page",
   );
-  await expect(page.getByLabel("وش طلبك اليوم؟")).toBeVisible();
+  await expect(page.getByLabel("وش تطلب اليوم")).toBeVisible();
 
   await modes.getByRole("link", { name: "حسب القسم" }).click();
   await expect(page).toHaveURL(/by=category/);
@@ -30,7 +30,7 @@ test("browse offers four search methods: word, available, family and category", 
   const sectionTitle = await page
     .getByRole("heading", { level: 1 })
     .textContent();
-  expect(sectionTitle).not.toBe("اكتشف الأكلات");
+  expect(sectionTitle).not.toBe("طبخات اليوم");
   await expect(page).toHaveTitle(new RegExp(sectionTitle!.trim()));
   await expect(
     page.getByRole("navigation", { name: "طريقة البحث" }),
@@ -50,7 +50,7 @@ test("browse offers four search methods: word, available, family and category", 
     .getByRole("link", { name: "المتاح الآن" })
     .click();
   await expect(page).toHaveURL(/by=available/);
-  await page.getByText("تضييق البحث", { exact: false }).click();
+  await page.getByText("ابحث: الكلمة", { exact: false }).click();
   await expect(page.getByRole("combobox", { name: "التوفر" })).toContainText(
     "متوفر الآن",
   );

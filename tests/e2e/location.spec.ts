@@ -2,7 +2,8 @@ import { test, expect } from "@playwright/test";
 test("region precedes city, restricts cities and resets stale selection in all searches", async ({
   page,
 }) => {
-  for (const route of ["/", "/browse", "/producers"]) {
+  // الرئيسية صار فيها حقل «وش تطلب اليوم» فقط بطلب المالك؛ المنطقة والمدينة في البحث وصفحة الأسر.
+  for (const route of ["/browse", "/producers"]) {
     await page.goto(route);
     const region = page.locator('select[name="region"]');
     const city = page.locator('select[name="city"]');

@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     template: "%s | أكلات جدتنا",
   },
   description:
-    "اكتشف الأكلات التراثية والمنتجات الغذائية من الأسر المنتجة السعودية، وتواصل مع الأسرة مباشرة.",
+    "طبخات تراثية ومنتجات غذائية من الأسر المنتجة السعودية، وتواصل مع الأسرة المنتجة مباشرة.",
   applicationName: "أكلات جدتنا",
   icons: {
     icon: {
@@ -51,12 +51,12 @@ export default function RootLayout({
               loading="eager"
             />
             <span>
-              أكلات جدتنا<small>أصالة تُصنع بحب</small>
+              أكلات جدتنا<small>وأصالة الماضي</small>
             </span>
           </Link>
           <nav className="desktop-nav" aria-label="التنقل الرئيسي">
             <Link href="/">الرئيسية</Link>
-            <Link href="/browse">اكتشف الأكلات</Link>
+            <Link href="/browse">طبخات اليوم</Link>
             <Link href="/producers">الأسر المنتجة</Link>
             <Link href="/offers">العروض الخاصة</Link>
             <Link href="/about">حكايتنا</Link>

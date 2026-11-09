@@ -25,7 +25,10 @@ export function mergeProducerPrivate(
   const nationalId = input.nationalId ?? existing?.nationalId,
     workLocation = input.workLocation ?? existing?.workLocation;
   if (!nationalId || !workLocation)
-    throw new HttpError(400, "أدخل رقم الهوية ومكان مزاولة العمل للأسرة");
+    throw new HttpError(
+      400,
+      "أدخل رقم الهوية ومكان مزاولة العمل للأسرة المنتجة",
+    );
   return { nationalId, workLocation };
 }
 function privateKey() {
@@ -369,7 +372,7 @@ export async function reviewProducer(
         [id],
       )
     ).rows[0];
-    if (!producer) throw new HttpError(404, "الأسرة غير موجودة");
+    if (!producer) throw new HttpError(404, "الأسرة المنتجة غير موجودة");
     if (producer.user_id === user.id)
       throw new HttpError(403, "لا يمكن مراجعة ملف أسرتك بنفسك");
     const verification = (
@@ -419,7 +422,7 @@ export async function reviewProducer(
     return { status: value.decision };
   });
 }
-// حالة حساب الأسرة للشريط أعلى الصفحة: بيانات المالك فقط، دون بيانات خاصة.
+// حالة حساب الأسرة المنتجة للشريط أعلى الصفحة: بيانات المالك فقط، دون بيانات خاصة.
 export async function familyStatus(user: SessionUser) {
   const row = (
     await db().query(

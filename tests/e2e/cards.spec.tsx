@@ -12,7 +12,7 @@ test("family cards keep long Arabic names, description and delivery badges reada
     regionName: "منطقة الرياض",
     cityName: "الرياض",
     description:
-      "وصف محلي لاختبار عرض النصوص الطويلة في بطاقة الأسرة المنتجة والتأكد من وضوحها دون تداخل مع حالة التوصيل أو اسم الأسرة.",
+      "وصف محلي لاختبار عرض النصوص الطويلة في بطاقة الأسرة المنتجة والتأكد من وضوحها دون تداخل مع حالة التوصيل أو اسم الأسرة المنتجة.",
     verified: true,
     delivery: true,
     logoUrl: null,

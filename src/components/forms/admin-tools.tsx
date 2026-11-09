@@ -428,12 +428,12 @@ const meals: Record<string, string> = {
   occasion: "مناسبة",
 };
 const orderStatus: Record<string, string> = {
-  pending: "جديد بانتظار الأسرة",
+  pending: "جديد بانتظار الأسرة المنتجة",
   accepted: "مقبول",
   preparing: "قيد التجهيز",
   ready: "جاهز",
   completed: "تم التسليم",
-  declined: "اعتذرت الأسرة",
+  declined: "اعتذرت الأسرة المنتجة",
   cancelled: "ملغى",
 };
 type Summary = Record<string, number>;
@@ -510,8 +510,8 @@ export function OrdersAdmin() {
     <section>
       <h2>متابعة الطلبات</h2>
       <p className={s.muted}>
-        للاطلاع والمتابعة فقط؛ الأسرة تدير حالة طلبها. الاتفاق والسداد خارج
-        الموقع.
+        للاطلاع والمتابعة فقط؛ الأسرة المنتجة تدير حالة طلبها. الاتفاق والسداد
+        خارج الموقع.
       </p>
       <Message error={r.error} />
       <div className={s.actions} role="group" aria-label="تصفية الطلبات">
@@ -549,7 +549,7 @@ export function OrdersAdmin() {
               </span>
             </div>
             <p>
-              الأسرة:{" "}
+              الأسرة المنتجة:{" "}
               <a href={`/producers/${o.producerSlug}`}>{o.producerName}</a>
             </p>
             <p>

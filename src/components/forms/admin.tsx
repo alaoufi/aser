@@ -147,13 +147,14 @@ function Review({
             </option>
             <option value="approved">اعتماد</option>
             <option value="rejected">
-              طلب استكمال (يعود للأسرة لتعديل المطلوب)
+              طلب استكمال (يعود للأسرة المنتجة لتعديل المطلوب)
             </option>
             <option value="suspended">إيقاف الحساب</option>
           </select>
         </label>
         <label className={s.field}>
-          سبب القرار (يُحفظ في سجل المراجعة ويظهر للأسرة عند طلب الاستكمال)
+          سبب القرار (يُحفظ في سجل المراجعة ويظهر للأسرة المنتجة عند طلب
+          الاستكمال)
           <textarea name="reason" required minLength={5} maxLength={2000} />
         </label>
         <label className={s.checks}>
@@ -276,7 +277,7 @@ export function Admin() {
                 ))}
               </div>
               <label className={s.field}>
-                بحث باسم الأسرة أو صاحبها أو الجوال أو المدينة
+                بحث باسم الأسرة المنتجة أو صاحبها أو الجوال أو المدينة
                 <input
                   type="search"
                   value={query}

@@ -83,7 +83,7 @@ test("only approved visible available/preorder products accept requests", () => 
     status: "available",
     visible: true,
     producerStatus: "approved",
-    producerName: "الأسرة",
+    producerName: "الأسرة المنتجة",
   };
   assert.doesNotThrow(() => assertOrderProduct(product));
   assert.doesNotThrow(() =>
@@ -103,7 +103,7 @@ test("snapshots copy current product values and contain only safe offer summary"
     name: "طبق",
     unit: "وجبة",
     price: "20.00",
-    producerName: "الأسرة",
+    producerName: "الأسرة المنتجة",
   };
   const snapshot = orderSnapshot(product, { label: "عرض", price: 15 });
   product.name = "معدل";
@@ -111,7 +111,7 @@ test("snapshots copy current product values and contain only safe offer summary"
     productName: "طبق",
     unit: "وجبة",
     price: 20,
-    producerName: "الأسرة",
+    producerName: "الأسرة المنتجة",
     offer: { label: "عرض", price: 15 },
   });
 });
@@ -247,7 +247,7 @@ test(
         "guest phone must never claim member history",
       );
       assert.equal((await producerOrders(users[0])).length, 2);
-      // تنبيه «طلب جديد»: للأسرة المالكة فقط، ويختفي بعد الاطلاع أو الرد.
+      // تنبيه «طلب جديد»: للأسرة المنتجة المالكة فقط، ويختفي بعد الاطلاع أو الرد.
       const alerts = await producerOrderAlerts(users[0]);
       assert.equal(alerts.pending, 2);
       assert.deepEqual(

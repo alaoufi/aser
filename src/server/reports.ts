@@ -28,7 +28,7 @@ export async function submitReport(user: SessionUser, input: unknown) {
             [value.producerId],
           )
         ).rows[0];
-    if (!target) throw new HttpError(404, "المنتج أو الأسرة غير متاح");
+    if (!target) throw new HttpError(404, "المنتج أو الأسرة المنتجة غير متاح");
     const id = randomUUID();
     await client.query(
       "INSERT INTO jdatna.reports(id,reporter_id,product_id,producer_id,reason) VALUES($1,$2,$3,$4,$5)",

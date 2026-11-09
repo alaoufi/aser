@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 const user = {
   id: "simple-family-user",
-  name: "اسم الأسرة",
+  name: "اسم الأسرة المنتجة",
   phone: "+966500000001",
   role: "customer",
 };
@@ -15,7 +15,7 @@ test("family saves only basic fields in one form and retries without reuploading
   page,
 }) => {
   await page.setViewportSize({ width: 320, height: 1000 });
-  // بعد حفظ ملف الأسرة يرقّي الخادم الحساب إلى producer، كما في الإنتاج.
+  // بعد حفظ ملف الأسرة المنتجة يرقّي الخادم الحساب إلى producer، كما في الإنتاج.
   await page.route("**/api/session", (r) =>
     r.fulfill({
       json: {
@@ -49,7 +49,7 @@ test("family saves only basic fields in one form and retries without reuploading
       if (attempts === 1)
         return r.fulfill({
           status: 503,
-          json: { error: "تعذر حفظ ملف الأسرة" },
+          json: { error: "تعذر حفظ ملف الأسرة المنتجة" },
         });
       profile = {
         ...posted,
@@ -83,7 +83,7 @@ test("family saves only basic fields in one form and retries without reuploading
   await expect(
     page.locator('details:has(summary:text-is("تفاصيل إضافية (اختيارية)"))'),
   ).not.toHaveAttribute("open", "");
-  await expect(page.getByLabel("نبذة عن الأسرة")).toHaveCount(0);
+  await expect(page.getByLabel("نبذة عن الأسرة المنتجة")).toHaveCount(0);
   await expect(page.getByLabel("الاسم", { exact: true })).toHaveValue(
     user.name,
   );
@@ -92,7 +92,7 @@ test("family saves only basic fields in one form and retries without reuploading
   ).not.toHaveAttribute("required", "");
   await page
     .getByLabel("الاسم التجاري (اختياري)", { exact: true })
-    .fill("مذاق الأسرة التجريبي");
+    .fill("مذاق الأسرة المنتجة التجريبي");
   await page.getByLabel("رقم الهوية", { exact: true }).fill("١٢٣٤٥٦٧٨٩٠");
   await expect(page.locator("input[name=phone]")).toHaveAttribute(
     "readonly",
@@ -116,7 +116,7 @@ test("family saves only basic fields in one form and retries without reuploading
     .getByRole("button", { name: "حفظ وإرسال للمراجعة", exact: true })
     .click();
   await expect(page.locator("main").getByRole("alert")).toHaveText(
-    "تعذر حفظ ملف الأسرة",
+    "تعذر حفظ ملف الأسرة المنتجة",
   );
   expect(uploads).toBe(1);
   await page
@@ -126,13 +126,13 @@ test("family saves only basic fields in one form and retries without reuploading
     page.getByRole("status").filter({ hasText: "تم تسجيل أسرتك بنجاح" }),
   ).toBeVisible();
   await expect(
-    page.getByRole("region", { name: "حالة حساب الأسرة" }),
+    page.getByRole("region", { name: "حالة حساب الأسرة المنتجة" }),
   ).toContainText("حالة الحساب: تحت المراجعة");
   expect(uploads).toBe(1);
   expect(attempts).toBe(2);
   expect(posted).toEqual({
     name: user.name,
-    tradeName: "مذاق الأسرة التجريبي",
+    tradeName: "مذاق الأسرة المنتجة التجريبي",
     phone: user.phone,
     cityId: city.id,
     nationalId: "١٢٣٤٥٦٧٨٩٠",

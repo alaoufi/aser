@@ -63,7 +63,7 @@ test(
         () =>
           reviewProducer({ ...user, role: "admin" }, p.id, {
             decision: "approved",
-            reason: "استثناء موثق بعد مراجعة أهلية الأسرة",
+            reason: "استثناء موثق بعد مراجعة أهلية الأسرة المنتجة",
             eligibilityConfirmed: true,
             exceptionApproved: true,
           }),
@@ -86,7 +86,7 @@ test(
       );
       await reviewProducer(admin, p.id, {
         decision: "approved",
-        reason: "استثناء موثق بعد مراجعة أهلية الأسرة",
+        reason: "استثناء موثق بعد مراجعة أهلية الأسرة المنتجة",
         eligibilityConfirmed: true,
         exceptionApproved: true,
       });
