@@ -117,8 +117,18 @@ test.describe("requests on a real isolated catalog product", () => {
           .getByLabel("تاريخ النهاية (شامل)", { exact: true })
           .fill(dateAfter(8));
       await expect(form).toContainText("لا دفع أو تجديد تلقائي");
-      await form.getByRole("button", { name: "إرسال الطلب للأسرة" }).click();
-      await expect(form.getByRole("status")).toContainText(receiptId);
+      await form
+        .getByRole("button", { name: "مراجعة الطلب قبل الإرسال" })
+        .click();
+      await expect(form.getByText("راجع طلبك قبل الإرسال")).toBeVisible();
+      await form.getByRole("button", { name: "تأكيد وإرسال الطلب" }).click();
+      const receipt = form.getByRole("status");
+      await expect(receipt).toContainText(receiptId.slice(0, 8));
+      await expect(receipt).toContainText("تم إرسال طلبك للأسرة");
+      await expect(receipt).toContainText("الخطوة التالية");
+      await expect(
+        receipt.getByRole("link", { name: "اتصال بالأسرة" }),
+      ).toHaveAttribute("href", /^tel:\+9665\d{8}$/);
       const payload = sent.at(-1)!;
       expect(payload.productId).toBe(productId);
       expect(payload.requestKey).toMatch(/^[0-9a-f-]{36}$/);
@@ -171,8 +181,12 @@ test.describe("requests on a real isolated catalog product", () => {
     await expect(
       form.getByRole("combobox", { name: "الوجبة", exact: true }),
     ).toBeDisabled();
-    await form.getByRole("button", { name: "إرسال الطلب للأسرة" }).click();
-    await expect(form.getByRole("status")).toContainText(receiptId);
+    await form
+      .getByRole("button", { name: "مراجعة الطلب قبل الإرسال" })
+      .click();
+    await expect(form.getByText("راجع طلبك قبل الإرسال")).toBeVisible();
+    await form.getByRole("button", { name: "تأكيد وإرسال الطلب" }).click();
+    await expect(form.getByRole("status")).toContainText(receiptId.slice(0, 8));
     expect(sent[0]).toMatchObject({ offerId, meal: "breakfast" });
   });
   for (const repeated of [false, true])
@@ -199,7 +213,7 @@ test.describe("requests on a real isolated catalog product", () => {
         const form = page.getByRole("region", { name: "طلب المنتج" });
         await expect(form.getByRole("alert")).toContainText("العرض غير متاح");
         await expect(
-          form.getByRole("button", { name: "إرسال الطلب للأسرة" }),
+          form.getByRole("button", { name: "مراجعة الطلب قبل الإرسال" }),
         ).toBeDisabled();
         expect(sent).toBe(0);
       },

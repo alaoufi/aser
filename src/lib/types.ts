@@ -62,6 +62,10 @@ export type Filters = {
   category?: string;
   status?: string;
   delivery?: string;
+  /** slug أسرة لعرض منتجاتها فقط */
+  producer?: string;
+  /** "all" يشمل غير المتوفر؛ الافتراضي يعرض المتاح والطلب المسبق */
+  include?: string;
   page?: number;
 };
 export type SessionUser = {

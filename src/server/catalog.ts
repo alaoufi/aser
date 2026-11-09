@@ -40,6 +40,31 @@ export const productSelect = `SELECT ${notCookingTodaySql()} AS "notCookingToday
 export function mapProduct(row: Product): Product {
   return { ...row, price: row.price === null ? null : Number(row.price) };
 }
+// بحث عربي متسامح: يوحّد الهمزات والتاء المربوطة والألف المقصورة ويحذف التشكيل والتطويل.
+const ARABIC_MARKS = /[ً-ْٰـ]/g;
+export function normalizeArabic(text: string) {
+  return text
+    .toLowerCase()
+    .replace(ARABIC_MARKS, "")
+    .replace(/[أإآٱ]/g, "ا")
+    .replace(/ة/g, "ه")
+    .replace(/ى/g, "ي");
+}
+export function searchWords(q?: string) {
+  if (!q) return [];
+  return (
+    normalizeArabic(q.slice(0, 120))
+      .split(/[\s،,]+/)
+      .map((w) => (w.length > 4 && w.startsWith("ال") ? w.slice(2) : w))
+      // «مرقوقه» تطابق «مرقوق» و«مرقوقة»: حذف الهاء/التاء الأخيرة للكلمات الطويلة.
+      .map((w) => (w.length > 4 && w.endsWith("ه") ? w.slice(0, -1) : w))
+      .filter((w) => w.length > 0)
+      .slice(0, 6)
+  );
+}
+function normalized(column: string) {
+  return `translate(regexp_replace(lower(${column}),'[ً-ْٰـ]','','g'),'أإآٱةى','ااااهي')`;
+}
 function conditions(f: Filters, products: boolean) {
   const args: unknown[] = [];
   const where = [
@@ -50,13 +75,27 @@ function conditions(f: Filters, products: boolean) {
     args.push(value);
     where.push(sql.replaceAll("?", () => "$" + args.length));
   };
-  if (f.q)
+  for (const word of searchWords(f.q)) {
+    const fields = products
+      ? ["x.name", "x.description", "p.name", "coalesce(p.trade_name,'')"]
+      : ["p.name", "coalesce(p.trade_name,'')", "p.description"];
+    const categoryMatch = products
+      ? "EXISTS(SELECT 1 FROM jdatna.product_categories sc JOIN jdatna.categories cc ON cc.id=sc.category_id WHERE sc.product_id=x.id AND " +
+        normalized("cc.name") +
+        " LIKE ?)"
+      : "EXISTS(SELECT 1 FROM jdatna.producer_categories sc JOIN jdatna.categories cc ON cc.id=sc.category_id WHERE sc.producer_id=p.id AND " +
+        normalized("cc.name") +
+        " LIKE ?)";
     add(
-      products
-        ? "(x.name ILIKE ? OR x.description ILIKE ? OR p.name ILIKE ? OR p.trade_name ILIKE ?)"
-        : "(p.name ILIKE ? OR p.trade_name ILIKE ? OR p.description ILIKE ?)",
-      `%${f.q.slice(0, 120).replace(/[\\%_]/g, "\\$&")}%`,
+      "(" +
+        fields.map((field) => normalized(field) + " LIKE ?").join(" OR ") +
+        " OR " +
+        categoryMatch +
+        ")",
+      `%${word.replace(/[\\%_]/g, "\\$&")}%`,
     );
+  }
+  if (f.producer) add("p.slug=?", f.producer.slice(0, 200));
   if (f.region)
     add(
       "EXISTS(SELECT 1 FROM jdatna.cities rc WHERE rc.id=p.city_id AND rc.region_id=?)",
@@ -71,6 +110,8 @@ function conditions(f: Filters, products: boolean) {
       f.category,
     );
   if (products && f.status) add("x.status=?", f.status);
+  else if (products && f.include !== "all")
+    where.push("x.status<>'unavailable'");
   if (products && f.status === "available")
     where.push(`NOT ${notCookingTodaySql()}`);
   if (f.delivery === "true") where.push("p.delivery=true");
@@ -85,7 +126,7 @@ export async function searchProducts(
   args.push((Math.max(1, Math.min(1000, Number(filters.page) || 1)) - 1) * 24);
   return (
     await db().query(
-      `${productSelect} WHERE ${where} ORDER BY x.featured DESC,x.created_at DESC LIMIT 24 OFFSET $${args.length}`,
+      `${productSelect} WHERE ${where} ORDER BY (x.status='available' AND NOT ${notCookingTodaySql()}) DESC,(x.status='preorder') DESC,x.featured DESC,x.created_at DESC LIMIT 24 OFFSET $${args.length}`,
       args,
     )
   ).rows.map(mapProduct);

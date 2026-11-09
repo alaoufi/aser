@@ -2,8 +2,13 @@ import { ReportButton } from "@/components/public/report-button";
 import { OrderRequestForm } from "@/components/forms/orders";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getProduct } from "@/server/catalog";
-import { availability, priceLabel, safeMediaUrl } from "@/components/public/ui";
+import { getProducer, getProduct } from "@/server/catalog";
+import {
+  availability,
+  phoneNumber,
+  priceLabel,
+  safeMediaUrl,
+} from "@/components/public/ui";
 export const dynamic = "force-dynamic";
 export async function generateMetadata({
   params,
@@ -23,6 +28,10 @@ export default async function ProductDetail({
   const p = await getProduct((await params).id);
   if (!p) notFound();
   const offer = (await searchParams).offer;
+  // وسائل تواصل الأسرة المنشورة في صفحتها العامة فقط، لعرضها بعد إرسال الطلب.
+  const family = await getProducer(p.producerSlug);
+  const familyPhone = family ? phoneNumber(family.phone) : null;
+  const familyWhatsapp = family?.whatsapp ? phoneNumber(family.whatsapp) : null;
   return (
     <div className="wrap page-space">
       <Link href="/browse" className="text-link">
@@ -86,6 +95,12 @@ export default async function ProductDetail({
         <OrderRequestForm
           productId={p.id}
           productName={p.name}
+          unit={p.unit}
+          price={p.price}
+          producerName={p.producerName}
+          producerSlug={p.producerSlug}
+          contactPhone={familyPhone ?? undefined}
+          contactWhatsapp={familyWhatsapp ?? undefined}
           notCookingToday={p.notCookingToday}
           offerId={Array.isArray(offer) ? "invalid" : offer}
         />

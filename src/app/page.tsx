@@ -38,7 +38,7 @@ export default async function Home() {
           </p>
           <form action="/browse" className="hero-search" autoComplete="off">
             <label>
-              <span>وش تشتهي اليوم؟</span>
+              <span>وش طلبك اليوم؟</span>
               <input
                 type="search"
                 name="q"

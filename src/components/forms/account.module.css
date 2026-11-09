@@ -262,3 +262,27 @@
 .card .actions + .actions {
   margin-top: 10px;
 }
+.confirmation {
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+}
+.confirmation h3 {
+  margin: 0;
+  font-size: 20px;
+}
+.confirmation h3:focus {
+  outline: none;
+}
+.confirmation h3 span {
+  color: var(--olive);
+}
+.confirmation h4 {
+  margin: 6px 0 0;
+}
+.confirmation p {
+  margin: 0;
+}
