@@ -1,15 +1,15 @@
 {
   "verified_on": "2026-11-09",
-  "code_commit": "029fd95700caef3cd59e8dded1bb38b68072819c",
-  "image": "jdatna-application:029fd95700caef3cd59e8dded1bb38b68072819c",
+  "code_commit": "30b97ec116e4835161e2c0a3b145679627104449",
+  "image": "jdatna-application:30b97ec116e4835161e2c0a3b145679627104449",
   "url": "https://jdatna.com",
   "checks": {
-    "unit_integration": "6/6 credentials DB checks on preceding password release; current real isolated DB/browser1234 login retains HttpOnly cookie across navigation/reload",
-    "browser_chromium": "6/6 public catalogue checks passed",
+    "unit_integration": "13/13 coverage tests, including real isolated DB ownership, SQL constraints, legacy preservation and approved-only public details",
+    "browser_chromium": "6/6 coverage+eligibility;2/2 center-name followup; four responsive widths",
     "typecheck": "passed",
     "build": "passed",
     "infrastructure_and_backup_restore": "passed after deployment; Aykdmh unchanged",
-    "live_browser": "Exact release;3 input/form autocomplete off; food GET search succeeds; unrelated shoes query returns0 product cards; owner browser history not inspected",
+    "live_browser": "Exact release; real city tree plus mocked own-session/save UI verifies multiple custom subareas+reload;4 widths no overflow/pageerror; no production fake account or area",
     "otp_endpoint": "Unchanged signup/reset-only OTP; min password4 with no composition requirement; salted scrypt and limits retained"
   },
   "registrationOpen": true,
@@ -24,7 +24,7 @@
   ],
   "sms_provider": "Same active Taqnyat credentials as Aykdmh; enabled at explicit owner request to test delivery on own phone",
   "footer_verification": "Affiliation retained",
-  "image_id": "sha256:99740a1454b97866f020fecdbe672365646daf4b6608c123faa34aafb0f2aeee",
+  "image_id": "sha256:74836a608f7beca1295a3e996cf039957e7c9fe4ddd4ed856daaf7641f15e993",
   "sms_delivery_confirmed": true,
   "sms_delivery_evidence": "Owner reported receipt of previous6-digit SMS;4-digit release deployed afterwards, not physically re-tested by agent",
   "otp_digits": 4,
@@ -148,5 +148,13 @@
     "footer": "#422d21",
     "footer_text": "#e3d0b7",
     "additional_image_assets": false
+  },
+  "custom_coverage": {
+    "legacy_preserved": true,
+    "migration": "016",
+    "publication": "approved families only",
+    "input": "Producer-entered center/neighborhood names under existing city",
+    "combined_limit": 100,
+    "global_geography_unchanged": true
   }
 }
