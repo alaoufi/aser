@@ -1,15 +1,30 @@
-# أكلات وغذاء الأجداد — jdatna.com
+# أكلات جدتنا — jdatna.com
 
-Repository: `alaoufi/aser`.
+مستودع المشروع: [alaoufi/aser](https://github.com/alaoufi/aser).
+الموقع: [أكلات جدتنا](https://jdatna.com). الفرع المحفوظ: `codex/jdatna-platform`.
 
-Arabic RTL producer marketplace built with Next.js, TypeScript and PostgreSQL.
-The public catalogue is live at https://jdatna.com and its application runs in Coolify.
-Producer/admin interfaces, moderation, private documents/photos and OTP adapters
-are implemented. **Production phone registration remains closed until real SMS is
-configured and tested.** No fictional producers or products are published.
-Platform orders and Android/iOS applications remain later phases.
+منصة عربية RTL للأكلات والمنتجات الغذائية من الأسر المنتجة، مبنية بـ Next.js وTypeScript وPostgreSQL. التطبيق يعمل في Coolify على Contabo، بقاعدة وملفات وتخزين ونسخ احتياطية مستقلة عن موقع أي خدمة على الخادم نفسه.
 
-## Development and checks
+## ابدأ هنا
+
+1. اقرأ [تعليمات العمل](AGENTS.md).
+2. اقرأ [الحالة الحالية وخطوات الاستئناف](docs/START_HERE.md).
+3. تحقق من [الإصدار المنشور](docs/RELEASE.json) ومن Git قبل التعديل.
+4. راجع [التسليم](docs/PROJECT_HANDOFF.md) و[المهام](docs/TASKS.md) و[القرارات](docs/DECISIONS.md). السجل تاريخي؛ القرارات الأحدث تتقدم على الأقدم.
+
+## المتاح حاليًا
+
+- التصفح والبحث بالمنطقة والمدينة والأقسام الفرعية، وصفحات الأسر والمنتجات.
+- التسجيل والتحقق بالجوال مفتوحان. OTP من أربع أرقام للتسجيل الأول أو استعادة كلمة المرور فقط؛ الدخول المعتاد بكلمة مرور من أربع خانات على الأقل دون شروط تركيب.
+- دخول موحد يراعي صلاحيات العميل والأسرة والإدارة. التسجيل كأسرة يتطلب الجوال المتحقق ومستند الأهلية أو استثناءً إداريًا، مع حماية الهوية والعنوان الخاص.
+- عروض خاصة للأسرة وفئات مستهدفة، وطلبات ضيف أو سجل طلبات للمسجل. الاتفاق والسداد خارج الموقع.
+- نطاقات تغطية متعددة بالمدينة، وأسماء أحياء ومراكز تدخلها الأسرة برسوم اختيارية؛ البيانات الجغرافية ليست شاملة لكل أحياء المملكة.
+- منتجات الألبان والمشروبات وفروع قابلة للإدارة، وحالة «لا يوجد طبخ اليوم».
+- الهوية المعتمدة وصور الأطباق الخمسة المعدلة بخلفية شفافة. أصول التشغيل في `public/` ومصادر التصميم الأصلية في `design/source/`.
+
+آخر مصدر تطبيق منشور ومتحقق: `30b97ec116e4835161e2c0a3b145679627104449`، والترحيلات حتى `016`. حفظ التوثيق ورفع Git لا يعيدان نشر الموقع تلقائيًا. تطبيقات Android وiOS ليست منشورة ضمن هذا التسليم.
+
+## التطوير والتحقق
 
 ```sh
 npm ci
@@ -20,18 +35,16 @@ npm run build
 npm run test:e2e
 ```
 
-Without DATABASE_URL, public browsing uses canonical category/city metadata and
-empty listing states. Configured database failures are surfaced, not hidden as
-empty data. Integration tests require an explicitly enabled `jdatna_test_` database;
-see scripts/README.md. Keep real environment files outside synced workspaces and Git.
+بدون `DATABASE_URL` يعمل عرض الأقسام والمدن والحالات الفارغة. اختبارات قاعدة البيانات الفعلية تتطلب قاعدة معزولة يبدأ اسمها بـ `jdatna_test_` و`JDATNA_TEST_DB=true`. لا تختبر CRUD أو SMS على الإنتاج؛ راجع [إرشادات السكربتات](scripts/README.md).
 
-- [Current handoff](docs/PROJECT_HANDOFF.md)
-- [Remaining tasks](docs/TASKS.md)
-- [Infrastructure decisions](docs/DECISIONS.md)
-- [Operations and recovery](docs/OPERATIONS.md)
-- [Current implementation and release details](docs/IMPLEMENTATION_PROGRESS.md)
-- [Coolify ownership and rollback](docs/COOLIFY.md)
+لا تشغّل Next dev وbuild بالتزامن في نفس `.next`. اقرأ أدلة النسخة المثبتة من Next.js داخل `node_modules/next/dist/docs/` قبل تعديل واجهاتها.
 
-No credentials, database contents or backups belong in Git. Infrastructure scripts
-are specific to the authorized server; `infra/provision.py` refuses existing storage
-and must not be rerun as an upgrade mechanism.
+## التشغيل والأصول
+
+- [التشغيل والاستعادة](docs/OPERATIONS.md)
+- [Coolify والعزل والرجوع](docs/COOLIFY.md)
+- [الهوية البصرية](docs/BRAND_IDENTITY.md)
+- [مصادر التصميم وبيانات سلامتها](design/README.md)
+- [أدلة التحقق المحفوظة](docs/verification/README.md)
+
+لا أسرار أو قواعد بيانات أو مستندات عملاء أو مفاتيح SSH في Git. ملفات الإعداد الحقيقية والنسخ المشفرة تبقى في مواقعها المحمية. لا تُعد تشغيل `infra/provision.py` كترقية؛ فهو إجراء تهيئة أولى فقط.

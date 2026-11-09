@@ -1,0 +1,21 @@
+✔ hierarchy permits only real administrative parent levels (0.8754ms)
+✔ multiple coverage picks support legacy cities without invented parents (3.2438ms)
+✔ curation requires explicit parent and existing city reference (0.9474ms)
+✔ curation rejects nonadministrators independently of routing (0.4928ms)
+✔ coverage region ordering follows Riyadh Makkah Madinah Qassim while preserving descendants (11.1119ms)
+✔ family save derives owner from session and never rewrites legacy delivery areas (0.786ms)
+✔ missing owner and region-only selection roll back before any coverage deletion (0.5981ms)
+✔ curating city rejects cross-region and already mapped city (0.7161ms)
+✔ public coverage queries constrain both new and legacy coverage to approved family (0.5031ms)
+✔ isolated PostgreSQL curated coverage, ownership, legacy retention and SQL constraints (29427.0488ms)
+✔ family coverage accepts named subareas, normalizes names and rejects empty, repeated or over-limit input (10.8876ms)
+✔ older clients cannot exceed the total limit through preserved subareas (2.617ms)
+✔ isolated family subareas preserve ownership and legacy data, validate cities before replacing, and publish approved families only (36002.8598ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 67052.1543

@@ -10,3 +10,5 @@ secrets
 *.gpg
 *.dump
 *.ext4
+
+design/source/

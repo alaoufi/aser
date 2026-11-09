@@ -1,0 +1,36 @@
+{
+  "source": "Owner-supplied identity kit and finalized imagegen edit outputs",
+  "assets": [
+    {
+      "bytes": 25587108,
+      "path": "source/Jaddatna_Complete_Logo_Kit.zip",
+      "sha256": "4f3befb45553ff453d406c189a47c3f43b1e05f4c54adb355b482bcb8da53b39"
+    },
+    {
+      "bytes": 1636916,
+      "path": "source/food-floating-v2/clay-pot.png",
+      "sha256": "4b45e3a9f4092416d017d75c6137f915f40ff082acd6fd9e5de2037014968ec9"
+    },
+    {
+      "bytes": 2207650,
+      "path": "source/food-floating-v2/fish-tray.png",
+      "sha256": "f6cf5a97c926426073af929e9bbf5cfbf59422d526e0a5dc21cf3f601be2058b"
+    },
+    {
+      "bytes": 1994677,
+      "path": "source/food-floating-v2/grain-plate.png",
+      "sha256": "52ab29770baff8496a46bc6d5a32643ea075b2f60e1321e6431acb8e04d63a27"
+    },
+    {
+      "bytes": 1949722,
+      "path": "source/food-floating-v2/rice-plate.png",
+      "sha256": "24d0689fbbe4faa24262e6a115db6e6cf7d7a138681e27c20ddb012b07f34370"
+    },
+    {
+      "bytes": 2016181,
+      "path": "source/food-floating-v2/traditional-platter.png",
+      "sha256": "a57401fe1c0669fe5bcfb3503c69fe0cc09a31bb2028f15d399d1f0d25bbcfce"
+    }
+  ],
+  "saved_on": "2026-11-09"
+}
