@@ -1,14 +1,21 @@
-name: نشر جدتنا (يدوي)
-# زر نشر يدوي يُشغَّل من GitHub (والجوال). لا نشر تلقائي عند الدفع.
-# يتطلب بيئة GitHub باسم production بموافقة المالك، وأسرارها الثلاثة (infra/deploy/README.md).
+name: نشر جدتنا
+# نشر مباشر: بعد كل دمج في codex/jdatna-platform ونجاح CI يُنشر تلقائيًا (deploy-migrate:
+# نسخة احتياطية، بناء، ترحيلات جديدة إن وجدت، تحويل، فحص صحة، رجوع تلقائي عند الفشل).
+# ويبقى التشغيل اليدوي متاحًا من GitHub والجوال (deploy / deploy-migrate / rollback / status).
+# يتطلب تجهيز الخادم والأسرار الثلاثة في بيئة production مرة واحدة (infra/deploy/README.md)؛
+# قبل ذلك يتخطى النشر التلقائي بهدوء دون فشل.
 on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [codex/jdatna-platform]
   workflow_dispatch:
     inputs:
       action:
         description: "deploy = نشر، deploy-migrate = نشر مع ترحيلات قاعدة البيانات، rollback = رجوع، status = الحالة"
         type: choice
         options: [deploy, deploy-migrate, rollback, status]
-        default: deploy
+        default: deploy-migrate
       ref:
         description: "commit للنشر (اتركه فارغًا لآخر codex/jdatna-platform)"
         required: false
@@ -23,32 +30,54 @@ concurrency:
 
 jobs:
   deploy:
+    # التلقائي فقط بعد CI ناجح على دفع (دمج) إلى الفرع الأساسي، لا على طلبات الدمج.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push')
     runs-on: ubuntu-latest
     environment: production
     timeout-minutes: 60
     steps:
+      - name: جاهزية النشر
+        id: ready
+        env:
+          SSH_KEY: ${{ secrets.JDATNA_DEPLOY_SSH_KEY }}
+        run: |
+          if [ -z "$SSH_KEY" ]; then
+            echo "::notice::النشر غير مُجهَّز بعد (أسرار production غير موجودة) — تخطٍّ دون نشر. راجع infra/deploy/README.md"
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/checkout@v4
+        if: steps.ready.outputs.ok == 'true'
         with:
           ref: codex/jdatna-platform
           fetch-depth: 0
 
-      - name: تحديد الإصدار
+      - name: تحديد الإصدار والأمر
+        if: steps.ready.outputs.ok == 'true'
         id: target
         env:
-          REF: ${{ inputs.ref }}
+          REF: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || inputs.ref }}
+          ACTION: ${{ github.event_name == 'workflow_run' && 'deploy-migrate' || inputs.action }}
         run: |
           set -euo pipefail
           sha=$(git rev-parse --verify "${REF:-HEAD}^{commit}")
           git merge-base --is-ancestor "$sha" HEAD || { echo "::error::$sha ليس على codex/jdatna-platform"; exit 1; }
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
-          echo "الإصدار: $sha"
+          echo "action=$ACTION" >> "$GITHUB_OUTPUT"
+          echo "الأمر: $ACTION — الإصدار: $sha"
 
       - name: الاتصال بالخادم وتنفيذ الأمر
+        if: steps.ready.outputs.ok == 'true'
         env:
           SSH_KEY: ${{ secrets.JDATNA_DEPLOY_SSH_KEY }}
           SSH_HOST: ${{ secrets.JDATNA_DEPLOY_HOST }}
           KNOWN_HOSTS: ${{ secrets.JDATNA_DEPLOY_KNOWN_HOSTS }}
-          ACTION: ${{ inputs.action }}
+          ACTION: ${{ steps.target.outputs.action }}
           SHA: ${{ steps.target.outputs.sha }}
         run: |
           set -euo pipefail
@@ -64,7 +93,7 @@ jobs:
             -o ServerAliveInterval=30 -o ServerAliveCountMax=6 "$SSH_HOST" "$remote"
 
       - name: التحقق العام من الموقع
-        if: inputs.action == 'deploy' || inputs.action == 'deploy-migrate'
+        if: steps.ready.outputs.ok == 'true' && (steps.target.outputs.action == 'deploy' || steps.target.outputs.action == 'deploy-migrate')
         env:
           SHA: ${{ steps.target.outputs.sha }}
         run: |

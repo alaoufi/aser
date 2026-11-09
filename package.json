@@ -6,7 +6,7 @@
     "dev": "next dev --hostname 127.0.0.1",
     "build": "next build",
     "start": "next start --hostname 0.0.0.0",
-    "typecheck": "next typegen && tsc --noEmit",
+    "typecheck": "next typegen && tsc --noEmit --incremental false",
     "test": "tsx --test tests/*.test.ts",
     "test:e2e": "playwright test",
     "migrate": "tsx scripts/migrate.ts",
