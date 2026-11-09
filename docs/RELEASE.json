@@ -1,15 +1,15 @@
 {
   "verified_on": "2026-11-09",
-  "code_commit": "9755c1c49b992e94a921c02ec09e21fcf989bc75",
-  "image": "jdatna-application:9755c1c49b992e94a921c02ec09e21fcf989bc75",
+  "code_commit": "8d298b6955a3f61d991a9decd55d5589773c6567",
+  "image": "jdatna-application:8d298b6955a3f61d991a9decd55d5589773c6567",
   "url": "https://jdatna.com",
   "checks": {
     "unit_integration": "6/6 credentials DB checks on preceding password release; current real isolated DB/browser1234 login retains HttpOnly cookie across navigation/reload",
-    "browser_chromium": "24/24 auth/session checks plus4/4 ticker checks after fractional-pixel assertion tolerance correction",
+    "browser_chromium": "Food geometry test passed at8 widths; existing auth/backend unchanged",
     "typecheck": "passed",
     "build": "passed",
     "infrastructure_and_backup_restore": "passed after deployment; Aykdmh unchanged",
-    "live_browser": "Exact release; updated copy; rightward seamless ticker; six widths without overflow/pageerror; existing-session UI three roles/reload mocked only",
+    "live_browser": "Exact release; five matching asset hashes and loaded images; names preserved;8 widths no overflow/search overlap/pageerror",
     "otp_endpoint": "Unchanged signup/reset-only OTP; min password4 with no composition requirement; salted scrypt and limits retained"
   },
   "registrationOpen": true,
@@ -24,7 +24,7 @@
   ],
   "sms_provider": "Same active Taqnyat credentials as Aykdmh; enabled at explicit owner request to test delivery on own phone",
   "footer_verification": "Affiliation retained",
-  "image_id": "sha256:6f0c9b3fd39373318f647f252104aaf2b2dba2a591e39e88972c2f86153be0c2",
+  "image_id": "sha256:76edbb108b97ef0008bc8312af1cecd9e5a1509677a53fc58b751ff1b04f1be2",
   "sms_delivery_confirmed": true,
   "sms_delivery_evidence": "Owner reported receipt of previous6-digit SMS;4-digit release deployed afterwards, not physically re-tested by agent",
   "otp_digits": 4,
@@ -83,7 +83,7 @@
         "sha256": "dcc5abf27cbb425ee047c2cf5ad64e4db06efa635fe126436dd20be815056504"
       }
     ],
-    "presentation": "Owner-approved visible captions and alt text;subtle2D rotations and uniform scaling;transparent pixels/assets unchanged",
+    "presentation": "AI-assisted edits of owner-supplied originals: rearranged ingredients, refined platter edges, transparent backgrounds and floating soft shadows; old originals/cutouts retained",
     "cutouts": [
       {
         "path": "/food/clay-pot-cutout.png",
@@ -112,7 +112,34 @@
       "3": "مرقوق",
       "4": "جريش",
       "5": "طبق سمك"
-    }
+    },
+    "floating_v2": [
+      {
+        "bytes": 101282,
+        "path": "/food/clay-pot-floating-v2.webp",
+        "sha256": "828F407FBCA4EA227D491601371FB3B53F1F90F62BA6A41A3938D1DFF8219013"
+      },
+      {
+        "bytes": 140678,
+        "path": "/food/fish-tray-floating-v2.webp",
+        "sha256": "B1BCF56F1BE43C8960C9FD8BF26A31C649CA52392897CB6F9146982164557FF8"
+      },
+      {
+        "bytes": 131778,
+        "path": "/food/grain-plate-floating-v2.webp",
+        "sha256": "5B7942E39FB0B6FB11ED1DBBCC583DE5D7EEBAC2FB157F5CAC392C7E661D1404"
+      },
+      {
+        "bytes": 255546,
+        "path": "/food/rice-plate-floating-v2.webp",
+        "sha256": "48F2013AD939790E0E040B5D84EF9B37BCCBA9DA5CA389D87E3BA963CA550D99"
+      },
+      {
+        "bytes": 108690,
+        "path": "/food/traditional-platter-floating-v2.webp",
+        "sha256": "BEBD21BDCA90BCE082C25D0E2A1B67AB94CB8F001BC61C41600E1F4781CB6B31"
+      }
+    ]
   },
   "background_theme": {
     "paper": "#fcf8f0",
