@@ -13,7 +13,25 @@ import {
   searchWords,
 } from "@/server/catalog";
 import { EmptyState, ProducerCard, ProductCard } from "@/components/public/ui";
-export const metadata: Metadata = { title: "اكتشف الأكلات" };
+// عنوان التبويب يتبع القسم أو الأسرة المفتوحة.
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}): Promise<Metadata> {
+  const raw = await searchParams;
+  const category = typeof raw.category === "string" ? raw.category : "";
+  const producer = typeof raw.producer === "string" ? raw.producer : "";
+  if (category) {
+    const found = (await getCategories()).find((c) => c.id === category);
+    if (found) return { title: found.name };
+  }
+  if (producer) {
+    const found = await getProducer(producer);
+    if (found) return { title: `منتجات ${found.name}` };
+  }
+  return { title: "اكتشف الأكلات" };
+}
 export const dynamic = "force-dynamic";
 
 // أربع طرق للبحث: بالكلمة، المتاح الآن، منتجات أسرة، منتجات قسم.
@@ -112,31 +130,116 @@ export default async function Browse({
     return query ? `/browse?${query}` : "/browse";
   };
   const familiesWithProducts = lists.families.filter((f) => f.available > 0);
+  // عند فتح قسم أو أسرة تصبح الصفحة كلها لهما: العنوان والوصف والفروع والنتائج.
+  const focus: "category" | "family" | null = currentCategory
+    ? "category"
+    : family
+      ? "family"
+      : null;
+  const available = currentCategory ? countOf(currentCategory.id) : 0;
   return (
     <div className="wrap page-space">
-      <div className="page-intro">
-        <p className="eyebrow">نكهات من بيوت أهلنا</p>
-        <h1>اكتشف الأكلات</h1>
-        <p>اختر طريقة البحث، ونعرض لك المتاح أولًا.</p>
-      </div>
-      <nav className="search-modes" aria-label="طريقة البحث">
-        {modes.map(([key, label]) => (
-          <Link
-            key={key}
-            href={href({
-              by: key,
-              ...(key === "family" ? { category: "" } : {}),
-              ...(key === "category" ? { producer: "" } : {}),
-              ...(key === "available" ? { status: "" } : {}),
-            })}
-            aria-current={by === key ? "page" : undefined}
-          >
-            {label}
-          </Link>
-        ))}
-      </nav>
-      <details className="filter-wrap" open={by === "word"}>
-        <summary>تضييق البحث: الكلمة، المنطقة، الأسرة، القسم، التوفر</summary>
+      {focus === "category" && currentCategory ? (
+        <div className="page-intro section-intro">
+          <p className="eyebrow">
+            {parentCategory
+              ? categoryLabel(parentCategory, categories)
+              : "قسم من أقسام جدتنا"}
+          </p>
+          <h1>{currentCategory.name}</h1>
+          <p>
+            {available
+              ? `${available} من المنتجات المتاحة من الأسر في هذا القسم${branches.length ? " وفروعه" : ""}.`
+              : "لا توجد منتجات متاحة في هذا القسم حاليًا."}
+          </p>
+          <div className="section-intro-links">
+            {parentCategory && (
+              <Link
+                className="text-link"
+                href={href({ category: parentCategory.id })}
+              >
+                → {parentCategory.name}
+              </Link>
+            )}
+            <Link
+              className="text-link"
+              href={href({ by: "category", category: "", q: "" })}
+            >
+              كل الأقسام
+            </Link>
+          </div>
+        </div>
+      ) : focus === "family" && family ? (
+        <div className="page-intro section-intro">
+          <p className="eyebrow">أسرة منتجة · {family.cityName}</p>
+          <h1>{family.name}</h1>
+          <p>
+            {filters.include
+              ? "كل منتجات الأسرة."
+              : "منتجات الأسرة المتاحة الآن وحسب الطلب."}
+          </p>
+          <div className="section-intro-links">
+            <Link className="text-link" href={`/producers/${family.slug}`}>
+              صفحة الأسرة والتواصل
+            </Link>
+            <Link
+              className="text-link"
+              href={href({ by: "family", producer: "", q: "" })}
+            >
+              كل الأسر
+            </Link>
+          </div>
+        </div>
+      ) : (
+        <div className="page-intro">
+          <p className="eyebrow">نكهات من بيوت أهلنا</p>
+          <h1>اكتشف الأكلات</h1>
+          <p>اختر طريقة البحث، ونعرض لك المتاح أولًا.</p>
+        </div>
+      )}
+      {!focus && (
+        <nav className="search-modes" aria-label="طريقة البحث">
+          {modes.map(([key, label]) => (
+            <Link
+              key={key}
+              href={href({
+                by: key,
+                ...(key === "family" ? { category: "" } : {}),
+                ...(key === "category" ? { producer: "" } : {}),
+                ...(key === "available" ? { status: "" } : {}),
+              })}
+              aria-current={by === key ? "page" : undefined}
+            >
+              {label}
+            </Link>
+          ))}
+        </nav>
+      )}
+      {currentCategory && (branches.length > 0 || parentCategory) && (
+        <nav aria-label="فروع القسم" className="category-branches">
+          <div>
+            {parentCategory && (
+              <Link href={href({ category: parentCategory.id })}>
+                العودة إلى {parentCategory.name}
+              </Link>
+            )}
+            {branches.map((c) => (
+              <Link key={c.id} href={href({ category: c.id })}>
+                {c.name}
+                {countOf(c.id) > 0 ? ` (${countOf(c.id)})` : ""}
+              </Link>
+            ))}
+          </div>
+        </nav>
+      )}
+      <details className="filter-wrap" open={by === "word" && !focus}>
+        <summary>
+          {focus === "category"
+            ? "تضييق داخل القسم: الكلمة، المنطقة، الأسرة، التوفر"
+            : focus === "family"
+              ? "تضييق داخل منتجات الأسرة: الكلمة، القسم، التوفر"
+              : "تضييق البحث: الكلمة، المنطقة، الأسرة، القسم، التوفر"}
+        </summary>
         <form className="filter-bar" action="/browse" autoComplete="off">
           {by !== "word" && <input type="hidden" name="by" value={by} />}
           <label className="search-query">
@@ -208,7 +311,7 @@ export default async function Browse({
         </form>
       </details>
 
-      {matchedCategories.length > 0 && (
+      {!focus && matchedCategories.length > 0 && (
         <nav className="search-suggestions" aria-label="أقسام مقترحة">
           <span>أقسام مطابقة:</span>
           {matchedCategories.map((c) => (
@@ -222,26 +325,7 @@ export default async function Browse({
         </nav>
       )}
 
-      {currentCategory && (branches.length > 0 || parentCategory) && (
-        <nav aria-label="فروع القسم" className="category-branches">
-          <p>{categoryLabel(currentCategory, categories)}</p>
-          <div>
-            {parentCategory && (
-              <Link href={href({ category: parentCategory.id })}>
-                العودة إلى {parentCategory.name}
-              </Link>
-            )}
-            {branches.map((c) => (
-              <Link key={c.id} href={href({ category: c.id })}>
-                {c.name}
-                {countOf(c.id) > 0 ? ` (${countOf(c.id)})` : ""}
-              </Link>
-            ))}
-          </div>
-        </nav>
-      )}
-
-      {filters.producer && (
+      {filters.producer && focus !== "family" && (
         <div className="family-filter" role="status">
           <p>
             {family ? (
@@ -354,12 +438,21 @@ export default async function Browse({
           <div className="results-heading">
             <h2>
               {products.length
-                ? `${products.length} ${filters.include ? "منتج مطابق" : "منتج متاح"}`
+                ? `${products.length} ${filters.include ? "منتج مطابق" : "منتج متاح"}${focus === "category" && currentCategory ? ` في ${currentCategory.name}` : ""}`
                 : widened.length
                   ? "لا تطابق تام — نتائج قريبة"
                   : "نتائج المنتجات"}
             </h2>
-            <Link href="/browse" className="text-link">
+            <Link
+              href={
+                focus === "category" && currentCategory
+                  ? `/browse?category=${encodeURIComponent(currentCategory.id)}`
+                  : focus === "family" && family
+                    ? `/browse?producer=${encodeURIComponent(family.slug)}`
+                    : "/browse"
+              }
+              className="text-link"
+            >
               مسح المرشحات
             </Link>
           </div>
