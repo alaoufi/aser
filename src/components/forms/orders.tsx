@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { ORDERS_CHANGED } from "@/components/public/order-alert";
 import { AccountShell, Guard, Message, api, s, useSession } from "./shared";
 const meals: Record<string, string> = {
   breakfast: "فطور",
@@ -10,10 +11,67 @@ const meals: Record<string, string> = {
 const statuses: Record<string, string> = {
   pending: "بانتظار اتفاق الأسرة",
   accepted: "قبلته الأسرة",
+  preparing: "قيد التجهيز لدى الأسرة",
+  ready: "جاهز للتسليم",
   declined: "اعتذرت الأسرة",
   completed: "مكتمل",
   cancelled: "ملغى",
 };
+// مراحل تنفيذ الطلب كما تراها الأسرة، وأزرار الانتقال من كل مرحلة.
+const stages = [
+  ["pending", "جديد"],
+  ["accepted", "مقبول"],
+  ["preparing", "قيد التجهيز"],
+  ["ready", "جاهز"],
+  ["completed", "تم التسليم"],
+] as const;
+const producerStatus: Record<string, string> = {
+  pending: "طلب جديد بانتظار ردك",
+  accepted: "مقبول — ابدأ التجهيز في موعده",
+  preparing: "قيد التجهيز",
+  ready: "جاهز للتسليم",
+  completed: "تم التسليم",
+  declined: "اعتذرتَ عن الطلب",
+  cancelled: "ملغى",
+};
+type Action = {
+  to: string;
+  label: string;
+  primary?: boolean;
+  confirm?: string;
+};
+const actions: Record<string, Action[]> = {
+  pending: [
+    { to: "accepted", label: "قبول الطلب", primary: true },
+    {
+      to: "declined",
+      label: "اعتذار",
+      confirm: "الاعتذار عن هذا الطلب نهائي. متأكد؟",
+    },
+  ],
+  accepted: [
+    { to: "preparing", label: "بدء التجهيز", primary: true },
+    { to: "cancelled", label: "إلغاء", confirm: "إلغاء الطلب نهائي. متأكد؟" },
+  ],
+  preparing: [
+    { to: "ready", label: "الطلب جاهز", primary: true },
+    { to: "cancelled", label: "إلغاء", confirm: "إلغاء الطلب نهائي. متأكد؟" },
+  ],
+  ready: [
+    { to: "completed", label: "تم التسليم", primary: true },
+    { to: "cancelled", label: "إلغاء", confirm: "إلغاء الطلب نهائي. متأكد؟" },
+  ],
+};
+const groups = [
+  { title: "طلبات جديدة", match: ["pending"] },
+  { title: "قيد التنفيذ", match: ["accepted", "preparing", "ready"] },
+  { title: "منتهية", match: ["completed", "declined", "cancelled"] },
+];
+function whatsapp(phone: string, product: string) {
+  const digits = phone.replace(/\D/g, "");
+  const text = `السلام عليكم، بخصوص طلبك (${product}) من أكلات جدتنا`;
+  return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
+}
 type Draft = {
   notCookingToday?: boolean;
   productId: string;
@@ -42,6 +100,7 @@ type Order = {
   endDate: string;
   notes: string;
   status: string;
+  isNew?: boolean;
 };
 const today = () =>
   new Intl.DateTimeFormat("en-CA", {
@@ -359,7 +418,16 @@ export function Orders({ producer = false }: { producer?: boolean }) {
         .catch((e) => setError(e.message))
         .finally(() => setLoaded(true));
   }, [session.user, endpoint]);
-  async function update(id: string, status: string) {
+  useEffect(() => {
+    if (!producer || !session.user) return;
+    const reload = () => {
+      load().catch(() => {});
+    };
+    window.addEventListener(ORDERS_CHANGED, reload);
+    return () => window.removeEventListener(ORDERS_CHANGED, reload);
+  }, [producer, session.user]);
+  async function update(id: string, status: string, confirmText?: string) {
+    if (confirmText && !window.confirm(confirmText)) return;
     setBusy(true);
     setError("");
     try {
@@ -423,72 +491,176 @@ export function Orders({ producer = false }: { producer?: boolean }) {
               />
             </div>
           )}
-          {orders.map((order) => (
-            <article
-              className={s.card}
-              key={order.id}
-              style={{ overflowWrap: "anywhere" }}
-            >
-              <h2>{order.snapshot.productName}</h2>
-              <p>
-                {order.snapshot.producerName} — {statuses[order.status]}
-              </p>
-              <p>
-                {meals[order.meal]}، {order.quantity} {order.snapshot.unit} لكل
-                يوم، {order.days} أيام
-              </p>
-              <p>
-                <bdi>{order.startDate}</bdi> إلى <bdi>{order.endDate}</bdi>
-              </p>
-              {order.snapshot.offer && (
-                <p>العرض عند الإرسال: {order.snapshot.offer.label}</p>
-              )}
-              <p>
-                السعر عند الإرسال:{" "}
-                {(order.snapshot.offer
-                  ? order.snapshot.offer.price
-                  : order.snapshot.price) === null
-                  ? "بالاتفاق"
-                  : `${order.snapshot.offer ? order.snapshot.offer.price : order.snapshot.price} ر.س للوحدة، قبل الاتفاق`}
-              </p>
-              {order.notes && <p>{order.notes}</p>}
-              {producer ? (
-                <>
-                  <p>
-                    {order.name} —{" "}
-                    <a href={`tel:${order.phone}`} dir="ltr">
-                      {order.phone}
-                    </a>
-                  </p>
-                  {(order.status === "pending"
-                    ? ["accepted", "declined", "cancelled"]
-                    : order.status === "accepted"
-                      ? ["completed", "cancelled"]
-                      : []
-                  ).map((status) => (
-                    <button
-                      className={s.button}
-                      key={status}
-                      disabled={busy}
-                      onClick={() => update(order.id, status)}
-                    >
-                      {statuses[status]}
-                    </button>
+          {producer &&
+            groups.map((group) => {
+              const list = orders.filter((o) => group.match.includes(o.status));
+              if (!list.length) return null;
+              return (
+                <section key={group.title} aria-label={group.title}>
+                  <h2 className={s.groupTitle}>
+                    {group.title} <span className={s.tag}>{list.length}</span>
+                  </h2>
+                  {list.map((order) => (
+                    <ProducerOrder
+                      key={order.id}
+                      order={order}
+                      busy={busy}
+                      onUpdate={update}
+                    />
                   ))}
-                </>
-              ) : (
-                <button
-                  className={s.button}
-                  disabled={busy}
-                  onClick={() => reorder(order.id)}
-                >
-                  إعداد طلب جديد من المنتج
-                </button>
-              )}
-            </article>
-          ))}
+                </section>
+              );
+            })}
+          {!producer &&
+            orders.map((order) => (
+              <article
+                className={s.card}
+                key={order.id}
+                style={{ overflowWrap: "anywhere" }}
+              >
+                <h2>{order.snapshot.productName}</h2>
+                <p>
+                  {order.snapshot.producerName} — {statuses[order.status]}
+                </p>
+                <p>
+                  {meals[order.meal]}، {order.quantity} {order.snapshot.unit}{" "}
+                  لكل يوم، {order.days} أيام
+                </p>
+                <p>
+                  <bdi>{order.startDate}</bdi> إلى <bdi>{order.endDate}</bdi>
+                </p>
+                {order.snapshot.offer && (
+                  <p>العرض عند الإرسال: {order.snapshot.offer.label}</p>
+                )}
+                <p>
+                  السعر عند الإرسال:{" "}
+                  {(order.snapshot.offer
+                    ? order.snapshot.offer.price
+                    : order.snapshot.price) === null
+                    ? "بالاتفاق"
+                    : `${order.snapshot.offer ? order.snapshot.offer.price : order.snapshot.price} ر.س للوحدة، قبل الاتفاق`}
+                </p>
+                {order.notes && <p>{order.notes}</p>}
+                {
+                  <button
+                    className={s.button}
+                    disabled={busy}
+                    onClick={() => reorder(order.id)}
+                  >
+                    إعداد طلب جديد من المنتج
+                  </button>
+                }
+              </article>
+            ))}
         </>
       )}
     </AccountShell>
+  );
+}
+
+function price(order: Order) {
+  const value = order.snapshot.offer
+    ? order.snapshot.offer.price
+    : order.snapshot.price;
+  return value === null ? "بالاتفاق" : `${value} ر.س للوحدة، قبل الاتفاق`;
+}
+function ProducerOrder({
+  order,
+  busy,
+  onUpdate,
+}: {
+  order: Order;
+  busy: boolean;
+  onUpdate: (id: string, status: string, confirmText?: string) => void;
+}) {
+  const reached = stages.findIndex(([key]) => key === order.status);
+  return (
+    <article
+      id={`order-${order.id}`}
+      className={`${s.card} ${order.isNew ? s.cardNew : ""}`}
+      style={{ overflowWrap: "anywhere" }}
+    >
+      <div className={s.orderHead}>
+        <h3>{order.snapshot.productName}</h3>
+        {order.isNew && <span className={s.tagNew}>جديد</span>}
+      </div>
+      <p className={s.orderStatus}>{producerStatus[order.status]}</p>
+      {reached >= 0 && (
+        <ol className={s.stepper} aria-label="مراحل تنفيذ الطلب">
+          {stages.map(([key, label], i) => (
+            <li
+              key={key}
+              className={i <= reached ? s.stepDone : undefined}
+              aria-current={i === reached ? "step" : undefined}
+            >
+              {label}
+            </li>
+          ))}
+        </ol>
+      )}
+      <dl className={s.orderFacts}>
+        <div>
+          <dt>العميل</dt>
+          <dd>{order.name}</dd>
+        </div>
+        <div>
+          <dt>الكمية</dt>
+          <dd>
+            {order.quantity} {order.snapshot.unit} لكل يوم، {order.days} أيام
+          </dd>
+        </div>
+        <div>
+          <dt>الوجبة</dt>
+          <dd>{meals[order.meal]}</dd>
+        </div>
+        <div>
+          <dt>المدة</dt>
+          <dd>
+            <bdi>{order.startDate}</bdi> إلى <bdi>{order.endDate}</bdi>
+          </dd>
+        </div>
+        {order.snapshot.offer && (
+          <div>
+            <dt>العرض</dt>
+            <dd>{order.snapshot.offer.label}</dd>
+          </div>
+        )}
+        <div>
+          <dt>السعر عند الإرسال</dt>
+          <dd>{price(order)}</dd>
+        </div>
+      </dl>
+      {order.notes && (
+        <p className={s.orderNotes}>ملاحظات العميل: {order.notes}</p>
+      )}
+      <div className={s.actions}>
+        <a className={s.contact} href={`tel:${order.phone}`}>
+          اتصال <bdi dir="ltr">{order.phone}</bdi>
+        </a>
+        <a
+          className={s.contact}
+          href={whatsapp(order.phone, order.snapshot.productName)}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          واتساب
+        </a>
+      </div>
+      {actions[order.status] && (
+        <div className={s.actions}>
+          {actions[order.status].map((a) => (
+            <button
+              type="button"
+              key={a.to}
+              className={a.primary ? s.button : s.buttonSecondary}
+              disabled={busy}
+              onClick={() => onUpdate(order.id, a.to, a.confirm)}
+            >
+              {a.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </article>
   );
 }

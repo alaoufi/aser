@@ -14,6 +14,8 @@ import {
   producerOrders,
   reorderDraft,
   updateOrder,
+  producerOrderAlerts,
+  markOrdersSeen,
 } from "../src/server/orders";
 import { db } from "../src/server/db";
 import type { SessionUser } from "../src/lib/types";
@@ -121,6 +123,13 @@ test("family status transition rejects terminal reopening and invalid jumps", ()
     ["accepted", "completed"],
     ["accepted", "cancelled"],
     ["accepted", "accepted"],
+    ["accepted", "preparing"],
+    ["accepted", "ready"],
+    ["preparing", "ready"],
+    ["preparing", "completed"],
+    ["preparing", "cancelled"],
+    ["ready", "completed"],
+    ["ready", "cancelled"],
   ])
     assert.doesNotThrow(() => assertOrderTransition(a, b));
   for (const [a, b] of [
@@ -129,6 +138,12 @@ test("family status transition rejects terminal reopening and invalid jumps", ()
     ["completed", "pending"],
     ["cancelled", "accepted"],
     ["accepted", "declined"],
+    ["pending", "preparing"],
+    ["pending", "ready"],
+    ["preparing", "accepted"],
+    ["ready", "preparing"],
+    ["preparing", "declined"],
+    ["completed", "ready"],
   ])
     assert.throws(() => assertOrderTransition(a, b));
 });
@@ -232,6 +247,39 @@ test(
         "guest phone must never claim member history",
       );
       assert.equal((await producerOrders(users[0])).length, 2);
+      // تنبيه «طلب جديد»: للأسرة المالكة فقط، ويختفي بعد الاطلاع أو الرد.
+      const alerts = await producerOrderAlerts(users[0]);
+      assert.equal(alerts.pending, 2);
+      assert.deepEqual(
+        alerts.alerts.map((a) => a.id).sort(),
+        [receipts[0].id, guest.id].sort(),
+      );
+      assert.equal(alerts.alerts[0].productName, "طبق أصلي");
+      assert.equal((await producerOrderAlerts(users[1])).alerts.length, 0);
+      assert.deepEqual(
+        (await markOrdersSeen(users[1], { ids: [guest.id] })).seen,
+        [],
+        "another family cannot acknowledge foreign orders",
+      );
+      assert.equal((await producerOrderAlerts(users[0])).alerts.length, 2);
+      assert.deepEqual(
+        (await markOrdersSeen(users[0], { ids: [guest.id] })).seen,
+        [guest.id],
+      );
+      assert.deepEqual(
+        (await markOrdersSeen(users[0], { ids: [guest.id] })).seen,
+        [],
+      );
+      await assert.rejects(markOrdersSeen(users[0], { ids: [] }));
+      await assert.rejects(markOrdersSeen(users[0], { ids: ["x"] }));
+      assert.deepEqual(
+        (await producerOrderAlerts(users[0])).alerts.map((a) => a.id),
+        [receipts[0].id],
+      );
+      assert.equal(
+        (await producerOrders(users[0])).find((o) => o.id === guest.id)?.isNew,
+        false,
+      );
       await assert.rejects(
         updateOrder(users[1], { id: receipts[0].id, status: "accepted" }),
         { status: 404 },
@@ -256,6 +304,18 @@ test(
       assert.equal("offerId" in draft, false);
       assert.equal("startDate" in draft, false);
       await updateOrder(users[0], { id: receipts[0].id, status: "accepted" });
+      assert.equal(
+        (await producerOrderAlerts(users[0])).alerts.length,
+        0,
+        "responding to an order acknowledges its alert",
+      );
+      await updateOrder(users[0], { id: receipts[0].id, status: "preparing" });
+      await assert.rejects(
+        updateOrder(users[0], { id: receipts[0].id, status: "accepted" }),
+        { status: 409 },
+      );
+      await updateOrder(users[0], { id: receipts[0].id, status: "ready" });
+      assert.equal((await memberOrders(users[2]))[0].status, "ready");
       await updateOrder(users[0], { id: receipts[0].id, status: "completed" });
       await assert.rejects(
         updateOrder(users[0], { id: receipts[0].id, status: "accepted" }),
