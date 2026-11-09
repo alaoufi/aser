@@ -2,12 +2,19 @@ import { randomBytes, scrypt, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import type { SessionUser } from "../lib/types";
 import { transaction } from "./db";
-import { hash, rateLimit, sessionToken } from "./auth";
+import {
+  adminOtpRequired,
+  hash,
+  rateLimit,
+  sessionToken,
+  startAdminChallenge,
+} from "./auth";
 import { HttpError, normalizePhone } from "./security";
 const passwordSchema = z
   .string()
   .min(4, "كلمة المرور أربع خانات على الأقل")
   .max(128, "كلمة المرور طويلة جدًا");
+export const ADMIN_PASSWORD_MIN = 10;
 export function normalizeUsername(input: string) {
   const value = input.trim().normalize("NFC").toLowerCase().normalize("NFC");
   let phoneAlias = false;
@@ -107,6 +114,16 @@ export async function passwordLogin(input: unknown) {
     const { password_hash: _, ...user } = row as SessionUser & {
       password_hash: string;
     };
+    if (user.role === "admin" && adminOtpRequired()) {
+      // لا جلسة قبل رمز الجوال لحساب الإدارة.
+      const challengeId = await startAdminChallenge(client, user.phone);
+      return {
+        otp: { challengeId },
+        user: null,
+        token: null,
+        next: roleDestination(user.role),
+      };
+    }
     const token = randomBytes(32).toString("hex");
     await client.query(
       "INSERT INTO jdatna.sessions(token_hash,user_id,expires_at) VALUES($1,$2,now()+interval '7 days')",
@@ -148,6 +165,16 @@ export async function setCredentials(request: Request, input: unknown) {
       ).rows[0];
       if (!proof?.fresh)
         throw new HttpError(403, "يلزم تحقق جديد بالجوال لتعيين كلمة المرور");
+      const role = (
+        await client.query("SELECT role FROM jdatna.users WHERE id=$1", [
+          proof.user_id,
+        ])
+      ).rows[0]?.role;
+      if (role === "admin" && value.password.length < ADMIN_PASSWORD_MIN)
+        throw new HttpError(
+          400,
+          `كلمة مرور الإدارة ${ADMIN_PASSWORD_MIN} خانات على الأقل`,
+        );
       const passwordHash = await hashPassword(value.password);
       const user = (
         await client.query(

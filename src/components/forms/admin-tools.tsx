@@ -421,3 +421,153 @@ export function ReportsAdmin() {
     </section>
   );
 }
+const meals: Record<string, string> = {
+  breakfast: "فطور",
+  lunch: "غداء",
+  dinner: "عشاء",
+  occasion: "مناسبة",
+};
+const orderStatus: Record<string, string> = {
+  pending: "جديد بانتظار الأسرة",
+  accepted: "مقبول",
+  preparing: "قيد التجهيز",
+  ready: "جاهز",
+  completed: "تم التسليم",
+  declined: "اعتذرت الأسرة",
+  cancelled: "ملغى",
+};
+type Summary = Record<string, number>;
+export function AdminSummary({ onOpen }: { onOpen: (tab: string) => void }) {
+  const r = useResource<{ summary: Summary }>("/api/admin/summary");
+  const v = r.data?.summary;
+  const cards: [string, string, string, boolean?][] = v
+    ? [
+        [
+          "أسر تحت المراجعة",
+          String(v.familiesPending),
+          "producers",
+          v.familiesPending > 0,
+        ],
+        ["أسر بانتظار الاستكمال", String(v.familiesIncomplete), "producers"],
+        ["أسر نشطة", String(v.familiesApproved), "producers"],
+        ["بلاغات مفتوحة", String(v.reportsOpen), "reports", v.reportsOpen > 0],
+        ["طلبات آخر 24 ساعة", String(v.ordersToday), "orders"],
+        [
+          "طلبات بلا رد منذ 24 ساعة",
+          String(v.ordersStale),
+          "orders",
+          v.ordersStale > 0,
+        ],
+        ["منتجات ظاهرة", String(v.productsLive), "products"],
+      ]
+    : [];
+  return (
+    <section aria-label="ملخص الإدارة" className={s.summaryGrid}>
+      {r.error && <Message error={r.error} />}
+      {!v && !r.error && <p role="status">جارٍ تحميل الملخص…</p>}
+      {cards.map(([label, value, tab, alert]) => (
+        <button
+          type="button"
+          key={label}
+          className={`${s.summaryCard} ${alert ? s.summaryAlert : ""}`}
+          onClick={() => onOpen(tab)}
+        >
+          <strong>{value}</strong>
+          <span>{label}</span>
+        </button>
+      ))}
+    </section>
+  );
+}
+type AdminOrder = {
+  id: string;
+  status: string;
+  productName: string;
+  producerName: string;
+  producerSlug: string;
+  customerName: string;
+  phone: string;
+  quantity: number;
+  meal: string;
+  startDate: string;
+  createdAt: string;
+  stale: boolean;
+};
+export function OrdersAdmin() {
+  const r = useResource<{ orders: AdminOrder[] }>("/api/admin/orders");
+  const [filter, setFilter] = useState("open");
+  const open = ["pending", "accepted", "preparing", "ready"];
+  const list = (r.data?.orders ?? []).filter((o) =>
+    filter === "all"
+      ? true
+      : filter === "stale"
+        ? o.stale
+        : filter === "open"
+          ? open.includes(o.status)
+          : !open.includes(o.status),
+  );
+  return (
+    <section>
+      <h2>متابعة الطلبات</h2>
+      <p className={s.muted}>
+        للاطلاع والمتابعة فقط؛ الأسرة تدير حالة طلبها. الاتفاق والسداد خارج
+        الموقع.
+      </p>
+      <Message error={r.error} />
+      <div className={s.actions} role="group" aria-label="تصفية الطلبات">
+        {[
+          ["open", "قيد التنفيذ"],
+          ["stale", "بلا رد منذ 24 ساعة"],
+          ["done", "منتهية"],
+          ["all", "الكل"],
+        ].map(([id, label]) => (
+          <button
+            type="button"
+            key={id}
+            className={s.buttonSecondary}
+            aria-pressed={filter === id}
+            onClick={() => setFilter(id)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {!r.data && !r.error ? (
+        <p role="status">جارٍ تحميل الطلبات…</p>
+      ) : list.length ? (
+        list.map((o) => (
+          <article
+            key={o.id}
+            className={`${s.card} ${o.stale ? s.cardNew : ""}`}
+          >
+            <div className={s.orderHead}>
+              <h3>{o.productName}</h3>
+              <span className={o.stale ? s.tagNew : s.tag}>
+                {o.stale
+                  ? "بلا رد +24 ساعة"
+                  : (orderStatus[o.status] ?? o.status)}
+              </span>
+            </div>
+            <p>
+              الأسرة:{" "}
+              <a href={`/producers/${o.producerSlug}`}>{o.producerName}</a>
+            </p>
+            <p>
+              العميل: {o.customerName} —{" "}
+              <a href={`tel:${o.phone}`} dir="ltr">
+                {o.phone}
+              </a>
+            </p>
+            <p>
+              {o.quantity} · {meals[o.meal] ?? o.meal} · من{" "}
+              <bdi>{o.startDate}</bdi> · أُرسل{" "}
+              <bdi>{new Date(o.createdAt).toLocaleString("ar-SA")}</bdi>
+            </p>
+          </article>
+        ))
+      ) : (
+        <p className={s.notice}>لا توجد طلبات في هذا التصنيف.</p>
+      )}
+    </section>
+  );
+}

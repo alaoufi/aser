@@ -1,17 +1,23 @@
 "use client";
 import { useEffect, useState } from "react";
 import {
+  AdminSummary,
   CategoriesAdmin,
   LocationsAdmin,
+  OrdersAdmin,
   ProductsAdmin,
   ReportsAdmin,
 } from "./admin-tools";
+import { familyAccountState, type FamilyState } from "@/lib/family-status";
 import { AccountShell, Guard, Message, api, s, useSession } from "./shared";
 type Application = {
   id: string;
   name: string;
   tradeName?: string | null;
   status: string;
+  verified?: boolean;
+  ownerName?: string;
+  phone?: string;
   cityName?: string;
   description?: string;
   documentType?: string;
@@ -28,6 +34,23 @@ type Application = {
   nationalId?: string | null;
   workLocation?: string | null;
 };
+const today = () =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Riyadh" }).format(
+    new Date(),
+  );
+function stateOf(p: Application): FamilyState {
+  return familyAccountState(
+    {
+      status: p.status,
+      verified: Boolean(p.verified),
+      documentId: p.documentId,
+      documentType: p.documentType,
+      documentExpiresAt: p.documentExpiresAt,
+      reviewReason: p.reviewReason,
+    },
+    today(),
+  );
+}
 function Review({
   producer,
   onSaved,
@@ -65,17 +88,14 @@ function Review({
   }
   return (
     <article className={s.card}>
-      <span className={s.tag}>
-        {(
-          {
-            pending: "قيد المراجعة",
-            approved: "معتمد",
-            rejected: "مرفوض",
-            suspended: "معلق",
-          } as Record<string, string>
-        )[producer.status] || producer.status}
-      </span>
+      <span className={s.tag}>{stateOf(producer).label}</span>
       <h2>{producer.name}</h2>
+      {(producer.ownerName || producer.phone) && (
+        <p>
+          صاحب الحساب: {producer.ownerName}{" "}
+          {producer.phone && <bdi dir="ltr">{producer.phone}</bdi>}
+        </p>
+      )}
       {producer.tradeName && <p>الاسم التجاري: {producer.tradeName}</p>}
       <p>{producer.cityName}</p>
       <p>{producer.description}</p>
@@ -126,13 +146,15 @@ function Review({
               اختر القرار
             </option>
             <option value="approved">اعتماد</option>
-            <option value="rejected">رفض</option>
-            <option value="suspended">تعليق</option>
+            <option value="rejected">
+              طلب استكمال (يعود للأسرة لتعديل المطلوب)
+            </option>
+            <option value="suspended">إيقاف الحساب</option>
           </select>
         </label>
         <label className={s.field}>
-          سبب القرار (يُحفظ في سجل المراجعة)
-          <textarea name="reason" required minLength={3} maxLength={2000} />
+          سبب القرار (يُحفظ في سجل المراجعة ويظهر للأسرة عند طلب الاستكمال)
+          <textarea name="reason" required minLength={5} maxLength={2000} />
         </label>
         <label className={s.checks}>
           <input
@@ -167,6 +189,8 @@ export function Admin() {
   const [error, setError] = useState("");
   const [loaded, setLoaded] = useState(false);
   const [success, setSuccess] = useState("");
+  const [filter, setFilter] = useState("review");
+  const [query, setQuery] = useState("");
   async function load() {
     const d = await api<{ producers: Application[] }>("/api/admin/producers");
     setProducers(d.producers);
@@ -183,12 +207,14 @@ export function Admin() {
       <Guard {...session} admin />
       {session.user?.role === "admin" && (
         <>
+          <AdminSummary onOpen={setTab} />
           <nav className={s.actions} aria-label="أقسام الإدارة">
             <a className={s.button} href="/admin/coverage">
               إدارة التغطية التفصيلية
             </a>
             {[
               ["producers", "مراجعة الأسر"],
+              ["orders", "الطلبات"],
               ["products", "المنتجات"],
               ["categories", "إدارة الأقسام"],
               ["locations", "المواقع"],
@@ -205,7 +231,9 @@ export function Admin() {
               </button>
             ))}
           </nav>
-          {tab === "products" ? (
+          {tab === "orders" ? (
+            <OrdersAdmin />
+          ) : tab === "products" ? (
             <ProductsAdmin />
           ) : tab === "categories" ? (
             <CategoriesAdmin />
@@ -221,21 +249,68 @@ export function Admin() {
                 حكوميًا. المستندات خاصة ومخصصة للمراجعة فقط.
               </p>
               <Message error={error} success={success} />
+              <div className={s.actions} role="group" aria-label="تصفية الأسر">
+                {(
+                  [
+                    ["review", "تحت المراجعة"],
+                    ["incomplete", "بانتظار إكمال المطلوب"],
+                    ["active", "نشط"],
+                    ["trusted", "موثوق"],
+                    ["suspended", "موقوف"],
+                    ["all", "الكل"],
+                  ] as const
+                ).map(([id, label]) => (
+                  <button
+                    type="button"
+                    key={id}
+                    className={s.buttonSecondary}
+                    aria-pressed={filter === id}
+                    onClick={() => setFilter(id)}
+                  >
+                    {label} (
+                    {id === "all"
+                      ? producers.length
+                      : producers.filter((p) => stateOf(p).key === id).length}
+                    )
+                  </button>
+                ))}
+              </div>
+              <label className={s.field}>
+                بحث باسم الأسرة أو صاحبها أو الجوال أو المدينة
+                <input
+                  type="search"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                />
+              </label>
               {!loaded ? (
                 <p role="status">جارٍ تحميل طلبات المراجعة…</p>
-              ) : producers.length ? (
-                producers.map((p) => (
-                  <Review
-                    key={p.id}
-                    producer={p}
-                    onSaved={async () => {
-                      await load();
-                      setSuccess("تم حفظ قرار المراجعة.");
-                    }}
-                  />
-                ))
               ) : (
-                <p className={s.notice}>لا توجد طلبات مراجعة حاليًا.</p>
+                (() => {
+                  const q = query.trim().toLowerCase();
+                  const shown = producers.filter(
+                    (p) =>
+                      (filter === "all" || stateOf(p).key === filter) &&
+                      (!q ||
+                        [p.name, p.tradeName, p.ownerName, p.phone, p.cityName]
+                          .filter(Boolean)
+                          .some((v) => String(v).toLowerCase().includes(q))),
+                  );
+                  return shown.length ? (
+                    shown.map((p) => (
+                      <Review
+                        key={p.id}
+                        producer={p}
+                        onSaved={async () => {
+                          await load();
+                          setSuccess("تم حفظ قرار المراجعة.");
+                        }}
+                      />
+                    ))
+                  ) : (
+                    <p className={s.notice}>لا توجد أسر في هذا التصنيف.</p>
+                  );
+                })()
               )}
             </>
           )}

@@ -252,3 +252,32 @@ export async function resolveReport(user: SessionUser, input: unknown) {
     return { ok: true };
   });
 }
+// ملخص لوحة الإدارة: أرقام تبدأ منها المراجعة اليومية.
+export async function adminSummary(user: SessionUser) {
+  assertAdmin(user);
+  const row = (
+    await db().query(
+      `SELECT
+        (SELECT count(*)::int FROM jdatna.producer_profiles WHERE status='pending') AS "familiesPending",
+        (SELECT count(*)::int FROM jdatna.producer_profiles WHERE status='approved') AS "familiesApproved",
+        (SELECT count(*)::int FROM jdatna.producer_profiles WHERE status='rejected') AS "familiesIncomplete",
+        (SELECT count(*)::int FROM jdatna.reports WHERE status IN ('new','reviewing')) AS "reportsOpen",
+        (SELECT count(*)::int FROM jdatna.order_requests WHERE created_at > now()-interval '24 hours') AS "ordersToday",
+        (SELECT count(*)::int FROM jdatna.order_requests WHERE status='pending' AND created_at < now()-interval '24 hours') AS "ordersStale",
+        (SELECT count(*)::int FROM jdatna.products WHERE visible=true AND status<>'unavailable') AS "productsLive"`,
+    )
+  ).rows[0];
+  return row as Record<string, number>;
+}
+// متابعة الطلبات للإدارة: قراءة فقط، آخر 200 طلب مع اسم الأسرة.
+export async function adminOrders(user: SessionUser) {
+  assertAdmin(user);
+  return (
+    await db().query(
+      `SELECT o.id,o.status,o.snapshot->>'productName' AS "productName",COALESCE(p.trade_name,p.name) AS "producerName",p.slug AS "producerSlug",o.customer_name AS "customerName",o.phone,o.quantity,o.meal,o.start_date::text AS "startDate",o.created_at AS "createdAt",o.updated_at AS "updatedAt",
+        (o.status='pending' AND o.created_at < now()-interval '24 hours') AS stale
+       FROM jdatna.order_requests o JOIN jdatna.producer_profiles p ON p.id=o.producer_id
+       ORDER BY (o.status='pending') DESC,o.created_at DESC LIMIT 200`,
+    )
+  ).rows;
+}

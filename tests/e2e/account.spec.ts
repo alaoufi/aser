@@ -96,6 +96,9 @@ test("admin category validates slug before sending and preserves errors from ser
       },
     }),
   );
+  await page.route("**/api/admin/summary", (route) =>
+    route.fulfill({ json: { summary: {} } }),
+  );
   await page.route("**/api/admin/producers", (route) =>
     route.fulfill({ json: { producers: [] } }),
   );
