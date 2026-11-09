@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { AccountLink } from "./account-link";
 import { useEffect, useRef } from "react";
 export function MobileNavigation() {
   const ref = useRef<HTMLDetailsElement>(null);
@@ -70,7 +71,7 @@ export function MobileNavigation() {
         <Link href="/offers">العروض الخاصة</Link>
         <Link href="/orders">طلباتي</Link>
         <Link href="/about">حكايتنا</Link>
-        <Link href="/login">تسجيل الدخول</Link>
+        <AccountLink />
       </nav>
     </details>
   );

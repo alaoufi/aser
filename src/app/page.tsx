@@ -70,7 +70,7 @@ export default async function Home() {
             <span>♧</span>
             <p>
               <strong>على ذوقك وقريب منك</strong>
-              <small>اختر مدينتك واكتشف نكهاتها</small>
+              <small>اكتشف المتاح في مدينتك</small>
             </p>
           </div>
           <div>

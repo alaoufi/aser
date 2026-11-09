@@ -34,3 +34,26 @@ test("intro ticker moves, pauses and respects reduced motion without overflow", 
     "normal",
   );
 });
+
+test("ticker travels left to right with an identical seamless repeat", async ({ page }) => {
+  await page.goto("/");
+  const result = await page.locator(".about-ticker-track").evaluate(track => {
+    const animation = track.getAnimations()[0];
+    animation.pause();
+    const duration = Number(animation.effect!.getComputedTiming().duration);
+    const copies = track.querySelectorAll<HTMLElement>(".about-ticker-copy");
+    animation.currentTime = 0;
+    const first = copies[1].getBoundingClientRect().left;
+    const x0 = track.getBoundingClientRect().left;
+    animation.currentTime = duration / 4;
+    const x1 = track.getBoundingClientRect().left;
+    animation.currentTime = duration - 0.01;
+    const last = copies[0].getBoundingClientRect().left;
+    return { first, last, x0, x1, widths: [...copies].map(c=>c.getBoundingClientRect().width), texts: [...copies].map(c=>c.textContent) };
+  });
+  expect(result.x1).toBeGreaterThan(result.x0);
+  expect(Math.abs(result.first - result.last)).toBeLessThan(1);
+  expect(result.widths[0]).toBeCloseTo(result.widths[1], 2);
+  expect(result.texts[0]).toBe(result.texts[1]);
+  await expect(page.getByText("اكتشف المتاح في مدينتك", { exact:true })).toBeVisible();
+});

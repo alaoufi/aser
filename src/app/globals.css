@@ -106,6 +106,7 @@ img {
 }
 .about-ticker-window {
   overflow: hidden;
+  direction: ltr;
 }
 .about-ticker-track {
   display: flex;
@@ -114,6 +115,7 @@ img {
   animation: about-ticker-scroll 38s linear infinite;
 }
 .about-ticker-copy {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-around;
@@ -145,8 +147,11 @@ img {
   animation-play-state: paused;
 }
 @keyframes about-ticker-scroll {
-  to {
+  from {
     transform: translateX(-50%);
+  }
+  to {
+    transform: translateX(0);
   }
 }
 @media (prefers-reduced-motion: reduce) {

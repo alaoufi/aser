@@ -244,6 +244,24 @@ export function LoginForm({
       setBusy(false);
     }
   }
+  if (!session.ready) return <p role="status">جارٍ التحقق من الحساب…</p>;
+  if (session.user && !verified) {
+    const destination =
+      session.user.role === "admin"
+        ? "/admin"
+        : session.user.role === "producer"
+          ? "/dashboard"
+          : "/orders";
+    return (
+      <section className={s.card}>
+        <h1>أهلًا {session.user.name}</h1>
+        <p>أنت مسجل الدخول بالفعل.</p>
+        <Link className={s.button} href={destination}>
+          متابعة إلى حسابي
+        </Link>
+      </section>
+    );
+  }
   return (
     <section
       className={s.card}
@@ -329,7 +347,9 @@ export function LoginForm({
                 maxLength={128}
                 required
               />
-              <small>أربع خانات على الأقل؛ أحرف أو أرقام أو رموز، دون اشتراط خلطها.</small>
+              <small>
+                أربع خانات على الأقل؛ أحرف أو أرقام أو رموز، دون اشتراط خلطها.
+              </small>
             </label>
             <label className={s.field}>
               تأكيد كلمة المرور
