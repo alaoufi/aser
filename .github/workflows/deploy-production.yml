@@ -1,0 +1,78 @@
+name: نشر جدتنا (يدوي)
+# زر نشر يدوي يُشغَّل من GitHub (والجوال). لا نشر تلقائي عند الدفع.
+# يتطلب بيئة GitHub باسم production بموافقة المالك، وأسرارها الثلاثة (infra/deploy/README.md).
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "deploy = نشر آخر الفرع، rollback = رجوع للإصدار السابق، status = الحالة"
+        type: choice
+        options: [deploy, rollback, status]
+        default: deploy
+      ref:
+        description: "commit للنشر (اتركه فارغًا لآخر codex/jdatna-platform)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: jdatna-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: codex/jdatna-platform
+          fetch-depth: 0
+
+      - name: تحديد الإصدار
+        id: target
+        env:
+          REF: ${{ inputs.ref }}
+        run: |
+          set -euo pipefail
+          sha=$(git rev-parse --verify "${REF:-HEAD}^{commit}")
+          git merge-base --is-ancestor "$sha" HEAD || { echo "::error::$sha ليس على codex/jdatna-platform"; exit 1; }
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "الإصدار: $sha"
+
+      - name: الاتصال بالخادم وتنفيذ الأمر
+        env:
+          SSH_KEY: ${{ secrets.JDATNA_DEPLOY_SSH_KEY }}
+          SSH_HOST: ${{ secrets.JDATNA_DEPLOY_HOST }}
+          KNOWN_HOSTS: ${{ secrets.JDATNA_DEPLOY_KNOWN_HOSTS }}
+          ACTION: ${{ inputs.action }}
+          SHA: ${{ steps.target.outputs.sha }}
+        run: |
+          set -euo pipefail
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key && chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          case "$ACTION" in
+            deploy) remote="deploy $SHA" ;;
+            rollback|status) remote="$ACTION" ;;
+            *) echo "::error::أمر غير معروف"; exit 1 ;;
+          esac
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            -o ServerAliveInterval=30 -o ServerAliveCountMax=6 "$SSH_HOST" "$remote"
+
+      - name: التحقق العام من الموقع
+        if: inputs.action == 'deploy'
+        env:
+          SHA: ${{ steps.target.outputs.sha }}
+        run: |
+          set -euo pipefail
+          live=$(curl -fsS https://jdatna.com/api/health | python3 -c 'import json,sys; print(json.load(sys.stdin)["version"])')
+          echo "الإصدار الحي: $live"
+          [ "$live" = "$SHA" ] || { echo "::error::الإصدار الحي لا يطابق $SHA"; exit 1; }
+
+      - name: تنظيف المفتاح
+        if: always()
+        run: rm -f ~/.ssh/deploy_key
