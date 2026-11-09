@@ -743,6 +743,11 @@ main::before {
     left: auto;
     right: 0;
   }
+  /* الشعار أقصى اليسار، و«أكلات جدتنا» على يمينه */
+  .site-header .brand {
+    flex-direction: row-reverse;
+    margin-right: auto;
+  }
 }
 
 /* صفحة القسم أو الأسرة: العنوان يتبع ما فُتح */

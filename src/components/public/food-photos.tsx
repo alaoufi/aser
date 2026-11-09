@@ -39,7 +39,6 @@ export function FoodPhotos() {
           </div>
         ))}
       </div>
-      <figcaption>من سفرتنا، ومن موروثنا</figcaption>
     </figure>
   );
 }

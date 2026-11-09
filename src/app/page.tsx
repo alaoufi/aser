@@ -38,31 +38,6 @@ export default async function Home() {
           <FoodPhotos />
         </div>
       </section>
-      <section className="value-strip">
-        <div className="wrap value-grid">
-          <div>
-            <span>⌂</span>
-            <p>
-              <strong>من بيوت أهلنا</strong>
-              <small>للأسر المنتجة الغذائية فقط</small>
-            </p>
-          </div>
-          <div>
-            <span>♧</span>
-            <p>
-              <strong>على ذوقك وقريب منك</strong>
-              <small>اكتشف المتاح في مدينتك</small>
-            </p>
-          </div>
-          <div>
-            <span>♡</span>
-            <p>
-              <strong>الخير لأهل الخير</strong>
-              <small>تسجيل مجاني وبدون عمولة</small>
-            </p>
-          </div>
-        </div>
-      </section>
       <section className="section wrap">
         <SectionHeading
           eyebrow="كل نكهة لها باب"
