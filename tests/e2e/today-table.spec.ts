@@ -9,13 +9,13 @@ test("today's table sits on the home page and says the dishes have not arrived w
   const table = page.getByRole("region", { name: "مائدة اليوم" });
   await expect(table).toBeVisible();
   // بيئة الاختبار بلا أطباق متوفرة اليوم.
-  await expect(table).toContainText("الطبخات لم تصل بعد");
+  await expect(table).toContainText("بانتظار العروض");
   await expect(table.getByRole("link", { name: /افتح المائدة/ })).toHaveCount(
     0,
   );
   await page.goto("/table");
   await expect(page.getByRole("region", { name: "مائدة اليوم" })).toContainText(
-    "الطبخات لم تصل بعد",
+    "بانتظار العروض",
   );
   expect(
     await page.evaluate(

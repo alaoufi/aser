@@ -43,7 +43,7 @@ export function TodayTable({
       <div className="table-top">
         {shown.length === 0 ? (
           <p className="table-empty">
-            الطبخات لم تصل بعد
+            بانتظار العروض
             {regionName ? <small>في {regionName}</small> : null}
           </p>
         ) : (
