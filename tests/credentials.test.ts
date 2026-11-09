@@ -230,15 +230,15 @@ test(
         identifier: username.toUpperCase(),
         password,
       });
-      tokens.push(login.token);
-      assert.equal(login.user.id, ids[0]);
+      tokens.push(login.token!);
+      assert.equal(login.user!.id, ids[0]);
       assert.equal(login.next, "/orders");
       const byPhone = await passwordLogin({
         identifier: "0" + users[0].phone.slice(4),
         password,
       });
-      tokens.push(byPhone.token);
-      assert.equal(byPhone.user.id, ids[0]);
+      tokens.push(byPhone.token!);
+      assert.equal(byPhone.user!.id, ids[0]);
       const badBody = {
         identifier: username,
         password: "Wrong private password!",
@@ -297,8 +297,8 @@ test(
           identifier: username + "-" + i,
           password,
         });
-        tokens.push(logged.token);
-        assert.equal(logged.user.role, users[i].role);
+        tokens.push(logged.token!);
+        assert.equal(logged.user!.role, users[i].role);
         assert.equal(logged.next, i === 1 ? "/dashboard" : "/admin");
       }
       const resetProof = await session(ids[0], "fresh");
@@ -323,7 +323,7 @@ test(
         identifier: username,
         password,
       });
-      tokens.push(afterConflict.token);
+      tokens.push(afterConflict.token!);
       const reset = await setCredentials(request(resetProof), {
         password: changedPassword,
       });
@@ -333,8 +333,8 @@ test(
         username,
         "omitting username preserves existing identity",
       );
-      assert.equal(await sessionUser(request(login.token)), null);
-      assert.equal(await sessionUser(request(afterConflict.token)), null);
+      assert.equal(await sessionUser(request(login.token!)), null);
+      assert.equal(await sessionUser(request(afterConflict.token!)), null);
       await assert.rejects(passwordLogin({ identifier: username, password }), {
         status: 401,
       });
@@ -342,8 +342,8 @@ test(
         identifier: username,
         password: changedPassword,
       });
-      tokens.push(afterReset.token);
-      assert.equal(afterReset.user.id, ids[0]);
+      tokens.push(afterReset.token!);
+      assert.equal(afterReset.user!.id, ids[0]);
       // Two simultaneous attempts cannot reuse the same one-use capability.
       const once = await session(ids[0], "fresh");
       const attempts = await Promise.allSettled([
