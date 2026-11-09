@@ -2071,7 +2071,7 @@ label:has(> select) {
 }
 .food-showcase-main {
   position: relative;
-  aspect-ratio: 4/3;
+  aspect-ratio: 1.1;
   background: transparent;
   border: 0;
   border-radius: 22px;
@@ -2089,7 +2089,7 @@ label:has(> select) {
 }
 .food-dish-visual {
   position: relative;
-  aspect-ratio: 1.25;
+  aspect-ratio: 1;
   background: transparent;
   border: 0;
   border-radius: 12px;
@@ -2142,10 +2142,10 @@ main {
 }
 
 .food-showcase-main img {
-  filter: drop-shadow(0 12px 10px #38291f2b);
+  filter: none;
 }
 .food-showcase-strip img {
-  filter: drop-shadow(0 5px 4px #38291f26);
+  filter: none;
 }
 .dish-number {
   position: absolute;

@@ -13,7 +13,7 @@ export function FoodPhotos() {
           1
         </span>
         <Image
-          src="/food/rice-plate-cutout.png"
+          src="/food/rice-plate-floating-v2.webp"
           alt="الطبق 1: الأرز"
           fill
           sizes="(max-width:600px) 85vw, (max-width:850px) 40vw, 480px"
@@ -29,7 +29,7 @@ export function FoodPhotos() {
                 {index + 2}
               </span>
               <Image
-                src={`/food/${id}-cutout.png`}
+                src={`/food/${id}-floating-v2.webp`}
                 alt={`الطبق ${index + 2}: ${name}`}
                 fill
                 sizes="(max-width:600px) 20vw, 110px"
