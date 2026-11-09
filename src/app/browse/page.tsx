@@ -46,10 +46,12 @@ export default async function Browse({
         <h1>اكتشف الأكلات</h1>
         <p>اختر ما تحب، وتواصل مع الأسرة على التفاصيل.</p>
       </div>
-      <form className="filter-bar" action="/browse">
+      <form className="filter-bar" action="/browse" autoComplete="off">
         <label>
           ابحث عن نكهة
           <input
+            type="search"
+            autoComplete="off"
             name="q"
             defaultValue={filters.q}
             placeholder="اسم الأكلة أو الأسرة"

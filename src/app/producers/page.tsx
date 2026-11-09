@@ -24,10 +24,20 @@ export default async function Producers({
         <h1>الأسر المنتجة</h1>
         <p>تعرّف على أهل الصنعة، واكتشف حكاية كل نكهة.</p>
       </div>
-      <form className="filter-bar compact" action="/producers">
+      <form
+        className="filter-bar compact"
+        action="/producers"
+        autoComplete="off"
+      >
         <label>
           اسم الأسرة
-          <input name="q" defaultValue={q} placeholder="ابحث باسم الأسرة" />
+          <input
+            type="search"
+            name="q"
+            autoComplete="off"
+            defaultValue={q}
+            placeholder="ابحث باسم الأسرة"
+          />
         </label>
         <LocationFields
           key={`${region}:${city}`}

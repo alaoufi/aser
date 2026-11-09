@@ -38,10 +38,15 @@ export default async function Home() {
             <br />
             أكلات أصيلة، ومنتجات بلدية، وتواصل يقرّبكم.
           </p>
-          <form action="/browse" className="hero-search">
+          <form action="/browse" className="hero-search" autoComplete="off">
             <label>
               <span>وش تشتهي اليوم؟</span>
-              <input name="q" placeholder="جريش، معمول، قهوة…" />
+              <input
+                type="search"
+                name="q"
+                autoComplete="off"
+                placeholder="جريش، معمول، قهوة…"
+              />
             </label>
             <LocationFields cities={cities} className="city-field" />
             <button className="button" type="submit">
