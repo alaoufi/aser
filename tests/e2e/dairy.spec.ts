@@ -48,9 +48,12 @@ test("dairy and drinks are prominent with all child names and searchable options
     ).toBeVisible();
   await branches.getByRole("link", { name: "شاهي", exact: true }).click();
   await expect(page).toHaveURL(/category=hot-tea/);
-  await expect(
-    page.getByRole("navigation", { name: "فروع القسم" }),
-  ).toContainText("المشروبات — مشروبات ساخنة — شاهي");
+  // الصفحة كلها للقسم: العنوان اسمه، ومساره الكامل فوقه، وعنوان التبويب.
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("شاهي");
+  await expect(page.locator(".section-intro .eyebrow")).toHaveText(
+    "المشروبات — مشروبات ساخنة",
+  );
+  await expect(page).toHaveTitle(/شاهي/);
 });
 test("admin assigns deep subsection and excludes its own descendants as parents", async ({
   page,

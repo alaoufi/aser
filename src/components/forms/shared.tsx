@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { FamilyStatusBanner } from "./family-status";
 import type { SessionUser } from "@/lib/types";
 import s from "./account.module.css";
 export { s };
@@ -95,7 +94,6 @@ export function AccountShell({
   return (
     <section className={s.shell}>
       {navigation && <AccountNavigation />}
-      <FamilyStatusBanner />
       {children}
     </section>
   );

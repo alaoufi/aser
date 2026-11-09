@@ -691,3 +691,70 @@ main::before {
 .directory-list a.is-empty em {
   color: var(--muted);
 }
+
+/* شارة حالة حساب الأسرة في الترويسة وأعلى قائمة الجوال */
+.family-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 4px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 13px;
+  white-space: nowrap;
+}
+.family-chip strong {
+  font-weight: 700;
+}
+.family-chip-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+.family-chip-review .family-chip-dot {
+  background: #b7791f;
+}
+.family-chip-incomplete .family-chip-dot {
+  background: var(--rust);
+}
+.family-chip-active .family-chip-dot {
+  background: var(--olive);
+}
+.family-chip-trusted .family-chip-dot {
+  background: #2f6f4f;
+}
+.mobile-nav nav a.family-chip-menu {
+  display: flex;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  white-space: normal;
+}
+
+/* الجوال: زر القائمة أقصى اليمين والشعار يسارًا، والقائمة تنفتح من اليمين */
+@media (max-width: 850px) {
+  .site-header .mobile-nav {
+    order: -1;
+  }
+  .site-header .mobile-nav nav {
+    left: auto;
+    right: 0;
+  }
+}
+
+/* صفحة القسم أو الأسرة: العنوان يتبع ما فُتح */
+.section-intro .eyebrow {
+  margin-bottom: 4px;
+}
+.section-intro h1 {
+  margin-bottom: 8px;
+}
+.section-intro-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-top: 6px;
+}

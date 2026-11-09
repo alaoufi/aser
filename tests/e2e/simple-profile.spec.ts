@@ -15,8 +15,14 @@ test("family saves only basic fields in one form and retries without reuploading
   page,
 }) => {
   await page.setViewportSize({ width: 320, height: 1000 });
+  // بعد حفظ ملف الأسرة يرقّي الخادم الحساب إلى producer، كما في الإنتاج.
   await page.route("**/api/session", (r) =>
-    r.fulfill({ json: { user, registrationOpen: true } }),
+    r.fulfill({
+      json: {
+        user: profile ? { ...user, role: "producer" } : user,
+        registrationOpen: true,
+      },
+    }),
   );
   // حالة الحساب: لا ملف قبل التسجيل، ثم «تحت المراجعة» بعده.
   await page.route("**/api/producer/status", (r) =>

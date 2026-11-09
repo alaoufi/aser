@@ -5,7 +5,12 @@ test("browse offers four search methods: word, available, family and category", 
 }) => {
   await page.goto("/browse");
   const modes = page.getByRole("navigation", { name: "طريقة البحث" });
-  for (const name of ["بالكلمة", "المتاح الآن", "حسب الأسرة", "حسب القسم"])
+  for (const name of [
+    "بالكلمة",
+    "المتاح الآن",
+    "حسب الأسرة المنتجة",
+    "حسب القسم",
+  ])
     await expect(modes.getByRole("link", { name })).toBeVisible();
   await expect(modes.getByRole("link", { name: "بالكلمة" })).toHaveAttribute(
     "aria-current",
@@ -21,9 +26,21 @@ test("browse offers four search methods: word, available, family and category", 
   await expect(page).toHaveURL(/by=category.*category=|category=.*by=category/);
   await expect(page.getByRole("region", { name: "الأقسام" })).toHaveCount(0);
 
+  // داخل القسم: العنوان اسم القسم، ولا أزرار طرق البحث، ورابط «كل الأقسام» للرجوع.
+  const sectionTitle = await page
+    .getByRole("heading", { level: 1 })
+    .textContent();
+  expect(sectionTitle).not.toBe("اكتشف الأكلات");
+  await expect(page).toHaveTitle(new RegExp(sectionTitle!.trim()));
+  await expect(
+    page.getByRole("navigation", { name: "طريقة البحث" }),
+  ).toHaveCount(0);
+  await page.getByRole("link", { name: "كل الأقسام" }).click();
+  await expect(page).toHaveURL(/by=category/);
+  await expect(page.getByRole("region", { name: "الأقسام" })).toBeVisible();
   await page
     .getByRole("navigation", { name: "طريقة البحث" })
-    .getByRole("link", { name: "حسب الأسرة" })
+    .getByRole("link", { name: "حسب الأسرة المنتجة" })
     .click();
   await expect(page).toHaveURL(/by=family/);
   await expect(page.getByRole("region", { name: "الأسر" })).toBeVisible();

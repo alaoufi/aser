@@ -19,7 +19,7 @@ import {
   s,
   useSession,
 } from "./shared";
-import { FAMILY_STATUS_CHANGED } from "./family-status";
+import { FAMILY_STATUS_CHANGED, FamilyStatusBanner } from "./family-status";
 type Profile = AdvancedProfile & {
   id?: string;
   name: string;
@@ -195,6 +195,7 @@ export function ProfileForm({
     );
   return (
     <>
+      <FamilyStatusBanner />
       {profile && <CookingAvailability />}
       {profile && (
         <Link className={s.button} href="/dashboard/coverage">

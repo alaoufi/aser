@@ -2,6 +2,7 @@ import { MobileNavigation } from "@/components/public/mobile-navigation";
 import { AboutTicker } from "@/components/public/about-ticker";
 import { AccountLink } from "@/components/public/account-link";
 import { OrderAlert } from "@/components/public/order-alert";
+import { FamilyStatusChip } from "@/components/forms/family-status";
 import "./fonts.css";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -61,6 +62,7 @@ export default function RootLayout({
             <Link href="/about">حكايتنا</Link>
           </nav>
           <div className="header-actions">
+            <FamilyStatusChip place="header" />
             <AccountLink className="button small" />
           </div>
           <MobileNavigation />
@@ -94,7 +96,6 @@ export default function RootLayout({
               <Link href="/producers">الأسر المنتجة</Link>
               <Link href="/offers">العروض الخاصة</Link>
               <Link href="/orders">طلباتي</Link>
-              <AccountLink />
             </div>
             <div>
               <h3>عن المنصة</h3>
