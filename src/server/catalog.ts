@@ -2,7 +2,7 @@ import type { Category, City, Producer, Product, Filters } from "../lib/types";
 import { db, databaseConfigured } from "./db";
 import { categories, cities } from "./constants";
 import { notCookingTodaySql } from "./cooking-availability";
-import { sortCategoryTree } from "../lib/category-label";
+import { sortCategoryTree, visibleCategoryTree } from "../lib/category-label";
 export async function getCategories(): Promise<Category[]> {
   return databaseConfigured()
     ? sortCategoryTree(
@@ -13,6 +13,29 @@ export async function getCategories(): Promise<Category[]> {
         ).rows,
       )
     : sortCategoryTree(categories);
+}
+/**
+ * أقسام الواجهة العامة: لا يظهر القسم إلا إذا اختارته أسرة منتجة معتمدة
+ * وعليه منتج منشور لأسرة معتمدة. الإدارة ونماذج الأسر تستخدم getCategories.
+ */
+export async function publicCategories(): Promise<Category[]> {
+  if (!databaseConfigured()) return [];
+  const [all, used] = await Promise.all([
+    getCategories(),
+    db().query(
+      `SELECT DISTINCT pc.category_id AS id
+       FROM jdatna.product_categories pc
+       JOIN jdatna.products x ON x.id=pc.product_id AND x.visible=true
+       JOIN jdatna.producer_profiles p ON p.id=x.producer_id AND p.status='approved'
+       WHERE EXISTS(SELECT 1 FROM jdatna.producer_categories f
+         JOIN jdatna.producer_profiles fp ON fp.id=f.producer_id AND fp.status='approved'
+         WHERE f.category_id=pc.category_id)`,
+    ),
+  ]);
+  return visibleCategoryTree(
+    all,
+    used.rows.map((r) => r.id as string),
+  );
 }
 export async function getCities(): Promise<City[]> {
   return databaseConfigured()

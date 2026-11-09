@@ -147,10 +147,20 @@ test(
         }),
         { status: 400 },
       );
+      // أول تسجيل يتطلب قسمًا؛ التعديلات اللاحقة بدونه تحفظ الأقسام كما هي.
+      await assert.rejects(
+        saveProfile(users[0], {
+          ...base,
+          nationalId: "1234567890",
+          workLocation: location,
+        }),
+        /قسمًا واحدًا/,
+      );
       const saved = await saveProfile(users[0], {
         ...base,
         nationalId: "١٢٣٤٥٦٧٨٩٠",
         workLocation: location,
+        categoryIds: ["12"],
       });
       producerIds.push(saved.id);
       const own = await ownProfile(users[0]);

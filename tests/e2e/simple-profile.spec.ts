@@ -112,6 +112,15 @@ test("family saves only basic fields in one form and retries without reuploading
   await page
     .getByLabel("عنوان أو رابط موقع العمل", { exact: true })
     .fill("عنوان عمل خاص لا يظهر للزوار");
+  // أقسام المنتجات مطلوبة عند التسجيل، ويُرفض الحفظ قبل أي رفع.
+  await page
+    .getByRole("button", { name: "حفظ وإرسال للمراجعة", exact: true })
+    .click();
+  await expect(page.locator("main").getByRole("alert")).toHaveText(
+    "اختر قسمًا واحدًا على الأقل لمنتجاتك.",
+  );
+  expect(uploads).toBe(0);
+  await page.getByRole("checkbox", { name: "منتجات غذائية أخرى" }).check();
   await page
     .getByRole("button", { name: "حفظ وإرسال للمراجعة", exact: true })
     .click();
@@ -128,9 +137,16 @@ test("family saves only basic fields in one form and retries without reuploading
   await expect(
     page.getByRole("region", { name: "حالة حساب الأسرة المنتجة" }),
   ).toContainText("حالة الحساب: تحت المراجعة");
+  // بعد التسجيل: الأقسام تُعدَّل من بطاقة مستقلة.
+  await expect(
+    page
+      .getByRole("region", { name: "أقسام منتجاتي" })
+      .getByRole("checkbox", { name: "منتجات غذائية أخرى" }),
+  ).toBeChecked();
   expect(uploads).toBe(1);
   expect(attempts).toBe(2);
   expect(posted).toEqual({
+    categoryIds: ["12"],
     name: user.name,
     tradeName: "مذاق الأسرة المنتجة التجريبي",
     phone: user.phone,

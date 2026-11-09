@@ -126,7 +126,7 @@ test(
         phone: users[i].phone,
         documentType: "producer_certificate",
         documentId: docIds[i],
-        categoryIds: ["1"],
+        categoryIds: ["1", "2"],
         delivery: true,
         pickup: true,
       });

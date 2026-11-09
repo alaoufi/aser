@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   browseLists,
   getCategories,
+  publicCategories,
   getCities,
   getProducer,
   normalizeArabic,
@@ -70,9 +71,10 @@ export default async function Browse({
   const showFamilyDirectory = by === "family" && !filters.producer;
   const showCategoryDirectory = by === "category" && !filters.category;
   const listProducts = !showFamilyDirectory && !showCategoryDirectory;
-  const [categories, cities, lists, products, families, family] =
+  const [allCategories, categories, cities, lists, products, families, family] =
     await Promise.all([
       getCategories(),
+      publicCategories(),
       getCities(),
       browseLists({ region: filters.region, city: filters.city }),
       listProducts ? searchProducts(filters) : Promise.resolve([]),
@@ -107,9 +109,10 @@ export default async function Browse({
   const topCategories = categories
     .filter((c) => !c.parentId)
     .sort((a, b) => Number(countOf(b.id) > 0) - Number(countOf(a.id) > 0));
-  const currentCategory = categories.find((c) => c.id === filters.category);
+  // القسم المفتوح يُبحث في كل الأقسام؛ القوائم العامة تعرض الظاهر فقط.
+  const currentCategory = allCategories.find((c) => c.id === filters.category);
   const branches = categories.filter((c) => c.parentId === filters.category);
-  const parentCategory = categories.find(
+  const parentCategory = allCategories.find(
     (c) => c.id === currentCategory?.parentId,
   );
   const href = (patch: Record<string, string>) => {
@@ -143,7 +146,7 @@ export default async function Browse({
         <div className="page-intro section-intro">
           <p className="eyebrow">
             {parentCategory
-              ? categoryLabel(parentCategory, categories)
+              ? categoryLabel(parentCategory, allCategories)
               : "قسم من أقسام جدتنا"}
           </p>
           <h1>{currentCategory.name}</h1>
@@ -389,6 +392,12 @@ export default async function Browse({
           <div className="results-heading">
             <h2>الأقسام</h2>
           </div>
+          {topCategories.length === 0 && (
+            <EmptyState
+              title="لا توجد أقسام فيها منتجات بعد"
+              text="تظهر الأقسام هنا عندما تنشر الأسر المنتجة منتجاتها."
+            />
+          )}
           <ul className="directory-list">
             {topCategories.map((c) => (
               <li key={c.id}>

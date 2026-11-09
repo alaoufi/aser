@@ -77,3 +77,16 @@ export function sortCategoryTree(all: Category[]): Category[] {
     .forEach(visit);
   return sorted;
 }
+/** الأقسام الظاهرة للعامة: ما فيه منتج منشور واختارته أسرة معتمدة، مع آبائه ليبقى التسلسل مفهومًا. */
+export function visibleCategoryTree(all: Category[], used: Iterable<string>) {
+  const map = new Map(all.map((c) => [c.id, c]));
+  const keep = new Set<string>();
+  for (const id of used) {
+    let current = map.get(id);
+    while (current && !keep.has(current.id)) {
+      keep.add(current.id);
+      current = current.parentId ? map.get(current.parentId) : undefined;
+    }
+  }
+  return all.filter((c) => keep.has(c.id));
+}

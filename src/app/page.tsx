@@ -1,15 +1,16 @@
 import { FoodPhotos } from "@/components/public/food-photos";
 import Link from "next/link";
 import {
-  getCategories,
+  publicCategories,
   searchProducts,
   searchProducers,
 } from "@/server/catalog";
 import { ProductCard, ProducerCard } from "@/components/public/ui";
 export const dynamic = "force-dynamic";
 export default async function Home() {
+  // لا يظهر القسم للعامة إلا إذا اختارته أسرة معتمدة وعليه منتج منشور.
   const [categories, products, producers] = await Promise.all([
-    getCategories(),
+    publicCategories(),
     searchProducts({}),
     searchProducers({}),
   ]);
@@ -38,60 +39,62 @@ export default async function Home() {
           <FoodPhotos />
         </div>
       </section>
-      <section className="section wrap" aria-label="الأقسام">
-        <div className="category-grid">
-          {categories
-            .filter((c) => !c.parentId)
-            .sort(
-              (a, b) =>
-                (a.id === "13" || a.id === "14" ? -1 : 0) -
-                (b.id === "13" || b.id === "14" ? -1 : 0),
-            )
-            .map((c, i) => (
-              <Link
-                href={`/browse?category=${encodeURIComponent(c.id)}`}
-                key={c.id}
-                className="category-card"
-              >
-                <span
-                  className={`category-icon tone-${i % 4}`}
-                  aria-hidden="true"
+      {categories.length > 0 && (
+        <section className="section wrap" aria-label="الأقسام">
+          <div className="category-grid">
+            {categories
+              .filter((c) => !c.parentId)
+              .sort(
+                (a, b) =>
+                  (a.id === "13" || a.id === "14" ? -1 : 0) -
+                  (b.id === "13" || b.id === "14" ? -1 : 0),
+              )
+              .map((c, i) => (
+                <Link
+                  href={`/browse?category=${encodeURIComponent(c.id)}`}
+                  key={c.id}
+                  className="category-card"
                 >
-                  {
-                    [
-                      "♨",
-                      "◉",
-                      "◌",
-                      "♧",
-                      "✿",
-                      "❧",
-                      "⬡",
-                      "◈",
-                      "✺",
-                      "☕",
-                      "☀",
-                      "✧",
-                    ][i % 12]
-                  }
-                </span>
-                <div className="category-title">
-                  <h3>{c.name}</h3>
-                  {categories.some((child) => child.parentId === c.id) && (
-                    <small>
-                      {categories
-                        .filter((child) => child.parentId === c.id)
-                        .map((child) => child.name)
-                        .join(" · ")}
-                    </small>
-                  )}
-                </div>
-                <span className="category-arrow" aria-hidden="true">
-                  ↗
-                </span>
-              </Link>
-            ))}
-        </div>
-      </section>
+                  <span
+                    className={`category-icon tone-${i % 4}`}
+                    aria-hidden="true"
+                  >
+                    {
+                      [
+                        "♨",
+                        "◉",
+                        "◌",
+                        "♧",
+                        "✿",
+                        "❧",
+                        "⬡",
+                        "◈",
+                        "✺",
+                        "☕",
+                        "☀",
+                        "✧",
+                      ][i % 12]
+                    }
+                  </span>
+                  <div className="category-title">
+                    <h3>{c.name}</h3>
+                    {categories.some((child) => child.parentId === c.id) && (
+                      <small>
+                        {categories
+                          .filter((child) => child.parentId === c.id)
+                          .map((child) => child.name)
+                          .join(" · ")}
+                      </small>
+                    )}
+                  </div>
+                  <span className="category-arrow" aria-hidden="true">
+                    ↗
+                  </span>
+                </Link>
+              ))}
+          </div>
+        </section>
+      )}
       <section className="availability-section wrap" aria-label="التوفر">
         <Link href="/browse?status=available" className="availability-card">
           <span className="status-dot" />
