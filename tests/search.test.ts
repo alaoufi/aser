@@ -6,6 +6,7 @@ import {
   searchWords,
   searchProducts,
   searchProducers,
+  browseLists,
 } from "../src/server/catalog";
 import { db } from "../src/server/db";
 
@@ -113,6 +114,24 @@ test(
         [...producers].sort(),
       );
       assert.deepEqual(ids(await searchProducts({ q: `زززز ${tag}` })), []);
+      // توسيع الدائرة: كلمة غير موجودة مع كلمة موجودة تكفي في وضع «any».
+      assert.deepEqual(
+        ids(await searchProducts({ q: `كبسة زززز ${tag}` })),
+        [],
+      );
+      assert.ok(
+        ids(
+          await searchProducts({ q: `كبسة زززز ${tag}`, match: "any" }),
+        ).includes(products[3]),
+      );
+      // قوائم التصفح: عدد المتاح لكل أسرة لا يشمل غير المتوفر.
+      const lists = await browseLists({ city });
+      const counts = Object.fromEntries(
+        lists.families.map((f) => [f.slug, f.available]),
+      );
+      assert.equal(counts[slugs[0]], 2);
+      assert.equal(counts[slugs[1]], 1);
+      assert.equal(typeof lists.categoryCounts, "object");
     } finally {
       await db().query("DELETE FROM jdatna.products WHERE id=ANY($1::uuid[])", [
         products,

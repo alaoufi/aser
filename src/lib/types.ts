@@ -66,6 +66,8 @@ export type Filters = {
   producer?: string;
   /** "all" يشمل غير المتوفر؛ الافتراضي يعرض المتاح والطلب المسبق */
   include?: string;
+  /** "any" يوسّع البحث: يكفي تطابق كلمة واحدة */
+  match?: string;
   page?: number;
 };
 export type SessionUser = {

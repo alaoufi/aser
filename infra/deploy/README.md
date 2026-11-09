@@ -22,6 +22,17 @@
    PUBLIC_HEALTH=https://jdatna.com/api/health
    # اختياري: أمر اختبار استعادة النسخة الاحتياطية المعتمد
    VERIFY_CMD=
+   # لأمر deploy-migrate: يطبّق ترحيلات مجلد الإصدار ($1) بحساب migrator
+   MIGRATE_CMD=/usr/local/sbin/jdatna-migrate
+   ```
+   مثال لـ `/usr/local/sbin/jdatna-migrate` (root، 700). يعدّله المنفّذ حسب طريقة الترحيل المعتمدة لديه، ويجربه مرة على قاعدة `jdatna_test_` قبل الاعتماد:
+   ```sh
+   #!/usr/bin/env bash
+   set -euo pipefail
+   # migrator.env يحتوي DATABASE_URL لحساب migrator فقط (root، 600)، ولا يُحفظ في Git.
+   docker run --rm --network jdatna_database --env-file /etc/jdatna/migrator.env \
+     -v "$1":/src:ro -w /tmp/m node:24-alpine \
+     sh -c 'cp -r /src/. . && npm ci --no-audit --no-fund && npx tsx scripts/migrate.ts'
    ```
 4. **مفتاح النشر المقيد**: يُنشأ على الخادم، ويُسمح له بتشغيل السكربت فقط:
    ```sh
@@ -44,6 +55,7 @@
 افتح تطبيق GitHub أو المتصفح، ثم المستودع، ثم Actions، ثم «نشر جدتنا (يدوي)»، ثم Run workflow. اختر:
 - `deploy` لنشر آخر الفرع، ويمكن تحديد commit معيّن.
 - `rollback` للرجوع للإصدار السابق.
+- `deploy-migrate` لإصدار فيه ترحيلات قاعدة بيانات جديدة: نسخة احتياطية، ثم بناء، ثم الترحيل، ثم التحويل. إن فشل الترحيل لا يتغير الموقع.
 - `status` لمعرفة الإصدار الحي.
 
 بعدها وافق على طلب بيئة `production`. السجل الكامل يظهر في GitHub، ويُحفظ على الخادم في `/var/log/jdatna-deploy.log`.

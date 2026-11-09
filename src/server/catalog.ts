@@ -75,6 +75,7 @@ function conditions(f: Filters, products: boolean) {
     args.push(value);
     where.push(sql.replaceAll("?", () => "$" + args.length));
   };
+  const anyWords: string[] = [];
   for (const word of searchWords(f.q)) {
     const fields = products
       ? ["x.name", "x.description", "p.name", "coalesce(p.trade_name,'')"]
@@ -86,15 +87,19 @@ function conditions(f: Filters, products: boolean) {
       : "EXISTS(SELECT 1 FROM jdatna.producer_categories sc JOIN jdatna.categories cc ON cc.id=sc.category_id WHERE sc.producer_id=p.id AND " +
         normalized("cc.name") +
         " LIKE ?)";
-    add(
+    const clause =
       "(" +
-        fields.map((field) => normalized(field) + " LIKE ?").join(" OR ") +
-        " OR " +
-        categoryMatch +
-        ")",
-      `%${word.replace(/[\\%_]/g, "\\$&")}%`,
-    );
+      fields.map((field) => normalized(field) + " LIKE ?").join(" OR ") +
+      " OR " +
+      categoryMatch +
+      ")";
+    const pattern = `%${word.replace(/[\\%_]/g, "\\$&")}%`;
+    if (f.match === "any") {
+      args.push(pattern);
+      anyWords.push(clause.replaceAll("?", "$" + args.length));
+    } else add(clause, pattern);
   }
+  if (anyWords.length) where.push("(" + anyWords.join(" OR ") + ")");
   if (f.producer) add("p.slug=?", f.producer.slice(0, 200));
   if (f.region)
     add(
@@ -176,3 +181,56 @@ export async function getProducerProducts(
     )
   ).rows.map(mapProduct);
 }
+
+// قوائم التصفح: الأسر المعتمدة مع عدد منتجاتها المتاحة، وعدد المنتجات المتاحة لكل قسم.
+export async function browseLists(f: { region?: string; city?: string } = {}) {
+  if (!databaseConfigured())
+    return {
+      families: [] as BrowseFamily[],
+      categoryCounts: {} as Record<string, number>,
+    };
+  const args: unknown[] = [];
+  const place: string[] = [];
+  if (f.region) {
+    args.push(f.region);
+    place.push(
+      `EXISTS(SELECT 1 FROM jdatna.cities rc WHERE rc.id=p.city_id AND rc.region_id=$${args.length})`,
+    );
+  }
+  if (f.city) {
+    args.push(f.city);
+    place.push(`p.city_id=$${args.length}`);
+  }
+  const extra = place.length ? " AND " + place.join(" AND ") : "";
+  const [families, counts] = await Promise.all([
+    db().query(
+      `SELECT p.slug,COALESCE(p.trade_name,p.name) AS name,c.name AS "cityName",
+        count(x.id) FILTER (WHERE x.status<>'unavailable')::int AS available
+       FROM jdatna.producer_profiles p JOIN jdatna.cities c ON c.id=p.city_id
+       LEFT JOIN jdatna.products x ON x.producer_id=p.id AND x.visible=true
+       WHERE p.status='approved'${extra}
+       GROUP BY p.id,c.name ORDER BY available DESC,name LIMIT 300`,
+      args,
+    ),
+    db().query(
+      `SELECT pc.category_id AS id,count(DISTINCT x.id)::int AS n
+       FROM jdatna.products x JOIN jdatna.producer_profiles p ON p.id=x.producer_id
+       JOIN jdatna.product_categories pc ON pc.product_id=x.id
+       WHERE p.status='approved' AND x.visible=true AND x.status<>'unavailable'${extra}
+       GROUP BY pc.category_id`,
+      args,
+    ),
+  ]);
+  return {
+    families: families.rows as BrowseFamily[],
+    categoryCounts: Object.fromEntries(
+      counts.rows.map((r) => [r.id as string, r.n as number]),
+    ) as Record<string, number>,
+  };
+}
+export type BrowseFamily = {
+  slug: string;
+  name: string;
+  cityName: string;
+  available: number;
+};
