@@ -5,12 +5,7 @@ import {
   searchProducts,
   searchProducers,
 } from "@/server/catalog";
-import {
-  EmptyState,
-  ProductCard,
-  ProducerCard,
-  SectionHeading,
-} from "@/components/public/ui";
+import { ProductCard, ProducerCard } from "@/components/public/ui";
 export const dynamic = "force-dynamic";
 export default async function Home() {
   const [categories, products, producers] = await Promise.all([
@@ -43,13 +38,7 @@ export default async function Home() {
           <FoodPhotos />
         </div>
       </section>
-      <section className="section wrap">
-        <SectionHeading
-          eyebrow="كل نكهة لها باب"
-          title="وش خاطرك فيه؟"
-          href="/browse"
-          label="تصفّح جميع الأكلات"
-        />
+      <section className="section wrap" aria-label="الأقسام">
         <div className="category-grid">
           {categories
             .filter((c) => !c.parentId)
@@ -103,85 +92,34 @@ export default async function Home() {
             ))}
         </div>
       </section>
-      <section className="availability-section wrap">
-        <div>
-          <p className="eyebrow">لكل وقت، نكهته</p>
-          <h2>
-            جاهز اليوم؟
-            <br />
-            أو على موعد معك.
-          </h2>
-        </div>
+      <section className="availability-section wrap" aria-label="التوفر">
         <Link href="/browse?status=available" className="availability-card">
           <span className="status-dot" />
           <h3>متوفر الآن</h3>
-          <p>اكتشف المنتجات المتاحة وتأكد من موعدها مع الأسرة المنتجة.</p>
-          <span className="text-link">شوف المتوفر ←</span>
         </Link>
         <Link href="/browse?status=preorder" className="availability-card warm">
           <span aria-hidden="true">◷</span>
-          <h3>يتجهّز على طلبك</h3>
-          <p>للعزائم واللّمات… نكهات تستاهل الانتظار.</p>
-          <span className="text-link">اكتشف حسب الطلب ←</span>
+          <h3>اطلب الآن</h3>
         </Link>
       </section>
-      <section className="section wrap">
-        <SectionHeading
-          eyebrow="أهل الصنعة وأهل الطيب"
-          title="تعرّف على الأسر المنتجة"
-          href="/producers"
-        />
-        {producers.length ? (
+      {producers.length > 0 && (
+        <section className="section wrap" aria-label="الأسر المنتجة">
           <div className="producer-grid">
             {producers.slice(0, 4).map((p) => (
               <ProducerCard key={p.id} producer={p} />
             ))}
           </div>
-        ) : (
-          <EmptyState
-            title="هنا تبدأ حكايات الأسر"
-            text="نفتح المساحة للأسر المنتجة. ستظهر الملفات العامة هنا بعد اكتمال مراجعتها والموافقة على نشرها."
-          />
-        )}
-      </section>
-      <section className="section wrap">
-        <SectionHeading
-          eyebrow="جديد المائدة"
-          title="نكهات تستحق الاكتشاف"
-          href="/browse"
-        />
-        {products.length ? (
+        </section>
+      )}
+      {products.length > 0 && (
+        <section className="section wrap" aria-label="جديد المائدة">
           <div className="product-grid">
             {products.slice(0, 4).map((p) => (
               <ProductCard key={p.id} product={p} />
             ))}
           </div>
-        ) : (
-          <EmptyState
-            title="المائدة تنتظر أولى نكهاتها"
-            text="لا توجد منتجات منشورة حاليًا. كل منتج سيظهر بمعلوماته الحقيقية وسعره أو خيار الاستفسار من الأسرة المنتجة."
-          />
-        )}
-      </section>
-      <section className="join-banner wrap">
-        <div>
-          <p className="eyebrow">لأهل الصنعة، مكان بيننا</p>
-          <h2>
-            طبختك لها محبّين.
-            <br />
-            خلّهم يوصلون لك.
-          </h2>
-          <p>
-            عرّف الناس بمنتجاتك، واحكِ حكايتك، وتواصل معهم مباشرة.
-            <br />
-            التسجيل مجاني وبدون عمولات أو اشتراكات حاليًا، من زر الدخول أعلى
-            الصفحة.
-          </p>
-        </div>
-        <div className="join-ornament" aria-hidden="true">
-          ✳
-        </div>
-      </section>
+        </section>
+      )}
     </>
   );
 }
