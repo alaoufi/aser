@@ -1,7 +1,7 @@
 import { randomBytes, scrypt, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import type { SessionUser } from "../lib/types";
-import { db, transaction } from "./db";
+import { transaction } from "./db";
 import { hash, rateLimit, sessionToken } from "./auth";
 import { HttpError, normalizePhone } from "./security";
 const passwordSchema = z

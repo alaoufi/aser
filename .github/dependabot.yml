@@ -1,0 +1,19 @@
+# تحديثات المكتبات والثغرات: طلبات دمج أسبوعية مجمّعة تمر على CI قبل أي دمج. لا دمج تلقائي.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    target-branch: codex/jdatna-platform
+    schedule: { interval: weekly, day: sunday }
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+  - package-ecosystem: github-actions
+    directory: /
+    target-branch: codex/jdatna-platform
+    schedule: { interval: monthly }
+  - package-ecosystem: docker
+    directory: /
+    target-branch: codex/jdatna-platform
+    schedule: { interval: monthly }

@@ -87,9 +87,7 @@ test("family signup requires credentials before application", async ({
     page.getByLabel("كلمة المرور الجديدة", { exact: true }),
   ).toBeVisible();
   await page.getByLabel("اسم مستخدم اختياري").fill("family.user");
-  await page
-    .getByLabel("كلمة المرور الجديدة", { exact: true })
-    .fill("1234");
+  await page.getByLabel("كلمة المرور الجديدة", { exact: true }).fill("1234");
   await page.getByLabel("تأكيد كلمة المرور").fill("1234");
   expect(
     await page.evaluate(
@@ -295,22 +293,48 @@ test("account navigation recognizes customer and producer identity", async ({
   await expect(nav.locator('a[href="/dashboard/products"]')).toBeVisible();
 });
 
-for (const [role, destination] of [["customer", "/orders"], ["producer", "/dashboard"], ["admin", "/admin"]]) {
-  test(`existing ${role} session keeps account entry after reload without signup`, async ({ page }) => {
+for (const [role, destination] of [
+  ["customer", "/orders"],
+  ["producer", "/dashboard"],
+  ["admin", "/admin"],
+]) {
+  test(`existing ${role} session keeps account entry after reload without signup`, async ({
+    page,
+  }) => {
     let active = true;
-    await page.route("**/api/session", r => r.fulfill({ json: { user: active ? { ...user, role } : null, registrationOpen: true } }));
-    await page.route("**/api/auth/**", () => { throw Error("Existing session must not request signup or OTP"); });
+    await page.route("**/api/session", (r) =>
+      r.fulfill({
+        json: {
+          user: active ? { ...user, role } : null,
+          registrationOpen: true,
+        },
+      }),
+    );
+    await page.route("**/api/auth/**", () => {
+      throw Error("Existing session must not request signup or OTP");
+    });
     await page.goto("/login");
     await expect(page.getByText("أنت مسجل الدخول بالفعل.")).toBeVisible();
     await expect(page.locator("form")).toHaveCount(0);
-    await expect(page.getByRole("link", { name: "متابعة إلى حسابي" })).toHaveAttribute("href", destination);
+    await expect(
+      page.getByRole("link", { name: "متابعة إلى حسابي" }),
+    ).toHaveAttribute("href", destination);
     await page.reload();
     await expect(page.getByText("أنت مسجل الدخول بالفعل.")).toBeVisible();
     await expect(page.locator("header .header-actions a")).toHaveText("حسابي");
-    await expect(page.locator("header .header-actions a")).toHaveAttribute("href", destination);
-    await expect(page.locator(".mobile-nav").getByRole("link", { name: "حسابي", includeHidden: true })).toHaveAttribute("href", destination);
+    await expect(page.locator("header .header-actions a")).toHaveAttribute(
+      "href",
+      destination,
+    );
+    await expect(
+      page
+        .locator(".mobile-nav")
+        .getByRole("link", { name: "حسابي", includeHidden: true }),
+    ).toHaveAttribute("href", destination);
     active = false;
     await page.reload();
-    await expect(page.getByRole("heading", { name: "الدخول إلى أكلات جدتنا" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "الدخول إلى أكلات جدتنا" }),
+    ).toBeVisible();
   });
 }
