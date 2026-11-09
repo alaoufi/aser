@@ -286,3 +286,45 @@
 .confirmation p {
   margin: 0;
 }
+
+/* شريط حالة حساب الأسرة */
+.familyStatus {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 18px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-inline-start: 6px solid var(--muted);
+  border-radius: 8px;
+  background: #fff;
+  line-height: 1.45;
+}
+.familyStatus p {
+  margin: 0;
+}
+.familyStatusHead {
+  font-size: 17px;
+}
+.familyStatusReason {
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--cream);
+}
+.familyStatus_review {
+  border-inline-start-color: #b7791f;
+}
+.familyStatus_incomplete {
+  border-inline-start-color: var(--rust);
+}
+.familyStatus_active {
+  border-inline-start-color: var(--olive);
+}
+.familyStatus_trusted {
+  border-inline-start-color: #2f6f4f;
+}
+.familyStatus_suspended {
+  border-inline-start-color: #555;
+}
+.stepper4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}

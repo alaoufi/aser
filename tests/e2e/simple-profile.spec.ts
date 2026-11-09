@@ -103,7 +103,7 @@ test("family saves only basic fields in one form and retries without reuploading
     .getByRole("button", { name: "حفظ وإرسال للمراجعة", exact: true })
     .click();
   await expect(
-    page.getByRole("status").filter({ hasText: "تم حفظ البيانات" }),
+    page.getByRole("status").filter({ hasText: "تم تسجيل أسرتك بنجاح" }),
   ).toBeVisible();
   expect(uploads).toBe(1);
   expect(attempts).toBe(2);
