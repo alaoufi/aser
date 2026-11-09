@@ -1,16 +1,16 @@
 {
   "verified_on": "2026-11-09",
-  "code_commit": "ed21228b4be0f328172a74c92d3a40bf59535bcd",
-  "image": "jdatna-application:ed21228b4be0f328172a74c92d3a40bf59535bcd",
+  "code_commit": "9755c1c49b992e94a921c02ec09e21fcf989bc75",
+  "image": "jdatna-application:9755c1c49b992e94a921c02ec09e21fcf989bc75",
   "url": "https://jdatna.com",
   "checks": {
-    "unit_integration": "94 distinct tests covered successfully across full run and SSH-timeout retries; full run 92 pass/2 connection failures, retry16/16",
-    "browser_chromium": "Branding2/2; targeted four-width visual check; preceding backend suite unchanged",
+    "unit_integration": "6/6 credentials DB checks on preceding password release; current real isolated DB/browser1234 login retains HttpOnly cookie across navigation/reload",
+    "browser_chromium": "24/24 auth/session checks plus4/4 ticker checks after fractional-pixel assertion tolerance correction",
     "typecheck": "passed",
     "build": "passed",
     "infrastructure_and_backup_restore": "passed after deployment; Aykdmh unchanged",
-    "live_browser": "Exact release; three transparent logo variants load undistorted at320/390/768/1440 without overflow/pageerrors; five assets HTTPS200 SHA256 exact",
-    "otp_endpoint": "Missing purpose and login purpose rejected400; OTP only signup/reset; fresh setup grant requires password"
+    "live_browser": "Exact release; updated copy; rightward seamless ticker; six widths without overflow/pageerror; existing-session UI three roles/reload mocked only",
+    "otp_endpoint": "Unchanged signup/reset-only OTP; min password4 with no composition requirement; salted scrypt and limits retained"
   },
   "registrationOpen": true,
   "SMS": true,
@@ -24,7 +24,7 @@
   ],
   "sms_provider": "Same active Taqnyat credentials as Aykdmh; enabled at explicit owner request to test delivery on own phone",
   "footer_verification": "Affiliation retained",
-  "image_id": "sha256:3ff75334d37e7cb622101d6e41867444f40a258fe88897ec87d7b993205b88df",
+  "image_id": "sha256:6f0c9b3fd39373318f647f252104aaf2b2dba2a591e39e88972c2f86153be0c2",
   "sms_delivery_confirmed": true,
   "sms_delivery_evidence": "Owner reported receipt of previous6-digit SMS;4-digit release deployed afterwards, not physically re-tested by agent",
   "otp_digits": 4,
