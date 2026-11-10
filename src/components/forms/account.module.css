@@ -620,3 +620,126 @@
   min-height: 64px;
   font-size: 11.5px;
 }
+
+/* منتجات الأسرة: زر إضافة واضح، وأقسام تُفتح وأمام كل منتج أزراره */
+.addProduct {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 56px;
+  margin: 8px 0 18px;
+  border: 0;
+  border-radius: 14px;
+  background: #4f5d36;
+  color: #fff;
+  font: inherit;
+  font-size: 18px;
+  font-weight: 800;
+  box-shadow: 0 6px 14px rgb(79 93 54 / 0.3);
+  cursor: pointer;
+}
+.addProduct span {
+  font-size: 24px;
+  line-height: 1;
+}
+@media (min-width: 720px) {
+  .addProduct {
+    width: auto;
+    padding: 0 28px;
+  }
+}
+.productGroups {
+  display: grid;
+  gap: 12px;
+}
+.productGroup {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fffdf8;
+  overflow: hidden;
+}
+.productGroup summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 52px;
+  padding: 0 16px;
+  font-weight: 700;
+  cursor: pointer;
+  list-style: none;
+  background: #f7efe1;
+}
+.productGroup summary::-webkit-details-marker {
+  display: none;
+}
+.productGroup summary::after {
+  content: "▾";
+  color: var(--muted);
+}
+.productGroup[open] summary::after {
+  content: "▴";
+}
+.productGroup summary small {
+  margin-inline-start: auto;
+  color: var(--muted);
+  font-weight: 400;
+}
+.productRows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.productRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--line);
+}
+.productInfo {
+  flex: 1 1 180px;
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.productInfo small {
+  color: var(--muted);
+}
+.hiddenTag {
+  color: var(--rust, #9c2f1e);
+  font-style: normal;
+}
+.productActions {
+  display: flex;
+  gap: 6px;
+}
+.productActions button {
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.productActions .deleteAction {
+  color: var(--rust, #9c2f1e);
+  border-color: #e3b9ae;
+}
+.categoryLine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.categoryLine > button:first-child {
+  flex: 1 1 200px;
+}
+.categoryLine > .categoryRow {
+  width: auto;
+}

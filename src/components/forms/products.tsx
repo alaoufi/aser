@@ -53,6 +53,58 @@ export function Products() {
         .catch((e) => setError(e.message))
         .finally(() => setLoaded(true));
   }, [session.user]);
+  // المنتجات مجمّعة في أقسام الأسرة: يُفتح القسم فتظهر منتجاته وأمام كل منتج أزراره.
+  const groups = [
+    ...categories
+      .filter(
+        (c) =>
+          mine.includes(c.id) ||
+          products.some((p) => p.categoryIds?.includes(c.id)),
+      )
+      .map((c) => ({
+        id: c.id,
+        label: categoryLabel(c, categories),
+        items: products.filter((p) => p.categoryIds?.includes(c.id)),
+      })),
+    {
+      id: "",
+      label: "بدون قسم",
+      items: products.filter(
+        (p) =>
+          !p.categoryIds?.some((id) => categories.some((c) => c.id === id)),
+      ),
+    },
+  ].filter((g) => g.items.length);
+  async function manage(p: Product, action: "hide" | "show" | "delete") {
+    if (
+      action === "delete" &&
+      !window.confirm(
+        `حذف «${p.name}» نهائيًا؟ يختفي من صفحتك ومن الموقع، وتبقى طلباته السابقة في السجل.`,
+      )
+    )
+      return;
+    setBusy(true);
+    setError("");
+    setSuccess("");
+    try {
+      await api("/api/producer/products", {
+        method: "PUT",
+        body: JSON.stringify({ id: p.id, action }),
+      });
+      await load();
+      setSuccess(
+        action === "delete"
+          ? `حُذف «${p.name}».`
+          : action === "hide"
+            ? `أُخفي «${p.name}» عن الزوار.`
+            : `ظهر «${p.name}» للزوار.`,
+      );
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
   function edit(p: Product | null) {
     setEditing(p);
     setLibraryPhoto("");
@@ -129,8 +181,12 @@ export function Products() {
             أضف منتجاتك ومعلوماتها بوضوح، وساعد الزوار على اختيار ما يناسبهم.
           </p>
           <Message error={error} success={success} />
-          <button className={s.button} onClick={() => edit(null)}>
-            + إضافة منتج
+          <button
+            type="button"
+            className={s.addProduct}
+            onClick={() => edit(null)}
+          >
+            <span aria-hidden="true">＋</span> إضافة منتج
           </button>
           {editing !== undefined && (
             <form
@@ -321,6 +377,16 @@ export function Products() {
               </div>
             </form>
           )}
+          {editing && (
+            <div className={s.card}>
+              <h3>صورة «{editing.name}»</h3>
+              <ProductPhoto
+                id={editing.id}
+                imageUrl={editing.imageUrl}
+                onUploaded={load}
+              />
+            </div>
+          )}
           {!loaded ? (
             <p role="status">جارٍ تحميل المنتجات…</p>
           ) : !products.length ? (
@@ -328,26 +394,70 @@ export function Products() {
               لم تضف منتجات بعد. ابدأ بأول أكلة من صنع أسرتك.
             </p>
           ) : (
-            <div className={s.list}>
-              {products.map((p) => (
-                <article key={p.id} className={s.card}>
-                  <span className={s.tag}>{statusLabels[p.status]}</span>
-                  <h2>{p.name}</h2>
-                  <p>{p.description}</p>
-                  <p>
-                    {p.price === null
-                      ? "السعر عند التواصل"
-                      : `${p.price} ر.س / ${p.unit}`}
-                  </p>
-                  <button className={s.button} onClick={() => edit(p)}>
-                    تعديل {p.name}
-                  </button>
-                  <ProductPhoto
-                    id={p.id}
-                    imageUrl={p.imageUrl}
-                    onUploaded={load}
-                  />
-                </article>
+            <div className={s.productGroups}>
+              {groups.map((g, i) => (
+                <details
+                  key={g.id || "none"}
+                  className={s.productGroup}
+                  open={i === 0}
+                >
+                  <summary>
+                    <span>{g.label}</span>
+                    <small>{g.items.length} منتج</small>
+                  </summary>
+                  <ul className={s.productRows}>
+                    {g.items.map((p) => (
+                      <li key={p.id} className={s.productRow}>
+                        <div className={s.productInfo}>
+                          <strong>{p.name}</strong>
+                          <small>
+                            {statusLabels[p.status]} ·{" "}
+                            {p.price === null
+                              ? "السعر عند التواصل"
+                              : `${p.price} ر.س / ${p.unit}`}
+                            {p.visible === false && (
+                              <em className={s.hiddenTag}>
+                                {p.hiddenBy === "admin"
+                                  ? " · أخفته الإدارة"
+                                  : " · مخفي عن الزوار"}
+                              </em>
+                            )}
+                          </small>
+                        </div>
+                        <div className={s.productActions}>
+                          <button
+                            type="button"
+                            onClick={() => edit(p)}
+                            aria-label={`تعديل ${p.name}`}
+                          >
+                            تعديل
+                          </button>
+                          {p.hiddenBy !== "admin" && (
+                            <button
+                              type="button"
+                              disabled={busy}
+                              onClick={() =>
+                                manage(p, p.visible === false ? "show" : "hide")
+                              }
+                              aria-label={`${p.visible === false ? "إظهار" : "إخفاء"} ${p.name}`}
+                            >
+                              {p.visible === false ? "إظهار" : "إخفاء"}
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            className={s.deleteAction}
+                            disabled={busy}
+                            onClick={() => manage(p, "delete")}
+                            aria-label={`حذف ${p.name}`}
+                          >
+                            حذف
+                          </button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
               ))}
             </div>
           )}

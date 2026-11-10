@@ -76,20 +76,58 @@ export function CategoriesAdmin() {
         {!r.data && !r.error && <p role="status">جارٍ تحميل الأقسام…</p>}
         {all.map((c) => (
           <div className={s.categoryItem} key={c.id}>
-            <button
-              type="button"
-              className={s.categoryRow}
-              aria-expanded={openId === c.id}
-              onClick={() => toggle(c.id)}
-            >
-              <span>
-                {c.icon} {categoryLabel(c, all)}
-              </span>
-              <small>
-                {c.productCount ?? 0} منتج{" "}
-                <span aria-hidden="true">{openId === c.id ? "▴" : "▾"}</span>
-              </small>
-            </button>
+            <div className={s.categoryLine}>
+              <button
+                type="button"
+                className={s.categoryRow}
+                aria-expanded={openId === c.id}
+                onClick={() => toggle(c.id)}
+              >
+                <span>
+                  {c.icon} {categoryLabel(c, all)}
+                  {c.hidden && <em className={s.hiddenTag}> · مخفي</em>}
+                </span>
+                <small>
+                  {c.productCount ?? 0} منتج{" "}
+                  <span aria-hidden="true">{openId === c.id ? "▴" : "▾"}</span>
+                </small>
+              </button>
+              <div className={s.productActions}>
+                <button
+                  type="button"
+                  onClick={() => toggle(c.id)}
+                  aria-label={`تعديل قسم ${c.name}`}
+                >
+                  تعديل
+                </button>
+                <button
+                  type="button"
+                  disabled={r.busy}
+                  onClick={() =>
+                    r.write("PUT", { id: c.id, hidden: !c.hidden })
+                  }
+                  aria-label={`${c.hidden ? "إظهار" : "إخفاء"} قسم ${c.name}`}
+                >
+                  {c.hidden ? "إظهار" : "إخفاء"}
+                </button>
+                <button
+                  type="button"
+                  className={s.deleteAction}
+                  disabled={r.busy}
+                  onClick={() => {
+                    if (
+                      window.confirm(
+                        `حذف قسم «${c.name}»؟ لا يُحذف إلا إذا لم تبقَ فيه منتجات ولا أقسام فرعية؛ أو أخفِه بدلًا من ذلك.`,
+                      )
+                    )
+                      r.write("DELETE", { id: c.id });
+                  }}
+                  aria-label={`حذف قسم ${c.name}`}
+                >
+                  حذف
+                </button>
+              </div>
+            </div>
             {openId === c.id && (
               <CategoryEditor
                 key={c.id}

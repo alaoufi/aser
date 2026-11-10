@@ -285,6 +285,8 @@ test("product photo reports unavailable storage without claiming success", async
     }),
   );
   await page.goto("/dashboard/products");
+  // رفع الصورة من شاشة تعديل المنتج.
+  await page.getByRole("button", { name: "تعديل الخبز" }).click();
   await page
     .getByLabel("صورة المنتج · JPEG أو PNG حتى 5 ميجابايت")
     .setInputFiles({
