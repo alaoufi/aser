@@ -62,6 +62,17 @@ function Bouquet() {
         height="250"
         aria-hidden="true"
       >
+        <defs>
+          <linearGradient id="jd-vase" x1="0" x2="1">
+            <stop offset="0" stopColor="#f0b98a" />
+            <stop offset="0.35" stopColor="#d48c59" />
+            <stop offset="1" stopColor="#8c4524" />
+          </linearGradient>
+          <radialGradient id="jd-rose" cx="0.35" cy="0.35" r="0.75">
+            <stop offset="0" stopColor="#fff" stopOpacity="0.35" />
+            <stop offset="1" stopColor="#000" stopOpacity="0.18" />
+          </radialGradient>
+        </defs>
         <g stroke="#4f6b30" strokeWidth="3" strokeLinecap="round" fill="none">
           <path d="M90 150 90 60M90 150 62 70M90 150 120 72M90 150 76 96M90 150 106 100M90 152 44 96M90 152 136 98M90 150 54 48M90 150 128 46" />
         </g>
@@ -98,6 +109,7 @@ function Bouquet() {
               />
             ))}
             <circle cx={x} cy={y} r={r * 0.62} fill={inner} />
+            <circle cx={x} cy={y} r={r} fill="url(#jd-rose)" />
             <path
               d={`M${x - r * 0.35} ${y}a${r * 0.35} ${r * 0.35} 0 1 1 ${r * 0.35} ${r * 0.3}`}
               stroke={outer}
@@ -110,7 +122,7 @@ function Bouquet() {
         {/* مزهرية فخار بحزام سدو */}
         <path
           d="M66 150h48c0 8-6 12-6 18 0 14 22 24 22 46 0 22-18 32-40 32s-40-10-40-32c0-22 22-32 22-46 0-6-6-10-6-18z"
-          fill="#d08a58"
+          fill="url(#jd-vase)"
           stroke="#f4ead9"
           strokeOpacity="0.7"
           strokeWidth="2"
@@ -140,7 +152,6 @@ function Bouquet() {
           opacity="0.18"
         />
       </svg>
-      <span className="table-bouquet-shadow" />
     </span>
   );
 }
@@ -211,7 +222,7 @@ export function TodayTable({
           ))}
           {shown.length === 0 ? (
             <div className="table-empty">
-              <Bouquet />
+              <span className="table-bouquet-shadow" aria-hidden="true" />
               <p>
                 {texts["table.empty"]}
                 {region && texts["table.emptyRegion"] ? (
@@ -278,6 +289,7 @@ export function TodayTable({
             </ul>
           )}
         </div>
+        {shown.length === 0 && <Bouquet />}
         <span className="table-leg leg-1" aria-hidden="true" />
         <span className="table-leg leg-2" aria-hidden="true" />
         <span className="table-leg leg-3" aria-hidden="true" />

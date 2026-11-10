@@ -1,0 +1,27 @@
+{
+  "packageId": "com.jdatna.app",
+  "host": "jdatna.com",
+  "name": "أكلات جدتنا",
+  "launcherName": "أكلات جدتنا",
+  "display": "standalone",
+  "orientation": "portrait",
+  "themeColor": "#2E1D12",
+  "navigationColor": "#2E1D12",
+  "backgroundColor": "#F4EAD9",
+  "enableNotifications": true,
+  "startUrl": "/?source=app",
+  "iconUrl": "https://jdatna.com/brand/app-icon-512.png",
+  "maskableIconUrl": "https://jdatna.com/brand/app-icon-maskable-512.png",
+  "webManifestUrl": "https://jdatna.com/manifest.webmanifest",
+  "fallbackType": "customtabs",
+  "features": { "locationDelegation": { "enabled": true } },
+  "shortcuts": [
+    { "name": "مائدة اليوم", "url": "/table" },
+    { "name": "المحادثات", "url": "/messages" },
+    { "name": "طلباتي", "url": "/orders" }
+  ],
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "minSdkVersion": 21,
+  "signingKey": { "path": "./android.keystore", "alias": "jdatna" }
+}
