@@ -76,6 +76,19 @@ test(
         listed.find((t) => t.key === "home.search")?.original,
         siteTextDefaults["home.search"],
       );
+      // الإخفاء لا يمسح النص: يختفي من الموقع ويعود كما هو عند الإظهار.
+      await setSiteText(admin, { key: "table.empty", hidden: true });
+      assert.equal((await getSiteTexts())["table.empty"], "");
+      const hiddenRow = (await adminSiteTexts(admin)).find(
+        (t) => t.key === "table.empty",
+      );
+      assert.equal(hiddenRow?.hidden, true);
+      assert.equal(hiddenRow?.value, "الصحون جاية");
+      await setSiteText(admin, { key: "table.empty", hidden: false });
+      assert.equal((await getSiteTexts())["table.empty"], "الصحون جاية");
+      await assert.rejects(
+        setSiteText(admin, { key: "table.empty", hidden: true, value: "x" }),
+      );
       for (const key of ["table.empty", "footer.made"])
         await setSiteText(admin, { key, value: null });
       assert.equal(
@@ -88,7 +101,7 @@ test(
         [before],
       );
       await pool.query(
-        "DELETE FROM jdatna.site_settings WHERE key IN ('text:table.empty','text:footer.made')",
+        "DELETE FROM jdatna.site_settings WHERE key IN ('text:table.empty','text:footer.made','hidden:table.empty')",
       );
       await pool.query(
         "DELETE FROM jdatna.admin_audit_logs WHERE actor_id=$1",

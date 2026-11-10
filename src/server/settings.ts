@@ -58,46 +58,92 @@ export async function setSiteTemplate(user: SessionUser, input: unknown) {
   });
 }
 
-/** نصوص الواجهة: الأصلية مع ما عدّلته الإدارة («» = محذوف). */
-export async function getSiteTexts(): Promise<SiteTexts> {
+/** النصوص المخزنة (المعدّلة) والمخفية مؤقتًا دون حذف نصها. */
+async function storedSiteTexts() {
   const texts: SiteTexts = { ...siteTextDefaults };
-  if (!databaseConfigured()) return texts;
+  const hidden = new Set<keyof SiteTexts>();
+  if (!databaseConfigured()) return { texts, hidden };
   try {
     const rows = (
       await db().query(
-        "SELECT substr(key,6) AS key,value FROM jdatna.site_settings WHERE key LIKE 'text:%'",
+        "SELECT key,value FROM jdatna.site_settings WHERE key LIKE 'text:%' OR key LIKE 'hidden:%'",
       )
     ).rows as { key: string; value: string }[];
-    for (const row of rows)
-      if (isSiteTextKey(row.key)) texts[row.key] = row.value;
+    for (const row of rows) {
+      const [kind, key] = [
+        row.key.slice(0, row.key.indexOf(":")),
+        row.key.slice(row.key.indexOf(":") + 1),
+      ];
+      if (!isSiteTextKey(key)) continue;
+      if (kind === "text") texts[key] = row.value;
+      else if (kind === "hidden") hidden.add(key);
+    }
   } catch {
     // عند تعذر القراءة تبقى النصوص الأصلية.
   }
+  return { texts, hidden };
+}
+
+/** نصوص الواجهة: الأصلية مع ما عدّلته الإدارة («» = محذوف أو مخفي). */
+export async function getSiteTexts(): Promise<SiteTexts> {
+  const { texts, hidden } = await storedSiteTexts();
+  for (const key of hidden) texts[key] = "";
   return texts;
 }
 
-/** قائمة الإدارة: لكل نص قيمته الحالية والأصلية وهل عُدِّل. */
+/** قائمة الإدارة: لكل نص قيمته الحالية والأصلية وهل عُدِّل وهل هو مخفي. */
 export async function adminSiteTexts(user: SessionUser) {
   if (!can(user, "content")) throw new HttpError(403, "لا تملك صلاحية الإدارة");
-  const current = await getSiteTexts();
+  const { texts: current, hidden } = await storedSiteTexts();
   return (Object.keys(siteTextDefaults) as (keyof SiteTexts)[]).map((key) => ({
     key,
     value: current[key],
     original: siteTextDefaults[key],
     edited: current[key] !== siteTextDefaults[key],
+    hidden: hidden.has(key),
   }));
 }
 
 /** تعديل نص أو حذفه («») أو إعادته للأصل (null). */
 export async function setSiteText(user: SessionUser, input: unknown) {
   if (!can(user, "content")) throw new HttpError(403, "لا تملك صلاحية الإدارة");
-  const { key, value } = z
-    .object({
-      key: z.string().refine(isSiteTextKey, "نص غير معروف"),
-      value: z.string().trim().max(2000).nullable(),
-    })
-    .strict()
+  const parsed = z
+    .union([
+      z
+        .object({
+          key: z.string().refine(isSiteTextKey, "نص غير معروف"),
+          value: z.string().trim().max(2000).nullable(),
+        })
+        .strict(),
+      z
+        .object({
+          key: z.string().refine(isSiteTextKey, "نص غير معروف"),
+          hidden: z.boolean(),
+        })
+        .strict(),
+    ])
     .parse(input);
+  const key = parsed.key;
+  // الإخفاء لا يمس النص: يُخفى من الموقع ويعود كما هو عند الإظهار.
+  if ("hidden" in parsed)
+    return transaction(async (client) => {
+      if (parsed.hidden)
+        await client.query(
+          `INSERT INTO jdatna.site_settings(key,value,updated_at,updated_by) VALUES($1,'1',now(),$2)
+           ON CONFLICT(key) DO UPDATE SET updated_at=now(),updated_by=EXCLUDED.updated_by`,
+          ["hidden:" + key, user.id],
+        );
+      else
+        await client.query("DELETE FROM jdatna.site_settings WHERE key=$1", [
+          "hidden:" + key,
+        ]);
+      await client.query(
+        "INSERT INTO jdatna.admin_audit_logs(id,actor_id,action,target_id,details) VALUES($1,$2,'site.text',NULL,$3)",
+        [randomUUID(), user.id, JSON.stringify({ key, hidden: parsed.hidden })],
+      );
+      return { key, hidden: parsed.hidden };
+    });
+  const value = parsed.value;
   return transaction(async (client) => {
     if (value === null)
       await client.query("DELETE FROM jdatna.site_settings WHERE key=$1", [

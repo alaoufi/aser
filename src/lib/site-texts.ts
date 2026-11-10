@@ -91,6 +91,21 @@ export const siteTextLabels: Record<
   "about.p3": ["حكايتنا", "الفقرة الثالثة"],
 };
 
+/** النصوص التي تظهر عنوانًا؛ خيار إخفائها «إخفاء العنوان» وغيرها «إخفاء النص». */
+export const siteTextTitleKeys: ReadonlySet<SiteTextKey> = new Set([
+  "table.title",
+  "browse.title",
+  "welcome.title",
+  "rating.family",
+  "rating.product",
+  "rating.member",
+  "about.eyebrow",
+  "about.title",
+  "about.h1",
+  "about.h2",
+  "about.h3",
+]);
+
 export function isSiteTextKey(key: string): key is SiteTextKey {
   return Object.hasOwn(siteTextDefaults, key);
 }
