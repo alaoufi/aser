@@ -94,6 +94,38 @@ test(
         reason: "تمت المراجعة",
       });
 
+      // الإدارة تحذف منتجًا مخالفًا: يختفي من الأسرة والزوار.
+      const spam = randomUUID();
+      await pool.query(
+        "INSERT INTO jdatna.products(id,producer_id,name,description,unit,status) VALUES($1,$2,'مكرر','وصف','صحن','available')",
+        [spam, familyId],
+      );
+      await assert.rejects(
+        moderateProduct(family, {
+          id: spam,
+          deleted: true,
+          reason: "مكرر جدًا",
+        }),
+        { status: 403 },
+      );
+      await moderateProduct(admin, {
+        id: spam,
+        deleted: true,
+        reason: "منتج مكرر",
+      });
+      const spamRow = (
+        await pool.query(
+          "SELECT visible,deleted_at FROM jdatna.products WHERE id=$1",
+          [spam],
+        )
+      ).rows[0];
+      assert.equal(spamRow.visible, false);
+      assert.ok(spamRow.deleted_at);
+      assert.equal(
+        (await ownProducts(family)).some((x) => x.id === spam),
+        false,
+      );
+
       // الحذف أرشفة: يختفي من الأسرة والزوار.
       await manageProduct(family, { id: productId, action: "delete" });
       const gone = await visible();

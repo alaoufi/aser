@@ -54,12 +54,15 @@ export const moderationSchema = z
     visible: z.boolean().optional(),
     featured: z.boolean().optional(),
     categoryIds: z.array(z.string().min(1).max(30)).min(1).max(100).optional(),
+    /** حذف المنتج (أرشفة): يختفي من الموقع ومن الأسرة. */
+    deleted: z.literal(true).optional(),
     reason: z.string().trim().min(5).max(2000),
   })
   .refine(
     (v) =>
       v.visible !== undefined ||
       v.featured !== undefined ||
+      v.deleted !== undefined ||
       v.categoryIds !== undefined,
     { message: "حدد التعديل المطلوب" },
   );
@@ -84,7 +87,7 @@ export async function adminProducts(user: SessionUser) {
   assertAdmin(user, "products");
   return (
     await db().query(
-      `SELECT x.id,x.name,x.status,x.visible,x.hidden_by AS "hiddenBy",x.featured,x.producer_id AS "producerId",p.name AS "producerName",c.name AS "cityName",p.status AS "producerStatus",ARRAY(SELECT category_id FROM jdatna.product_categories WHERE product_id=x.id) AS "categoryIds" FROM jdatna.products x JOIN jdatna.producer_profiles p ON p.id=x.producer_id JOIN jdatna.cities c ON c.id=p.city_id WHERE x.deleted_at IS NULL ORDER BY x.created_at DESC LIMIT 200`,
+      `SELECT x.id,x.name,x.status,x.visible,x.hidden_by AS "hiddenBy",x.featured,x.producer_id AS "producerId",p.name AS "producerName",p.slug AS "producerSlug",c.name AS "cityName",p.status AS "producerStatus",ARRAY(SELECT category_id FROM jdatna.product_categories WHERE product_id=x.id) AS "categoryIds" FROM jdatna.products x JOIN jdatna.producer_profiles p ON p.id=x.producer_id JOIN jdatna.cities c ON c.id=p.city_id WHERE x.deleted_at IS NULL ORDER BY x.created_at DESC LIMIT 200`,
     )
   ).rows;
 }
@@ -94,11 +97,23 @@ export async function moderateProduct(user: SessionUser, input: unknown) {
   return transaction(async (client) => {
     const product = (
       await client.query(
-        "SELECT id FROM jdatna.products WHERE id=$1 FOR UPDATE",
+        "SELECT id FROM jdatna.products WHERE id=$1 AND deleted_at IS NULL FOR UPDATE",
         [value.id],
       )
     ).rows[0];
     if (!product) throw new HttpError(404, "المنتج غير موجود");
+    if (value.deleted) {
+      await client.query(
+        "UPDATE jdatna.products SET deleted_at=now(),visible=false,featured=false,hidden_by='admin',updated_at=now() WHERE id=$1",
+        [value.id],
+      );
+      await client.query(
+        "UPDATE jdatna.offers SET enabled=false,updated_at=now() WHERE product_id=$1",
+        [value.id],
+      );
+      await audit(client, user, "product.delete", value.id, value);
+      return { ok: true, deleted: true };
+    }
     await client.query(
       // إخفاء الإدارة يُنسب لها، فلا تلغيه الأسرة.
       `UPDATE jdatna.products SET visible=COALESCE($2,visible),

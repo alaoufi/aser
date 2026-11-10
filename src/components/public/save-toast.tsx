@@ -20,7 +20,7 @@ export function SaveToast() {
     return () => window.clearTimeout(timer);
   }, [text, tick]);
   return (
-    <div className="save-toast-region" role="status" aria-live="polite">
+    <div className="save-toast-region" aria-live="polite" aria-atomic="true">
       {text && (
         <p key={tick} className="save-toast">
           <span aria-hidden="true">✓</span> {text}

@@ -59,7 +59,7 @@ test("the admin hides, deletes and restores product form fields from category ma
   await expect(
     box.getByRole("button", { name: "استعادة حقل قصة الأكلة" }),
   ).toBeVisible();
-  await expect(page.getByRole("status").getByText("تم الحفظ")).toBeVisible();
+  await expect(page.locator(".save-toast")).toContainText("تم الحفظ");
   await box.getByRole("button", { name: "استعادة حقل قصة الأكلة" }).click();
   expect(sent).toEqual([
     { key: "ingredients", state: "hidden" },
