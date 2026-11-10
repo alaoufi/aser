@@ -57,31 +57,69 @@ test(
       // طلب مرفوض لا يُعدّ تعاملًا.
       await order("declined");
       await assert.rejects(
-        rate(buyer, { kind: "family", target: familyId, stars: 5 }),
+        rate(buyer, { kind: "family", target: familyId, stars: 5, oath: true }),
         { status: 403 },
       );
       await order("completed");
+      // لا يُقبل التقييم دون الموافقة على القسم، ويصل نص القسم لمن يحق له التقييم.
+      await assert.rejects(
+        rate(buyer, { kind: "family", target: familyId, stars: 5 }),
+      );
+      await assert.rejects(
+        rate(buyer, {
+          kind: "family",
+          target: familyId,
+          stars: 5,
+          oath: false,
+        }),
+      );
+      assert.match(
+        (await ratingView(buyer, { kind: "family", target: familyId })).oath ??
+          "",
+        /أقسم بالله العلي العظيم/,
+      );
       // العضو المتعامل يقيّم الأسرة والمنتج، ويعدّل تقييمه.
-      await rate(buyer, { kind: "family", target: familyId, stars: 3 });
+      await rate(buyer, {
+        kind: "family",
+        target: familyId,
+        stars: 3,
+        oath: true,
+      });
       await rate(buyer, {
         kind: "family",
         target: familyId,
         stars: 5,
         comment: "  أكل لذيذ  ",
+        oath: true,
       });
-      await rate(buyer, { kind: "product", target: productId, stars: 4 });
+      await rate(buyer, {
+        kind: "product",
+        target: productId,
+        stars: 4,
+        oath: true,
+      });
       // الإدارة تقيّم الأسرة دون طلب؛ صاحبة الأسرة لا تقيّم نفسها؛ الغريب لا يقيّم.
-      await rate(admin, { kind: "family", target: familyId, stars: 4 });
+      await rate(admin, {
+        kind: "family",
+        target: familyId,
+        stars: 4,
+        oath: true,
+      });
       await assert.rejects(
-        rate(owner, { kind: "family", target: familyId, stars: 5 }),
+        rate(owner, { kind: "family", target: familyId, stars: 5, oath: true }),
         { status: 403 },
       );
       await assert.rejects(
-        rate(stranger, { kind: "product", target: productId, stars: 1 }),
+        rate(stranger, {
+          kind: "product",
+          target: productId,
+          stars: 1,
+          oath: true,
+        }),
         { status: 403 },
       );
       await assert.rejects(
-        rate(buyer, { kind: "family", target: familyId, stars: 6 }),
+        rate(buyer, { kind: "family", target: familyId, stars: 6, oath: true }),
       );
       assert.deepEqual(await ratingSummary("family", familyId), {
         average: 4.5,
@@ -99,9 +137,19 @@ test(
         false,
       );
       // الأسرة المتعاملة تقيّم العميل؛ تقييم العميل لا يراه غيرها والإدارة.
-      await rate(owner, { kind: "member", target: buyer.id, stars: 5 });
+      await rate(owner, {
+        kind: "member",
+        target: buyer.id,
+        stars: 5,
+        oath: true,
+      });
       await assert.rejects(
-        rate(otherFamily, { kind: "member", target: buyer.id, stars: 1 }),
+        rate(otherFamily, {
+          kind: "member",
+          target: buyer.id,
+          stars: 1,
+          oath: true,
+        }),
         { status: 403 },
       );
       await assert.rejects(

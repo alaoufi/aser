@@ -4,13 +4,27 @@ import type { SessionUser } from "../lib/types";
 import { db } from "./db";
 import { HttpError } from "./security";
 import { can } from "../lib/permissions";
+import { siteTextDefaults } from "../lib/site-texts";
 
 export type RatingKind = "family" | "product" | "member";
 export type RatingSummary = { average: number | null; count: number };
 export type RatingView = RatingSummary & {
   mine: { stars: number; comment: string } | null;
   canRate: boolean;
+  /** نص القسم الذي يوافق عليه المقيِّم قبل الإرسال (من «نصوص الموقع»). */
+  oath?: string;
 };
+
+/** نص القسم: المعدّل في «نصوص الموقع»، وإن حُذف أو أُخفي فالنص الأصلي؛ فالقسم لا يسقط. */
+async function oathText(k: RatingKind) {
+  const key = k === "member" ? "rating.oathMember" : "rating.oath";
+  try {
+    const { getSiteTexts } = await import("./settings");
+    return (await getSiteTexts())[key] || siteTextDefaults[key];
+  } catch {
+    return siteTextDefaults[key];
+  }
+}
 
 const kind = z.enum(["family", "product", "member"]);
 /** تعامل فعلي: طلب لم يُرفض ولم يُلغَ. */
@@ -98,10 +112,12 @@ export async function ratingView(
         [k, targetId, user.id],
       )
     ).rows[0] ?? null;
+  const canRate = Boolean(await eligibility(user, k, targetId));
   return {
     ...summary,
     mine,
-    canRate: Boolean(await eligibility(user, k, targetId)),
+    canRate,
+    ...(canRate ? { oath: await oathText(k) } : {}),
   };
 }
 
@@ -112,6 +128,8 @@ export async function rate(user: SessionUser, input: unknown) {
       target: z.uuid(),
       stars: z.number().int().min(1).max(5),
       comment: z.string().trim().max(500).default(""),
+      /** الموافقة على القسم شرط لقبول التقييم. */
+      oath: z.literal(true, { error: "وافق على القسم قبل إرسال التقييم" }),
     })
     .strict()
     .parse(input);

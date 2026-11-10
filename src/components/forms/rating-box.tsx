@@ -8,6 +8,7 @@ type View = {
   count: number;
   mine: { stars: number; comment: string } | null;
   canRate: boolean;
+  oath?: string;
 };
 
 /** ملخص التقييم، ونموذج «رأيك مهم؟» لمن تعامل فعليًا. */
@@ -28,6 +29,7 @@ export function RatingBox({
   const [view, setView] = useState<View | null>(null);
   const [stars, setStars] = useState(0);
   const [comment, setComment] = useState("");
+  const [sworn, setSworn] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -48,6 +50,10 @@ export function RatingBox({
       setError("اختر عدد النجوم.");
       return;
     }
+    if (!sworn) {
+      setError("وافق على القسم قبل إرسال التقييم.");
+      return;
+    }
     setBusy(true);
     setError("");
     setMessage("");
@@ -56,7 +62,7 @@ export function RatingBox({
         "/api/ratings",
         {
           method: "PUT",
-          body: JSON.stringify({ kind, target, stars, comment }),
+          body: JSON.stringify({ kind, target, stars, comment, oath: true }),
         },
       );
       setView((v) => v && { ...v, ...summary, mine: { stars, comment } });
@@ -119,7 +125,16 @@ export function RatingBox({
               />
             </label>
           )}
-          <button className="button small" disabled={busy}>
+          <label className="rating-oath">
+            <input
+              type="checkbox"
+              required
+              checked={sworn}
+              onChange={(e) => setSworn(e.target.checked)}
+            />
+            <span>{view.oath}</span>
+          </label>
+          <button className="button small" disabled={busy || !sworn}>
             {busy
               ? "جارٍ الحفظ…"
               : view.mine
