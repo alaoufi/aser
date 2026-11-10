@@ -1140,3 +1140,122 @@ main::before {
     transition: transform 0.2s ease;
   }
 }
+
+/* ترحيب الأسرة المنتجة: بطاقة عائمة ثلاثية الأبعاد */
+.family-welcome {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  max-width: min(92vw, 420px);
+  overflow: visible;
+  perspective: 900px;
+}
+.family-welcome::backdrop {
+  background: #2e1d1266;
+  backdrop-filter: blur(2px);
+}
+.family-welcome-card {
+  position: relative;
+  padding: 26px 22px 20px;
+  border-radius: 18px;
+  text-align: center;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 20% 0%, #fffaf0 0, transparent 55%),
+    linear-gradient(160deg, #fbf5ea, #efe0c6);
+  border: 1px solid #d6b98d;
+  transform: rotateX(8deg) rotateY(-6deg);
+  transform-style: preserve-3d;
+  box-shadow:
+    0 1px 0 #fff inset,
+    0 2px 0 #d6b98d,
+    0 6px 0 -1px #c9a87c,
+    0 22px 30px #2e1d1240,
+    0 40px 60px -20px #2e1d1255;
+}
+/* البطاقة ثابتة حتى تبقى أزرارها سهلة الضغط؛ العلامة وحدها تطفو. */
+@media (prefers-reduced-motion: no-preference) {
+  .family-welcome-mark {
+    animation: welcome-float 3.5s ease-in-out infinite;
+  }
+}
+@keyframes welcome-float {
+  0%,
+  100% {
+    transform: translateZ(30px) translateY(0);
+  }
+  50% {
+    transform: translateZ(30px) translateY(-6px);
+  }
+}
+.family-welcome-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-bottom: 6px;
+  border-radius: 50%;
+  background: var(--rust);
+  color: #fbf3e4;
+  font-size: 20px;
+  box-shadow: 0 6px 12px #9c2f1e55;
+  transform: translateZ(30px);
+}
+.family-welcome h2 {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 18px;
+  line-height: 1.5;
+}
+.family-welcome p {
+  margin: 2px 0 14px;
+  font-family: var(--accent-serif);
+  font-size: 17px;
+  color: var(--muted);
+}
+.family-welcome-links {
+  display: grid;
+  gap: 8px;
+}
+.family-welcome-links a {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #fffdf8;
+  border: 1px solid #e3cfae;
+  box-shadow: 0 3px 0 #e3cfae;
+  color: var(--ink);
+  text-align: start;
+  transform: translateZ(18px);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.family-welcome-links a:hover,
+.family-welcome-links a:focus-visible {
+  transform: translateZ(18px) translateY(-2px);
+  box-shadow: 0 5px 0 #d6b98d;
+}
+.family-welcome-links strong {
+  font-size: 14px;
+}
+.family-welcome-links small {
+  font-size: 12px;
+  color: var(--muted);
+}
+.family-welcome-close {
+  position: absolute;
+  top: 8px;
+  inset-inline-start: 8px;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  font-size: 22px;
+  cursor: pointer;
+}

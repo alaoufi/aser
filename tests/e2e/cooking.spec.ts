@@ -1,6 +1,16 @@
 import { test, expect } from "@playwright/test";
 import { randomUUID } from "node:crypto";
 import { Pool } from "pg";
+
+// ترحيب الأسرة يُختبر في family-welcome.spec؛ هنا نعدّه ظاهرًا في هذه الزيارة.
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    try {
+      sessionStorage.setItem("jdatna:family-welcome", "1");
+    } catch {}
+  });
+});
+
 test("family changes today's cooking state without editing profile", async ({
   page,
 }) => {

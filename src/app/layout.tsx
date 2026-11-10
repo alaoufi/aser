@@ -2,6 +2,7 @@ import { MobileNavigation } from "@/components/public/mobile-navigation";
 import { AboutTicker } from "@/components/public/about-ticker";
 import { AccountLink } from "@/components/public/account-link";
 import { OrderAlert } from "@/components/public/order-alert";
+import { FamilyWelcome } from "@/components/public/family-welcome";
 import { FamilyStatusChip } from "@/components/forms/family-status";
 import "./fonts.css";
 import type { Metadata } from "next";
@@ -88,6 +89,7 @@ export default async function RootLayout({
           />
         </header>
         <main id="main">{children}</main>
+        <FamilyWelcome />
         <OrderAlert />
         <footer className="site-footer">
           <div className="footer-top">
