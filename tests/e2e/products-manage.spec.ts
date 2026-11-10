@@ -87,6 +87,7 @@ test("a family sees a clear add button, opens a category and hides or deletes a 
   await expect(page.getByText("كليجا", { exact: true })).toBeVisible();
 
   await page.getByRole("button", { name: "إخفاء جريش" }).click();
+  await expect(page.locator(".save-toast")).toContainText("تم الحفظ");
   await expect(page.getByText("مخفي عن الزوار")).toBeVisible();
   await expect(page.getByRole("button", { name: "إظهار جريش" })).toBeVisible();
 

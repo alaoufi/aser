@@ -3,6 +3,7 @@ import { AboutTicker } from "@/components/public/about-ticker";
 import { AccountLink } from "@/components/public/account-link";
 import { OrderAlert } from "@/components/public/order-alert";
 import { PushSetup } from "@/components/public/push-setup";
+import { SaveToast } from "@/components/public/save-toast";
 import { MessageAlert, MessagesLink } from "@/components/public/message-alert";
 import { FamilyWelcome } from "@/components/public/family-welcome";
 import { StarDefs } from "@/components/public/stars";
@@ -115,6 +116,7 @@ export default async function RootLayout({
         <FamilyWelcome texts={texts} />
         <OrderAlert />
         <MessageAlert />
+        <SaveToast />
         <footer className="site-footer">
           <div className="footer-top">
             <div>
