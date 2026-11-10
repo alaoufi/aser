@@ -146,7 +146,10 @@ export function OrderRequestForm({
   producerSlug,
   contactPhone,
   contactWhatsapp,
+  shipping,
 }: {
+  /** الشحن لكل المملكة: رسومه تضاف على السعر (بلا رسوم = بالاتفاق). */
+  shipping?: { label: string; fee: number | null };
   notCookingToday?: boolean;
   productId: string;
   productName: string;
@@ -358,6 +361,17 @@ export function OrderRequestForm({
             : `${selectedOffer ? selectedOffer.price : price} ر.س للوحدة، قبل الاتفاق`}
         </dd>
       </div>
+      {shipping && (
+        <div>
+          <dt>الشحن</dt>
+          <dd>
+            {shipping.label}:{" "}
+            {shipping.fee === null
+              ? "رسوم الشحن بالاتفاق"
+              : `${shipping.fee} ر.س تضاف على السعر`}
+          </dd>
+        </div>
+      )}
       <div>
         <dt>باسم</dt>
         <dd>

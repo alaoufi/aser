@@ -2,6 +2,16 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useSession } from "@/components/forms/shared";
+import type { SiteTexts } from "@/lib/site-texts";
+
+type WelcomeTexts = Pick<
+  SiteTexts,
+  | "welcome.title"
+  | "welcome.subtitle"
+  | "welcome.products"
+  | "welcome.library"
+  | "welcome.categories"
+>;
 
 const SEEN = "jdatna:family-welcome";
 
@@ -9,7 +19,7 @@ const SEEN = "jdatna:family-welcome";
  * ترحيب الأسرة المنتجة في كل زيارة للموقع (مرة لكل زيارة/تبويب، حتى مع
  * بقاء الدخول محفوظًا)، مع اختصارات لما تضيفه اليوم.
  */
-export function FamilyWelcome() {
+export function FamilyWelcome({ texts }: { texts: WelcomeTexts }) {
   const { user } = useSession();
   const dialog = useRef<HTMLDialogElement>(null);
   const [open, setOpen] = useState(false);
@@ -56,19 +66,21 @@ export function FamilyWelcome() {
         <span className="family-welcome-mark" aria-hidden="true">
           ✦
         </span>
-        <h2 id="family-welcome-title">مرحبا بك جيت ومعك الخير</h2>
-        <p>وش جبت معك اليوم؟</p>
+        <h2 id="family-welcome-title">
+          {texts["welcome.title"] || "مرحبا بك جيت ومعك الخير"}
+        </h2>
+        {texts["welcome.subtitle"] && <p>{texts["welcome.subtitle"]}</p>}
         <nav aria-label="اختصارات الأسرة" className="family-welcome-links">
           <Link href="/dashboard/products" onClick={close}>
-            <strong>إضافة منتجاتك</strong>
+            <strong>{texts["welcome.products"] || "إضافة منتجاتك"}</strong>
             <small>طبق جديد أو تحديث المتوفر</small>
           </Link>
           <Link href="/dashboard/library" onClick={close}>
-            <strong>مكتبة الصور</strong>
+            <strong>{texts["welcome.library"] || "مكتبة الصور"}</strong>
             <small>صور أطباقك جاهزة للمنتجات</small>
           </Link>
           <Link href="/dashboard#family-categories" onClick={close}>
-            <strong>الأقسام</strong>
+            <strong>{texts["welcome.categories"] || "الأقسام"}</strong>
             <small>أقسام منتجاتك</small>
           </Link>
         </nav>

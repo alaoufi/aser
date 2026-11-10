@@ -1259,3 +1259,79 @@ main::before {
   font-size: 22px;
   cursor: pointer;
 }
+
+/* المائدة: صف أطباق يتحرك بسهمين */
+.table-carousel {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.table-track {
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+.table-track::-webkit-scrollbar {
+  display: none;
+}
+.table-dishes.is-row {
+  display: flex;
+  gap: 14px;
+  width: max-content;
+  padding: 6px 4px 8px;
+}
+.table-dishes.is-row > li {
+  flex: 0 0 auto;
+  width: 136px;
+  scroll-snap-align: start;
+}
+.table-arrow {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid #f1dfbf;
+  background: #5c3518cc;
+  color: #fbf3e4;
+  font-size: 18px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  box-shadow: 0 3px 6px #00000055;
+  z-index: 1;
+}
+.table-arrow:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.dish-shipping {
+  font-style: normal;
+  font-size: 11px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #fbf3e4;
+  color: #5c3518;
+}
+@media (max-width: 600px) {
+  .table-arrow {
+    width: 34px;
+    height: 34px;
+    font-size: 15px;
+  }
+  .table-dishes.is-row > li {
+    width: 112px;
+  }
+}
+.shipping-badge {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #eef3e8;
+  color: #3b4628;
+  font-size: 12px;
+}

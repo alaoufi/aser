@@ -8,6 +8,7 @@ import {
   getCities,
   publicCategories,
   searchProducts,
+  todayProducts,
   searchProducers,
 } from "@/server/catalog";
 import { ProductCard, ProducerCard } from "@/components/public/ui";
@@ -25,7 +26,7 @@ export default async function Home({
   const saved = (await cookies()).get("jdatna_region")?.value ?? "";
   const region =
     [asked ?? saved].find((r) => r && regions.some((x) => x.id === r)) ?? "";
-  const today = await searchProducts({ status: "available", region });
+  const today = await todayProducts({ region });
   const [template, texts] = await Promise.all([
     visitorTemplate(),
     getSiteTexts(),
@@ -68,7 +69,7 @@ export default async function Home({
         products={today}
         regions={regions}
         region={region}
-        capacity={6}
+        capacity={12}
         path="/"
         texts={texts}
       />

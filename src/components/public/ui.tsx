@@ -70,6 +70,9 @@ export function ProductCard({ product: p }: { product: Product }) {
         <p>
           {priceLabel(p.price)} {p.price !== null && <small>/ {p.unit}</small>}
         </p>
+        {p.deliveryScope === "kingdom" && (
+          <small className="shipping-badge">شحن لكل المملكة</small>
+        )}
       </div>
     </Link>
   );

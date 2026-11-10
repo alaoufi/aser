@@ -85,7 +85,10 @@ export function assertOrderProduct(
     throw new HttpError(404, "المنتج أو الأسرة المنتجة غير متاح للطلب");
 }
 export function orderSnapshot(
-  product: Pick<OrderProduct, "name" | "unit" | "price" | "producerName">,
+  product: Pick<OrderProduct, "name" | "unit" | "price" | "producerName"> & {
+    deliveryScope?: string;
+    shippingFee?: number | string | null;
+  },
   offer?: { label: string; price: number | null },
 ) {
   return {
@@ -93,6 +96,18 @@ export function orderSnapshot(
     unit: product.unit,
     price: product.price === null ? null : Number(product.price),
     producerName: product.producerName,
+    // الشحن لكل المملكة يضاف على السعر؛ يُحفظ وقت الطلب.
+    ...(product.deliveryScope === "kingdom"
+      ? {
+          shipping: {
+            scope: "kingdom",
+            fee:
+              product.shippingFee === null || product.shippingFee === undefined
+                ? null
+                : Number(product.shippingFee),
+          },
+        }
+      : {}),
     offer: offer ? { label: offer.label, price: offer.price } : null,
   };
 }
@@ -139,7 +154,7 @@ export async function submitOrder(user: SessionUser | null, input: unknown) {
     }
     const product = (
       await client.query(
-        `SELECT x.name,x.unit,x.price,x.status,x.visible,p.id AS "producerId",COALESCE(p.trade_name,p.name) AS "producerName",p.status AS "producerStatus" FROM jdatna.products x JOIN jdatna.producer_profiles p ON p.id=x.producer_id WHERE x.id=$1 FOR SHARE OF x,p`,
+        `SELECT x.name,x.unit,x.price,x.status,x.visible,x.delivery_scope AS "deliveryScope",x.shipping_fee AS "shippingFee",p.id AS "producerId",COALESCE(p.trade_name,p.name) AS "producerName",p.status AS "producerStatus" FROM jdatna.products x JOIN jdatna.producer_profiles p ON p.id=x.producer_id WHERE x.id=$1 FOR SHARE OF x,p`,
         [value.productId],
       )
     ).rows[0];

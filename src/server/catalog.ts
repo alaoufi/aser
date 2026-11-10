@@ -59,7 +59,7 @@ COALESCE((SELECT json_agg(json_build_object('cityId',a.city_id,'cityName',ac.nam
  FROM jdatna.business_hours b WHERE b.producer_id=p.id) AS "businessHours"
 FROM jdatna.producer_profiles p JOIN jdatna.cities c ON c.id=p.city_id
 JOIN jdatna.regions r ON r.id=c.region_id`;
-export const productSelect = `SELECT ${notCookingTodaySql()} AS "notCookingToday",x.id,x.producer_id AS "producerId",COALESCE(p.trade_name,p.name) AS "producerName",p.slug AS "producerSlug",c.name AS "cityName",x.name,x.description,x.price,x.unit,x.status,x.image_url AS "imageUrl",ARRAY(SELECT category_id FROM jdatna.product_categories WHERE product_id=x.id) AS "categoryIds",ARRAY(SELECT name FROM jdatna.product_allergens WHERE product_id=x.id) AS allergens,x.ingredients,x.storage,x.shelf_life AS "shelfLife",x.preparation_time AS "preparationTime",x.story,p.delivery FROM jdatna.products x JOIN jdatna.producer_profiles p ON p.id=x.producer_id JOIN jdatna.cities c ON c.id=p.city_id`;
+export const productSelect = `SELECT ${notCookingTodaySql()} AS "notCookingToday",x.id,x.producer_id AS "producerId",COALESCE(p.trade_name,p.name) AS "producerName",p.slug AS "producerSlug",c.name AS "cityName",x.name,x.description,x.price,x.unit,x.status,x.image_url AS "imageUrl",ARRAY(SELECT category_id FROM jdatna.product_categories WHERE product_id=x.id) AS "categoryIds",ARRAY(SELECT name FROM jdatna.product_allergens WHERE product_id=x.id) AS allergens,x.ingredients,x.storage,x.shelf_life AS "shelfLife",x.preparation_time AS "preparationTime",x.story,p.delivery,x.delivery_scope AS "deliveryScope",x.shipping_fee::float8 AS "shippingFee" FROM jdatna.products x JOIN jdatna.producer_profiles p ON p.id=x.producer_id JOIN jdatna.cities c ON c.id=p.city_id`;
 export function mapProduct(row: Product): Product {
   return { ...row, price: row.price === null ? null : Number(row.price) };
 }
@@ -155,6 +155,24 @@ export async function searchProducts(
   return (
     await db().query(
       `${productSelect} WHERE ${where} ORDER BY (x.status='available' AND NOT ${notCookingTodaySql()}) DESC,(x.status='preorder') DESC,x.featured DESC,x.created_at DESC LIMIT 24 OFFSET $${args.length}`,
+      args,
+    )
+  ).rows.map(mapProduct);
+}
+/**
+ * أطباق «مائدة اليوم»: المتوفر اليوم في المنطقة، والأكثر طلبًا أولًا
+ * (الطلبات غير المرفوضة أو الملغاة)، ثم المميز، ثم الأحدث.
+ */
+export async function todayProducts(
+  filters: Pick<Filters, "region" | "city"> = {},
+  limit = 48,
+): Promise<Product[]> {
+  if (!databaseConfigured()) return [];
+  const { args, where } = conditions({ ...filters, status: "available" }, true);
+  args.push(Math.max(1, Math.min(200, limit)));
+  return (
+    await db().query(
+      `${productSelect} WHERE ${where} ORDER BY (SELECT count(*) FROM jdatna.order_requests o WHERE o.product_id=x.id AND o.status NOT IN ('declined','cancelled')) DESC,x.featured DESC,x.created_at DESC LIMIT $${args.length}`,
       args,
     )
   ).rows.map(mapProduct);
