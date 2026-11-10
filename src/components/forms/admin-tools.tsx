@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import type { Category, City } from "@/lib/types";
 import { categoryLabel, categoryParentOptions } from "@/lib/category-label";
 import {
@@ -472,10 +472,21 @@ export function ProductsAdmin() {
   const [query, setQuery] = useState("");
   const [openId, setOpenId] = useState("");
   const all = r.data?.products ?? [];
+  const [show, setShow] = useState<"all" | "visible" | "hidden" | "featured">(
+    "all",
+  );
   const q = query.trim();
-  const list = q
-    ? all.filter((p) => p.name.includes(q) || p.producerName.includes(q))
-    : all;
+  const list = all
+    .filter((p) => !q || p.name.includes(q) || p.producerName.includes(q))
+    .filter((p) =>
+      show === "visible"
+        ? p.visible
+        : show === "hidden"
+          ? !p.visible
+          : show === "featured"
+            ? p.featured
+            : true,
+    );
   const busy = r.busy;
   async function blockFamily(p: ModeratedProduct) {
     const reason = askReason(
@@ -515,125 +526,190 @@ export function ProductsAdmin() {
           onChange={(e) => setQuery(e.target.value)}
         />
       </label>
+      <div className={s.filterChips} role="group" aria-label="عرض المنتجات">
+        {(
+          [
+            ["all", "الكل"],
+            ["visible", "الظاهرة"],
+            ["hidden", "المخفية"],
+            ["featured", "المميزة"],
+          ] as const
+        ).map(([v, label]) => (
+          <button
+            key={v}
+            type="button"
+            aria-pressed={show === v}
+            onClick={() => setShow(v)}
+          >
+            {label} (
+            {v === "all"
+              ? all.length
+              : all.filter((p) =>
+                  v === "visible"
+                    ? p.visible
+                    : v === "hidden"
+                      ? !p.visible
+                      : p.featured,
+                ).length}
+            )
+          </button>
+        ))}
+      </div>
       {!r.data && !r.error ? (
         <p role="status">جارٍ تحميل المنتجات…</p>
       ) : list.length ? (
-        <div className={s.productRows}>
-          {list.map((p) => {
-            const blocked = p.producerStatus === "suspended";
-            return (
-              <div key={p.id}>
-                <div className={s.productRow}>
-                  <span className={s.productInfo}>
-                    <strong>{p.name}</strong>
-                    <small>
-                      {p.producerName} · {p.cityName}
-                    </small>
-                    {!p.visible && (
-                      <em className={s.hiddenTag}>
-                        {p.hiddenBy === "family"
-                          ? "أخفته الأسرة"
-                          : "مخفي من الإدارة"}
-                      </em>
+        <div className={s.tableWrap}>
+          <table className={s.adminTable}>
+            <thead>
+              <tr>
+                <th scope="col">اسم المنتج</th>
+                <th scope="col">الأسرة المنتجة</th>
+                <th scope="col">الإجراءات</th>
+              </tr>
+            </thead>
+            <tbody>
+              {list.map((p) => {
+                const blocked = p.producerStatus === "suspended";
+                return (
+                  <Fragment key={p.id}>
+                    <tr>
+                      <td>
+                        <strong>{p.name}</strong>
+                        {!p.visible && (
+                          <em className={s.hiddenTag}>
+                            {p.hiddenBy === "family"
+                              ? "أخفته الأسرة"
+                              : "مخفي من الإدارة"}
+                          </em>
+                        )}
+                        {p.featured && <em className={s.hiddenTag}>مميز</em>}
+                      </td>
+                      <td>
+                        {p.producerSlug ? (
+                          <a
+                            href={`/producers/${p.producerSlug}`}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            {p.producerName}
+                          </a>
+                        ) : (
+                          p.producerName
+                        )}
+                        <small>{p.cityName}</small>
+                        {blocked && (
+                          <em className={s.hiddenTag}>الأسرة موقوفة</em>
+                        )}
+                      </td>
+                      <td>
+                        <div className={s.productActions}>
+                          <a
+                            href={`/products/${p.id}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            aria-label={`عرض ${p.name}`}
+                          >
+                            عرض
+                          </a>
+                          <button
+                            type="button"
+                            disabled={busy}
+                            aria-label={`${p.visible ? "إخفاء" : "إظهار"} ${p.name}`}
+                            onClick={() => {
+                              const reason = p.visible
+                                ? askReason(
+                                    `إخفاء «${p.name}» عن الزوار؟`,
+                                    "مخالفة المحتوى",
+                                  )
+                                : "إظهار المنتج بعد المراجعة";
+                              if (reason)
+                                r.write("PATCH", {
+                                  id: p.id,
+                                  visible: !p.visible,
+                                  reason,
+                                });
+                            }}
+                          >
+                            {p.visible ? "إخفاء" : "إظهار"}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={busy}
+                            aria-label={`${p.featured ? "إلغاء تمييز" : "تمييز"} ${p.name}`}
+                            onClick={() =>
+                              r.write("PATCH", {
+                                id: p.id,
+                                featured: !p.featured,
+                                reason: p.featured
+                                  ? "إلغاء تمييز المنتج"
+                                  : "تمييز المنتج في الواجهة",
+                              })
+                            }
+                          >
+                            {p.featured ? "إلغاء التمييز" : "تمييز"}
+                          </button>
+                          <button
+                            type="button"
+                            aria-expanded={openId === p.id}
+                            aria-label={`أقسام ${p.name}`}
+                            onClick={() =>
+                              setOpenId(openId === p.id ? "" : p.id)
+                            }
+                          >
+                            القسم
+                          </button>
+                          <button
+                            type="button"
+                            className={s.deleteAction}
+                            disabled={busy}
+                            aria-label={`حذف ${p.name}`}
+                            onClick={() => {
+                              const reason = askReason(
+                                `حذف «${p.name}» نهائيًا من الموقع؟`,
+                                "مخالفة المحتوى",
+                              );
+                              if (reason)
+                                r.write("PATCH", {
+                                  id: p.id,
+                                  deleted: true,
+                                  reason,
+                                });
+                            }}
+                          >
+                            حذف
+                          </button>
+                          {!blocked && (
+                            <button
+                              type="button"
+                              className={s.deleteAction}
+                              disabled={busy}
+                              aria-label={`حظر أسرة ${p.producerName}`}
+                              onClick={() => blockFamily(p)}
+                            >
+                              حظر الأسرة
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                    {openId === p.id && (
+                      <tr>
+                        <td colSpan={3}>
+                          <ProductCategories
+                            key={p.categoryIds?.join()}
+                            product={p}
+                            categories={c.data?.categories || []}
+                            busy={busy || !c.data}
+                            onSave={(body) => r.write("PATCH", body)}
+                          />
+                        </td>
+                      </tr>
                     )}
-                    {p.featured && <em className={s.hiddenTag}>مميز</em>}
-                    {blocked && <em className={s.hiddenTag}>الأسرة موقوفة</em>}
-                  </span>
-                  <div className={s.productActions}>
-                    <a
-                      href={`/products/${p.id}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      aria-label={`عرض ${p.name}`}
-                    >
-                      عرض
-                    </a>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      aria-label={`${p.visible ? "إخفاء" : "إظهار"} ${p.name}`}
-                      onClick={() => {
-                        const reason = p.visible
-                          ? askReason(
-                              `إخفاء «${p.name}» عن الزوار؟`,
-                              "مخالفة المحتوى",
-                            )
-                          : "إظهار المنتج بعد المراجعة";
-                        if (reason)
-                          r.write("PATCH", {
-                            id: p.id,
-                            visible: !p.visible,
-                            reason,
-                          });
-                      }}
-                    >
-                      {p.visible ? "إخفاء" : "إظهار"}
-                    </button>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      aria-label={`${p.featured ? "إلغاء تمييز" : "تمييز"} ${p.name}`}
-                      onClick={() =>
-                        r.write("PATCH", {
-                          id: p.id,
-                          featured: !p.featured,
-                          reason: p.featured
-                            ? "إلغاء تمييز المنتج"
-                            : "تمييز المنتج في الواجهة",
-                        })
-                      }
-                    >
-                      {p.featured ? "إلغاء التمييز" : "تمييز"}
-                    </button>
-                    <button
-                      type="button"
-                      aria-expanded={openId === p.id}
-                      aria-label={`أقسام ${p.name}`}
-                      onClick={() => setOpenId(openId === p.id ? "" : p.id)}
-                    >
-                      القسم
-                    </button>
-                    <button
-                      type="button"
-                      className={s.deleteAction}
-                      disabled={busy}
-                      aria-label={`حذف ${p.name}`}
-                      onClick={() => {
-                        const reason = askReason(
-                          `حذف «${p.name}» نهائيًا من الموقع؟`,
-                          "مخالفة المحتوى",
-                        );
-                        if (reason)
-                          r.write("PATCH", { id: p.id, deleted: true, reason });
-                      }}
-                    >
-                      حذف
-                    </button>
-                    {!blocked && (
-                      <button
-                        type="button"
-                        className={s.deleteAction}
-                        disabled={busy}
-                        aria-label={`حظر أسرة ${p.producerName}`}
-                        onClick={() => blockFamily(p)}
-                      >
-                        حظر الأسرة
-                      </button>
-                    )}
-                  </div>
-                </div>
-                {openId === p.id && (
-                  <ProductCategories
-                    key={p.categoryIds?.join()}
-                    product={p}
-                    categories={c.data?.categories || []}
-                    busy={busy || !c.data}
-                    onSave={(body) => r.write("PATCH", body)}
-                  />
-                )}
-              </div>
-            );
-          })}
+                  </Fragment>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       ) : (
         <p className={s.notice}>

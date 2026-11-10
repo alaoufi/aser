@@ -750,3 +750,82 @@
 .categoryLine > .categoryRow {
   width: auto;
 }
+
+/* جدول منتجات الإدارة: اسم المنتج · الأسرة المنتجة · الإجراءات */
+.tableWrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fffaf2;
+}
+.adminTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+.adminTable th {
+  position: sticky;
+  top: 0;
+  padding: 10px 12px;
+  background: #efe3cf;
+  color: var(--ink, #2e1d12);
+  font-size: 14px;
+  text-align: start;
+  white-space: nowrap;
+}
+.adminTable td {
+  padding: 10px 12px;
+  border-top: 1px solid var(--line);
+  vertical-align: top;
+}
+.adminTable td > strong,
+.adminTable td > a,
+.adminTable td > small,
+.adminTable td > em {
+  display: block;
+}
+.adminTable td > small {
+  color: #6b5a4a;
+}
+.adminTable td > a {
+  color: inherit;
+  font-weight: 600;
+}
+.adminTable td:last-child {
+  width: 46%;
+}
+.filterChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 4px 0 12px;
+}
+.filterChips button {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: #fff;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.filterChips button[aria-pressed="true"] {
+  background: var(--olive, #4f5d36);
+  border-color: var(--olive, #4f5d36);
+  color: #fff;
+}
+@media (max-width: 640px) {
+  .adminTable th,
+  .adminTable td {
+    padding: 8px;
+  }
+  .adminTable td:last-child {
+    width: 52%;
+  }
+  .adminTable .productActions button,
+  .adminTable .productActions a {
+    padding: 0 9px;
+    font-size: 13px;
+  }
+}

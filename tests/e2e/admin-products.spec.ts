@@ -76,6 +76,8 @@ test("admin products: explained, searchable, and each product can be hidden, fea
   await page.getByRole("button", { name: "المنتجات", exact: true }).click();
   const box = page.getByRole("region", { name: "المنتجات" });
   await expect(box).toContainText("حظر الأسرة");
+  for (const h of ["اسم المنتج", "الأسرة المنتجة", "الإجراءات"])
+    await expect(box.getByRole("columnheader", { name: h })).toBeVisible();
   await box.getByLabel("بحث باسم المنتج أو الأسرة").fill("كليجا");
   await expect(box.getByRole("button", { name: "إخفاء جريش" })).toHaveCount(0);
   await box.getByLabel("بحث باسم المنتج أو الأسرة").fill("");
@@ -83,6 +85,10 @@ test("admin products: explained, searchable, and each product can be hidden, fea
   page.once("dialog", (d) => d.accept("صور مضللة للمنتج"));
   await box.getByRole("button", { name: "إخفاء جريش" }).click();
   await expect(box.getByText("مخفي من الإدارة")).toBeVisible();
+  await box.getByRole("button", { name: /^المخفية/ }).click();
+  await expect(box.getByRole("button", { name: "إظهار جريش" })).toBeVisible();
+  await expect(box.getByRole("button", { name: "حذف كليجا" })).toHaveCount(0);
+  await box.getByRole("button", { name: /^الكل/ }).click();
   await box.getByRole("button", { name: "تمييز جريش" }).click();
   await expect(
     box.getByRole("button", { name: "إلغاء تمييز جريش" }),
