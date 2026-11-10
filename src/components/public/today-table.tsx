@@ -15,69 +15,133 @@ export function regionsOf(
   return [...map].map(([id, name]) => ({ id, name }));
 }
 
-/** باقة ورد على المائدة الفارغة، ترحيبًا إلى أن تصل العروض. */
+/** باقة ورد واقفة في مزهرية فخار، عائمة فوق المائدة الفارغة إلى أن تصل العروض. */
 function Bouquet() {
-  const flowers: [
+  // وردة جورية: طبقات بتلات متدرجة حول قلب ملتف.
+  const roses: [
+    x: number,
+    y: number,
+    r: number,
+    outer: string,
+    inner: string,
+  ][] = [
+    [90, 46, 19, "#b8321f", "#7f1d12"],
+    [60, 66, 15, "#e9836a", "#c2412b"],
+    [120, 68, 15, "#f2b8a0", "#d7745a"],
+    [76, 92, 13, "#c2412b", "#8f2416"],
+    [106, 96, 13, "#f4ead9", "#e0b48a"],
+  ];
+  // زهور صغيرة بخمس بتلات.
+  const blossoms: [
     x: number,
     y: number,
     r: number,
     petal: string,
     core: string,
   ][] = [
-    [60, 34, 15, "#c2412b", "#f0c35a"],
-    [38, 48, 12, "#f4ead9", "#d6a35c"],
-    [84, 50, 12, "#e58a6f", "#f4ead9"],
-    [50, 66, 10, "#d6a35c", "#9c2f1e"],
-    [74, 70, 10, "#c2412b", "#f0c35a"],
-    [28, 72, 9, "#e58a6f", "#f4ead9"],
-    [94, 76, 9, "#f4ead9", "#c2412b"],
+    [42, 92, 9, "#f4ead9", "#d6a35c"],
+    [138, 94, 9, "#f0c35a", "#b8321f"],
+    [92, 76, 8, "#f4ead9", "#c2412b"],
+    [52, 44, 7, "#e9836a", "#f4ead9"],
+    [130, 42, 7, "#f4ead9", "#d6a35c"],
   ];
+  const leaf = (x: number, y: number, angle: number) => (
+    <path
+      key={`${x}-${y}`}
+      d={`M${x} ${y}c-10-4-16-12-16-22 10 2 17 10 16 22z`}
+      fill="#5f7a3a"
+      transform={`rotate(${angle} ${x} ${y})`}
+    />
+  );
   return (
-    <svg
-      className="table-bouquet"
-      viewBox="0 0 120 150"
-      width="120"
-      height="150"
-      aria-hidden="true"
-    >
-      <g stroke="#4f5d36" strokeWidth="2.4" strokeLinecap="round" fill="none">
-        <path d="M60 128 60 40M60 120 40 50M60 120 84 52M60 122 50 68M60 122 74 72M60 124 30 74M60 124 92 78" />
-      </g>
-      <g fill="#6b7d45">
-        <path d="M60 96c-12-6-18-2-22 4 8 2 14 2 22-4z" />
-        <path d="M60 90c12-8 19-4 23 2-8 3-15 3-23-2z" />
-      </g>
-      {flowers.map(([x, y, r, petal, core]) => (
-        <g key={`${x}-${y}`}>
-          {[0, 72, 144, 216, 288].map((a) => (
-            <ellipse
-              key={a}
-              cx={x}
-              cy={y - r * 0.55}
-              rx={r * 0.48}
-              ry={r * 0.62}
-              fill={petal}
-              transform={`rotate(${a} ${x} ${y})`}
-            />
-          ))}
-          <circle cx={x} cy={y} r={r * 0.36} fill={core} />
+    <span className="table-bouquet-wrap" aria-hidden="true">
+      <svg
+        className="table-bouquet"
+        viewBox="0 0 180 250"
+        width="180"
+        height="250"
+        aria-hidden="true"
+      >
+        <g stroke="#4f6b30" strokeWidth="3" strokeLinecap="round" fill="none">
+          <path d="M90 150 90 60M90 150 62 70M90 150 120 72M90 150 76 96M90 150 106 100M90 152 44 96M90 152 136 98M90 150 54 48M90 150 128 46" />
         </g>
-      ))}
-      <path
-        d="M30 96h60l-20 50H50z"
-        fill="#f4ead9"
-        stroke="#d6a35c"
-        strokeWidth="2"
-      />
-      <path d="M30 96 50 146M90 96 70 146" stroke="#e8d6b4" strokeWidth="1.5" />
-      <path
-        d="M46 112c8 4 20 4 28 0M60 114c-8 8-14 10-18 8M60 114c8 8 14 10 18 8"
-        stroke="#9c2f1e"
-        strokeWidth="3"
-        fill="none"
-        strokeLinecap="round"
-      />
-    </svg>
+        {leaf(70, 120, -40)}
+        {leaf(112, 118, 40)}
+        {leaf(56, 104, -70)}
+        {leaf(126, 106, 70)}
+        {leaf(90, 112, 0)}
+        {blossoms.map(([x, y, r, petal, core]) => (
+          <g key={`b${x}-${y}`}>
+            {[0, 72, 144, 216, 288].map((a) => (
+              <ellipse
+                key={a}
+                cx={x}
+                cy={y - r * 0.55}
+                rx={r * 0.5}
+                ry={r * 0.66}
+                fill={petal}
+                transform={`rotate(${a} ${x} ${y})`}
+              />
+            ))}
+            <circle cx={x} cy={y} r={r * 0.36} fill={core} />
+          </g>
+        ))}
+        {roses.map(([x, y, r, outer, inner]) => (
+          <g key={`r${x}-${y}`}>
+            {[0, 60, 120, 180, 240, 300].map((a) => (
+              <circle
+                key={a}
+                cx={x + Math.cos((a * Math.PI) / 180) * r * 0.42}
+                cy={y + Math.sin((a * Math.PI) / 180) * r * 0.42}
+                r={r * 0.6}
+                fill={outer}
+              />
+            ))}
+            <circle cx={x} cy={y} r={r * 0.62} fill={inner} />
+            <path
+              d={`M${x - r * 0.35} ${y}a${r * 0.35} ${r * 0.35} 0 1 1 ${r * 0.35} ${r * 0.3}`}
+              stroke={outer}
+              strokeWidth="2"
+              fill="none"
+              strokeLinecap="round"
+            />
+          </g>
+        ))}
+        {/* مزهرية فخار بحزام سدو */}
+        <path
+          d="M66 150h48c0 8-6 12-6 18 0 14 22 24 22 46 0 22-18 32-40 32s-40-10-40-32c0-22 22-32 22-46 0-6-6-10-6-18z"
+          fill="#d08a58"
+          stroke="#f4ead9"
+          strokeOpacity="0.7"
+          strokeWidth="2"
+        />
+        <path
+          d="M66 150h48c0 8-6 12-6 18 0 14 22 24 22 46 0 22-18 32-40 32"
+          fill="#a85d34"
+          opacity="0.35"
+        />
+        <rect x="62" y="146" width="56" height="8" rx="4" fill="#8a4424" />
+        <path d="M52 204h76v12H52z" fill="#2e1d12" opacity="0.85" />
+        <path
+          d="M52 216l6-12 6 12 6-12 6 12 6-12 6 12 6-12 6 12 6-12 6 12 6-12 6 12z"
+          fill="#d6a35c"
+        />
+        <path
+          d="M58 210h4M70 210h4M82 210h4M94 210h4M106 210h4M118 210h4"
+          stroke="#b8321f"
+          strokeWidth="3"
+        />
+        <ellipse
+          cx="76"
+          cy="186"
+          rx="5"
+          ry="14"
+          fill="#f4ead9"
+          opacity="0.18"
+        />
+      </svg>
+      <span className="table-bouquet-shadow" />
+    </span>
   );
 }
 

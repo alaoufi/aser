@@ -6,7 +6,7 @@ import { deleteAccount, isDeleted } from "../src/server/account";
 import { sendMessage, startConversation } from "../src/server/chat";
 
 test(
-  "isolated account deletion: personal data is erased in-app, orders and chats stay anonymous, last admin is kept",
+  "isolated account deletion: everything of the account is deleted in-app except conversations kept for disputes, last admin is kept",
   { skip: process.env.JDATNA_TEST_DB !== "true" },
   async () => {
     const pool = db();
@@ -79,7 +79,7 @@ test(
           [customer.id],
         )
       ).rows[0];
-      assert.equal(u.name, "حساب محذوف");
+      assert.equal(u.name, customer.name + " (حساب محذوف)");
       assert.equal(u.phone, "deleted:" + customer.id);
       assert.equal(u.username, null);
       assert.ok(u.suspended_at);
@@ -92,18 +92,16 @@ test(
         ).rows[0].n,
         0,
       );
-      const order = (
-        await pool.query(
-          "SELECT user_id,customer_name,phone,notes FROM jdatna.order_requests WHERE id=$1",
-          [orderId],
-        )
-      ).rows[0];
-      assert.deepEqual(order, {
-        user_id: null,
-        customer_name: "عميل محذوف",
-        phone: "—",
-        notes: "",
-      });
+      assert.equal(
+        (
+          await pool.query(
+            "SELECT count(*)::int AS n FROM jdatna.order_requests WHERE id=$1",
+            [orderId],
+          )
+        ).rows[0].n,
+        0,
+        "his orders are deleted",
+      );
       assert.equal(
         (
           await pool.query(
@@ -111,14 +109,29 @@ test(
             [chat],
           )
         ).rows[0].body,
-        "رسالة من حساب محذوف",
+        "رقمي الخاص 0555",
+        "conversations stay as they were for disputes",
       );
       await assert.rejects(deleteAccount(customer, { confirm: "حذف حسابي" }), {
         status: 404,
       });
 
-      // الأسرة: ملفها ومنتجاتها تختفي وبيانات التواصل تُمسح.
+      // الأسرة: منتجاتها وعروضها وطلباتها تُحذف، ويبقى سطرها مخفيًا لربط محادثاتها.
+      const offerId = randomUUID();
+      await pool.query(
+        `INSERT INTO jdatna.offers(id,producer_id,product_id,title,description,terms,price,audience,meal,starts_at,ends_at,enabled) VALUES($1,$2,$3,'عرض','','شروط',15,'students','lunch',now(),now()+interval '1 day',true)`,
+        [offerId, familyId, productId],
+      );
       await deleteAccount(family, { confirm: "حذف حسابي" });
+      assert.equal(
+        (
+          await pool.query(
+            "SELECT count(*)::int AS n FROM jdatna.offers WHERE producer_id=$1",
+            [familyId],
+          )
+        ).rows[0].n,
+        0,
+      );
       const profile = (
         await pool.query(
           "SELECT status,name,phone,description FROM jdatna.producer_profiles WHERE id=$1",
@@ -133,11 +146,21 @@ test(
       });
       assert.equal(
         (
-          await pool.query("SELECT visible FROM jdatna.products WHERE id=$1", [
-            productId,
-          ])
-        ).rows[0].visible,
-        false,
+          await pool.query(
+            "SELECT count(*)::int AS n FROM jdatna.products WHERE producer_id=$1",
+            [familyId],
+          )
+        ).rows[0].n,
+        0,
+      );
+      assert.equal(
+        (
+          await pool.query(
+            "SELECT count(*)::int AS n FROM jdatna.messages WHERE conversation_id=$1",
+            [chat],
+          )
+        ).rows[0].n,
+        1,
       );
 
       // المدير الوحيد لا يحذف نفسه حتى يعيّن غيره.

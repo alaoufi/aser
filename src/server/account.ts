@@ -9,8 +9,9 @@ import { HttpError } from "./security";
 export const DELETE_CONFIRMATION = "حذف حسابي";
 
 /**
- * حذف الحساب من داخل التطبيق (شرط آبل وقوقل بلاي): تُمسح البيانات الشخصية نهائيًا
- * ويتعطل الحساب، وتبقى سجلات الطلبات والمحادثات عند الطرف الآخر بلا اسم ولا جوال.
+ * حذف الحساب من داخل التطبيق (شرط آبل وقوقل بلاي): يُحذف الحساب وكل متعلقاته نهائيًا
+ * (الطلبات، العروض، المنتجات، التقييمات، بيانات الأسرة ومستنداتها، الإشعارات، الجلسات)،
+ * وتبقى المحادثات وحدها كما هي للرجوع إليها عند النزاع.
  */
 export async function deleteAccount(user: SessionUser, input: unknown) {
   const { confirm } = z.object({ confirm: z.string() }).strict().parse(input);
@@ -37,34 +38,84 @@ export async function deleteAccount(user: SessionUser, input: unknown) {
         );
     }
 
-    // الأسرة المنتجة: تُخفى نهائيًا وتُمسح بياناتها ومستنداتها.
+    // كل متعلقات الحساب تُحذف نهائيًا، وتبقى المحادثات كما هي للرجوع إليها عند النزاع.
     const family = (
       await client.query(
         "SELECT id FROM jdatna.producer_profiles WHERE user_id=$1",
         [user.id],
       )
     ).rows[0] as { id: string } | undefined;
+    const del = (sql: string, args: unknown[]) => client.query(sql, args);
+    // طلباته كعميل، وتقييماته وتقييمات الآخرين له.
+    await del("DELETE FROM jdatna.order_requests WHERE user_id=$1", [user.id]);
+    await del(
+      "DELETE FROM jdatna.ratings WHERE rater_id=$1 OR (kind='member' AND target_id=$1)",
+      [user.id],
+    );
     if (family) {
-      await client.query(
-        `UPDATE jdatna.producer_profiles SET status='suspended',name='أسرة محذوفة',trade_name=NULL,description='',
-           neighborhood=NULL,phone='—',whatsapp=NULL,logo_url=NULL,cover_url=NULL,verified=false,updated_at=now()
-         WHERE id=$1`,
-        [family.id],
+      const products = (
+        await client.query(
+          "SELECT id FROM jdatna.products WHERE producer_id=$1",
+          [family.id],
+        )
+      ).rows.map((r) => r.id as string);
+      // طلبات الأسرة وعروضها ومنتجاتها وتقييماتها وكل بياناتها.
+      await del("DELETE FROM jdatna.order_requests WHERE producer_id=$1", [
+        family.id,
+      ]);
+      await del("DELETE FROM jdatna.offers WHERE producer_id=$1", [family.id]);
+      await del(
+        "DELETE FROM jdatna.ratings WHERE (kind='family' AND target_id=$1) OR (kind='product' AND target_id=ANY($2::uuid[]))",
+        [family.id, products],
       );
-      await client.query(
-        `UPDATE jdatna.products SET visible=false,status='unavailable',image_url=NULL,description='',story=NULL,updated_at=now()
-         WHERE producer_id=$1`,
-        [family.id],
-      );
+      await del("DELETE FROM jdatna.reports WHERE product_id=ANY($1::uuid[])", [
+        products,
+      ]);
       for (const table of [
-        "producer_private",
+        "product_categories",
+        "product_allergens",
+        "product_media",
+      ])
+        await del(
+          `DELETE FROM jdatna.${table} WHERE product_id=ANY($1::uuid[])`,
+          [products],
+        );
+      await del("DELETE FROM jdatna.products WHERE producer_id=$1", [
+        family.id,
+      ]);
+      for (const table of [
+        "producer_verifications",
+        "producer_categories",
         "producer_social_links",
+        "business_hours",
+        "delivery_areas",
         "pickup_locations",
-        "producer_zones",
+        "producer_coverage",
         "producer_coverage_details",
+        "producer_zones",
+        "producer_cooking_days",
+        "producer_private",
         "photo_library",
       ])
-        await client.query(`DELETE FROM jdatna.${table} WHERE producer_id=$1`, [
+        await del(`DELETE FROM jdatna.${table} WHERE producer_id=$1`, [
+          family.id,
+        ]);
+      const kept = (
+        await client.query(
+          "SELECT EXISTS(SELECT 1 FROM jdatna.conversations WHERE producer_id=$1) OR EXISTS(SELECT 1 FROM jdatna.reports WHERE producer_id=$1) AS kept",
+          [family.id],
+        )
+      ).rows[0].kept as boolean;
+      if (kept)
+        // يبقى سطر الأسرة فقط لربط محادثاتها وبلاغاتها، موقوفًا ومخفيًا بلا بيانات.
+        await del(
+          `UPDATE jdatna.producer_profiles SET status='suspended',name='أسرة محذوفة',trade_name=NULL,description='',
+             neighborhood=NULL,phone='—',whatsapp=NULL,logo_url=NULL,cover_url=NULL,verified=false,updated_at=now()
+           WHERE id=$1`,
+          [family.id],
+        );
+      else
+        await del("DELETE FROM jdatna.producer_profiles WHERE id=$1", [
           family.id,
         ]);
     }
@@ -74,26 +125,17 @@ export async function deleteAccount(user: SessionUser, input: unknown) {
         [user.id],
       )
     ).rows.map((r) => r.object_key as string);
-
-    // طلباته تبقى للأسرة بلا اسم ولا جوال ولا ملاحظات، ومنفصلة عن الحساب.
-    await client.query(
-      "UPDATE jdatna.order_requests SET user_id=NULL,customer_name='عميل محذوف',phone='—',notes='',updated_at=now() WHERE user_id=$1",
-      [user.id],
-    );
-    await client.query(
-      "UPDATE jdatna.messages SET body='رسالة من حساب محذوف' WHERE sender_id=$1",
-      [user.id],
-    );
     for (const sql of [
-      "DELETE FROM jdatna.ratings WHERE rater_id=$1",
+      "DELETE FROM jdatna.reports WHERE reporter_id=$1 AND producer_id IS NULL",
       "DELETE FROM jdatna.offer_preferences WHERE user_id=$1",
       "DELETE FROM jdatna.push_subscriptions WHERE user_id=$1",
       "DELETE FROM jdatna.sessions WHERE user_id=$1",
     ])
-      await client.query(sql, [user.id]);
+      await del(sql, [user.id]);
+    // يبقى سطر المستخدم لربط محادثاته، باسمه موسومًا بالحذف ليُعرف عند النزاع.
     await client.query(
-      `UPDATE jdatna.users SET name='حساب محذوف',phone=$2,username=NULL,password_hash=NULL,permissions='{}',
-         suspended_at=now(),deleted_at=now() WHERE id=$1`,
+      `UPDATE jdatna.users SET name=left(name,100)||' (حساب محذوف)',phone=$2,username=NULL,password_hash=NULL,
+         permissions='{}',suspended_at=now(),deleted_at=now() WHERE id=$1`,
       [user.id, `deleted:${user.id}`],
     );
     await client.query(

@@ -966,24 +966,51 @@ main::before {
   align-items: center;
   gap: 2px;
 }
-.table-bouquet {
-  width: clamp(84px, 22vw, 120px);
-  height: auto;
-  filter: drop-shadow(0 6px 6px #00000055);
-  animation: table-bouquet-sway 6s ease-in-out infinite;
-  transform-origin: 50% 100%;
+.table-bouquet-wrap {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  margin-bottom: 4px;
 }
-@keyframes table-bouquet-sway {
+.table-bouquet {
+  width: clamp(130px, 36vw, 180px);
+  height: auto;
+  filter: drop-shadow(0 10px 8px #00000040);
+  animation: table-bouquet-float 4.5s ease-in-out infinite;
+}
+.table-bouquet-shadow {
+  width: 46%;
+  height: 12px;
+  margin-top: -6px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, #00000066, transparent);
+  animation: table-bouquet-shadow 4.5s ease-in-out infinite;
+}
+@keyframes table-bouquet-float {
   0%,
   100% {
-    rotate: -2deg;
+    translate: 0 0;
+    rotate: -1deg;
   }
   50% {
-    rotate: 2deg;
+    translate: 0 -10px;
+    rotate: 1deg;
+  }
+}
+@keyframes table-bouquet-shadow {
+  0%,
+  100% {
+    scale: 1;
+    opacity: 1;
+  }
+  50% {
+    scale: 0.75;
+    opacity: 0.6;
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .table-bouquet {
+  .table-bouquet,
+  .table-bouquet-shadow {
     animation: none;
   }
 }
