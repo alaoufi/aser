@@ -18,9 +18,8 @@ test("store pages: support, account deletion and app verification files are publ
 }) => {
   await page.goto("/");
   const footer = page.locator("footer");
-  await expect(
-    footer.getByRole("link", { name: "حذف الحساب" }),
-  ).toHaveAttribute("href", "/account/delete");
+  // الدعم في التذييل البني، وحذف الحساب داخل الحساب لا في التذييل.
+  await expect(footer.getByRole("link", { name: "حذف الحساب" })).toHaveCount(0);
   await expect(
     footer.getByRole("link", { name: "الدعم والتواصل" }),
   ).toHaveAttribute("href", "/support");
@@ -59,6 +58,7 @@ test("a member deletes their account from inside the app after typing the confir
   const button = page.getByRole("button", { name: "حذف حسابي نهائيًا" });
   await expect(button).toBeDisabled();
   await page.getByLabel("اكتب «حذف حسابي» للتأكيد").fill("حذف حسابي");
+  page.once("dialog", (d) => d.accept());
   await button.click();
   await expect(page.getByText("حُذف حسابك نهائيًا")).toBeVisible();
   expect(body).toEqual({ confirm: "حذف حسابي" });
@@ -125,4 +125,34 @@ test("an empty today's table shows a bouquet waiting for offers", async ({
   const table = page.getByRole("region", { name: "مائدة اليوم" });
   await expect(table.locator(".table-bouquet")).toBeVisible();
   await expect(table).toContainText("بانتظار العروض");
+});
+
+test("inside my account, deleting takes three confirmations and can be cancelled", async ({
+  page,
+}) => {
+  await signedIn(page);
+  await page.route("**/api/orders", (r) => r.fulfill({ json: { orders: [] } }));
+  let deleted = 0;
+  await page.route("**/api/account/delete", async (r) => {
+    deleted++;
+    await r.fulfill({ json: { deleted: true } });
+  });
+  await page.goto("/orders");
+  await page.getByRole("button", { name: "حذف حسابي" }).click();
+  const warn = page.getByRole("alertdialog", { name: "هل تريد حذف حسابك؟" });
+  await expect(warn).toContainText("تبقى المحادثات فقط");
+  await warn.getByRole("button", { name: "تراجع، أبقِ حسابي" }).click();
+  await expect(warn).toHaveCount(0);
+
+  await page.getByRole("button", { name: "حذف حسابي" }).click();
+  await page.getByRole("button", { name: "نعم، أريد الحذف" }).click();
+  await page.getByLabel("اكتب «حذف حسابي» للتأكيد").fill("حذف حسابي");
+  // رفض التأكيد الأخير لا يحذف.
+  page.once("dialog", (d) => d.dismiss());
+  await page.getByRole("button", { name: "حذف حسابي نهائيًا" }).click();
+  await expect.poll(() => deleted).toBe(0);
+  page.once("dialog", (d) => d.accept());
+  await page.getByRole("button", { name: "حذف حسابي نهائيًا" }).click();
+  await expect(page.getByText("حُذف حسابك نهائيًا")).toBeVisible();
+  expect(deleted).toBe(1);
 });

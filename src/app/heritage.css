@@ -1816,3 +1816,31 @@ button.food-dish:focus-visible .food-dish-visual {
   color: #9d2929;
   margin: 0;
 }
+
+/* «حذف حسابي» داخل الحساب: زر هادئ أسفل الصفحة ثم خطوات التأكيد */
+.delete-account-section {
+  margin-top: 40px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--line);
+}
+.delete-account-open,
+.delete-account-cancel {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid #e3b9ae;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--rust, #9c2f1e);
+  font: inherit;
+  cursor: pointer;
+}
+.delete-account-cancel {
+  margin-top: 10px;
+  color: var(--muted);
+  border-color: var(--line);
+}
+.delete-account-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}

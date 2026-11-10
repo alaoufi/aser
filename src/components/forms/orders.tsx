@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { ORDERS_CHANGED } from "@/components/public/order-alert";
 import { RatingBox } from "./rating-box";
 import { OrderChatButton } from "./chat";
+import { DeleteAccountSection } from "./delete-account";
 import {
   AccountShell,
   Guard,
@@ -797,6 +798,7 @@ export function Orders({ producer = false }: { producer?: boolean }) {
             ))}
         </>
       )}
+      {!producer && session.user && <DeleteAccountSection />}
     </AccountShell>
   );
 }
