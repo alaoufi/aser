@@ -10,6 +10,7 @@ import {
   unreadTotal,
   unreadConversations,
   moderateConversation,
+  markDelivered,
 } from "../src/server/chat";
 
 test(
@@ -132,6 +133,20 @@ test(
         ],
       );
       assert.equal((await listConversations(outsider)).length, 0);
+
+      // علامات واتساب: أُرسلت ← وصلت (فحص الطرف الآخر) ← قُرئت (فتحه للمحادثة).
+      const tick = await sendMessage(customer, id, { body: "وصلت؟" });
+      const ms = (v: unknown) => new Date(v as string).getTime();
+      const at = ms(tick.createdAt);
+      let view = (await conversationMessages(customer, id)).conversation;
+      assert.ok(ms(view.otherDeliveredAt) < at, "sent only");
+      await markDelivered(family);
+      view = (await conversationMessages(customer, id)).conversation;
+      assert.ok(ms(view.otherDeliveredAt) >= at, "delivered");
+      assert.ok(ms(view.otherReadAt) < at, "not read yet");
+      await conversationMessages(family, id);
+      view = (await conversationMessages(customer, id)).conversation;
+      assert.ok(ms(view.otherReadAt) >= at, "read");
 
       // تنبيه الرسائل الجديدة: المجموع وأحدث المحادثات بنص آخر رسالة.
       await sendMessage(family, id, { body: "وصلك الطلب؟" });

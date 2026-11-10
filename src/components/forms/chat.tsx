@@ -23,6 +23,8 @@ type Thread = {
     producerSlug: string;
     blocked?: boolean;
     blockedByMe?: boolean;
+    otherReadAt?: string;
+    otherDeliveredAt?: string;
   };
   messages: Message[];
 };
@@ -209,7 +211,22 @@ function Conversation({ id, onBack }: { id: string; onBack: () => void }) {
     const timer = setInterval(() => {
       const after = last ? `?after=${encodeURIComponent(last)}` : "";
       api<Thread>(`/api/conversations/${encodeURIComponent(id)}${after}`)
-        .then((d) => merge(d.messages))
+        .then((d) => {
+          merge(d.messages);
+          // تحديث علامات الوصول والقراءة لرسائلي السابقة.
+          setThread((t) =>
+            t
+              ? {
+                  ...t,
+                  conversation: {
+                    ...t.conversation,
+                    otherReadAt: d.conversation.otherReadAt,
+                    otherDeliveredAt: d.conversation.otherDeliveredAt,
+                  },
+                }
+              : t,
+          );
+        })
         .catch(() => {});
     }, 4000);
     return () => clearInterval(timer);
@@ -349,7 +366,16 @@ function Conversation({ id, onBack }: { id: string; onBack: () => void }) {
               {label && <p className={c.day}>{label}</p>}
               <p className={`${c.bubble} ${m.mine ? c.mine : ""}`}>
                 {m.body}
-                <time dateTime={m.createdAt}>{time(m.createdAt)}</time>
+                <span className={c.meta}>
+                  <time dateTime={m.createdAt}>{time(m.createdAt)}</time>
+                  {m.mine && (
+                    <Ticks
+                      at={m.createdAt}
+                      read={thread.conversation.otherReadAt}
+                      delivered={thread.conversation.otherDeliveredAt}
+                    />
+                  )}
+                </span>
               </p>
             </div>
           );
@@ -401,6 +427,57 @@ function Conversation({ id, onBack }: { id: string; onBack: () => void }) {
         </form>
       )}
     </>
+  );
+}
+
+/** علامات الرسالة كواتساب: ✓ أُرسلت، ✓✓ رمادي وصلت، ✓✓ أزرق قُرئت. */
+function Ticks({
+  at,
+  read,
+  delivered,
+}: {
+  at: string;
+  read?: string;
+  delivered?: string;
+}) {
+  const t = Date.parse(at);
+  const state =
+    read && Date.parse(read) >= t
+      ? "read"
+      : delivered && Date.parse(delivered) >= t
+        ? "delivered"
+        : "sent";
+  const label =
+    state === "read" ? "قُرئت" : state === "delivered" ? "وصلت" : "أُرسلت";
+  return (
+    <span
+      className={`${c.ticks} ${state === "read" ? c.ticksRead : ""}`}
+      role="img"
+      aria-label={label}
+      title={label}
+      data-state={state}
+    >
+      <svg viewBox="0 0 18 12" width="17" height="11" aria-hidden="true">
+        <path
+          d="M1 6.5 4.5 10 11 2"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.7"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        {state !== "sent" && (
+          <path
+            d="M7.5 9.2 8.3 10 14.8 2"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.7"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        )}
+      </svg>
+    </span>
   );
 }
 

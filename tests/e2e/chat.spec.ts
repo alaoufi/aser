@@ -115,3 +115,79 @@ test("visitors are asked to sign in before messaging a family", async ({
   await page.goto("/messages");
   await expect(page.getByText("يلزم تسجيل الدخول للمتابعة")).toBeVisible();
 });
+
+test("my messages show WhatsApp ticks: sent, delivered (two grey) and read (two blue)", async ({
+  page,
+}) => {
+  const id = "33333333-3333-4333-8333-333333333333";
+  await page.route("**/api/session", (r) =>
+    r.fulfill({
+      json: {
+        user: {
+          id: "c1",
+          name: "عميل",
+          phone: "+966500000001",
+          role: "customer",
+        },
+        registrationOpen: true,
+      },
+    }),
+  );
+  await page.route("**/api/conversations", (r) =>
+    r.fulfill({ json: { conversations: [] } }),
+  );
+  await page.route(`**/api/conversations/${id}**`, (r) =>
+    r.fulfill({
+      json: {
+        conversation: {
+          id,
+          title: "أسرة العلامات",
+          side: "customer",
+          producerSlug: "family-ticks",
+          otherReadAt: "2026-11-09T09:01:00.000Z",
+          otherDeliveredAt: "2026-11-09T09:03:00.000Z",
+        },
+        messages: new URL(r.request().url()).searchParams.get("after")
+          ? []
+          : [
+              {
+                id: "a",
+                body: "قرأتها",
+                mine: true,
+                createdAt: "2026-11-09T09:00:00.000Z",
+              },
+              {
+                id: "b",
+                body: "وصلت فقط",
+                mine: true,
+                createdAt: "2026-11-09T09:02:00.000Z",
+              },
+              {
+                id: "c",
+                body: "أُرسلت فقط",
+                mine: true,
+                createdAt: "2026-11-09T09:05:00.000Z",
+              },
+              {
+                id: "d",
+                body: "رد الأسرة",
+                mine: false,
+                createdAt: "2026-11-09T09:06:00.000Z",
+              },
+            ],
+      },
+    }),
+  );
+  await page.goto(`/messages?c=${id}`);
+  const bubble = (text: string) => page.locator("p", { hasText: text });
+  await expect(
+    bubble("قرأتها").getByRole("img", { name: "قُرئت" }),
+  ).toBeVisible();
+  await expect(
+    bubble("وصلت فقط").getByRole("img", { name: "وصلت" }),
+  ).toBeVisible();
+  await expect(
+    bubble("أُرسلت فقط").getByRole("img", { name: "أُرسلت" }),
+  ).toBeVisible();
+  await expect(bubble("رد الأسرة").getByRole("img")).toHaveCount(0);
+});

@@ -104,8 +104,25 @@ export async function unreadTotal(user: SessionUser) {
   return (await listConversations(user)).reduce((n, c) => n + c.unread, 0);
 }
 
+/**
+ * وصلت رسائل الطرف الآخر لجهاز المستخدم (✓✓ رمادي عند المرسل): يُسجَّل عند كل فحص
+ * من التطبيق المفتوح أو عند عرض قائمة المحادثات.
+ */
+export async function markDelivered(user: SessionUser) {
+  await db().query(
+    "UPDATE jdatna.conversations SET customer_delivered_at=now() WHERE customer_id=$1",
+    [user.id],
+  );
+  await db().query(
+    `UPDATE jdatna.conversations c SET producer_delivered_at=now()
+     FROM jdatna.producer_profiles p WHERE p.id=c.producer_id AND p.user_id=$1`,
+    [user.id],
+  );
+}
+
 /** تنبيه الرسائل الجديدة: مجموع غير المقروء وأحدث المحادثات التي فيها جديد. */
 export async function unreadConversations(user: SessionUser) {
+  await markDelivered(user);
   const unread = (await listConversations(user)).filter((c) => c.unread > 0);
   return {
     total: unread.reduce((n, c) => n + c.unread, 0),
@@ -131,6 +148,7 @@ async function participant(
   const row = (
     await client.query(
       `SELECT c.id,c.customer_id,p.user_id AS producer_user,c.blocked_by,c.producer_id,
+        c.customer_read_at,c.producer_read_at,c.customer_delivered_at,c.producer_delivered_at,
         CASE WHEN c.customer_id=$1 THEN COALESCE(p.trade_name,p.name) ELSE u.name END AS title,
         p.slug AS "producerSlug"
        FROM jdatna.conversations c
@@ -150,6 +168,10 @@ async function participant(
     side: "customer" | "producer";
     blocked_by: string | null;
     producer_id: string;
+    customer_read_at: Date;
+    producer_read_at: Date;
+    customer_delivered_at: Date;
+    producer_delivered_at: Date;
   };
 }
 
@@ -173,10 +195,12 @@ export async function conversationMessages(
         since ? [c.id, user.id, since] : [c.id, user.id],
       )
     ).rows as ChatMessage[];
+    // فتح المحادثة = قراءة واستلام (✓✓ أزرق عند الطرف الآخر).
     await client.query(
-      `UPDATE jdatna.conversations SET ${c.side === "customer" ? "customer_read_at" : "producer_read_at"}=now() WHERE id=$1`,
+      `UPDATE jdatna.conversations SET ${c.side === "customer" ? "customer_read_at=now(),customer_delivered_at=now()" : "producer_read_at=now(),producer_delivered_at=now()"} WHERE id=$1`,
       [c.id],
     );
+    const other = c.side === "customer" ? "producer" : "customer";
     return {
       conversation: {
         id: c.id,
@@ -185,6 +209,9 @@ export async function conversationMessages(
         producerSlug: c.producerSlug,
         blocked: Boolean(c.blocked_by),
         blockedByMe: c.blocked_by === user.id,
+        // متى قرأ الطرف الآخر ومتى استلم: رسائلي قبلها مقروءة أو مستلمة.
+        otherReadAt: c[`${other}_read_at`],
+        otherDeliveredAt: c[`${other}_delivered_at`],
       },
       messages: rows,
     };
