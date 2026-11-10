@@ -93,17 +93,17 @@ test("admin edits, deletes and restores visible site texts", async ({
   expect(sent[2]).toEqual({ key: "table.empty", value: "" });
 
   // إخفاء العنوان أو النص دون مسحه، ثم إظهاره.
-  const titleRow = page.getByLabel("عنوان المائدة").locator("..");
-  await titleRow.getByRole("checkbox", { name: "إخفاء العنوان" }).check();
+  // المائدة: عنوانها ونصها في بطاقة واحدة بخياري الإخفاء.
+  const table = page.getByRole("group", { name: "إخفاء عنوان المائدة" });
+  await expect(
+    table.getByRole("checkbox", { name: "إخفاء النص" }),
+  ).toBeVisible();
+  await table.getByRole("checkbox", { name: "إخفاء العنوان" }).check();
   await expect.poll(() => sent.length).toBe(4);
   expect(sent[3]).toEqual({ key: "table.title", hidden: true });
   await expect(page.getByText("(مخفي)")).toBeVisible();
   await expect(page.getByLabel("عنوان المائدة")).toHaveValue("مائدة اليوم");
-  await page
-    .getByLabel("عنوان المائدة")
-    .locator("..")
-    .getByRole("checkbox", { name: "إخفاء العنوان" })
-    .uncheck();
+  await table.getByRole("checkbox", { name: "إخفاء العنوان" }).uncheck();
   await expect.poll(() => sent.length).toBe(5);
   expect(sent[4]).toEqual({ key: "table.title", hidden: false });
   // الفقرة: «إخفاء العنوان» و«إخفاء النص» متجاوران أعلى بطاقتها.

@@ -109,6 +109,7 @@ export const siteTextTitleKeys: ReadonlySet<SiteTextKey> = new Set([
 /** الفقرات: كل عنوان مع نصه، فيظهر لكل فقرة «إخفاء العنوان» و«إخفاء النص» معًا. */
 export const siteTextParagraphs: ReadonlyMap<SiteTextKey, SiteTextKey> =
   new Map<SiteTextKey, SiteTextKey>([
+    ["table.title", "table.empty"],
     ["welcome.title", "welcome.subtitle"],
     ["browse.title", "browse.subtitle"],
     ["about.title", "about.lead"],
