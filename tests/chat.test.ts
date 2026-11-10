@@ -9,6 +9,7 @@ import {
   sendMessage,
   unreadTotal,
   unreadConversations,
+  moderateConversation,
 } from "../src/server/chat";
 
 test(
@@ -174,7 +175,65 @@ test(
       await assert.rejects(
         startConversation(customer, { order: orderId, producer: "x" }),
       );
+
+      // الحظر يوقف الإرسال للطرفين، ولا يلغيه إلا من حظر، والبلاغ يصل للإدارة.
+      assert.deepEqual(
+        await moderateConversation(customer, id, { action: "block" }),
+        {
+          reported: false,
+          blocked: true,
+          blockedByMe: true,
+        },
+      );
+      await assert.rejects(sendMessage(family, id, { body: "مرحبا" }), {
+        status: 403,
+      });
+      await assert.rejects(sendMessage(customer, id, { body: "مرحبا" }), {
+        status: 403,
+      });
+      assert.equal(
+        (await conversationMessages(family, id)).conversation.blocked,
+        true,
+      );
+      assert.equal(
+        (await conversationMessages(family, id)).conversation.blockedByMe,
+        false,
+      );
+      await assert.rejects(
+        moderateConversation(family, id, { action: "unblock" }),
+        { status: 403 },
+      );
+      await assert.rejects(
+        moderateConversation(outsider, id, { action: "block" }),
+        { status: 404 },
+      );
+      await moderateConversation(customer, id, { action: "unblock" });
+      await sendMessage(family, id, { body: "تم" });
+      await assert.rejects(
+        moderateConversation(family, id, { action: "report", reason: "قصير" }),
+      );
+      const reported = await moderateConversation(family, id, {
+        action: "report",
+        reason: "رسائل مزعجة متكررة من العميل",
+      });
+      assert.deepEqual(reported, {
+        reported: true,
+        blocked: false,
+        blockedByMe: false,
+      });
+      const report = (
+        await pool.query(
+          "SELECT reporter_id,producer_id,reason FROM jdatna.reports WHERE producer_id=$1",
+          [familyId],
+        )
+      ).rows[0];
+      assert.equal(report.reporter_id, family.id);
+      assert.match(report.reason, /بلاغ محادثة/);
     } finally {
+      await pool.query(
+        "DELETE FROM jdatna.reports WHERE producer_id=ANY($1::uuid[])",
+        [[familyId, pendingId]],
+      );
       if (ids.product) {
         await pool.query(
           "DELETE FROM jdatna.order_requests WHERE product_id=$1",

@@ -80,6 +80,17 @@ function AccountNavigation() {
     </nav>
   );
 }
+/** أسفل صفحات الحساب: الدعم وحذف الحساب في متناول المستخدم دائمًا. */
+function AccountFooter() {
+  const { user } = useSession();
+  if (!user) return null;
+  return (
+    <p className={s.accountFooter}>
+      <Link href="/support">الدعم والتواصل</Link>
+      <Link href="/account/delete">حذف حسابي</Link>
+    </p>
+  );
+}
 export function AccountShell({
   children,
   navigation = true,
@@ -91,6 +102,7 @@ export function AccountShell({
     <section className={s.shell}>
       {navigation && <AccountNavigation />}
       {children}
+      {navigation && <AccountFooter />}
     </section>
   );
 }

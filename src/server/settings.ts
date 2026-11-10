@@ -162,3 +162,71 @@ export async function setSiteText(user: SessionUser, input: unknown) {
     return { key, value: value ?? siteTextDefaults[key as keyof SiteTexts] };
   });
 }
+
+/** ربط تطبيقي الجوال بالموقع: يُعبَّأ من الإدارة بعد إنشاء التطبيق في المتجر. */
+export type AppLinks = {
+  androidPackage: string;
+  androidFingerprints: string[];
+  iosAppIds: string[];
+};
+const emptyAppLinks: AppLinks = {
+  androidPackage: "",
+  androidFingerprints: [],
+  iosAppIds: [],
+};
+const appLinksSchema = z
+  .object({
+    androidPackage: z
+      .string()
+      .trim()
+      .regex(/^$|^[a-zA-Z][\w]*(\.[a-zA-Z][\w]*)+$/, "اسم الحزمة غير صالح"),
+    androidFingerprints: z
+      .array(
+        z
+          .string()
+          .trim()
+          .toUpperCase()
+          .regex(/^([0-9A-F]{2}:){31}[0-9A-F]{2}$/, "بصمة SHA-256 غير صالحة"),
+      )
+      .max(5),
+    iosAppIds: z
+      .array(
+        z
+          .string()
+          .trim()
+          .regex(/^[A-Z0-9]{10}\.[a-zA-Z0-9.-]+$/, "معرّف تطبيق آبل غير صالح"),
+      )
+      .max(5),
+  })
+  .strict();
+
+export async function getAppLinks(): Promise<AppLinks> {
+  if (!databaseConfigured()) return emptyAppLinks;
+  try {
+    const raw = (
+      await db().query(
+        "SELECT value FROM jdatna.site_settings WHERE key='app:links'",
+      )
+    ).rows[0]?.value;
+    return raw ? appLinksSchema.parse(JSON.parse(raw)) : emptyAppLinks;
+  } catch {
+    return emptyAppLinks;
+  }
+}
+
+export async function setAppLinks(user: SessionUser, input: unknown) {
+  if (!can(user, "content")) throw new HttpError(403, "لا تملك صلاحية الإدارة");
+  const value = appLinksSchema.parse(input);
+  return transaction(async (client) => {
+    await client.query(
+      `INSERT INTO jdatna.site_settings(key,value,updated_at,updated_by) VALUES('app:links',$1,now(),$2)
+       ON CONFLICT(key) DO UPDATE SET value=EXCLUDED.value,updated_at=now(),updated_by=EXCLUDED.updated_by`,
+      [JSON.stringify(value), user.id],
+    );
+    await client.query(
+      "INSERT INTO jdatna.admin_audit_logs(id,actor_id,action,target_id,details) VALUES($1,$2,'site.app-links',NULL,$3)",
+      [randomUUID(), user.id, JSON.stringify(value)],
+    );
+    return value;
+  });
+}

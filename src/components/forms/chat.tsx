@@ -21,6 +21,8 @@ type Thread = {
     title: string;
     side: "customer" | "producer";
     producerSlug: string;
+    blocked?: boolean;
+    blockedByMe?: boolean;
   };
   messages: Message[];
 };
@@ -140,7 +142,46 @@ function Conversation({ id, onBack }: { id: string; onBack: () => void }) {
   const [error, setError] = useState("");
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
+  const [reporting, setReporting] = useState(false);
+  const [notice, setNotice] = useState("");
   const bottom = useRef<HTMLDivElement>(null);
+  const menu = useRef<HTMLDetailsElement>(null);
+  async function moderate(body: Record<string, unknown>) {
+    setError("");
+    try {
+      const r = await api<{
+        blocked: boolean;
+        blockedByMe: boolean;
+        reported?: boolean;
+      }>(`/api/conversations/${encodeURIComponent(id)}`, {
+        method: "PATCH",
+        body: JSON.stringify(body),
+      });
+      setThread((t) =>
+        t
+          ? {
+              ...t,
+              conversation: {
+                ...t.conversation,
+                blocked: r.blocked,
+                blockedByMe: r.blockedByMe,
+              },
+            }
+          : t,
+      );
+      setNotice(
+        r.reported
+          ? "وصل بلاغك للإدارة وستراجعه. شكرًا لك."
+          : r.blocked
+            ? "حُظرت المحادثة؛ لا يستطيع أي طرف الإرسال فيها."
+            : "أُلغي الحظر.",
+      );
+      setReporting(false);
+      if (menu.current) menu.current.open = false;
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
   const merge = (incoming: Message[]) =>
     setThread((t) => {
       if (!t) return t;
@@ -229,7 +270,72 @@ function Conversation({ id, onBack }: { id: string; onBack: () => void }) {
             thread.conversation.title
           )}
         </h2>
+        <details className={c.safety} ref={menu}>
+          <summary aria-label="خيارات المحادثة">⋮</summary>
+          <div className={c.safetyMenu}>
+            <button type="button" onClick={() => setReporting(true)}>
+              إبلاغ عن المحادثة
+            </button>
+            {thread.conversation.blockedByMe ? (
+              <button
+                type="button"
+                onClick={() => moderate({ action: "unblock" })}
+              >
+                إلغاء الحظر
+              </button>
+            ) : (
+              !thread.conversation.blocked && (
+                <button
+                  type="button"
+                  onClick={() => moderate({ action: "block" })}
+                >
+                  حظر المحادثة
+                </button>
+              )
+            )}
+          </div>
+        </details>
       </div>
+      {reporting && (
+        <form
+          className={c.report}
+          aria-label="إبلاغ عن المحادثة"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const f = new FormData(e.currentTarget);
+            moderate({
+              action: "report",
+              reason: String(f.get("reason") ?? ""),
+              block: f.get("block") === "on",
+            });
+          }}
+        >
+          <label htmlFor="chat-report-reason">سبب البلاغ</label>
+          <textarea
+            id="chat-report-reason"
+            name="reason"
+            minLength={10}
+            maxLength={1000}
+            required
+            rows={3}
+          />
+          <label className={c.reportBlock}>
+            <input type="checkbox" name="block" defaultChecked /> حظر المحادثة
+            أيضًا
+          </label>
+          <div className={c.reportActions}>
+            <button type="submit">إرسال البلاغ</button>
+            <button type="button" onClick={() => setReporting(false)}>
+              إلغاء
+            </button>
+          </div>
+        </form>
+      )}
+      {notice && (
+        <p role="status" className={c.safetyNotice}>
+          {notice}
+        </p>
+      )}
       <div className={c.messages} aria-live="polite">
         {thread.messages.length === 0 && (
           <p className={c.day}>اكتب رسالتك الأولى. المحادثة محفوظة لكما.</p>
@@ -251,41 +357,49 @@ function Conversation({ id, onBack }: { id: string; onBack: () => void }) {
         <div ref={bottom} />
       </div>
       {error && <p className={c.error}>{error}</p>}
-      <form className={c.composer} onSubmit={send}>
-        <label className="sr-only" htmlFor="chat-message">
-          اكتب رسالة
-        </label>
-        <textarea
-          id="chat-message"
-          rows={1}
-          maxLength={2000}
-          placeholder="اكتب رسالة"
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              e.currentTarget.form?.requestSubmit();
-            }
-          }}
-        />
-        <button
-          className={c.send}
-          disabled={busy || !draft.trim()}
-          aria-label="إرسال"
-        >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-            aria-hidden="true"
-            style={{ transform: "scaleX(-1)" }}
+      {thread.conversation.blocked ? (
+        <p className={c.blockedNote}>
+          {thread.conversation.blockedByMe
+            ? "حظرت هذه المحادثة. يمكنك إلغاء الحظر من زر الخيارات ⋮."
+            : "لا يمكن الإرسال في هذه المحادثة."}
+        </p>
+      ) : (
+        <form className={c.composer} onSubmit={send}>
+          <label className="sr-only" htmlFor="chat-message">
+            اكتب رسالة
+          </label>
+          <textarea
+            id="chat-message"
+            rows={1}
+            maxLength={2000}
+            placeholder="اكتب رسالة"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                e.currentTarget.form?.requestSubmit();
+              }
+            }}
+          />
+          <button
+            className={c.send}
+            disabled={busy || !draft.trim()}
+            aria-label="إرسال"
           >
-            <path d="M2 21l21-9L2 3v7l15 2-15 2z" />
-          </svg>
-        </button>
-      </form>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              aria-hidden="true"
+              style={{ transform: "scaleX(-1)" }}
+            >
+              <path d="M2 21l21-9L2 3v7l15 2-15 2z" />
+            </svg>
+          </button>
+        </form>
+      )}
     </>
   );
 }

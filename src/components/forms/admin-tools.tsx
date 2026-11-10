@@ -871,3 +871,89 @@ function TextRow({
     </div>
   );
 }
+
+type AppLinksData = {
+  androidPackage: string;
+  androidFingerprints: string[];
+  iosAppIds: string[];
+};
+/** ربط تطبيقي قوقل بلاي وآبل بالموقع: يُعبَّأ مرة بعد إنشاء التطبيق في المتجر. */
+export function AppLinksAdmin() {
+  const r = useResource<{ links: AppLinksData }>("/api/admin/app-links");
+  const links = r.data?.links;
+  const lines = (v: FormDataEntryValue | null) =>
+    String(v ?? "")
+      .split(/\s*[\n,]\s*/)
+      .map((x) => x.trim())
+      .filter(Boolean);
+  return (
+    <section>
+      <h2>تطبيق الجوال</h2>
+      <p className={s.muted}>
+        التطبيق يعرض الموقع نفسه، فكل تعديل ننشره يظهر فيه فورًا دون تحديث
+        المتجر. هذه البيانات تُعبَّأ مرة واحدة بعد إنشاء التطبيق، وتُنشر في
+        <bdi> /.well-known/assetlinks.json </bdi>و
+        <bdi> /.well-known/apple-app-site-association</bdi>.
+      </p>
+      <Message error={r.error} success={r.success} />
+      {!links && !r.error ? (
+        <p role="status">جارٍ التحميل…</p>
+      ) : links ? (
+        <form
+          key={JSON.stringify(links)}
+          className={`${s.card} ${s.form}`}
+          onSubmit={(e) => {
+            e.preventDefault();
+            const f = new FormData(e.currentTarget);
+            r.write("PUT", {
+              androidPackage: String(f.get("androidPackage") ?? "").trim(),
+              androidFingerprints: lines(f.get("androidFingerprints")),
+              iosAppIds: lines(f.get("iosAppIds")),
+            });
+          }}
+        >
+          <div className={s.field}>
+            <label htmlFor="app-android-package">
+              اسم حزمة أندرويد (Package name)
+            </label>
+            <input
+              id="app-android-package"
+              name="androidPackage"
+              dir="ltr"
+              placeholder="com.jdatna.app"
+              defaultValue={links.androidPackage}
+            />
+          </div>
+          <div className={s.field}>
+            <label htmlFor="app-android-fingerprints">
+              بصمة شهادة التوقيع SHA-256 من Play Console (سطر لكل بصمة)
+            </label>
+            <textarea
+              id="app-android-fingerprints"
+              name="androidFingerprints"
+              dir="ltr"
+              rows={3}
+              defaultValue={links.androidFingerprints.join("\n")}
+            />
+          </div>
+          <div className={s.field}>
+            <label htmlFor="app-ios-ids">
+              معرّف تطبيق آبل TeamID.BundleID (سطر لكل معرّف)
+            </label>
+            <textarea
+              id="app-ios-ids"
+              name="iosAppIds"
+              dir="ltr"
+              rows={2}
+              placeholder="ABCDE12345.com.jdatna.app"
+              defaultValue={links.iosAppIds.join("\n")}
+            />
+          </div>
+          <button className={s.button} disabled={r.busy}>
+            {r.busy ? "جارٍ الحفظ…" : "حفظ بيانات التطبيق"}
+          </button>
+        </form>
+      ) : null}
+    </section>
+  );
+}

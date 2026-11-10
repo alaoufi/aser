@@ -959,6 +959,75 @@ main::before {
   color: #fbf3e4;
   text-shadow: 0 1px 2px #00000080;
 }
+.table-empty p {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+/* الباقة واقفة فوق سطح الطاولة المائل (خارج الدوران) فتظهر ثلاثية الأبعاد،
+   وظلها مرسوم على السطح نفسه فيتبع ميله. */
+.table-3d > .table-bouquet-wrap {
+  position: absolute;
+  left: 50%;
+  bottom: calc(34px + 40%);
+  z-index: 2;
+  translate: -50% 0;
+  pointer-events: none;
+}
+.table-bouquet {
+  display: block;
+  width: clamp(130px, 36vw, 200px);
+  height: auto;
+  filter: drop-shadow(3px 4px 3px #00000035);
+  transform-origin: 50% 100%;
+}
+.table-3d .table-empty {
+  justify-content: flex-end;
+  min-height: clamp(190px, 46vw, 230px);
+  padding-bottom: clamp(18px, 6vw, 34px);
+}
+.table-bouquet-shadow {
+  display: none;
+  position: absolute;
+  top: 44%;
+  left: 50%;
+  translate: -50% -50%;
+  width: clamp(80px, 22vw, 120px);
+  height: 24px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, #00000070, transparent);
+  animation: table-bouquet-shadow 4.5s ease-in-out infinite;
+}
+@keyframes table-bouquet-float {
+  0%,
+  100% {
+    translate: 0 0;
+    rotate: -1deg;
+  }
+  50% {
+    translate: 0 -10px;
+    rotate: 1deg;
+  }
+}
+@keyframes table-bouquet-shadow {
+  0%,
+  100% {
+    scale: 1;
+    opacity: 1;
+  }
+  50% {
+    scale: 0.75;
+    opacity: 0.6;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .table-bouquet,
+  .table-bouquet-shadow {
+    animation: none;
+  }
+}
 .table-empty small {
   font-family: var(--display);
   font-size: 13px;
@@ -1712,4 +1781,38 @@ button.food-dish:focus-visible .food-dish-visual {
 }
 .push-bar-actions .button {
   min-height: 40px;
+}
+
+/* حذف الحساب */
+.delete-account {
+  display: grid;
+  gap: 10px;
+  max-width: 520px;
+  margin-top: 24px;
+  padding: 18px;
+  border: 1px solid #e3b9ae;
+  border-radius: 12px;
+  background: #fff6f3;
+}
+.delete-account h2 {
+  margin: 0;
+}
+.delete-account input {
+  min-height: 46px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font: inherit;
+}
+.delete-account .button.danger {
+  background: var(--rust, #9c2f1e);
+  border-color: var(--rust, #9c2f1e);
+  color: #fff;
+}
+.delete-account .button.danger:disabled {
+  opacity: 0.5;
+}
+.delete-account-error {
+  color: #9d2929;
+  margin: 0;
 }
