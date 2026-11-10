@@ -19,6 +19,8 @@ test("family cards keep long Arabic names, description and delivery badges reada
   } as Producer;
   const html = renderToStaticMarkup(createElement(ProducerCard, { producer }));
   await page.goto("/producers");
+  // ننتظر اكتمال التحميل حتى لا تستبدل React البطاقات المحقونة أثناء الترطيب.
+  await page.waitForLoadState("networkidle");
   await page
     .locator(".empty-state, .producer-grid")
     .first()

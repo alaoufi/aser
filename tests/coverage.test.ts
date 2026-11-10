@@ -28,7 +28,8 @@ test("hierarchy permits only real administrative parent levels", () => {
   assert.equal(validCoverageParent("governorate", "region"), true);
   assert.equal(validCoverageParent("city", "governorate"), true);
   assert.equal(validCoverageParent("neighborhood", "city"), true);
-  assert.equal(validCoverageParent("neighborhood", "center"), true);
+  // الحي داخل نطاق المدينة والمركز خارجه: الحي الجديد يتبع المدينة فقط.
+  assert.equal(validCoverageParent("neighborhood", "center"), false);
   assert.equal(validCoverageParent("center", "region"), false);
   assert.equal(validCoverageParent("city", "city"), false);
 });
@@ -310,22 +311,22 @@ test(
         })
       ).id;
       created.push(center);
+      await assert.rejects(
+        curateCoverage(users[2], {
+          kind: "neighborhood",
+          parentId: center,
+          name: "Neighborhood under center",
+        }),
+        { status: 400 },
+      );
       const neighborhood = (
         await curateCoverage(users[2], {
           kind: "neighborhood",
-          parentId: center,
+          parentId: cityNode,
           name: "Test neighborhood",
         })
       ).id;
       created.push(neighborhood);
-      const cityHood = (
-        await curateCoverage(users[2], {
-          kind: "neighborhood",
-          parentId: cityNode,
-          name: "Direct city neighborhood",
-        })
-      ).id;
-      created.push(cityHood);
       await saveCoverage(users[0], {
         areas: [
           { nodeId: center, fee: 12.5 },
