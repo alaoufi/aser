@@ -48,7 +48,9 @@ test("a member rates an ordered product with shiny stars and the count shows", a
     }),
   );
   let sent: unknown;
-  let view = { average: 4, count: 3, mine: null, canRate: true };
+  const oath =
+    "أقسم بالله العلي العظيم أني تعاملت مع هذه الأسرة وتقييمي صادق وما قلت إلا الصدق";
+  let view = { average: 4, count: 3, mine: null, canRate: true, oath };
   await page.route("**/api/ratings**", async (r) => {
     if (r.request().method() === "PUT") {
       sent = r.request().postDataJSON();
@@ -64,13 +66,18 @@ test("a member rates an ordered product with shiny stars and the count shows", a
   ).toBeVisible();
   await expect(box.getByRole("group", { name: "رأيك مهم؟" })).toBeVisible();
   await box.getByRole("radio", { name: "5 من 5" }).check();
-  await box.getByRole("button", { name: "إرسال التقييم" }).click();
+  // لا يُرسل التقييم قبل الموافقة على القسم.
+  const send = box.getByRole("button", { name: "إرسال التقييم" });
+  await expect(send).toBeDisabled();
+  await box.getByRole("checkbox", { name: oath }).check();
+  await send.click();
   await expect(box.getByText("شكرًا، تم حفظ تقييمك.")).toBeVisible();
   expect(sent).toEqual({
     kind: "product",
     target: "11111111-1111-4111-8111-111111111111",
     stars: 5,
     comment: "",
+    oath: true,
   });
   await expect(box.getByText("4.3 · 4 تقييم")).toBeVisible();
 });

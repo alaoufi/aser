@@ -1501,6 +1501,26 @@ main::before {
   font: inherit;
   background: #fff;
 }
+/* القسم قبل التقييم: مربع موافقة واضح بخط مقروء */
+.rating-oath {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid #d6b98d;
+  border-radius: 10px;
+  background: #fff8ec;
+  font-size: 15px;
+  line-height: 1.6;
+  cursor: pointer;
+}
+.rating-oath input {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin-top: 2px;
+  accent-color: var(--olive, #4f5d36);
+}
 .rating-ok {
   margin: 0;
   color: #2f4a1f;
