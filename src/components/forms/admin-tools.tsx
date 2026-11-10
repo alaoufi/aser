@@ -164,7 +164,6 @@ function CategoryEditor({
     const ok = await r.write(editing ? "PATCH" : "POST", {
       id: editing?.id,
       name: f.get("name"),
-      slug: f.get("slug"),
       icon: f.get("icon"),
       parentId: f.get("parentId") || null,
     });
@@ -186,18 +185,6 @@ function CategoryEditor({
             required
             maxLength={120}
             defaultValue={editing?.name}
-          />
-        </label>
-        <label className={s.field}>
-          الرابط المختصر
-          <input
-            name="slug"
-            dir="ltr"
-            required
-            pattern="[a-z0-9\x2d]+"
-            maxLength={100}
-            title="حروف إنجليزية صغيرة وأرقام وشرطة فقط"
-            defaultValue={editing?.slug}
           />
         </label>
         <label className={s.field}>
@@ -231,6 +218,18 @@ function CategoryEditor({
         <button className={s.button} disabled={r.busy}>
           {r.busy ? "جارٍ الحفظ…" : editing ? "حفظ التعديل" : "حفظ التصنيف"}
         </button>
+        {editing && (
+          <button
+            type="button"
+            className={s.buttonSecondary}
+            disabled={r.busy}
+            onClick={() =>
+              r.write("PUT", { id: editing.id, hidden: !editing.hidden })
+            }
+          >
+            {editing.hidden ? "إظهار القسم" : "إخفاء القسم"}
+          </button>
+        )}
         {editing && !confirming && (
           <button
             type="button"

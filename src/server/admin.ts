@@ -26,7 +26,9 @@ export const categorySchema = z.object({
     .regex(
       /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
       "الرابط المختصر أحرف إنجليزية صغيرة وأرقام وشرطات فقط",
-    ),
+    )
+    // يُنشأ داخليًا من رقم القسم إن لم يُرسل، ولا يُعرض في الإدارة.
+    .optional(),
   icon: z.string().trim().min(1).max(20),
   parentId: z.string().min(1).max(30).nullable().optional(),
 });
@@ -230,11 +232,11 @@ export async function saveCategory(
     }
     if (editing) {
       const result = await client.query(
-        "UPDATE jdatna.categories SET name=$2,slug=$3,icon=$4,parent_id=CASE WHEN $6 THEN $5 ELSE parent_id END WHERE id=$1 RETURNING id",
+        "UPDATE jdatna.categories SET name=$2,slug=COALESCE($3,slug),icon=$4,parent_id=CASE WHEN $6 THEN $5 ELSE parent_id END WHERE id=$1 RETURNING id",
         [
           id,
           value.name,
-          value.slug,
+          value.slug ?? null,
           value.icon,
           value.parentId ?? null,
           value.parentId !== undefined,
@@ -249,7 +251,13 @@ export async function saveCategory(
       ).rows[0].id;
       await client.query(
         "INSERT INTO jdatna.categories(id,name,slug,icon,parent_id) VALUES($1,$2,$3,$4,$5)",
-        [id, value.name, value.slug, value.icon, value.parentId ?? null],
+        [
+          id,
+          value.name,
+          value.slug ?? `cat-${id}`,
+          value.icon,
+          value.parentId ?? null,
+        ],
       );
     }
     await audit(

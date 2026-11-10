@@ -65,7 +65,6 @@ test("admin assigns deep subsection and excludes its own descendants as parents"
     .click();
   await page.getByRole("button", { name: "＋ قسم جديد" }).click();
   await page.getByLabel("اسم القسم").fill("حليب");
-  await page.getByLabel("الرابط المختصر").fill("milk-test");
   await page.locator("select[name=parentId]").selectOption("drinks-hot");
   await page.getByRole("button", { name: "حفظ التصنيف", exact: true }).click();
   await expect(page.getByRole("status")).toBeVisible();

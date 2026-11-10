@@ -3,7 +3,11 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { db } from "../src/server/db";
 import { manageProduct, ownProducts } from "../src/server/management";
-import { moderateProduct, setCategoryHidden } from "../src/server/admin";
+import {
+  moderateProduct,
+  saveCategory,
+  setCategoryHidden,
+} from "../src/server/admin";
 import { getCategories } from "../src/server/catalog";
 
 test(
@@ -26,6 +30,7 @@ test(
     const family = mk("producer", "أسرة المنتجات"),
       other = mk("producer", "أسرة أخرى"),
       admin = mk("admin", "مدير");
+    const created: string[] = [];
     const familyId = randomUUID(),
       productId = randomUUID(),
       categoryId = "t" + Math.floor(Math.random() * 1e6);
@@ -115,10 +120,32 @@ test(
       );
       await setCategoryHidden(admin, { id: categoryId, hidden: false });
       assert.ok((await getCategories()).some((c) => c.id === categoryId));
+
+      // قسم جديد بلا رابط مختصر: يُنشأ داخليًا، ويبقى عند التعديل.
+      const made = await saveCategory(
+        admin,
+        { name: "قسم بلا رابط", icon: "✦" },
+        false,
+      );
+      created.push(made.id);
+      const slugOf = async () =>
+        (
+          await pool.query("SELECT slug FROM jdatna.categories WHERE id=$1", [
+            made.id,
+          ])
+        ).rows[0].slug;
+      assert.equal(await slugOf(), `cat-${made.id}`);
+      await saveCategory(
+        admin,
+        { id: made.id, name: "قسم معدل", icon: "✦" },
+        true,
+      );
+      assert.equal(await slugOf(), `cat-${made.id}`);
     } finally {
-      await pool.query("DELETE FROM jdatna.categories WHERE id=$1", [
-        categoryId,
-      ]);
+      await pool.query(
+        "DELETE FROM jdatna.categories WHERE id=ANY($1::text[])",
+        [[categoryId, ...created]],
+      );
       await pool.query("DELETE FROM jdatna.products WHERE id=$1", [productId]);
       await pool.query("DELETE FROM jdatna.producer_profiles WHERE id=$1", [
         familyId,
