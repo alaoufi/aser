@@ -191,3 +191,49 @@ test("my messages show WhatsApp ticks: sent, delivered (two grey) and read (two 
   ).toBeVisible();
   await expect(bubble("رد الأسرة").getByRole("img")).toHaveCount(0);
 });
+
+test("Enter starts a new line in the message box instead of sending it", async ({
+  page,
+}) => {
+  const id = "44444444-4444-4444-8444-444444444444";
+  let posted = 0;
+  await page.route("**/api/session", (r) =>
+    r.fulfill({
+      json: {
+        user: {
+          id: "c1",
+          name: "عميل",
+          phone: "+966500000001",
+          role: "customer",
+        },
+        registrationOpen: true,
+      },
+    }),
+  );
+  await page.route("**/api/conversations", (r) =>
+    r.fulfill({ json: { conversations: [] } }),
+  );
+  await page.route(`**/api/conversations/${id}**`, (r) => {
+    if (r.request().method() === "POST") posted++;
+    return r.fulfill({
+      json: {
+        conversation: {
+          id,
+          title: "أسرة",
+          side: "customer",
+          producerSlug: "x",
+        },
+        messages: [],
+      },
+    });
+  });
+  await page.goto(`/messages?c=${id}`);
+  const box = page.getByLabel("اكتب رسالة");
+  await box.fill("السطر الأول");
+  await box.press("End");
+  await box.press("Enter");
+  await box.pressSequentially("السطر الثاني");
+  await expect(box).toHaveValue("السطر الأول\nالسطر الثاني");
+  expect(posted).toBe(0);
+  await expect(box).toBeInViewport();
+});
