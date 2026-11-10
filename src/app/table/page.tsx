@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import type { Metadata } from "next";
 import { getCities, searchProducts } from "@/server/catalog";
+import { getSiteTexts } from "@/server/settings";
 import { TodayTable, regionsOf } from "@/components/public/today-table";
 export const metadata: Metadata = {
   title: "مائدة اليوم",
@@ -27,6 +28,7 @@ export default async function TablePage({
         regions={regions}
         region={region}
         path="/table"
+        texts={await getSiteTexts()}
       />
     </div>
   );

@@ -14,6 +14,7 @@ import {
   searchWords,
 } from "@/server/catalog";
 import { EmptyState, ProducerCard, ProductCard } from "@/components/public/ui";
+import { getSiteTexts } from "@/server/settings";
 // عنوان التبويب يتبع القسم أو الأسرة المنتجة المفتوحة.
 export async function generateMetadata({
   searchParams,
@@ -68,6 +69,7 @@ export default async function Browse({
     delivery: val("delivery"),
     producer: val("producer"),
   };
+  const texts = await getSiteTexts();
   const showFamilyDirectory = by === "family" && !filters.producer;
   const showCategoryDirectory = by === "category" && !filters.category;
   const listProducts = !showFamilyDirectory && !showCategoryDirectory;
@@ -195,8 +197,8 @@ export default async function Browse({
         </div>
       ) : (
         <div className="page-intro">
-          <h1>طبخات اليوم</h1>
-          <p>اختر طريقة البحث، ونعرض لك المتاح أولًا.</p>
+          <h1>{texts["browse.title"] || "طبخات اليوم"}</h1>
+          {texts["browse.subtitle"] && <p>{texts["browse.subtitle"]}</p>}
         </div>
       )}
       {!focus && (

@@ -10,7 +10,7 @@ import Image from "next/image";
 import "./globals.css";
 import "./heritage.css";
 import "./najdi.css";
-import { getSiteTemplate } from "@/server/settings";
+import { getSiteTemplate, getSiteTexts } from "@/server/settings";
 // القالب يُقرأ عند كل طلب حتى يسري اختيار الإدارة فورًا على كل الصفحات.
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -36,7 +36,10 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const template = await getSiteTemplate();
+  const [template, texts] = await Promise.all([
+    getSiteTemplate(),
+    getSiteTexts(),
+  ]);
   return (
     <html
       lang="ar"
@@ -48,7 +51,7 @@ export default async function RootLayout({
         <a href="#main" className="skip-link">
           انتقل إلى المحتوى
         </a>
-        <AboutTicker />
+        {texts["ticker.text"] && <AboutTicker text={texts["ticker.text"]} />}
         <header className="site-header">
           <Link href="/" className="brand">
             <Image
@@ -61,7 +64,10 @@ export default async function RootLayout({
               loading="eager"
             />
             <span>
-              أكلات جدتنا<small>وأصالة الماضي</small>
+              أكلات جدتنا
+              {texts["brand.tagline"] && (
+                <small>{texts["brand.tagline"]}</small>
+              )}
             </span>
           </Link>
           <nav className="desktop-nav" aria-label="التنقل الرئيسي">
@@ -112,11 +118,17 @@ export default async function RootLayout({
           <div className="footer-bottom">
             <span>
               © {new Date().getFullYear()} أكلات جدتنا
-              <small className="footer-affiliation">أحد فروع مواقع تربح</small>
+              {texts["footer.affiliation"] && (
+                <small className="footer-affiliation">
+                  {texts["footer.affiliation"]}
+                </small>
+              )}
             </span>
-            <span>
-              صُنع ليقرّب أهل الدار <span aria-hidden="true">✧</span>
-            </span>
+            {texts["footer.made"] && (
+              <span>
+                {texts["footer.made"]} <span aria-hidden="true">✧</span>
+              </span>
+            )}
           </div>
         </footer>
       </body>

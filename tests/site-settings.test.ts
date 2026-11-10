@@ -2,7 +2,14 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { db } from "../src/server/db";
-import { getSiteTemplate, setSiteTemplate } from "../src/server/settings";
+import {
+  adminSiteTexts,
+  getSiteTemplate,
+  getSiteTexts,
+  setSiteTemplate,
+  setSiteText,
+} from "../src/server/settings";
+import { siteTextDefaults } from "../src/lib/site-texts";
 
 test(
   "isolated site template: admin-only, validated, audited and read back",
@@ -45,10 +52,43 @@ test(
         )
       ).rows.map((r) => r.t);
       assert.deepEqual(audits, ["classic", "najdi"]);
+      // النصوص: تعديل، حذف (فارغ)، واستعادة الأصل؛ للمدير فقط وبمفاتيح معروفة.
+      await assert.rejects(
+        setSiteText(
+          { ...admin, role: "customer" },
+          { key: "table.empty", value: "x" },
+        ),
+        { status: 403 },
+      );
+      await assert.rejects(
+        setSiteText(admin, { key: "unknown.key", value: "x" }),
+      );
+      await setSiteText(admin, {
+        key: "table.empty",
+        value: "  الصحون جاية  ",
+      });
+      assert.equal((await getSiteTexts())["table.empty"], "الصحون جاية");
+      await setSiteText(admin, { key: "footer.made", value: "" });
+      assert.equal((await getSiteTexts())["footer.made"], "");
+      const listed = await adminSiteTexts(admin);
+      assert.equal(listed.find((t) => t.key === "footer.made")?.edited, true);
+      assert.equal(
+        listed.find((t) => t.key === "home.search")?.original,
+        siteTextDefaults["home.search"],
+      );
+      for (const key of ["table.empty", "footer.made"])
+        await setSiteText(admin, { key, value: null });
+      assert.equal(
+        (await getSiteTexts())["table.empty"],
+        siteTextDefaults["table.empty"],
+      );
     } finally {
       await pool.query(
         "UPDATE jdatna.site_settings SET value=$1,updated_by=NULL WHERE key='template'",
         [before],
+      );
+      await pool.query(
+        "DELETE FROM jdatna.site_settings WHERE key IN ('text:table.empty','text:footer.made')",
       );
       await pool.query(
         "DELETE FROM jdatna.admin_audit_logs WHERE actor_id=$1",

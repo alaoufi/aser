@@ -1,0 +1,67 @@
+import { test, expect } from "@playwright/test";
+
+test("admin edits, deletes and restores visible site texts", async ({
+  page,
+}) => {
+  await page.route("**/api/session", (r) =>
+    r.fulfill({
+      json: {
+        user: { id: "a", name: "مدير", phone: "+966500000009", role: "admin" },
+        registrationOpen: true,
+      },
+    }),
+  );
+  await page.route("**/api/admin/summary", (r) =>
+    r.fulfill({ json: { summary: {} } }),
+  );
+  await page.route("**/api/admin/producers", (r) =>
+    r.fulfill({ json: { producers: [] } }),
+  );
+  const texts = [
+    {
+      key: "table.empty",
+      value: "بانتظار العروض",
+      original: "بانتظار العروض",
+      edited: false,
+    },
+    {
+      key: "footer.made",
+      value: "",
+      original: "صُنع ليقرّب أهل الدار",
+      edited: true,
+    },
+  ];
+  const sent: unknown[] = [];
+  await page.route("**/api/admin/texts", async (r) => {
+    if (r.request().method() === "PUT") {
+      const body = r.request().postDataJSON();
+      sent.push(body);
+      const t = texts.find((x) => x.key === body.key)!;
+      t.value = body.value ?? t.original;
+      t.edited = t.value !== t.original;
+    }
+    return r.fulfill({ json: { texts } });
+  });
+  await page.goto("/admin");
+  await page.getByRole("button", { name: "نصوص الموقع", exact: true }).click();
+  const empty = page.getByLabel("المائدة الفارغة");
+  await expect(empty).toHaveValue("بانتظار العروض");
+  await expect(
+    page.getByRole("button", { name: "حفظ «المائدة الفارغة»" }),
+  ).toBeDisabled();
+  await empty.fill("الصحون جاية");
+  await page.getByRole("button", { name: "حفظ «المائدة الفارغة»" }).click();
+  await expect.poll(() => sent.length).toBe(1);
+  expect(sent[0]).toEqual({ key: "table.empty", value: "الصحون جاية" });
+  await expect(page.getByText("(معدّل)")).toBeVisible();
+
+  // نص محذوف: يُستعاد لأصله.
+  await expect(page.getByText("(محذوف)")).toBeVisible();
+  await page.getByRole("button", { name: "استعادة الأصل" }).last().click();
+  await expect.poll(() => sent.length).toBe(2);
+  expect(sent[1]).toEqual({ key: "footer.made", value: null });
+
+  await page.getByRole("button", { name: "حذف «المائدة الفارغة»" }).click();
+  await expect.poll(() => sent.length).toBe(3);
+  expect(sent[2]).toEqual({ key: "table.empty", value: "" });
+});

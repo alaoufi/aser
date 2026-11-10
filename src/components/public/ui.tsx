@@ -138,3 +138,15 @@ export function SectionHeading({
     </div>
   );
 }
+
+/** نص من الإدارة: السطر الجديد يظهر كسطر جديد. */
+export function Lines({ text }: { text: string }) {
+  const parts = text.split("\n");
+  return parts.map((line, i) => (
+    // biome-ignore lint/suspicious/noArrayIndexKey: الأسطر ثابتة الترتيب
+    <span key={i}>
+      {line}
+      {i < parts.length - 1 && <br />}
+    </span>
+  ));
+}
