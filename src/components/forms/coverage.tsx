@@ -7,6 +7,7 @@ import type {
   CustomCoverageArea,
 } from "@/server/coverage";
 import { api, s, AccountShell, Guard, Message, useSession } from "./shared";
+import { ZoneEditor } from "./zones";
 function Select({
   title,
   value,
@@ -51,7 +52,10 @@ function Picker({
     [center, setCenter] = useState(""),
     [hood, setHood] = useState(""),
     [centerName, setCenterName] = useState(""),
-    [neighborhoodName, setNeighborhoodName] = useState("");
+    [neighborhoodName, setNeighborhoodName] = useState(""),
+    [customKind, setCustomKind] = useState<"neighborhood" | "center">(
+      "neighborhood",
+    );
   const descendants = (id: string) => nodes.filter((n) => n.parentId === id);
   const cities =
     gov === "legacy" || !gov
@@ -113,29 +117,40 @@ function Picker({
             setNeighborhoodName("");
           }}
         />
+        {descendants(city).some((n) => n.kind === "neighborhood") && (
+          <Select
+            title="الحي — داخل المدينة (اختياري)"
+            nodes={descendants(city).filter((n) => n.kind === "neighborhood")}
+            value={center ? "" : hood}
+            onChange={(v) => {
+              setHood(v);
+              setCenter("");
+            }}
+          />
+        )}
         {descendants(city).some((n) => n.kind === "center") && (
           <Select
-            title="المركز (اختياري)"
+            title="المركز — خارج المدينة (اختياري)"
             nodes={descendants(city).filter((n) => n.kind === "center")}
             value={center}
             onChange={(v) => {
               setCenter(v);
               setHood("");
-              setCenterName(nodes.find((n) => n.id === v)?.name ?? "");
-              setNeighborhoodName("");
             }}
           />
         )}
-        {descendants(center || city).some((n) => n.kind === "neighborhood") && (
-          <Select
-            title="الحي (اختياري)"
-            nodes={descendants(center || city).filter(
-              (n) => n.kind === "neighborhood",
-            )}
-            value={hood}
-            onChange={setHood}
-          />
-        )}
+        {/* أحياء قديمة سُجّلت تحت مركز تبقى قابلة للاختيار. */}
+        {center &&
+          descendants(center).some((n) => n.kind === "neighborhood") && (
+            <Select
+              title="حي تابع للمركز (اختياري)"
+              nodes={descendants(center).filter(
+                (n) => n.kind === "neighborhood",
+              )}
+              value={hood}
+              onChange={setHood}
+            />
+          )}
       </div>
       <button
         className={s.button}
@@ -152,47 +167,63 @@ function Picker({
             {nodes.find((n) => n.id === city)?.name}
           </legend>
           <p>
-            أدخل اسم حي أو مركز وأضفه، ثم كرر لإضافة بقية نطاقاتك. يمكنك ترك اسم
-            المركز فارغًا لإضافة حي تابع للمدينة مباشرة.
+            لم تجد اسمه في القائمة؟ اختر نوعه واكتب اسمه، ثم كرر لإضافة بقية
+            نطاقاتك. الحي داخل نطاق المدينة، والمركز خارجه.
           </p>
           <div className={s.grid}>
             <label className={s.field}>
-              اسم المركز (اختياري)
-              <input
-                value={centerName}
-                onChange={(e) => setCenterName(e.target.value)}
-                maxLength={120}
-                autoComplete="off"
-                placeholder="اسم المركز الذي تخدمه"
-              />
+              <span className="sr-only">نوع النطاق</span>
+              <select
+                aria-label="نوع النطاق"
+                value={customKind}
+                onChange={(e) =>
+                  setCustomKind(e.target.value as "neighborhood" | "center")
+                }
+              >
+                <option value="neighborhood">حي — داخل المدينة</option>
+                <option value="center">مركز — خارج المدينة</option>
+              </select>
             </label>
             <label className={s.field}>
-              اسم الحي (اختياري)
+              {customKind === "center" ? "اسم المركز" : "اسم الحي"}
               <input
-                value={neighborhoodName}
-                onChange={(e) => setNeighborhoodName(e.target.value)}
+                value={customKind === "center" ? centerName : neighborhoodName}
+                onChange={(e) =>
+                  customKind === "center"
+                    ? setCenterName(e.target.value)
+                    : setNeighborhoodName(e.target.value)
+                }
                 maxLength={120}
                 autoComplete="off"
-                placeholder="اسم الحي الذي تخدمه"
+                placeholder={
+                  customKind === "center"
+                    ? "اسم المركز الذي تخدمه"
+                    : "اسم الحي الذي تخدمه"
+                }
               />
             </label>
           </div>
           <button
             type="button"
             className={s.button}
-            disabled={!centerName.trim() && !neighborhoodName.trim()}
+            disabled={
+              !(customKind === "center" ? centerName : neighborhoodName).trim()
+            }
             onClick={() => {
               onCustom({
                 cityNodeId: city,
-                center: centerName.trim() || null,
-                neighborhood: neighborhoodName.trim() || null,
+                center: customKind === "center" ? centerName.trim() : null,
+                neighborhood:
+                  customKind === "neighborhood"
+                    ? neighborhoodName.trim()
+                    : null,
                 fee: null,
               });
               setCenterName("");
               setNeighborhoodName("");
             }}
           >
-            أضف الحي أو المركز
+            {customKind === "center" ? "أضف المركز" : "أضف الحي"}
           </button>
         </fieldset>
       )}
@@ -400,6 +431,7 @@ export function CoverageForm() {
           </button>
         </form>
       )}
+      {session.user && <ZoneEditor />}
     </AccountShell>
   );
 }
@@ -426,7 +458,7 @@ export function CoverageAdmin() {
         ? n.kind === "governorate"
         : kind === "center"
           ? n.kind === "city" && !n.legacy
-          : (n.kind === "city" && !n.legacy) || n.kind === "center",
+          : n.kind === "city" && !n.legacy,
   );
   return (
     <AccountShell>
@@ -481,8 +513,10 @@ export function CoverageAdmin() {
               >
                 <option value="governorate">إضافة محافظة</option>
                 <option value="city">ربط مدينة قائمة بمحافظة</option>
-                <option value="center">إضافة مركز</option>
-                <option value="neighborhood">إضافة حي</option>
+                <option value="neighborhood">
+                  إضافة حي (داخل نطاق المدينة)
+                </option>
+                <option value="center">إضافة مركز (خارج نطاق المدينة)</option>
               </select>
             </label>
             <label className={s.field}>

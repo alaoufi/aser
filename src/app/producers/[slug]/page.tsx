@@ -2,6 +2,7 @@ import { ReportButton } from "@/components/public/report-button";
 import { getPublicCoverage } from "@/server/coverage";
 import { ShareButton } from "@/components/public/share-button";
 import { ChatButton } from "@/components/forms/chat";
+import { LocationCheck } from "@/components/maps/location-check";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getProducer, getProducerProducts } from "@/server/catalog";
@@ -118,6 +119,7 @@ export default async function ProducerDetail({
               ))}
             </ul>
           )}
+          {p.delivery && <LocationCheck producerSlug={p.slug} />}
           <p className="muted">
             يُشارك موقع الاستلام الدقيق معك بالتنسيق الخاص؛ لا يُعرض عنوان
             المنزل علنًا.

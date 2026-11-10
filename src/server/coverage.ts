@@ -117,7 +117,8 @@ export function validCoverageParent(kind: CoverageKind, parent: CoverageKind) {
       : kind === "center"
         ? parent === "city"
         : kind === "neighborhood"
-          ? parent === "city" || parent === "center"
+          ? // الحي داخل نطاق المدينة، والمركز خارجه؛ كلاهما يتبع المدينة مباشرة.
+            parent === "city"
           : false;
 }
 export function requireCoverageAdmin(user: { role: string }) {
