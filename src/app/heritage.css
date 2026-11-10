@@ -978,7 +978,7 @@ main::before {
 }
 .table-bouquet {
   display: block;
-  width: clamp(100px, 27vw, 150px);
+  width: clamp(130px, 36vw, 200px);
   height: auto;
   filter: drop-shadow(6px 8px 6px #00000045);
   animation: table-bouquet-float 4.5s ease-in-out infinite;

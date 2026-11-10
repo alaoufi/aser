@@ -15,140 +15,288 @@ export function regionsOf(
   return [...map].map(([id, name]) => ({ id, name }));
 }
 
-/** باقة ورد واقفة في مزهرية فخار، عائمة فوق المائدة الفارغة إلى أن تصل العروض. */
-function Bouquet() {
-  // وردة جورية: طبقات بتلات متدرجة حول قلب ملتف.
-  const roses: [
-    x: number,
-    y: number,
-    r: number,
-    outer: string,
-    inner: string,
-  ][] = [
-    [90, 46, 19, "#b8321f", "#7f1d12"],
-    [60, 66, 15, "#e9836a", "#c2412b"],
-    [120, 68, 15, "#f2b8a0", "#d7745a"],
-    [76, 92, 13, "#c2412b", "#8f2416"],
-    [106, 96, 13, "#f4ead9", "#e0b48a"],
-  ];
-  // زهور صغيرة بخمس بتلات.
-  const blossoms: [
-    x: number,
-    y: number,
-    r: number,
-    petal: string,
-    core: string,
-  ][] = [
-    [42, 92, 9, "#f4ead9", "#d6a35c"],
-    [138, 94, 9, "#f0c35a", "#b8321f"],
-    [92, 76, 8, "#f4ead9", "#c2412b"],
-    [52, 44, 7, "#e9836a", "#f4ead9"],
-    [130, 42, 7, "#f4ead9", "#d6a35c"],
-  ];
-  const leaf = (x: number, y: number, angle: number) => (
-    <path
-      key={`${x}-${y}`}
-      d={`M${x} ${y}c-10-4-16-12-16-22 10 2 17 10 16 22z`}
-      fill="#5f7a3a"
-      transform={`rotate(${angle} ${x} ${y})`}
-    />
+type P = [x: number, y: number, r: number];
+const rot = (a: number, x: number, y: number) => `rotate(${a} ${x} ${y})`;
+/** وردة جورية: طبقات بتلات حول قلب ملتف، بلمعة تعطيها عمقًا. */
+function Rose({
+  x,
+  y,
+  r,
+  c,
+  d,
+}: {
+  x: number;
+  y: number;
+  r: number;
+  c: string;
+  d: string;
+}) {
+  return (
+    <g>
+      {[0, 51, 103, 154, 206, 257, 309].map((a) => (
+        <circle
+          key={a}
+          cx={x + Math.cos((a * Math.PI) / 180) * r * 0.45}
+          cy={y + Math.sin((a * Math.PI) / 180) * r * 0.45}
+          r={r * 0.58}
+          fill={c}
+        />
+      ))}
+      <circle cx={x} cy={y} r={r * 0.66} fill={d} />
+      <path
+        d={`M${x - r * 0.42} ${y + r * 0.05}a${r * 0.42} ${r * 0.4} 0 1 1 ${r * 0.5} ${r * 0.34}M${x - r * 0.18} ${y}a${r * 0.2} ${r * 0.2} 0 1 1 ${r * 0.24} ${r * 0.14}`}
+        stroke={c}
+        strokeWidth={r * 0.13}
+        fill="none"
+        strokeLinecap="round"
+      />
+      <circle cx={x} cy={y} r={r} fill="url(#jd-shine)" />
+    </g>
   );
+}
+/** زهرة ببتلات حول قلب: أقحوان، جربيرا. */
+function Petals({
+  x,
+  y,
+  r,
+  n,
+  c,
+  core,
+  w = 0.28,
+}: {
+  x: number;
+  y: number;
+  r: number;
+  n: number;
+  c: string;
+  core: string;
+  w?: number;
+}) {
+  return (
+    <g>
+      {Array.from({ length: n }, (_, i) => (
+        <ellipse
+          key={i}
+          cx={x}
+          cy={y - r * 0.55}
+          rx={r * w}
+          ry={r * 0.5}
+          fill={c}
+          transform={rot((360 / n) * i, x, y)}
+        />
+      ))}
+      <circle cx={x} cy={y} r={r * 0.3} fill={core} />
+      <circle
+        cx={x - r * 0.08}
+        cy={y - r * 0.08}
+        r={r * 0.12}
+        fill="#fff"
+        opacity="0.35"
+      />
+    </g>
+  );
+}
+
+/** باقة ورد كثيفة في مزهرية برونزية، واقفة على المائدة الفارغة إلى أن تصل العروض. */
+function Bouquet() {
+  const leaves: [x: number, y: number, a: number, l: number][] = [
+    [62, 150, -60, 34],
+    [52, 120, -80, 30],
+    [70, 96, -40, 28],
+    [178, 150, 60, 34],
+    [188, 118, 80, 30],
+    [170, 92, 40, 28],
+    [96, 176, -20, 30],
+    [146, 176, 20, 30],
+    [120, 60, 0, 26],
+    [40, 160, -100, 26],
+    [200, 160, 100, 26],
+    [86, 70, -25, 22],
+    [156, 68, 25, 22],
+    [120, 186, 0, 24],
+  ];
+  const sprigs: [x: number, y: number, a: number][] = [
+    [34, 104, -55],
+    [206, 104, 55],
+    [28, 140, -80],
+    [212, 140, 80],
+    [74, 44, -20],
+    [168, 44, 20],
+  ];
+  const rosesData: [number, number, number, string, string][] = [
+    [100, 128, 22, "#b23a2f", "#7c1f17"],
+    [150, 80, 18, "#c8463a", "#8b241a"],
+    [70, 64, 15, "#e58b80", "#c45d55"],
+    [168, 128, 14, "#e9a093", "#c96a60"],
+  ];
+  const daisies: P[] = [
+    [120, 92, 18],
+    [86, 102, 14],
+    [140, 118, 15],
+    [58, 128, 12],
+    [178, 102, 12],
+    [112, 50, 12],
+    [194, 136, 10],
+  ];
+  const peonies: [number, number, number][] = [
+    [124, 148, 22],
+    [176, 160, 15],
+  ];
+  const marigolds: P[] = [
+    [150, 152, 12],
+    [82, 152, 10],
+    [140, 174, 9],
+  ];
   return (
     <span className="table-bouquet-wrap" aria-hidden="true">
       <svg
         className="table-bouquet"
-        viewBox="0 0 180 250"
-        width="180"
-        height="250"
+        viewBox="0 0 240 290"
+        width="240"
+        height="290"
         aria-hidden="true"
       >
         <defs>
           <linearGradient id="jd-vase" x1="0" x2="1">
-            <stop offset="0" stopColor="#f0b98a" />
-            <stop offset="0.35" stopColor="#d48c59" />
-            <stop offset="1" stopColor="#8c4524" />
+            <stop offset="0" stopColor="#c49a6c" />
+            <stop offset="0.3" stopColor="#8a6244" />
+            <stop offset="1" stopColor="#3e2a1d" />
           </linearGradient>
-          <radialGradient id="jd-rose" cx="0.35" cy="0.35" r="0.75">
-            <stop offset="0" stopColor="#fff" stopOpacity="0.35" />
-            <stop offset="1" stopColor="#000" stopOpacity="0.18" />
+          <radialGradient id="jd-shine" cx="0.35" cy="0.3" r="0.8">
+            <stop offset="0" stopColor="#fff" stopOpacity="0.3" />
+            <stop offset="0.6" stopColor="#fff" stopOpacity="0" />
+            <stop offset="1" stopColor="#000" stopOpacity="0.2" />
           </radialGradient>
         </defs>
-        <g stroke="#4f6b30" strokeWidth="3" strokeLinecap="round" fill="none">
-          <path d="M90 150 90 60M90 150 62 70M90 150 120 72M90 150 76 96M90 150 106 100M90 152 44 96M90 152 136 98M90 150 54 48M90 150 128 46" />
+        {/* سيقان من فوهة المزهرية إلى الزهور */}
+        <g stroke="#4b6b3e" strokeWidth="2.5" strokeLinecap="round" fill="none">
+          <path d="M120 180 100 128M120 180 150 80M120 180 70 64M120 180 168 128M120 180 120 92M120 180 86 102M120 180 140 118M120 180 58 128M120 180 178 102M120 180 196 58M120 180 42 118M120 180 124 148M120 180 176 160" />
         </g>
-        {leaf(70, 120, -40)}
-        {leaf(112, 118, 40)}
-        {leaf(56, 104, -70)}
-        {leaf(126, 106, 70)}
-        {leaf(90, 112, 0)}
-        {blossoms.map(([x, y, r, petal, core]) => (
-          <g key={`b${x}-${y}`}>
-            {[0, 72, 144, 216, 288].map((a) => (
-              <ellipse
-                key={a}
-                cx={x}
-                cy={y - r * 0.55}
-                rx={r * 0.5}
-                ry={r * 0.66}
-                fill={petal}
-                transform={`rotate(${a} ${x} ${y})`}
-              />
-            ))}
-            <circle cx={x} cy={y} r={r * 0.36} fill={core} />
-          </g>
+        {/* أغصان */}
+        <g stroke="#3f5a3a" strokeWidth="2" strokeLinecap="round" fill="none">
+          {sprigs.map(([x, y, a]) => (
+            <g key={`s${x}`} transform={rot(a, x, y)}>
+              <path d={`M${x} ${y + 40}V${y - 6}`} />
+              {[0, 9, 18, 27].map((o) => (
+                <path key={o} d={`M${x} ${y + o}l-7-6M${x} ${y + o}l7-6`} />
+              ))}
+            </g>
+          ))}
+        </g>
+        {leaves.map(([x, y, a, l]) => (
+          <ellipse
+            key={`l${x}-${y}`}
+            cx={x}
+            cy={y - l / 2}
+            rx={l * 0.22}
+            ry={l / 2}
+            fill={a % 40 === 0 ? "#4b6b45" : "#5f7f56"}
+            transform={rot(a, x, y)}
+          />
         ))}
-        {roses.map(([x, y, r, outer, inner]) => (
-          <g key={`r${x}-${y}`}>
+        {/* براعم وتوليب */}
+        {[
+          [44, 82, -35, "#e8919a"],
+          [196, 82, 35, "#ef9aa2"],
+          [126, 30, 8, "#c8463a"],
+          [92, 36, -15, "#f2b28c"],
+        ].map(([x, y, a, c]) => (
+          <path
+            key={`b${x}`}
+            d={`M${x} ${y}c-7-8-6-18 0-22 6 4 7 14 0 22z`}
+            fill={c as string}
+            transform={rot(a as number, x as number, y as number)}
+          />
+        ))}
+        {peonies.map(([x, y, r]) => (
+          <g key={`p${x}`}>
             {[0, 60, 120, 180, 240, 300].map((a) => (
               <circle
                 key={a}
                 cx={x + Math.cos((a * Math.PI) / 180) * r * 0.42}
                 cy={y + Math.sin((a * Math.PI) / 180) * r * 0.42}
                 r={r * 0.6}
-                fill={outer}
+                fill="#f6b48c"
               />
             ))}
-            <circle cx={x} cy={y} r={r * 0.62} fill={inner} />
-            <circle cx={x} cy={y} r={r} fill="url(#jd-rose)" />
-            <path
-              d={`M${x - r * 0.35} ${y}a${r * 0.35} ${r * 0.35} 0 1 1 ${r * 0.35} ${r * 0.3}`}
-              stroke={outer}
-              strokeWidth="2"
-              fill="none"
-              strokeLinecap="round"
-            />
+            <circle cx={x} cy={y} r={r * 0.62} fill="#f9cba8" />
+            <circle cx={x} cy={y} r={r * 0.3} fill="#e99a6e" />
+            <circle cx={x} cy={y} r={r} fill="url(#jd-shine)" />
           </g>
         ))}
-        {/* مزهرية فخار بحزام سدو */}
+        {marigolds.map(([x, y, r]) => (
+          <g key={`m${x}`}>
+            {[0, 1, 2, 3, 4, 5, 6].map((i) => (
+              <circle
+                key={i}
+                cx={x + Math.cos(i) * r * 0.55}
+                cy={y + Math.sin(i * 1.3) * r * 0.5}
+                r={r * 0.42}
+                fill={i % 2 ? "#f08a2c" : "#e5701c"}
+              />
+            ))}
+          </g>
+        ))}
+        <Petals
+          x={196}
+          y={58}
+          r={20}
+          n={18}
+          c="#ee6a2b"
+          core="#7a2f12"
+          w={0.2}
+        />
+        <Petals
+          x={42}
+          y={118}
+          r={14}
+          n={16}
+          c="#f08a3a"
+          core="#7a2f12"
+          w={0.2}
+        />
+        {daisies.map(([x, y, r]) => (
+          <Petals
+            key={`d${x}-${y}`}
+            x={x}
+            y={y}
+            r={r}
+            n={14}
+            c="#fbf7ee"
+            core="#f0a321"
+            w={0.22}
+          />
+        ))}
+        {rosesData.map(([x, y, r, c, d]) => (
+          <Rose key={`r${x}`} x={x} y={y} r={r} c={c} d={d} />
+        ))}
+        {/* مزهرية برونزية داكنة بحزام */}
         <path
-          d="M66 150h48c0 8-6 12-6 18 0 14 22 24 22 46 0 22-18 32-40 32s-40-10-40-32c0-22 22-32 22-46 0-6-6-10-6-18z"
+          d="M92 174h56c-2 10-8 14-8 22 0 10 22 22 22 48 0 24-18 40-42 40s-42-16-42-40c0-26 22-38 22-48 0-8-6-12-8-22z"
           fill="url(#jd-vase)"
-          stroke="#f4ead9"
-          strokeOpacity="0.7"
-          strokeWidth="2"
-        />
-        <path
-          d="M66 150h48c0 8-6 12-6 18 0 14 22 24 22 46 0 22-18 32-40 32"
-          fill="#a85d34"
-          opacity="0.35"
-        />
-        <rect x="62" y="146" width="56" height="8" rx="4" fill="#8a4424" />
-        <path d="M52 204h76v12H52z" fill="#2e1d12" opacity="0.85" />
-        <path
-          d="M52 216l6-12 6 12 6-12 6 12 6-12 6 12 6-12 6 12 6-12 6 12 6-12 6 12z"
-          fill="#d6a35c"
-        />
-        <path
-          d="M58 210h4M70 210h4M82 210h4M94 210h4M106 210h4M118 210h4"
-          stroke="#b8321f"
-          strokeWidth="3"
         />
         <ellipse
-          cx="76"
-          cy="186"
-          rx="5"
-          ry="14"
-          fill="#f4ead9"
+          cx="120"
+          cy="175"
+          rx="30"
+          ry="6"
+          fill="#3a271b"
+          stroke="#d9b98f"
+          strokeWidth="1.5"
+        />
+        <path
+          d="M88 230c20 6 44 6 64 0M86 244c22 7 46 7 68 0"
+          stroke="#b48a5f"
+          strokeWidth="2"
+          fill="none"
+          opacity="0.7"
+        />
+        <path
+          d="M98 208c-6 14-8 34-2 54"
+          stroke="#f4ead9"
+          strokeWidth="5"
+          strokeLinecap="round"
+          fill="none"
           opacity="0.18"
         />
       </svg>
