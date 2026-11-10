@@ -151,9 +151,9 @@ function Bouquet() {
     <span className="table-bouquet-wrap" aria-hidden="true">
       <svg
         className="table-bouquet"
-        viewBox="0 0 240 274"
+        viewBox="0 0 240 296"
         width="240"
-        height="274"
+        height="296"
         aria-hidden="true"
       >
         <defs>
@@ -171,7 +171,7 @@ function Bouquet() {
         {/* ظل التلامس على الخشب، ثم المزهرية مقصّرة كما تُرى من فوق */}
         <ellipse
           cx="120"
-          cy="262"
+          cy="286"
           rx="54"
           ry="11"
           fill="#1a0f08"
@@ -179,13 +179,13 @@ function Bouquet() {
         />
         <ellipse
           cx="120"
-          cy="260"
+          cy="284"
           rx="36"
           ry="7"
           fill="#1a0f08"
           opacity="0.4"
         />
-        <g transform="translate(0 174) scale(1 0.78) translate(0 -174)">
+        <g>
           <path
             d="M92 174h56c-2 10-8 14-8 22 0 10 22 22 22 48 0 24-18 40-42 40s-42-16-42-40c0-26 22-38 22-48 0-8-6-12-8-22z"
             fill="url(#jd-vase)"
@@ -194,7 +194,7 @@ function Bouquet() {
             cx="120"
             cy="175"
             rx="30"
-            ry="10"
+            ry="7"
             fill="#3a271b"
             stroke="#d9b98f"
             strokeWidth="1.5"
