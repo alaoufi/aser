@@ -148,6 +148,14 @@ function Conversation({ id, onBack }: { id: string; onBack: () => void }) {
   const [notice, setNotice] = useState("");
   const bottom = useRef<HTMLDivElement>(null);
   const menu = useRef<HTMLDetailsElement>(null);
+  const input = useRef<HTMLTextAreaElement>(null);
+  const composer = useRef<HTMLFormElement>(null);
+  /** حقل الكتابة يتمدد مع الرسالة حتى ستة أسطر تقريبًا ثم يمرّر. */
+  const grow = (el: HTMLTextAreaElement | null) => {
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 168)}px`;
+  };
   async function moderate(body: Record<string, unknown>) {
     setError("");
     try {
@@ -197,6 +205,10 @@ function Conversation({ id, onBack }: { id: string; onBack: () => void }) {
       .then((d) => {
         if (!active) return;
         setThread(d);
+        // على الجوال: إظهار حقل الكتابة كاملًا عند فتح المحادثة.
+        requestAnimationFrame(() =>
+          composer.current?.scrollIntoView({ block: "nearest" }),
+        );
         // قُرئت المحادثة: تحدّث شارة الرسائل الجديدة فورًا.
         window.dispatchEvent(new Event(UNREAD_REFRESH));
       })
@@ -247,6 +259,7 @@ function Conversation({ id, onBack }: { id: string; onBack: () => void }) {
       );
       merge([m]);
       setDraft("");
+      requestAnimationFrame(() => grow(input.current));
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -390,7 +403,7 @@ function Conversation({ id, onBack }: { id: string; onBack: () => void }) {
             : "لا يمكن الإرسال في هذه المحادثة."}
         </p>
       ) : (
-        <form className={c.composer} onSubmit={send}>
+        <form className={c.composer} onSubmit={send} ref={composer}>
           <label className="sr-only" htmlFor="chat-message">
             اكتب رسالة
           </label>
@@ -400,9 +413,14 @@ function Conversation({ id, onBack }: { id: string; onBack: () => void }) {
             maxLength={2000}
             placeholder="اكتب رسالة"
             value={draft}
-            onChange={(e) => setDraft(e.target.value)}
+            ref={input}
+            onChange={(e) => {
+              setDraft(e.target.value);
+              grow(e.currentTarget);
+            }}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
+              // الإدخال يبدأ سطرًا جديدًا؛ الإرسال بالزر (أو Ctrl/⌘ + الإدخال).
+              if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
                 e.preventDefault();
                 e.currentTarget.form?.requestSubmit();
               }
