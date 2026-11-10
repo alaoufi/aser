@@ -2,6 +2,7 @@ import { MobileNavigation } from "@/components/public/mobile-navigation";
 import { AboutTicker } from "@/components/public/about-ticker";
 import { AccountLink } from "@/components/public/account-link";
 import { OrderAlert } from "@/components/public/order-alert";
+import { MessageAlert, MessagesLink } from "@/components/public/message-alert";
 import { FamilyWelcome } from "@/components/public/family-welcome";
 import { StarDefs } from "@/components/public/stars";
 import { SITE_VERSION } from "@/lib/version";
@@ -85,8 +86,11 @@ export default async function RootLayout({
           <div className="header-actions">
             <TemplateSwitcher current={template} className="desktop-only" />
             <FamilyStatusChip place="header" />
+            <MessagesLink />
             <AccountLink className="button small" />
           </div>
+          {/* المحادثات ظاهرة دائمًا على الجوال بجانب زر القائمة */}
+          <MessagesLink className="mobile-messages" />
           <MobileNavigation
             switcher={<TemplateSwitcher current={template} />}
           />
@@ -94,6 +98,7 @@ export default async function RootLayout({
         <main id="main">{children}</main>
         <FamilyWelcome texts={texts} />
         <OrderAlert />
+        <MessageAlert />
         <footer className="site-footer">
           <div className="footer-top">
             <div>

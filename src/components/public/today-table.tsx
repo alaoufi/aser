@@ -60,8 +60,11 @@ export function TodayTable({
       {/* مائدة خشب كبيرة ثلاثية الأبعاد بأرجل قصيرة */}
       <div className="table-3d">
         <div className="table-top">
-          {/* علامة مائية كبيرة عائمة باسم المائدة */}
-          <span className="table-watermark" aria-hidden="true">
+          {/* علامة مائية عائمة باسم المائدة: شريط أعلى الطاولة وآخر أسفلها */}
+          <span className="table-watermark is-top" aria-hidden="true">
+            {texts["table.title"] || "مائدة اليوم"}
+          </span>
+          <span className="table-watermark is-bottom" aria-hidden="true">
             {texts["table.title"] || "مائدة اليوم"}
           </span>
           {shown.length === 0 ? (

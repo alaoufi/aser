@@ -20,27 +20,57 @@ export type ChatMessage = {
   createdAt: string;
 };
 
-/** يبدأ محادثة العضو مع أسرة معتمدة، أو يعيد محادثتهما القائمة. */
+/**
+ * يبدأ محادثة العضو مع أسرة معتمدة، أو يعيد محادثتهما القائمة.
+ * ويمكن بدؤها من طلب: صاحب الطلب يراسل الأسرة، والأسرة تراسل صاحب الطلب.
+ */
 export async function startConversation(user: SessionUser, input: unknown) {
-  const { producer } = z
-    .object({ producer: z.string().min(1).max(200) })
-    .strict()
+  const parsed = z
+    .union([
+      z.object({ producer: z.string().min(1).max(200) }).strict(),
+      z.object({ order: z.uuid() }).strict(),
+    ])
     .parse(input);
-  const family = (
-    await db().query(
-      "SELECT id,user_id FROM jdatna.producer_profiles WHERE slug=$1 AND status='approved'",
-      [producer],
+  let customerId: string, producerId: string;
+  if ("order" in parsed) {
+    const order = (
+      await db().query(
+        `SELECT o.user_id,o.producer_id,p.user_id AS producer_user
+         FROM jdatna.order_requests o JOIN jdatna.producer_profiles p ON p.id=o.producer_id
+         WHERE o.id=$1`,
+        [parsed.order],
+      )
+    ).rows[0];
+    if (
+      !order ||
+      (order.user_id !== user.id && order.producer_user !== user.id)
     )
-  ).rows[0];
-  if (!family) throw new HttpError(404, "الأسرة المنتجة غير متاحة للمراسلة");
-  if (family.user_id === user.id)
-    throw new HttpError(400, "لا يمكنك مراسلة أسرتك من حسابك نفسه");
+      throw new HttpError(404, "الطلب غير موجود");
+    if (!order.user_id)
+      throw new HttpError(400, "طلب الضيف بلا حساب؛ تواصل معه بالجوال");
+    if (order.user_id === order.producer_user)
+      throw new HttpError(400, "لا يمكنك مراسلة أسرتك من حسابك نفسه");
+    customerId = order.user_id;
+    producerId = order.producer_id;
+  } else {
+    const family = (
+      await db().query(
+        "SELECT id,user_id FROM jdatna.producer_profiles WHERE slug=$1 AND status='approved'",
+        [parsed.producer],
+      )
+    ).rows[0];
+    if (!family) throw new HttpError(404, "الأسرة المنتجة غير متاحة للمراسلة");
+    if (family.user_id === user.id)
+      throw new HttpError(400, "لا يمكنك مراسلة أسرتك من حسابك نفسه");
+    customerId = user.id;
+    producerId = family.id;
+  }
   const row = (
     await db().query(
       `INSERT INTO jdatna.conversations(id,customer_id,producer_id) VALUES($1,$2,$3)
        ON CONFLICT(customer_id,producer_id) DO UPDATE SET customer_id=EXCLUDED.customer_id
        RETURNING id`,
-      [randomUUID(), user.id, family.id],
+      [randomUUID(), customerId, producerId],
     )
   ).rows[0];
   return { id: row.id as string };
@@ -71,6 +101,21 @@ export async function listConversations(
 
 export async function unreadTotal(user: SessionUser) {
   return (await listConversations(user)).reduce((n, c) => n + c.unread, 0);
+}
+
+/** تنبيه الرسائل الجديدة: مجموع غير المقروء وأحدث المحادثات التي فيها جديد. */
+export async function unreadConversations(user: SessionUser) {
+  const unread = (await listConversations(user)).filter((c) => c.unread > 0);
+  return {
+    total: unread.reduce((n, c) => n + c.unread, 0),
+    conversations: unread.slice(0, 5).map((c) => ({
+      id: c.id,
+      title: c.title,
+      preview: c.preview,
+      unread: c.unread,
+      lastAt: c.lastAt,
+    })),
+  };
 }
 
 /** طرف المحادثة فقط يصل إليها؛ غيره يرى «غير موجودة». */

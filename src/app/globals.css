@@ -21,7 +21,7 @@ body {
   background: var(--paper);
   color: var(--ink);
   font-family: "Noto Sans Arabic", "Segoe UI", Tahoma, sans-serif;
-  line-height: 1.65;
+  line-height: 1.5;
   font-size: 16px;
 }
 a {
@@ -453,7 +453,7 @@ img {
 .category-card h3 {
   font-size: 12px;
   margin: 0;
-  line-height: 1.8;
+  line-height: 1.5;
   flex: 1;
 }
 .category-icon {
@@ -802,7 +802,7 @@ img {
 }
 .profile-description {
   color: var(--muted);
-  line-height: 2;
+  line-height: 1.7;
   margin-top: 20px;
   white-space: pre-line;
 }
@@ -948,14 +948,14 @@ hr {
 .prose .lead {
   font-size: 20px;
   color: var(--olive);
-  line-height: 2;
+  line-height: 1.7;
 }
 .prose h2 {
   font-size: 24px;
   margin: 35px 0 15px;
 }
 .prose p {
-  line-height: 2.1;
+  line-height: 1.75;
   color: var(--muted);
 }
 .prose .button {
@@ -1255,7 +1255,7 @@ hr {
   }
   .hero-description {
     font-size: 14px;
-    line-height: 2;
+    line-height: 1.7;
   }
   .hero-search {
     width: 100%;
@@ -1900,7 +1900,7 @@ hr {
   .empty-state p,
   .page-intro p:not(.eyebrow) {
     font-size: 14px;
-    line-height: 1.8;
+    line-height: 1.55;
   }
   .producer-card {
     padding: 16px 14px;
@@ -1942,7 +1942,7 @@ hr {
   }
   .footer-top p {
     font-size: 13px;
-    line-height: 1.8;
+    line-height: 1.55;
   }
   .footer-top > div > a:not(.footer-brand) {
     font-size: 13px;
@@ -2231,7 +2231,7 @@ main {
   display: block;
   color: var(--muted);
   font-size: 11px;
-  line-height: 1.7;
+  line-height: 1.5;
   margin-top: 4px;
 }
 

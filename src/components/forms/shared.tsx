@@ -74,16 +74,9 @@ function AccountNavigation() {
           <Link href="/register">طلب انضمام كأسرة</Link>
         </>
       ) : (
-        <>
-          <Link href="/dashboard">لوحة الأسرة المنتجة</Link>
-          <Link href="/dashboard/products">المنتجات</Link>
-          <Link href="/dashboard/library">مكتبة الصور</Link>
-          <Link href="/dashboard/offers">عروض الأسرة المنتجة</Link>
-          <Link href="/dashboard/orders">طلبات الأسرة المنتجة</Link>
-          <Link href="/dashboard/coverage">مناطق التغطية</Link>
-        </>
+        // أقسام الأسرة في «لوحتي» بمربعات؛ «حساب الإدارة» في قائمة «حسابي» أعلى الموقع.
+        <Link href="/dashboard">لوحتي</Link>
       )}
-      {isManager(user) && <Link href="/admin">حساب الإدارة</Link>}
     </nav>
   );
 }

@@ -8,6 +8,7 @@ import {
   conversationMessages,
   sendMessage,
   unreadTotal,
+  unreadConversations,
 } from "../src/server/chat";
 
 test(
@@ -33,6 +34,7 @@ test(
       pending = mk("producer", "أسرة غير معتمدة");
     const familyId = randomUUID(),
       pendingId = randomUUID();
+    const ids: { product?: string } = {};
     try {
       for (const u of [customer, family, outsider, pending])
         await pool.query(
@@ -129,7 +131,59 @@ test(
         ],
       );
       assert.equal((await listConversations(outsider)).length, 0);
+
+      // تنبيه الرسائل الجديدة: المجموع وأحدث المحادثات بنص آخر رسالة.
+      await sendMessage(family, id, { body: "وصلك الطلب؟" });
+      const alert = await unreadConversations(customer);
+      assert.equal(alert.total, 1);
+      assert.equal(alert.conversations[0].id, id);
+      assert.equal(alert.conversations[0].preview, "وصلك الطلب؟");
+      assert.equal((await unreadConversations(outsider)).total, 0);
+
+      // بدء المحادثة من الطلب: صاحب الطلب والأسرة يصلان لنفس المحادثة، وغيرهما لا.
+      const productId = randomUUID(),
+        orderId = randomUUID(),
+        guestOrder = randomUUID();
+      ids.product = productId;
+      await pool.query(
+        "INSERT INTO jdatna.products(id,producer_id,name,description,unit,status) VALUES($1,$2,'طبق المحادثة','test','meal','available')",
+        [productId, familyId],
+      );
+      for (const [oid, uid] of [
+        [orderId, customer.id],
+        [guestOrder, null],
+      ])
+        await pool.query(
+          "INSERT INTO jdatna.order_requests(id,request_key,request_hash,user_id,producer_id,product_id,snapshot,customer_name,phone,quantity,meal,start_date,end_date,status) VALUES($1,$2,'h',$3,$4,$5,'{}','عميل','+966500000000',1,'lunch',current_date+1,current_date+1,'pending')",
+          [oid, randomUUID(), uid, familyId, productId],
+        );
+      assert.equal(
+        (await startConversation(customer, { order: orderId })).id,
+        id,
+      );
+      assert.equal(
+        (await startConversation(family, { order: orderId })).id,
+        id,
+      );
+      await assert.rejects(startConversation(outsider, { order: orderId }), {
+        status: 404,
+      });
+      await assert.rejects(startConversation(family, { order: guestOrder }), {
+        status: 400,
+      });
+      await assert.rejects(
+        startConversation(customer, { order: orderId, producer: "x" }),
+      );
     } finally {
+      if (ids.product) {
+        await pool.query(
+          "DELETE FROM jdatna.order_requests WHERE product_id=$1",
+          [ids.product],
+        );
+        await pool.query("DELETE FROM jdatna.products WHERE id=$1", [
+          ids.product,
+        ]);
+      }
       await pool.query(
         "DELETE FROM jdatna.messages WHERE conversation_id IN (SELECT id FROM jdatna.conversations WHERE producer_id=ANY($1::uuid[]))",
         [[familyId, pendingId]],
