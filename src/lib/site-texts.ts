@@ -22,7 +22,7 @@ export const siteTextDefaults = {
   "table.next": "الأطباق التالية",
   "region.auto": "حسب موقعك",
   "region.detecting": "نحدد منطقتك…",
-  "support.contact": "",
+  "support.contact": "0500785596",
   "support.hours": "نرد على الاستفسارات خلال يومي عمل.",
   "push.title": "فعّل الإشعارات",
   "push.body": "لتصلك الرسائل والطلبات الجديدة على جوالك حتى والموقع مغلق.",

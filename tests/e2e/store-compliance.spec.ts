@@ -31,6 +31,7 @@ test("store pages: support, account deletion and app verification files are publ
   await expect(
     page.getByRole("heading", { name: "الإبلاغ عن محتوى أو مستخدم" }),
   ).toBeVisible();
+  await expect(page.getByText("0500785596")).toBeVisible();
   await page.goto("/account/delete");
   await expect(
     page.getByRole("heading", { name: "حذف الحساب", level: 1 }),
