@@ -10,6 +10,7 @@ import {
   type AdvancedProfile,
 } from "./profile-advanced";
 import { CookingAvailability } from "./cooking-availability";
+import { SectionIcon } from "./section-icon";
 import {
   AccountShell,
   Guard,
@@ -531,6 +532,14 @@ function FamilyCategories({
     </section>
   );
 }
+/** أقسام لوحة الأسرة المنتجة: مربعات صغيرة بدل أسطر الروابط. */
+const familySections: [href: string, label: string, icon: string][] = [
+  ["/dashboard/products", "المنتجات", "products"],
+  ["/dashboard/orders", "الطلبات", "orders"],
+  ["/dashboard/offers", "العروض", "offers"],
+  ["/dashboard/library", "مكتبة الصور", "library"],
+  ["/dashboard/coverage", "التغطية", "coverage"],
+];
 export function Dashboard() {
   const session = useSession();
   return (
@@ -555,6 +564,21 @@ export function Dashboard() {
             </button>
             {session.user.role === "admin" && <a href="/admin">لوحة الإدارة</a>}
           </div>
+          {session.user.role === "producer" && (
+            <nav
+              className={`${s.adminNav} ${s.familyNav}`}
+              aria-label="أقسام الأسرة المنتجة"
+            >
+              <div className={s.adminNavGroup}>
+                {familySections.map(([href, label, icon]) => (
+                  <Link key={href} className={s.adminNavItem} href={href}>
+                    <SectionIcon name={icon} />
+                    <span>{label}</span>
+                  </Link>
+                ))}
+              </div>
+            </nav>
+          )}
           <ProfileForm />
         </>
       )}

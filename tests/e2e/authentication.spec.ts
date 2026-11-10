@@ -287,10 +287,15 @@ test("account navigation recognizes customer and producer identity", async ({
   await expect(
     nav.getByRole("link", { name: "طلباتي", exact: true }),
   ).toBeVisible();
-  await expect(nav.locator('a[href="/dashboard/products"]')).toHaveCount(0);
+  await expect(nav.locator('a[href="/dashboard"]')).toHaveCount(0);
   role = "producer";
+  // القائمة سطر واحد: «لوحتي» للأسرة، وأقسامها مربعات داخل اللوحة.
   await page.goto("/dashboard/orders");
-  await expect(nav.locator('a[href="/dashboard/products"]')).toBeVisible();
+  await expect(nav.getByRole("link", { name: "لوحتي" })).toHaveAttribute(
+    "href",
+    "/dashboard",
+  );
+  await expect(nav.locator('a[href="/dashboard/products"]')).toHaveCount(0);
 });
 
 for (const [role, destination] of [
