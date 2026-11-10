@@ -151,9 +151,9 @@ function Bouquet() {
     <span className="table-bouquet-wrap" aria-hidden="true">
       <svg
         className="table-bouquet"
-        viewBox="0 0 240 290"
+        viewBox="0 0 240 274"
         width="240"
-        height="290"
+        height="274"
         aria-hidden="true"
       >
         <defs>
@@ -168,6 +168,53 @@ function Bouquet() {
             <stop offset="1" stopColor="#000" stopOpacity="0.2" />
           </radialGradient>
         </defs>
+        {/* ظل التلامس على الخشب، ثم المزهرية مقصّرة كما تُرى من فوق */}
+        <ellipse
+          cx="120"
+          cy="262"
+          rx="54"
+          ry="11"
+          fill="#1a0f08"
+          opacity="0.45"
+        />
+        <ellipse
+          cx="120"
+          cy="260"
+          rx="36"
+          ry="7"
+          fill="#1a0f08"
+          opacity="0.4"
+        />
+        <g transform="translate(0 174) scale(1 0.78) translate(0 -174)">
+          <path
+            d="M92 174h56c-2 10-8 14-8 22 0 10 22 22 22 48 0 24-18 40-42 40s-42-16-42-40c0-26 22-38 22-48 0-8-6-12-8-22z"
+            fill="url(#jd-vase)"
+          />
+          <ellipse
+            cx="120"
+            cy="175"
+            rx="30"
+            ry="10"
+            fill="#3a271b"
+            stroke="#d9b98f"
+            strokeWidth="1.5"
+          />
+          <path
+            d="M88 230c20 6 44 6 64 0M86 244c22 7 46 7 68 0"
+            stroke="#b48a5f"
+            strokeWidth="2"
+            fill="none"
+            opacity="0.7"
+          />
+          <path
+            d="M98 208c-6 14-8 34-2 54"
+            stroke="#f4ead9"
+            strokeWidth="5"
+            strokeLinecap="round"
+            fill="none"
+            opacity="0.18"
+          />
+        </g>
         {/* سيقان من فوهة المزهرية إلى الزهور */}
         <g stroke="#4b6b3e" strokeWidth="2.5" strokeLinecap="round" fill="none">
           <path d="M120 180 100 128M120 180 150 80M120 180 70 64M120 180 168 128M120 180 120 92M120 180 86 102M120 180 140 118M120 180 58 128M120 180 178 102M120 180 196 58M120 180 42 118M120 180 124 148M120 180 176 160" />
@@ -270,35 +317,6 @@ function Bouquet() {
         {rosesData.map(([x, y, r, c, d]) => (
           <Rose key={`r${x}`} x={x} y={y} r={r} c={c} d={d} />
         ))}
-        {/* مزهرية برونزية داكنة بحزام */}
-        <path
-          d="M92 174h56c-2 10-8 14-8 22 0 10 22 22 22 48 0 24-18 40-42 40s-42-16-42-40c0-26 22-38 22-48 0-8-6-12-8-22z"
-          fill="url(#jd-vase)"
-        />
-        <ellipse
-          cx="120"
-          cy="175"
-          rx="30"
-          ry="6"
-          fill="#3a271b"
-          stroke="#d9b98f"
-          strokeWidth="1.5"
-        />
-        <path
-          d="M88 230c20 6 44 6 64 0M86 244c22 7 46 7 68 0"
-          stroke="#b48a5f"
-          strokeWidth="2"
-          fill="none"
-          opacity="0.7"
-        />
-        <path
-          d="M98 208c-6 14-8 34-2 54"
-          stroke="#f4ead9"
-          strokeWidth="5"
-          strokeLinecap="round"
-          fill="none"
-          opacity="0.18"
-        />
       </svg>
     </span>
   );

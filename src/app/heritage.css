@@ -980,8 +980,7 @@ main::before {
   display: block;
   width: clamp(130px, 36vw, 200px);
   height: auto;
-  filter: drop-shadow(6px 8px 6px #00000045);
-  animation: table-bouquet-float 4.5s ease-in-out infinite;
+  filter: drop-shadow(3px 4px 3px #00000035);
   transform-origin: 50% 100%;
 }
 .table-3d .table-empty {
@@ -989,6 +988,7 @@ main::before {
   min-height: clamp(190px, 46vw, 230px);
 }
 .table-bouquet-shadow {
+  display: none;
   position: absolute;
   top: 44%;
   left: 50%;
