@@ -149,6 +149,8 @@ export const productSchema = z.object({
   shelfLife: optionalText(250),
   preparationTime: optionalText(250),
   story: optionalText(2000),
+  /** صورة المنتج من مكتبة صور الأسرة. */
+  libraryPhotoId: z.uuid().optional(),
 });
 export const reviewSchema = z
   .object({

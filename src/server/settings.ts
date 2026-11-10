@@ -11,7 +11,7 @@ import {
 
 export const siteTemplates = ["najdi", "classic"] as const;
 export type SiteTemplate = (typeof siteTemplates)[number];
-const fallback: SiteTemplate = "najdi";
+const fallback: SiteTemplate = "classic";
 
 /** قالب الواجهة الحالي؛ أي خطأ في القراءة يعيد القالب الافتراضي ولا يوقف الصفحة. */
 export async function getSiteTemplate(): Promise<SiteTemplate> {

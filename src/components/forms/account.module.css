@@ -402,3 +402,49 @@
 .categoryItem > form {
   padding-block: 8px 12px;
 }
+/* مكتبة الصور */
+.library {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+  gap: 14px;
+}
+.library img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 8px;
+  background: #efe0c6;
+}
+.library h3 {
+  margin: 6px 0 2px;
+}
+.picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 110px), 1fr));
+  gap: 10px;
+}
+.picker label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: center;
+  font-size: 13px;
+}
+.picker label:has(input:checked) {
+  border-color: #486443;
+  background: #eef3e8;
+}
+.picker img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 6px;
+}

@@ -76,6 +76,7 @@ function AccountNavigation() {
         <>
           <Link href="/dashboard">لوحة الأسرة المنتجة</Link>
           <Link href="/dashboard/products">المنتجات</Link>
+          <Link href="/dashboard/library">مكتبة الصور</Link>
           <Link href="/dashboard/offers">عروض الأسرة المنتجة</Link>
           <Link href="/dashboard/orders">طلبات الأسرة المنتجة</Link>
           <Link href="/dashboard/coverage">مناطق التغطية</Link>
