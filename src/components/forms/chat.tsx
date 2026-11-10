@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { AccountShell, Guard, api, useSession } from "./shared";
 import c from "./chat.module.css";
+import { UNREAD_REFRESH } from "@/components/public/message-alert";
 
 type Summary = {
   id: string;
@@ -85,7 +86,8 @@ export function Messages() {
             ) : list.length === 0 ? (
               <p className={c.empty}>
                 لا توجد محادثات بعد. افتح صفحة أسرة منتجة أو منتج واضغط «مراسلة
-                الأسرة المنتجة».
+                الأسرة المنتجة»، أو «مراسلة» من أي طلب في «طلباتي».{" "}
+                <Link href="/producers">تصفح الأسر المنتجة ←</Link>
               </p>
             ) : (
               list.map((x) => (
@@ -149,7 +151,12 @@ function Conversation({ id, onBack }: { id: string; onBack: () => void }) {
   useEffect(() => {
     let active = true;
     api<Thread>(`/api/conversations/${encodeURIComponent(id)}`)
-      .then((d) => active && setThread(d))
+      .then((d) => {
+        if (!active) return;
+        setThread(d);
+        // قُرئت المحادثة: تحدّث شارة الرسائل الجديدة فورًا.
+        window.dispatchEvent(new Event(UNREAD_REFRESH));
+      })
       .catch((e) => active && setError((e as Error).message));
     return () => {
       active = false;
@@ -279,6 +286,47 @@ function Conversation({ id, onBack }: { id: string; onBack: () => void }) {
           </svg>
         </button>
       </form>
+    </>
+  );
+}
+
+/** زر «مراسلة» من الطلب: صاحب الطلب يراسل الأسرة، والأسرة تراسل صاحب الطلب. */
+export function OrderChatButton({
+  orderId,
+  label,
+  className = "button",
+}: {
+  orderId: string;
+  label: string;
+  className?: string;
+}) {
+  const router = useRouter();
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  return (
+    <>
+      <button
+        type="button"
+        className={className}
+        disabled={busy}
+        onClick={async () => {
+          setBusy(true);
+          setError("");
+          try {
+            const d = await api<{ id: string }>("/api/conversations", {
+              method: "POST",
+              body: JSON.stringify({ order: orderId }),
+            });
+            router.push(`/messages?c=${encodeURIComponent(d.id)}`);
+          } catch (e) {
+            setError((e as Error).message);
+            setBusy(false);
+          }
+        }}
+      >
+        {busy ? "جارٍ فتح المحادثة…" : label}
+      </button>
+      {error && <p role="alert">{error}</p>}
     </>
   );
 }

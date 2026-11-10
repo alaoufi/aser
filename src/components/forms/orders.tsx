@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ORDERS_CHANGED } from "@/components/public/order-alert";
 import { RatingBox } from "./rating-box";
+import { OrderChatButton } from "./chat";
 import {
   AccountShell,
   Guard,
@@ -770,15 +771,20 @@ export function Orders({ producer = false }: { producer?: boolean }) {
                     : `${order.snapshot.offer ? order.snapshot.offer.price : order.snapshot.price} ر.س للوحدة، قبل الاتفاق`}
                 </p>
                 {order.notes && <p>{order.notes}</p>}
-                {
-                  <button
+                <div className={s.actions}>
+                  <OrderChatButton
+                    orderId={order.id}
+                    label="مراسلة الأسرة المنتجة"
                     className={s.button}
+                  />
+                  <button
+                    className={s.buttonSecondary}
                     disabled={busy}
                     onClick={() => reorder(order.id)}
                   >
                     إعداد طلب جديد من المنتج
                   </button>
-                }
+                </div>
                 {!["declined", "cancelled"].includes(order.status) && (
                   <RatingBox
                     kind="product"
@@ -867,6 +873,9 @@ function ProducerOrder({
           <dd>{price(order)}</dd>
         </div>
       </dl>
+      {order.customerId && (
+        <OrderChatButton orderId={order.id} label="مراسلة صاحب الطلب" />
+      )}
       {order.customerId &&
         !["declined", "cancelled"].includes(order.status) && (
           <RatingBox

@@ -73,6 +73,7 @@ export function MobileNavigation({ switcher }: { switcher?: React.ReactNode }) {
         <Link href="/producers">الأسر المنتجة</Link>
         <Link href="/offers">العروض الخاصة</Link>
         <Link href="/orders">طلباتي</Link>
+        <Link href="/messages">المحادثات</Link>
         <Link href="/about">حكايتنا</Link>
         <AccountLink />
         {switcher}

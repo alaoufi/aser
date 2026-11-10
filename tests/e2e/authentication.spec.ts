@@ -250,14 +250,15 @@ test("public branding uses one login entry and the updated logo and name", async
 }) => {
   await page.goto("/login");
   await expect(page).toHaveTitle("تسجيل الدخول | أكلات جدتنا");
-  await expect(page.locator("header .header-actions a")).toHaveCount(1);
-  await expect(page.locator("header .header-actions a")).toHaveText(
-    "تسجيل الدخول",
-  );
-  await expect(page.locator("header .header-actions a")).toHaveAttribute(
-    "href",
-    "/login",
-  );
+  await expect(
+    page.locator("header .header-actions a:not(.messages-link)"),
+  ).toHaveCount(1);
+  await expect(
+    page.locator("header .header-actions a:not(.messages-link)"),
+  ).toHaveText("تسجيل الدخول");
+  await expect(
+    page.locator("header .header-actions a:not(.messages-link)"),
+  ).toHaveAttribute("href", "/login");
   await expect(page.locator('.mobile-nav a[href="/login"]')).toHaveCount(1);
   await expect(page.locator('header a[href="/register"]')).toHaveCount(0);
   await expect(page.locator(".brand-logo")).toHaveAttribute(
@@ -326,11 +327,12 @@ for (const [role, destination] of [
     ).toHaveAttribute("href", destination);
     await page.reload();
     await expect(page.getByText("أنت مسجل الدخول بالفعل.")).toBeVisible();
-    await expect(page.locator("header .header-actions a")).toHaveText("حسابي");
-    await expect(page.locator("header .header-actions a")).toHaveAttribute(
-      "href",
-      destination,
-    );
+    await expect(
+      page.locator("header .header-actions a:not(.messages-link)"),
+    ).toHaveText("حسابي");
+    await expect(
+      page.locator("header .header-actions a:not(.messages-link)"),
+    ).toHaveAttribute("href", destination);
     await expect(
       page
         .locator(".mobile-nav")
