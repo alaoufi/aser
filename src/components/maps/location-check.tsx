@@ -1,5 +1,6 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { visitorLocation } from "@/lib/visitor-location";
 import type { LatLng } from "@/lib/geo";
 import { MapView, currentLocation } from "./map-view";
 
@@ -14,6 +15,18 @@ export function LocationCheck({ producerSlug }: { producerSlug: string }) {
   const [result, setResult] = useState<Result | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  // الفحص تلقائي بموقع الزائر في هذه الزيارة؛ الخريطة للتعديل اليدوي.
+  useEffect(() => {
+    let active = true;
+    visitorLocation().then((p) => {
+      if (!active || !p) return;
+      setFocus(p);
+      check(p);
+    });
+    return () => {
+      active = false;
+    };
+  }, [producerSlug]);
   async function check(p: LatLng) {
     setPoint(p);
     setBusy(true);
@@ -38,7 +51,8 @@ export function LocationCheck({ producerSlug }: { producerSlug: string }) {
     <section className="coverage-check" aria-label="هل توصل الأسرة لموقعك؟">
       <h3>هل توصل الأسرة لموقعك؟</h3>
       <p className="muted">
-        اضغط على الخريطة عند موقعك، أو استخدم موقعك الحالي. لا نحفظ موقعك.
+        نفحص موقعك الحالي تلقائيًا، ولتعديله اضغط على الخريطة عند موقعك. لا نحفظ
+        موقعك.
       </p>
       <div className="map-tools">
         <button

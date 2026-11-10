@@ -32,6 +32,8 @@ export function TodayTable({
     | "table.prev"
     | "table.next"
     | "delivery.kingdom"
+    | "region.auto"
+    | "region.detecting"
   >;
   products: Product[];
   regions: Region[];
@@ -55,7 +57,13 @@ export function TodayTable({
         >
           {texts["table.title"] || "مائدة اليوم"}
         </h2>
-        <RegionPicker regions={regions} value={region} path={path} />
+        <RegionPicker
+          regions={regions}
+          value={region}
+          path={path}
+          autoLabel={texts["region.auto"]}
+          detectingLabel={texts["region.detecting"]}
+        />
       </div>
       {/* مائدة خشب كبيرة ثلاثية الأبعاد بأرجل قصيرة */}
       <div className="table-3d">
