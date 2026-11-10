@@ -33,6 +33,20 @@ test("admin edits, deletes and restores visible site texts", async ({
       hidden: false,
     },
     {
+      key: "about.h1",
+      value: "من أهل الصنعة إليك",
+      original: "من أهل الصنعة إليك",
+      edited: false,
+      hidden: false,
+    },
+    {
+      key: "about.p1",
+      value: "تصفح الأسر والمنتجات",
+      original: "تصفح الأسر والمنتجات",
+      edited: false,
+      hidden: false,
+    },
+    {
       key: "footer.made",
       value: "",
       original: "صُنع ليقرّب أهل الدار",
@@ -92,7 +106,17 @@ test("admin edits, deletes and restores visible site texts", async ({
     .uncheck();
   await expect.poll(() => sent.length).toBe(5);
   expect(sent[4]).toEqual({ key: "table.title", hidden: false });
+  // الفقرة: «إخفاء العنوان» و«إخفاء النص» متجاوران أعلى بطاقتها.
+  const paragraph = page.getByRole("group", {
+    name: "إخفاء العنوان الفرعي الأول",
+  });
+  await paragraph.getByRole("checkbox", { name: "إخفاء النص" }).check();
+  await expect.poll(() => sent.length).toBe(6);
+  expect(sent[5]).toEqual({ key: "about.p1", hidden: true });
   await expect(
-    page.getByRole("checkbox", { name: "إخفاء النص" }).first(),
-  ).toBeVisible();
+    paragraph.getByRole("checkbox", { name: "إخفاء العنوان" }),
+  ).not.toBeChecked();
+  await expect(page.getByLabel("الفقرة الأولى")).toHaveValue(
+    "تصفح الأسر والمنتجات",
+  );
 });
