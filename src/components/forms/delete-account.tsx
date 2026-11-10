@@ -7,7 +7,9 @@ import { stopPushOnLogout } from "@/components/public/push-setup";
 const CONFIRM = "حذف حسابي";
 
 /** نموذج حذف الحساب: يكتب المستخدم «حذف حسابي» ثم يؤكد. */
-export function DeleteAccount() {
+export function DeleteAccount({
+  embedded = false,
+}: { embedded?: boolean } = {}) {
   const session = useSession();
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -35,6 +37,15 @@ export function DeleteAccount() {
         e.preventDefault();
         setBusy(true);
         setError("");
+        // التأكيد الأخير قبل الحذف النهائي.
+        if (
+          !window.confirm(
+            "تأكيد أخير: سيُحذف حسابك وكل متعلقاته نهائيًا ولا يمكن استرجاعه. هل تريد المتابعة؟",
+          )
+        ) {
+          setBusy(false);
+          return;
+        }
         try {
           await stopPushOnLogout();
           await api("/api/account/delete", {
@@ -49,7 +60,7 @@ export function DeleteAccount() {
         }
       }}
     >
-      <h2>تأكيد الحذف</h2>
+      {!embedded && <h2>تأكيد الحذف</h2>}
       <p>
         الحساب: <strong>{session.user.name}</strong> (
         <bdi>{session.user.phone}</bdi>)
@@ -74,5 +85,64 @@ export function DeleteAccount() {
         {busy ? "جارٍ الحذف…" : "حذف حسابي نهائيًا"}
       </button>
     </form>
+  );
+}
+
+/**
+ * «حذف حسابي» داخل الحساب: زر ثم تحذير بما يُحذف، ثم كتابة «حذف حسابي»،
+ * ثم تأكيد أخير — ثلاث رسائل تأكيد قبل الحذف النهائي.
+ */
+export function DeleteAccountSection() {
+  const [step, setStep] = useState<0 | 1 | 2>(0);
+  return (
+    <section className="delete-account-section" aria-label="حذف الحساب">
+      {step === 0 && (
+        <button
+          type="button"
+          className="delete-account-open"
+          onClick={() => setStep(1)}
+        >
+          حذف حسابي
+        </button>
+      )}
+      {step === 1 && (
+        <div
+          className="delete-account"
+          role="alertdialog"
+          aria-label="هل تريد حذف حسابك؟"
+        >
+          <h2>هل تريد حذف حسابك؟</h2>
+          <p>
+            سيُحذف حسابك وكل متعلقاته نهائيًا: طلباتك، وتقييماتك، وللأسرة
+            المنتجة منتجاتها وعروضها وطلباتها وصورها ومستنداتها. تبقى المحادثات
+            فقط للرجوع إليها عند النزاع. لا يمكن التراجع بعد الحذف.
+          </p>
+          <div className="delete-account-actions">
+            <button type="button" className="button" onClick={() => setStep(0)}>
+              تراجع، أبقِ حسابي
+            </button>
+            <button
+              type="button"
+              className="button danger"
+              onClick={() => setStep(2)}
+            >
+              نعم، أريد الحذف
+            </button>
+          </div>
+        </div>
+      )}
+      {step === 2 && (
+        <>
+          <DeleteAccount embedded />
+          <button
+            type="button"
+            className="delete-account-cancel"
+            onClick={() => setStep(0)}
+          >
+            إلغاء
+          </button>
+        </>
+      )}
+    </section>
   );
 }

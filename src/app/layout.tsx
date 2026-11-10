@@ -144,7 +144,6 @@ export default async function RootLayout({
               <Link href="/privacy">سياسة الخصوصية</Link>
               <Link href="/terms">شروط الاستخدام</Link>
               <Link href="/support">الدعم والتواصل</Link>
-              <Link href="/account/delete">حذف الحساب</Link>
             </div>
           </div>
           <div className="footer-bottom">

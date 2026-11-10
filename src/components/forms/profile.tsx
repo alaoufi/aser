@@ -11,6 +11,7 @@ import {
 } from "./profile-advanced";
 import { CookingAvailability } from "./cooking-availability";
 import { SectionIcon } from "./section-icon";
+import { DeleteAccountSection } from "./delete-account";
 import { stopPushOnLogout } from "@/components/public/push-setup";
 import {
   AccountShell,
@@ -582,6 +583,7 @@ export function Dashboard() {
             </nav>
           )}
           <ProfileForm />
+          <DeleteAccountSection />
         </>
       )}
     </AccountShell>
