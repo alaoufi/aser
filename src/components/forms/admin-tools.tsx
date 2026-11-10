@@ -664,3 +664,51 @@ export function OrdersAdmin() {
     </section>
   );
 }
+/** قالب الواجهة: الباب النجدي أو الكلاسيكي، ويسري فورًا على كل الصفحات. */
+export function TemplateAdmin() {
+  const r = useResource<{ template: "najdi" | "classic" }>(
+    "/api/admin/settings",
+  );
+  const options = [
+    [
+      "najdi",
+      "الباب النجدي",
+      "جدار طين وباب ونوافذ خشب، والأقسام نوافذ، والتوفر أبواب.",
+    ],
+    [
+      "classic",
+      "الكلاسيكي",
+      "القوس النجدي وطبق الخوص وصور الأطباق، كما كان الموقع.",
+    ],
+  ] as const;
+  return (
+    <section>
+      <h2>قالب الموقع</h2>
+      <Message error={r.error} success={r.success} />
+      {!r.data && !r.error ? (
+        <p role="status">جارٍ تحميل القالب…</p>
+      ) : (
+        <fieldset className={`${s.card} ${s.form}`}>
+          <legend>اختر قالب الواجهة</legend>
+          {options.map(([id, label, hint]) => (
+            <label key={id} className={s.field}>
+              <span>
+                <input
+                  type="radio"
+                  name="template"
+                  value={id}
+                  checked={r.data?.template === id}
+                  disabled={r.busy}
+                  onChange={() => r.write("PUT", { template: id })}
+                />{" "}
+                <strong>{label}</strong>
+                {r.data?.template === id ? " (المفعّل)" : ""}
+              </span>
+              <small>{hint}</small>
+            </label>
+          ))}
+        </fieldset>
+      )}
+    </section>
+  );
+}
