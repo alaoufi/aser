@@ -6,6 +6,15 @@ import { ProductPhoto } from "./product-photo";
 import { LibraryPicker, type LibraryPhoto } from "./library";
 import { DeliveryScopeFields, readDeliveryScope } from "./delivery-scope";
 import { AccountShell, Guard, Message, api, s, useSession } from "./shared";
+import {
+  fieldShown,
+  type ProductFieldKey,
+  type ProductFields,
+} from "@/lib/product-fields";
+/** حقل أخفته الإدارة: لا يظهر، وتبقى قيمته السابقة كما هي عند الحفظ. */
+function Keep({ name, value }: { name: string; value: unknown }) {
+  return <input type="hidden" name={name} value={String(value ?? "")} />;
+}
 const statusLabels = {
   available: "متوفر",
   unavailable: "غير متوفر",
@@ -27,9 +36,13 @@ export function Products() {
   const [success, setSuccess] = useState("");
   const [contactPrice, setContactPrice] = useState(false);
   const [libraryPhoto, setLibraryPhoto] = useState("");
+  const [fields, setFields] = useState<ProductFields | null>(null);
+  const show = (k: ProductFieldKey) => fieldShown(fields, k);
   async function load() {
     const [p, c] = await Promise.all([
-      api<{ products: Product[] }>("/api/producer/products"),
+      api<{ products: Product[]; fields?: ProductFields }>(
+        "/api/producer/products",
+      ),
       api<{
         categories: Category[];
         profile: {
@@ -40,6 +53,7 @@ export function Products() {
       }>("/api/producer/profile"),
     ]);
     setProducts(p.products);
+    setFields(p.fields ?? null);
     setCategories(c.categories);
     setMine(c.profile?.categoryIds ?? []);
     setFamilyScope({
@@ -122,7 +136,11 @@ export function Products() {
       setError("اختر تصنيفًا للمنتج.");
       return;
     }
-    const price = contactPrice ? null : Number(f.get("price"));
+    const price = !show("price")
+      ? (editing?.price ?? null)
+      : contactPrice
+        ? null
+        : Number(f.get("price"));
     if (price !== null && (!Number.isFinite(price) || price < 0)) {
       setError("أدخل سعرًا صحيحًا.");
       return;
@@ -196,33 +214,35 @@ export function Products() {
               data-product-form
             >
               <h2>{editing ? "تعديل المنتج" : "منتج جديد"}</h2>
-              <LibraryPicker
-                value={libraryPhoto}
-                onPick={(photo: LibraryPhoto | null) => {
-                  setLibraryPhoto(photo?.id ?? "");
-                  if (!photo) return;
-                  // اختيار طبق من المكتبة يملأ الاسم والوصف والقسم إن كانت فارغة.
-                  const form = document.querySelector<HTMLFormElement>(
-                    `form[data-product-form]`,
-                  );
-                  const fill = (name: string, value: string) => {
-                    const el = form?.querySelector<
-                      HTMLInputElement | HTMLTextAreaElement
-                    >(`[name="${name}"]`);
-                    if (el && !el.value.trim() && value) el.value = value;
-                  };
-                  fill("name", photo.name);
-                  fill("description", photo.description);
-                  if (photo.categoryId) {
-                    const boxes = form?.querySelectorAll<HTMLInputElement>(
-                      'input[name="categoryIds"]',
+              {show("library") && (
+                <LibraryPicker
+                  value={libraryPhoto}
+                  onPick={(photo: LibraryPhoto | null) => {
+                    setLibraryPhoto(photo?.id ?? "");
+                    if (!photo) return;
+                    // اختيار طبق من المكتبة يملأ الاسم والوصف والقسم إن كانت فارغة.
+                    const form = document.querySelector<HTMLFormElement>(
+                      `form[data-product-form]`,
                     );
-                    if (boxes && ![...boxes].some((b) => b.checked))
-                      for (const b of boxes)
-                        if (b.value === photo.categoryId) b.checked = true;
-                  }
-                }}
-              />
+                    const fill = (name: string, value: string) => {
+                      const el = form?.querySelector<
+                        HTMLInputElement | HTMLTextAreaElement
+                      >(`[name="${name}"]`);
+                      if (el && !el.value.trim() && value) el.value = value;
+                    };
+                    fill("name", photo.name);
+                    fill("description", photo.description);
+                    if (photo.categoryId) {
+                      const boxes = form?.querySelectorAll<HTMLInputElement>(
+                        'input[name="categoryIds"]',
+                      );
+                      if (boxes && ![...boxes].some((b) => b.checked))
+                        for (const b of boxes)
+                          if (b.value === photo.categoryId) b.checked = true;
+                    }
+                  }}
+                />
+              )}
               <div className={s.grid}>
                 <label className={s.field}>
                   اسم المنتج
@@ -233,45 +253,55 @@ export function Products() {
                     defaultValue={editing?.name}
                   />
                 </label>
-                <label className={s.field}>
-                  وحدة البيع
-                  <input
-                    name="unit"
-                    required
-                    defaultValue={editing?.unit || "طبق"}
-                    maxLength={60}
-                  />
-                </label>
-                <label className={s.field}>
-                  <span className="sr-only">التوفر</span>
-                  <select
-                    name="status"
-                    defaultValue={editing?.status || "available"}
-                  >
-                    <option value="" disabled>
-                      اختر حالة التوفر
-                    </option>
-                    {Object.entries(statusLabels).map(([v, n]) => (
-                      <option key={v} value={v}>
-                        {n}
+                {show("unit") ? (
+                  <label className={s.field}>
+                    وحدة البيع
+                    <input
+                      name="unit"
+                      required
+                      defaultValue={editing?.unit || "طبق"}
+                      maxLength={60}
+                    />
+                  </label>
+                ) : (
+                  <Keep name="unit" value={editing?.unit || "طبق"} />
+                )}
+                {show("status") ? (
+                  <label className={s.field}>
+                    <span className="sr-only">التوفر</span>
+                    <select
+                      name="status"
+                      defaultValue={editing?.status || "available"}
+                    >
+                      <option value="" disabled>
+                        اختر حالة التوفر
                       </option>
-                    ))}
-                  </select>
-                </label>
-                <label className={s.field}>
-                  السعر بالريال
-                  <input
-                    name="price"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    required={!contactPrice}
-                    disabled={contactPrice}
-                    defaultValue={editing?.price ?? ""}
-                  />
-                </label>
+                      {Object.entries(statusLabels).map(([v, n]) => (
+                        <option key={v} value={v}>
+                          {n}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ) : (
+                  <Keep name="status" value={editing?.status || "available"} />
+                )}
+                {show("price") && (
+                  <label className={s.field}>
+                    السعر بالريال
+                    <input
+                      name="price"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      required={!contactPrice}
+                      disabled={contactPrice}
+                      defaultValue={editing?.price ?? ""}
+                    />
+                  </label>
+                )}
               </div>
-              <label className={s.checks}>
+              <label className={s.checks} hidden={!show("price")}>
                 <input
                   type="checkbox"
                   checked={contactPrice}
@@ -279,27 +309,48 @@ export function Products() {
                 />
                 السعر عند التواصل
               </label>
-              <label className={s.field}>
-                تفاصيل المنتج
-                <textarea
-                  name="description"
-                  required
-                  maxLength={4000}
-                  defaultValue={editing?.description}
-                />
-              </label>
+              {show("description") ? (
+                <label className={s.field}>
+                  تفاصيل المنتج
+                  <textarea
+                    name="description"
+                    required
+                    maxLength={4000}
+                    defaultValue={editing?.description}
+                  />
+                </label>
+              ) : (
+                <Keep name="description" value={editing?.description} />
+              )}
               {/* يُعرض في كل إضافة: افتراضي الأسرة، أو قيمة المنتج عند التعديل. */}
-              <DeliveryScopeFields
-                legend="نطاق توصيل هذا المنتج"
-                defaultScope={
-                  editing?.deliveryScope ?? familyScope.deliveryScope
-                }
-                defaultFee={
-                  editing
-                    ? (editing.shippingFee ?? null)
-                    : familyScope.shippingFee
-                }
-              />
+              {show("deliveryScope") ? (
+                <DeliveryScopeFields
+                  legend="نطاق توصيل هذا المنتج"
+                  defaultScope={
+                    editing?.deliveryScope ?? familyScope.deliveryScope
+                  }
+                  defaultFee={
+                    editing
+                      ? (editing.shippingFee ?? null)
+                      : familyScope.shippingFee
+                  }
+                />
+              ) : (
+                <>
+                  <Keep
+                    name="deliveryScope"
+                    value={editing?.deliveryScope ?? familyScope.deliveryScope}
+                  />
+                  <Keep
+                    name="shippingFee"
+                    value={
+                      editing
+                        ? (editing.shippingFee ?? "")
+                        : (familyScope.shippingFee ?? "")
+                    }
+                  />
+                </>
+              )}
               <fieldset>
                 <legend>القسم (من أقسامك)</legend>
                 {mine.length === 0 && (
@@ -323,14 +374,18 @@ export function Products() {
                     ))}
                 </div>
               </fieldset>
-              <label className={s.field}>
-                مسببات الحساسية · افصل بفاصلة عربية (،)
-                <input
-                  name="allergens"
-                  defaultValue={editing?.allergens.join("، ")}
-                  placeholder="الحليب، المكسرات، القمح"
-                />
-              </label>
+              {show("allergens") ? (
+                <label className={s.field}>
+                  مسببات الحساسية · افصل بفاصلة عربية (،)
+                  <input
+                    name="allergens"
+                    defaultValue={editing?.allergens.join("، ")}
+                    placeholder="الحليب، المكسرات، القمح"
+                  />
+                </label>
+              ) : (
+                <Keep name="allergens" value={editing?.allergens.join("، ")} />
+              )}
               <div className={s.grid}>
                 {(
                   [
@@ -339,25 +394,33 @@ export function Products() {
                     ["shelfLife", "مدة الصلاحية"],
                     ["preparationTime", "وقت التجهيز"],
                   ] as const
-                ).map(([key, label]) => (
-                  <label className={s.field} key={key}>
-                    {label}
-                    <input
-                      name={key}
-                      defaultValue={editing?.[key] || ""}
-                      maxLength={1000}
-                    />
-                  </label>
-                ))}
+                ).map(([key, label]) =>
+                  !show(key) ? (
+                    <Keep key={key} name={key} value={editing?.[key]} />
+                  ) : (
+                    <label className={s.field} key={key}>
+                      {label}
+                      <input
+                        name={key}
+                        defaultValue={editing?.[key] || ""}
+                        maxLength={1000}
+                      />
+                    </label>
+                  ),
+                )}
               </div>
-              <label className={s.field}>
-                قصة الأكلة (اختياري)
-                <textarea
-                  name="story"
-                  defaultValue={editing?.story || ""}
-                  maxLength={3000}
-                />
-              </label>
+              {show("story") ? (
+                <label className={s.field}>
+                  قصة الأكلة (اختياري)
+                  <textarea
+                    name="story"
+                    defaultValue={editing?.story || ""}
+                    maxLength={3000}
+                  />
+                </label>
+              ) : (
+                <Keep name="story" value={editing?.story} />
+              )}
               <p className={s.muted}>
                 احفظ المنتج أولًا، ثم أضف صورته من بطاقته أدناه. تأكد من الإفصاح
                 عن معلومات السلامة والحساسية اللازمة لمنتجك.

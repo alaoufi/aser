@@ -92,6 +92,9 @@ test("phone verification moves to code entry and reports server failure", async 
 test("admin category validates slug before sending and preserves errors from server", async ({
   page,
 }) => {
+  await page.route("**/api/admin/product-fields", (route) =>
+    route.fulfill({ json: { fields: {} } }),
+  );
   await page.route("**/api/session", (route) =>
     route.fulfill({
       json: {

@@ -2,7 +2,12 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { db } from "../src/server/db";
-import { manageProduct, ownProducts } from "../src/server/management";
+import {
+  manageProduct,
+  ownProducts,
+  saveProduct,
+} from "../src/server/management";
+import { getProductFields, setProductField } from "../src/server/settings";
 import {
   moderateProduct,
   saveCategory,
@@ -121,6 +126,44 @@ test(
       await setCategoryHidden(admin, { id: categoryId, hidden: false });
       assert.ok((await getCategories()).some((c) => c.id === categoryId));
 
+      // حقول نموذج المنتج: الإدارة تحذف «تفاصيل المنتج» فيُقبل المنتج دونها.
+      await pool.query(
+        "INSERT INTO jdatna.producer_categories(producer_id,category_id) VALUES($1,$2)",
+        [familyId, categoryId],
+      );
+      const bare = {
+        name: "كعك",
+        description: "",
+        price: 10,
+        unit: "طبق",
+        status: "available",
+        categoryIds: [categoryId],
+      };
+      await assert.rejects(saveProduct(family, bare, false), { status: 400 });
+      await assert.rejects(
+        setProductField(family, { key: "description", state: "deleted" }),
+        { status: 403 },
+      );
+      await setProductField(admin, { key: "description", state: "deleted" });
+      await setProductField(admin, { key: "story", state: "hidden" });
+      const fields = await getProductFields();
+      assert.equal(fields.description, "deleted");
+      assert.equal(fields.story, "hidden");
+      assert.equal(fields.unit, "shown");
+      await saveProduct(family, bare, false);
+      assert.equal(
+        (
+          await pool.query(
+            "SELECT count(*)::int AS n FROM jdatna.products WHERE producer_id=$1 AND name='كعك'",
+            [familyId],
+          )
+        ).rows[0].n,
+        1,
+      );
+      await setProductField(admin, { key: "description", state: "shown" });
+      await setProductField(admin, { key: "story", state: "shown" });
+      assert.equal((await getProductFields()).description, "shown");
+
       // قسم جديد بلا رابط مختصر: يُنشأ داخليًا، ويبقى عند التعديل.
       const made = await saveCategory(
         admin,
@@ -142,14 +185,29 @@ test(
       );
       assert.equal(await slugOf(), `cat-${made.id}`);
     } finally {
+      for (const t of ["product_categories", "product_allergens"])
+        await pool.query(
+          `DELETE FROM jdatna.${t} WHERE product_id IN (SELECT id FROM jdatna.products WHERE producer_id=$1)`,
+          [familyId],
+        );
+      await pool.query(
+        "DELETE FROM jdatna.producer_categories WHERE producer_id=$1",
+        [familyId],
+      );
+      await pool.query("DELETE FROM jdatna.products WHERE producer_id=$1", [
+        familyId,
+      ]);
+      await pool.query("DELETE FROM jdatna.producer_profiles WHERE id=$1", [
+        familyId,
+      ]);
       await pool.query(
         "DELETE FROM jdatna.categories WHERE id=ANY($1::text[])",
         [[categoryId, ...created]],
       );
-      await pool.query("DELETE FROM jdatna.products WHERE id=$1", [productId]);
-      await pool.query("DELETE FROM jdatna.producer_profiles WHERE id=$1", [
-        familyId,
-      ]);
+      await pool.query(
+        "DELETE FROM jdatna.site_settings WHERE updated_by=ANY($1::uuid[])",
+        [[family.id, other.id, admin.id]],
+      );
       await pool.query(
         "DELETE FROM jdatna.admin_audit_logs WHERE actor_id=ANY($1::uuid[])",
         [[family.id, other.id, admin.id]],

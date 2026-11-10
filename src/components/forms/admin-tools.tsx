@@ -9,6 +9,12 @@ import {
   type SiteTextKey,
 } from "@/lib/site-texts";
 import { api, Message, s } from "./shared";
+import {
+  productFieldKeys,
+  productFieldLabels,
+  type ProductFields,
+  type ProductFieldState,
+} from "@/lib/product-fields";
 function useResource<T>(url: string) {
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState("");
@@ -991,6 +997,92 @@ export function AppLinksAdmin() {
           </button>
         </form>
       ) : null}
+    </section>
+  );
+}
+
+/** حقول نموذج «إضافة منتج» عند الأسر: إخفاء أو حذف أو إعادة كل حقل. */
+export function ProductFieldsAdmin() {
+  const r = useResource<{ fields: ProductFields }>("/api/admin/product-fields");
+  const fields = r.data?.fields;
+  const set = (key: string, state: ProductFieldState) =>
+    r.write("PUT", { key, state });
+  const shown = productFieldKeys.filter((k) => fields?.[k] !== "deleted");
+  const deleted = productFieldKeys.filter((k) => fields?.[k] === "deleted");
+  return (
+    <section aria-labelledby="product-fields-title">
+      <h2 id="product-fields-title">حقول إضافة المنتج</h2>
+      <p className={s.muted}>
+        الحقول التي تظهر للأسرة عند إضافة منتج. اسم المنتج والقسم أساسيان ولا
+        يُخفيان. الحقل المخفي أو المحذوف لا يظهر في النموذج، وتبقى قيم المنتجات
+        السابقة كما هي.
+      </p>
+      <Message error={r.error} success={r.success} />
+      {!fields && !r.error && <p role="status">جارٍ التحميل…</p>}
+      {fields && (
+        <div className={s.productRows}>
+          {shown.map((k) => (
+            <div className={s.productRow} key={k}>
+              <span className={s.productInfo}>
+                {productFieldLabels[k]}
+                {fields[k] === "hidden" && (
+                  <em className={s.hiddenTag}> · مخفي</em>
+                )}
+              </span>
+              <div className={s.productActions}>
+                <button
+                  type="button"
+                  disabled={r.busy}
+                  onClick={() =>
+                    set(k, fields[k] === "hidden" ? "shown" : "hidden")
+                  }
+                  aria-label={`${fields[k] === "hidden" ? "إظهار" : "إخفاء"} حقل ${productFieldLabels[k]}`}
+                >
+                  {fields[k] === "hidden" ? "إظهار" : "إخفاء"}
+                </button>
+                <button
+                  type="button"
+                  className={s.deleteAction}
+                  disabled={r.busy}
+                  onClick={() => {
+                    if (
+                      window.confirm(
+                        `حذف حقل «${productFieldLabels[k]}» من نموذج إضافة المنتج؟ يمكنك استعادته لاحقًا.`,
+                      )
+                    )
+                      set(k, "deleted");
+                  }}
+                  aria-label={`حذف حقل ${productFieldLabels[k]}`}
+                >
+                  حذف
+                </button>
+              </div>
+            </div>
+          ))}
+          {deleted.length > 0 && (
+            <>
+              <h3>حقول محذوفة</h3>
+              {deleted.map((k) => (
+                <div className={s.productRow} key={k}>
+                  <span className={s.productInfo}>
+                    <s>{productFieldLabels[k]}</s>
+                  </span>
+                  <div className={s.productActions}>
+                    <button
+                      type="button"
+                      disabled={r.busy}
+                      onClick={() => set(k, "shown")}
+                      aria-label={`استعادة حقل ${productFieldLabels[k]}`}
+                    >
+                      استعادة
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+        </div>
+      )}
     </section>
   );
 }

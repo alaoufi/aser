@@ -10,6 +10,8 @@ import {
   decryptDocument,
 } from "./security";
 import { profileSchema, productSchema, reviewSchema } from "./validation";
+import { getProductFields } from "./settings";
+import { fieldShown } from "../lib/product-fields";
 import { productSelect, mapProduct } from "./catalog";
 import { can } from "../lib/permissions";
 type ProducerPrivate = { nationalId: string; workLocation: string };
@@ -332,6 +334,11 @@ export async function saveProduct(
 ) {
   const value = productSchema.parse(input);
   if (editing && !value.id) throw new HttpError(400, "معرف المنتج مطلوب");
+  if (
+    value.description.length < 5 &&
+    fieldShown(await getProductFields(), "description")
+  )
+    throw new HttpError(400, "اكتب تفاصيل المنتج في خمسة أحرف على الأقل");
   return transaction(async (client) => {
     const producer = (
       await client.query(

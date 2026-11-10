@@ -1,9 +1,14 @@
 import { api, json, jsonBody } from "@/server/http";
 import { requireUser, rateLimit } from "@/server/auth";
 import { manageProduct, ownProducts, saveProduct } from "@/server/management";
+import { getProductFields } from "@/server/settings";
 export const GET = api(async (request) => {
   const user = await requireUser(request, ["producer", "admin"]);
-  return json({ products: await ownProducts(user) });
+  const [products, fields] = await Promise.all([
+    ownProducts(user),
+    getProductFields(),
+  ]);
+  return json({ products, fields });
 });
 export const POST = api(async (request) => {
   const user = await requireUser(request, ["producer", "admin"]);
