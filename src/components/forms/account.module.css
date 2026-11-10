@@ -329,35 +329,159 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
-/* ملخص الإدارة */
+/* ملخص الإدارة: مربعات صغيرة متناسقة، أربعة في الصف على الجوال */
 .summaryGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 10px;
-  margin: 0 0 20px;
+  grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+  gap: 8px;
+  margin: 0 0 18px;
+}
+@media (min-width: 720px) {
+  .summaryGrid {
+    grid-template-columns: repeat(auto-fill, 112px);
+    justify-content: start;
+  }
 }
 .summaryCard {
-  display: grid;
-  gap: 2px;
-  padding: 14px;
+  position: relative;
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 6px;
   border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #fff;
+  border-radius: 12px;
+  background: #fffdf8;
+  box-shadow: 0 1px 2px rgb(46 29 18 / 0.06);
   font: inherit;
-  text-align: start;
+  color: var(--ink);
+  text-align: center;
   cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
+}
+.summaryCard:hover {
+  transform: translateY(-2px);
+  border-color: #d6a35c;
+  box-shadow: 0 6px 14px rgb(46 29 18 / 0.1);
 }
 .summaryCard strong {
-  font-size: 26px;
-  line-height: 1.1;
+  font-size: 22px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: #4f5d36;
 }
 .summaryCard span {
-  font-size: 13px;
+  font-size: 11.5px;
+  line-height: 1.35;
   color: var(--muted);
 }
 .summaryAlert {
-  border-color: var(--rust);
-  box-shadow: inset 0 3px 0 var(--rust);
+  border-color: #e3b9ae;
+  background: #fff6f3;
+}
+.summaryAlert strong {
+  color: var(--rust, #9c2f1e);
+}
+.summaryAlert::after {
+  content: "";
+  position: absolute;
+  top: 8px;
+  inset-inline-end: 8px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--rust, #9c2f1e);
+}
+
+/* أقسام الإدارة: مجموعات من مربعات بأيقونة */
+.adminNav {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 22px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fbf5ea;
+}
+.adminNavGroup {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+.adminNavGroup + .adminNavGroup {
+  padding-top: 10px;
+  border-top: 1px dashed #dcc9a8;
+}
+@media (min-width: 720px) {
+  .adminNav {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+  }
+  .adminNavGroup {
+    display: flex;
+    flex-wrap: wrap;
+  }
+  .adminNavGroup .adminNavItem {
+    width: 80px;
+  }
+  .adminNavGroup + .adminNavGroup {
+    padding-top: 0;
+    border-top: 0;
+    padding-inline-start: 10px;
+    border-inline-start: 1px dashed #dcc9a8;
+  }
+}
+.adminNavItem {
+  min-height: 72px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 8px 4px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.3;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+.adminNavItem svg {
+  color: #4f5d36;
+}
+.adminNavItem:hover {
+  border-color: #d6a35c;
+}
+.adminNavItem[aria-pressed="true"] {
+  background: #4f5d36;
+  color: #fff;
+  border-color: #4f5d36;
+}
+.adminNavItem[aria-pressed="true"] svg {
+  color: #f4ead9;
+}
+@media (prefers-reduced-motion: reduce) {
+  .summaryCard,
+  .adminNavItem {
+    transition: none;
+  }
+  .summaryCard:hover {
+    transform: none;
+  }
 }
 .buttonSecondary[aria-pressed="true"] {
   background: var(--ink);

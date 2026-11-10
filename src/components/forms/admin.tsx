@@ -31,6 +31,40 @@ const adminTabs: [
   ["texts", "نصوص الموقع", "content"],
   ["members", "الأعضاء والصلاحيات", "owner"],
 ];
+/** تجميع الأقسام في شاشة الإدارة (الأسماء للقارئ الآلي فقط). */
+const adminGroups: [group: string, ids: string[]][] = [
+  ["الأسر والطلبات", ["producers", "orders", "products", "reports"]],
+  ["الأقسام والمواقع", ["categories", "locations"]],
+  ["الموقع والأعضاء", ["template", "texts", "members"]],
+];
+const adminIcons: Record<string, string> = {
+  producers: "M3 11l9-7 9 7M5 10v10h14V10M10 20v-6h4v6",
+  orders: "M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6",
+  products: "M4 13a8 8 0 0016 0zM3 13h18M12 5v3M9 6v2M15 6v2",
+  reports: "M5 21V4M5 4h11l-2 4 2 4H5",
+  categories: "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z",
+  locations:
+    "M12 21s-7-6.5-7-12a7 7 0 0114 0c0 5.5-7 12-7 12zM12 11.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5",
+  coverage: "M9 4L3 6v14l6-2 6 2 6-2V4l-6 2zM9 4v14M15 6v14",
+  template: "M3 4h18v16H3zM3 9h18M9 9v11",
+  texts: "M5 6h14M12 6v13M8 19h8",
+  members:
+    "M9 11a4 4 0 100-8 4 4 0 000 8zM2 21a7 7 0 0114 0M16 4a4 4 0 010 7M18 14a6 6 0 014 7",
+};
+function AdminIcon({ name }: { name: string }) {
+  return (
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+      <path
+        d={adminIcons[name]}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
 type Application = {
   id: string;
   name: string;
@@ -237,23 +271,40 @@ export function Admin() {
       {isManager(session.user) && (
         <>
           <AdminSummary onOpen={setTab} />
-          <nav className={s.actions} aria-label="أقسام الإدارة">
-            {can(session.user, "locations") && (
-              <a className={s.button} href="/admin/coverage">
-                إدارة التغطية التفصيلية
-              </a>
-            )}
-            {allowed.map(([id, label]) => (
-              <button
-                type="button"
-                className={s.button}
-                key={id}
-                aria-pressed={active === id}
-                onClick={() => setTab(id)}
-              >
-                {label}
-              </button>
-            ))}
+          <nav className={s.adminNav} aria-label="أقسام الإدارة">
+            {adminGroups.map(([group, ids]) => {
+              const items = allowed.filter(([id]) => ids.includes(id));
+              const coverage =
+                ids.includes("locations") && can(session.user, "locations");
+              if (!items.length && !coverage) return null;
+              return (
+                <div
+                  key={group}
+                  role="group"
+                  aria-label={group}
+                  className={s.adminNavGroup}
+                >
+                  {items.map(([id, label]) => (
+                    <button
+                      type="button"
+                      className={s.adminNavItem}
+                      key={id}
+                      aria-pressed={active === id}
+                      onClick={() => setTab(id)}
+                    >
+                      <AdminIcon name={id} />
+                      <span>{label}</span>
+                    </button>
+                  ))}
+                  {coverage && (
+                    <a className={s.adminNavItem} href="/admin/coverage">
+                      <AdminIcon name="coverage" />
+                      <span>إدارة التغطية التفصيلية</span>
+                    </a>
+                  )}
+                </div>
+              );
+            })}
           </nav>
           {active === "members" ? (
             <MembersAdmin />
