@@ -36,7 +36,12 @@ async function family(page: Page) {
   await page.route("**/api/producer/profile", (r) =>
     r.fulfill({
       json: {
-        profile: { id: "p1", categoryIds: ["2"] },
+        profile: {
+          id: "p1",
+          categoryIds: ["2"],
+          deliveryScope: "kingdom",
+          shippingFee: 25,
+        },
         categories: [
           { id: "1", name: "الأكلات الشعبية", slug: "a", icon: "✦" },
           { id: "2", name: "الجريش والقرصان", slug: "b", icon: "✦" },
@@ -138,12 +143,21 @@ test("adding a product picks its photo from the library and fills the dish detai
   await expect(page.getByLabel("تفاصيل المنتج")).toHaveValue("صحن جريش أحمر");
   await page.getByLabel("وحدة البيع").fill("صحن");
   await page.getByLabel("السعر بالريال").fill("25");
+  await expect(
+    page.getByRole("radio", { name: "جميع مناطق المملكة (بالشحن)" }),
+  ).toBeChecked();
+  await expect(
+    page.getByLabel("رسوم الشحن (ريال، تضاف على السعر)"),
+  ).toHaveValue("25");
   await page.getByRole("button", { name: "حفظ المنتج" }).click();
   await expect.poll(() => saved).toBeTruthy();
   expect(saved).toMatchObject({
     name: "جريش بالدجاج",
     categoryIds: ["2"],
     libraryPhotoId: photo.id,
+    // نطاق التوصيل يُعرض في كل إضافة منتج بافتراضي الأسرة، ويمكن تعديله.
+    deliveryScope: "kingdom",
+    shippingFee: 25,
   });
 });
 

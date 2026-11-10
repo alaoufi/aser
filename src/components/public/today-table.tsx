@@ -3,6 +3,7 @@ import type { Product } from "@/lib/types";
 import { priceLabel, safeMediaUrl } from "./ui";
 import { RegionPicker } from "./region-picker";
 import type { SiteTexts } from "@/lib/site-texts";
+import { TableCarousel } from "./table-carousel";
 
 export type Region = { id: string; name: string };
 /** يرتب المناطق من قائمة المدن بلا تكرار. */
@@ -23,7 +24,15 @@ export function TodayTable({
   path,
   texts,
 }: {
-  texts: Pick<SiteTexts, "table.title" | "table.empty" | "table.more">;
+  texts: Pick<
+    SiteTexts,
+    | "table.title"
+    | "table.empty"
+    | "table.more"
+    | "table.prev"
+    | "table.next"
+    | "delivery.kingdom"
+  >;
   products: Product[];
   regions: Region[];
   region: string;
@@ -51,8 +60,39 @@ export function TodayTable({
               {texts["table.empty"]}
               {regionName ? <small>في {regionName}</small> : null}
             </p>
+          ) : capacity ? (
+            <TableCarousel
+              prevLabel={texts["table.prev"] || "الأطباق السابقة"}
+              nextLabel={texts["table.next"] || "الأطباق التالية"}
+            >
+              <ul className={`table-dishes${capacity ? " is-row" : ""}`}>
+                {shown.map((p) => (
+                  <li key={p.id}>
+                    <Link href={`/products/${p.id}`} className="table-dish">
+                      <span className="plate">
+                        {p.imageUrl && safeMediaUrl(p.imageUrl) ? (
+                          <img src={p.imageUrl} alt="" loading="lazy" />
+                        ) : (
+                          <span aria-hidden="true">♨</span>
+                        )}
+                      </span>
+                      <strong>{p.name}</strong>
+                      <small>
+                        {p.producerName} · {priceLabel(p.price)}
+                      </small>
+                      {p.deliveryScope === "kingdom" &&
+                        texts["delivery.kingdom"] && (
+                          <em className="dish-shipping">
+                            {texts["delivery.kingdom"]}
+                          </em>
+                        )}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </TableCarousel>
           ) : (
-            <ul className="table-dishes">
+            <ul className={`table-dishes${capacity ? " is-row" : ""}`}>
               {shown.map((p) => (
                 <li key={p.id}>
                   <Link href={`/products/${p.id}`} className="table-dish">
@@ -67,6 +107,12 @@ export function TodayTable({
                     <small>
                       {p.producerName} · {priceLabel(p.price)}
                     </small>
+                    {p.deliveryScope === "kingdom" &&
+                      texts["delivery.kingdom"] && (
+                        <em className="dish-shipping">
+                          {texts["delivery.kingdom"]}
+                        </em>
+                      )}
                   </Link>
                 </li>
               ))}

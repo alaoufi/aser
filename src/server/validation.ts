@@ -1,4 +1,13 @@
 import { z } from "zod";
+/** نطاق التوصيل: داخل نطاق التغطية، أو جميع مناطق المملكة بالشحن. */
+const deliveryScope = z.enum(["coverage", "kingdom"]);
+/** رسوم الشحن تضاف على السعر. */
+const shippingFee = z
+  .number()
+  .min(0)
+  .max(99999999.99)
+  .multipleOf(0.01)
+  .nullable();
 export const documentType = z.enum([
   "commercial_registration",
   "freelance",
@@ -91,6 +100,8 @@ export const profileSchema = z
     documentNumber: optionalText(100),
     documentExpiresAt: z.iso.date().nullable().optional(),
     categoryIds: z.array(z.string().min(1).max(30)).min(1).max(100).optional(),
+    deliveryScope: deliveryScope.optional(),
+    shippingFee: shippingFee.optional(),
     website: safeHttps.nullable().optional(),
     socialLinks: z
       .array(socialSchema)
@@ -151,6 +162,8 @@ export const productSchema = z.object({
   story: optionalText(2000),
   /** صورة المنتج من مكتبة صور الأسرة. */
   libraryPhotoId: z.uuid().optional(),
+  deliveryScope: deliveryScope.optional(),
+  shippingFee: shippingFee.optional(),
 });
 export const reviewSchema = z
   .object({

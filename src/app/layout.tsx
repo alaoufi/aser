@@ -89,7 +89,7 @@ export default async function RootLayout({
           />
         </header>
         <main id="main">{children}</main>
-        <FamilyWelcome />
+        <FamilyWelcome texts={texts} />
         <OrderAlert />
         <footer className="site-footer">
           <div className="footer-top">

@@ -55,7 +55,7 @@ function decryptPrivate(payload: Buffer): ProducerPrivate {
 export async function ownProfile(user: SessionUser) {
   const profile = (
     await db().query(
-      `SELECT p.*,p.trade_name AS "tradeName",p.city_id AS "cityId",p.user_id AS "userId",ARRAY(SELECT category_id FROM jdatna.producer_categories WHERE producer_id=p.id) AS "categoryIds",v.document_id AS "documentId",v.document_type AS "documentType",v.reason AS "reviewReason",v.document_number AS "documentNumber",v.document_expires_at::text AS "documentExpiresAt",COALESCE((SELECT json_agg(json_build_object('platform',platform,'url',url)) FROM jdatna.producer_social_links WHERE producer_id=p.id),'[]') AS "socialLinks",COALESCE((SELECT json_agg(json_build_object('day',day,'opens',to_char(opens,'HH24:MI'),'closes',to_char(closes,'HH24:MI'))) FROM jdatna.business_hours WHERE producer_id=p.id),'[]') AS "businessHours",COALESCE((SELECT json_agg(json_build_object('cityId',city_id,'fee',fee)) FROM jdatna.delivery_areas WHERE producer_id=p.id),'[]') AS "deliveryAreas" FROM jdatna.producer_profiles p LEFT JOIN LATERAL(SELECT document_id,document_type,reason,document_number,document_expires_at FROM jdatna.producer_verifications WHERE producer_id=p.id ORDER BY created_at DESC LIMIT 1)v ON true WHERE p.user_id=$1`,
+      `SELECT p.*,p.trade_name AS "tradeName",p.city_id AS "cityId",p.user_id AS "userId",ARRAY(SELECT category_id FROM jdatna.producer_categories WHERE producer_id=p.id) AS "categoryIds",v.document_id AS "documentId",v.document_type AS "documentType",v.reason AS "reviewReason",v.document_number AS "documentNumber",v.document_expires_at::text AS "documentExpiresAt",p.delivery_scope AS "deliveryScope",p.shipping_fee::float8 AS "shippingFee",COALESCE((SELECT json_agg(json_build_object('platform',platform,'url',url)) FROM jdatna.producer_social_links WHERE producer_id=p.id),'[]') AS "socialLinks",COALESCE((SELECT json_agg(json_build_object('day',day,'opens',to_char(opens,'HH24:MI'),'closes',to_char(closes,'HH24:MI'))) FROM jdatna.business_hours WHERE producer_id=p.id),'[]') AS "businessHours",COALESCE((SELECT json_agg(json_build_object('cityId',city_id,'fee',fee)) FROM jdatna.delivery_areas WHERE producer_id=p.id),'[]') AS "deliveryAreas" FROM jdatna.producer_profiles p LEFT JOIN LATERAL(SELECT document_id,document_type,reason,document_number,document_expires_at FROM jdatna.producer_verifications WHERE producer_id=p.id ORDER BY created_at DESC LIMIT 1)v ON true WHERE p.user_id=$1`,
       [user.id],
     )
   ).rows[0];
@@ -222,6 +222,18 @@ export async function saveProfile(user: SessionUser, input: unknown) {
       );
     if (value.categoryIds !== undefined)
       await replaceProducerCategories(client, id, value.categoryIds);
+    // نطاق التوصيل الافتراضي للأسرة (يُقترح لكل منتج جديد).
+    if (value.deliveryScope !== undefined)
+      await client.query(
+        "UPDATE jdatna.producer_profiles SET delivery_scope=$2,shipping_fee=$3 WHERE id=$1",
+        [
+          id,
+          value.deliveryScope,
+          value.deliveryScope === "kingdom"
+            ? (value.shippingFee ?? null)
+            : null,
+        ],
+      );
     const previous = existing
       ? (
           await client.query(
@@ -397,6 +409,23 @@ export async function saveProduct(
       await client.query(
         "INSERT INTO jdatna.product_allergens(product_id,name) VALUES($1,$2)",
         [id, allergen],
+      );
+    // نطاق توصيل المنتج: ما اختارته الأسرة له، وإلا افتراضي الأسرة للمنتج الجديد.
+    if (value.deliveryScope !== undefined)
+      await client.query(
+        "UPDATE jdatna.products SET delivery_scope=$2,shipping_fee=$3 WHERE id=$1",
+        [
+          id,
+          value.deliveryScope,
+          value.deliveryScope === "kingdom"
+            ? (value.shippingFee ?? null)
+            : null,
+        ],
+      );
+    else if (!editing)
+      await client.query(
+        "UPDATE jdatna.products x SET delivery_scope=p.delivery_scope,shipping_fee=p.shipping_fee FROM jdatna.producer_profiles p WHERE x.id=$1 AND p.id=x.producer_id",
+        [id],
       );
     if (value.libraryPhotoId) {
       const owned = (

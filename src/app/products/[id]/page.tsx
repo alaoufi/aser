@@ -2,6 +2,7 @@ import { ReportButton } from "@/components/public/report-button";
 import { OrderRequestForm } from "@/components/forms/orders";
 import { ChatButton } from "@/components/forms/chat";
 import { LocationCheck } from "@/components/maps/location-check";
+import { getSiteTexts } from "@/server/settings";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getProducer, getProduct } from "@/server/catalog";
@@ -27,7 +28,10 @@ export default async function ProductDetail({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ offer?: string | string[] }>;
 }) {
-  const p = await getProduct((await params).id);
+  const [p, texts] = await Promise.all([
+    getProduct((await params).id),
+    getSiteTexts(),
+  ]);
   if (!p) notFound();
   const offer = (await searchParams).offer;
   // وسائل تواصل الأسرة المنتجة المنشورة في صفحتها العامة فقط، لعرضها بعد إرسال الطلب.
@@ -82,11 +86,31 @@ export default async function ProductDetail({
             <p>
               <strong>التوصيل</strong>
               <span>
-                {p.delivery ? "متاح بالتنسيق مع الأسرة المنتجة" : "غير متاح"}
+                {p.deliveryScope === "kingdom"
+                  ? texts["delivery.kingdom"] || "شحن لجميع مناطق المملكة"
+                  : p.delivery
+                    ? texts["delivery.coverage"] ||
+                      "متاح بالتنسيق مع الأسرة المنتجة"
+                    : "غير متاح"}
               </span>
             </p>
+            {p.deliveryScope === "kingdom" && (
+              <p>
+                <strong>الشحن</strong>
+                <span>
+                  {p.shippingFee == null
+                    ? "رسوم الشحن بالاتفاق"
+                    : `${p.shippingFee} ر.س`}
+                  {texts["delivery.shippingAdded"]
+                    ? ` — ${texts["delivery.shippingAdded"]}`
+                    : ""}
+                </span>
+              </p>
+            )}
           </div>
-          {p.delivery && <LocationCheck producerSlug={p.producerSlug} />}
+          {p.delivery && p.deliveryScope !== "kingdom" && (
+            <LocationCheck producerSlug={p.producerSlug} />
+          )}
           <ChatButton producerSlug={p.producerSlug} />
           <Link className="button" href={`/producers/${p.producerSlug}`}>
             {p.price === null
@@ -113,6 +137,14 @@ export default async function ProductDetail({
           contactWhatsapp={familyWhatsapp ?? undefined}
           notCookingToday={p.notCookingToday}
           offerId={Array.isArray(offer) ? "invalid" : offer}
+          shipping={
+            p.deliveryScope === "kingdom"
+              ? {
+                  label: texts["delivery.kingdom"] || "شحن لجميع مناطق المملكة",
+                  fee: p.shippingFee ?? null,
+                }
+              : undefined
+          }
         />
       )}
       <section className="food-information">

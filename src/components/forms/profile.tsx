@@ -20,8 +20,11 @@ import {
   useSession,
 } from "./shared";
 import { FAMILY_STATUS_CHANGED, FamilyStatusBanner } from "./family-status";
+import { DeliveryScopeFields, readDeliveryScope } from "./delivery-scope";
 type Profile = AdvancedProfile & {
   id?: string;
+  deliveryScope?: "coverage" | "kingdom";
+  shippingFee?: number | null;
   name: string;
   tradeName?: string | null;
   description?: string;
@@ -159,6 +162,7 @@ export function ProfileForm({
         body: JSON.stringify({
           ...optional,
           ...(!profile ? { categoryIds } : {}),
+          ...readDeliveryScope(f),
           name: f.get("name"),
           tradeName: f.get("tradeName") || null,
           phone: user.phone,
@@ -333,6 +337,10 @@ export function ProfileForm({
               </small>
             </fieldset>
           )}
+          <DeliveryScopeFields
+            defaultScope={profile?.deliveryScope ?? "coverage"}
+            defaultFee={profile?.shippingFee ?? null}
+          />
           {documentType === "exception" && (
             <label className={s.field}>
               سبب طلب الاستثناء الإداري

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { Product, Category } from "@/lib/types";
 import { ProductPhoto } from "./product-photo";
 import { LibraryPicker, type LibraryPhoto } from "./library";
+import { DeliveryScopeFields, readDeliveryScope } from "./delivery-scope";
 import { AccountShell, Guard, Message, api, s, useSession } from "./shared";
 const statusLabels = {
   available: "متوفر",
@@ -15,6 +16,10 @@ export function Products() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [mine, setMine] = useState<string[]>([]);
+  const [familyScope, setFamilyScope] = useState<{
+    deliveryScope: "coverage" | "kingdom";
+    shippingFee: number | null;
+  }>({ deliveryScope: "coverage", shippingFee: null });
   const [editing, setEditing] = useState<Product | null | undefined>(undefined);
   const [busy, setBusy] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -27,12 +32,20 @@ export function Products() {
       api<{ products: Product[] }>("/api/producer/products"),
       api<{
         categories: Category[];
-        profile: { categoryIds?: string[] } | null;
+        profile: {
+          categoryIds?: string[];
+          deliveryScope?: "coverage" | "kingdom";
+          shippingFee?: number | null;
+        } | null;
       }>("/api/producer/profile"),
     ]);
     setProducts(p.products);
     setCategories(c.categories);
     setMine(c.profile?.categoryIds ?? []);
+    setFamilyScope({
+      deliveryScope: c.profile?.deliveryScope ?? "coverage",
+      shippingFee: c.profile?.shippingFee ?? null,
+    });
   }
   useEffect(() => {
     if (session.user?.role === "producer" || session.user?.role === "admin")
@@ -71,6 +84,7 @@ export function Products() {
       status: f.get("status"),
       categoryIds,
       ...(libraryPhoto ? { libraryPhotoId: libraryPhoto } : {}),
+      ...readDeliveryScope(f),
       allergens: String(f.get("allergens") || "")
         .split("،")
         .map((v) => v.trim())
@@ -218,6 +232,18 @@ export function Products() {
                   defaultValue={editing?.description}
                 />
               </label>
+              {/* يُعرض في كل إضافة: افتراضي الأسرة، أو قيمة المنتج عند التعديل. */}
+              <DeliveryScopeFields
+                legend="نطاق توصيل هذا المنتج"
+                defaultScope={
+                  editing?.deliveryScope ?? familyScope.deliveryScope
+                }
+                defaultFee={
+                  editing
+                    ? (editing.shippingFee ?? null)
+                    : familyScope.shippingFee
+                }
+              />
               <fieldset>
                 <legend>القسم (من أقسامك)</legend>
                 {mine.length === 0 && (

@@ -147,6 +147,8 @@ test("family saves only basic fields in one form and retries without reuploading
   expect(attempts).toBe(2);
   expect(posted).toEqual({
     categoryIds: ["12"],
+    deliveryScope: "coverage",
+    shippingFee: null,
     name: user.name,
     tradeName: "مذاق الأسرة المنتجة التجريبي",
     phone: user.phone,

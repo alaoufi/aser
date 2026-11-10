@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import type { Metadata } from "next";
-import { getCities, searchProducts } from "@/server/catalog";
+import { getCities, todayProducts } from "@/server/catalog";
 import { getSiteTexts } from "@/server/settings";
 import { TodayTable, regionsOf } from "@/components/public/today-table";
 export const metadata: Metadata = {
@@ -20,7 +20,7 @@ export default async function TablePage({
   const saved = (await cookies()).get("jdatna_region")?.value ?? "";
   const region =
     [asked ?? saved].find((r) => r && regions.some((x) => x.id === r)) ?? "";
-  const products = await searchProducts({ status: "available", region });
+  const products = await todayProducts({ region });
   return (
     <div className="page-space">
       <TodayTable

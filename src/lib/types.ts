@@ -54,6 +54,10 @@ export type Product = {
   preparationTime: string | null;
   story: string | null;
   delivery: boolean;
+  /** داخل نطاق التغطية، أو جميع مناطق المملكة بالشحن. */
+  deliveryScope?: "coverage" | "kingdom";
+  /** رسوم الشحن تضاف على السعر (للشحن لكل المملكة). */
+  shippingFee?: number | null;
 };
 export type Filters = {
   region?: string;
