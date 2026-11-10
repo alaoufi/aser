@@ -125,12 +125,24 @@ export async function uploadProductImage(
   return { imageUrl };
 }
 export async function productImage(id: string, user: SessionUser | null) {
-  const media = (
+  let media = (
     await db().query(
       "SELECT m.object_key,m.mime,p.user_id,p.status,x.visible FROM jdatna.product_media m JOIN jdatna.products x ON x.id=m.product_id JOIN jdatna.producer_profiles p ON p.id=x.producer_id WHERE m.id=$1 AND m.object_key IS NOT NULL",
       [id],
     )
   ).rows[0];
+  if (!media) {
+    // صورة من مكتبة الأسرة.
+    const { libraryMedia } = await import("./library");
+    const photo = await libraryMedia(id, user);
+    if (photo)
+      media = {
+        object_key: photo.objectKey,
+        mime: photo.mime,
+        status: "approved",
+        visible: true,
+      };
+  }
   if (
     !media ||
     !(

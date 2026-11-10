@@ -3,6 +3,7 @@ import { categoryLabel } from "@/lib/category-label";
 import { useEffect, useState } from "react";
 import type { Product, Category } from "@/lib/types";
 import { ProductPhoto } from "./product-photo";
+import { LibraryPicker, type LibraryPhoto } from "./library";
 import { AccountShell, Guard, Message, api, s, useSession } from "./shared";
 const statusLabels = {
   available: "متوفر",
@@ -20,6 +21,7 @@ export function Products() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [contactPrice, setContactPrice] = useState(false);
+  const [libraryPhoto, setLibraryPhoto] = useState("");
   async function load() {
     const [p, c] = await Promise.all([
       api<{ products: Product[] }>("/api/producer/products"),
@@ -40,6 +42,7 @@ export function Products() {
   }, [session.user]);
   function edit(p: Product | null) {
     setEditing(p);
+    setLibraryPhoto("");
     setContactPrice(p?.price === null);
     setSuccess("");
     setError("");
@@ -67,6 +70,7 @@ export function Products() {
       unit: f.get("unit"),
       status: f.get("status"),
       categoryIds,
+      ...(libraryPhoto ? { libraryPhotoId: libraryPhoto } : {}),
       allergens: String(f.get("allergens") || "")
         .split("،")
         .map((v) => v.trim())
@@ -119,8 +123,36 @@ export function Products() {
               className={`${s.card} ${s.form}`}
               key={editing?.id || "new"}
               onSubmit={save}
+              data-product-form
             >
               <h2>{editing ? "تعديل المنتج" : "منتج جديد"}</h2>
+              <LibraryPicker
+                value={libraryPhoto}
+                onPick={(photo: LibraryPhoto | null) => {
+                  setLibraryPhoto(photo?.id ?? "");
+                  if (!photo) return;
+                  // اختيار طبق من المكتبة يملأ الاسم والوصف والقسم إن كانت فارغة.
+                  const form = document.querySelector<HTMLFormElement>(
+                    `form[data-product-form]`,
+                  );
+                  const fill = (name: string, value: string) => {
+                    const el = form?.querySelector<
+                      HTMLInputElement | HTMLTextAreaElement
+                    >(`[name="${name}"]`);
+                    if (el && !el.value.trim() && value) el.value = value;
+                  };
+                  fill("name", photo.name);
+                  fill("description", photo.description);
+                  if (photo.categoryId) {
+                    const boxes = form?.querySelectorAll<HTMLInputElement>(
+                      'input[name="categoryIds"]',
+                    );
+                    if (boxes && ![...boxes].some((b) => b.checked))
+                      for (const b of boxes)
+                        if (b.value === photo.categoryId) b.checked = true;
+                  }
+                }}
+              />
               <div className={s.grid}>
                 <label className={s.field}>
                   اسم المنتج

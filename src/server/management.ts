@@ -397,6 +397,19 @@ export async function saveProduct(
         "INSERT INTO jdatna.product_allergens(product_id,name) VALUES($1,$2)",
         [id, allergen],
       );
+    if (value.libraryPhotoId) {
+      const owned = (
+        await client.query(
+          "SELECT 1 FROM jdatna.photo_library WHERE id=$1 AND producer_id=$2",
+          [value.libraryPhotoId, producer.id],
+        )
+      ).rowCount;
+      if (!owned) throw new HttpError(400, "اختر صورة من مكتبة صورك");
+      await client.query(
+        "UPDATE jdatna.products SET image_url=$2 WHERE id=$1",
+        [id, "/api/media/" + value.libraryPhotoId],
+      );
+    }
     return { id };
   });
 }

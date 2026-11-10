@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Product } from "@/lib/types";
 import { priceLabel, safeMediaUrl } from "./ui";
 import { RegionPicker } from "./region-picker";
+import type { SiteTexts } from "@/lib/site-texts";
 
 export type Region = { id: string; name: string };
 /** يرتب المناطق من قائمة المدن بلا تكرار. */
@@ -20,7 +21,9 @@ export function TodayTable({
   region,
   capacity,
   path,
+  texts,
 }: {
+  texts: Pick<SiteTexts, "table.title" | "table.empty" | "table.more">;
   products: Product[];
   regions: Region[];
   region: string;
@@ -37,13 +40,13 @@ export function TodayTable({
       aria-labelledby="today-table-title"
     >
       <div className="today-table-head">
-        <h2 id="today-table-title">مائدة اليوم</h2>
+        <h2 id="today-table-title">{texts["table.title"] || "مائدة اليوم"}</h2>
         <RegionPicker regions={regions} value={region} path={path} />
       </div>
       <div className="table-top">
         {shown.length === 0 ? (
           <p className="table-empty">
-            بانتظار العروض
+            {texts["table.empty"]}
             {regionName ? <small>في {regionName}</small> : null}
           </p>
         ) : (
@@ -71,8 +74,8 @@ export function TodayTable({
       {capacity && products.length > 0 && (
         <Link href={full} className="table-more">
           {products.length > shown.length
-            ? `افتح المائدة كاملة (${products.length} طبق) ←`
-            : "افتح المائدة كاملة ←"}
+            ? `${texts["table.more"] || "افتح المائدة كاملة"} (${products.length} طبق) ←`
+            : `${texts["table.more"] || "افتح المائدة كاملة"} ←`}
         </Link>
       )}
     </section>

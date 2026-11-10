@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import type { Category, City } from "@/lib/types";
 import { categoryLabel, categoryParentOptions } from "@/lib/category-label";
+import { siteTextLabels, type SiteTextKey } from "@/lib/site-texts";
 import { api, Message, s } from "./shared";
 function useResource<T>(url: string) {
   const [data, setData] = useState<T | null>(null);
@@ -710,5 +711,95 @@ export function TemplateAdmin() {
         </fieldset>
       )}
     </section>
+  );
+}
+type AdminText = {
+  key: string;
+  value: string;
+  original: string;
+  edited: boolean;
+};
+/** نصوص الموقع: تعديل أي نص ظاهر، أو حذفه، أو إعادته للأصل. */
+export function TextsAdmin() {
+  const r = useResource<{ texts: AdminText[] }>("/api/admin/texts");
+  const groups = new Map<string, AdminText[]>();
+  for (const t of r.data?.texts ?? []) {
+    const [group] = siteTextLabels[t.key as SiteTextKey] ?? ["أخرى", t.key];
+    groups.set(group, [...(groups.get(group) ?? []), t]);
+  }
+  return (
+    <section>
+      <h2>نصوص الموقع</h2>
+      <p className={s.muted}>
+        عدّل النص واحفظه، أو احذفه فلا يظهر، أو أعده لأصله. العناوين والأزرار
+        الأساسية تعود لنصها الأصلي إذا حُذفت.
+      </p>
+      <Message error={r.error} success={r.success} />
+      {!r.data && !r.error && <p role="status">جارٍ تحميل النصوص…</p>}
+      {[...groups].map(([group, items]) => (
+        <fieldset key={group} className={`${s.card} ${s.form}`}>
+          <legend>{group}</legend>
+          {items.map((t) => (
+            <TextRow key={t.key + t.value} item={t} resource={r} />
+          ))}
+        </fieldset>
+      ))}
+    </section>
+  );
+}
+function TextRow({
+  item,
+  resource: r,
+}: {
+  item: AdminText;
+  resource: ReturnType<typeof useResource<{ texts: AdminText[] }>>;
+}) {
+  const label = siteTextLabels[item.key as SiteTextKey]?.[1] ?? item.key;
+  const id = "text-" + item.key.replace(/\W/g, "-");
+  const [draft, setDraft] = useState(item.value);
+  const status = !item.edited ? "" : item.value === "" ? "محذوف" : "معدّل";
+  return (
+    <div className={s.field}>
+      <label htmlFor={id}>
+        {label}
+        {status && <small> ({status})</small>}
+      </label>
+      <textarea
+        id={id}
+        rows={item.original.length > 60 ? 3 : 1}
+        maxLength={2000}
+        value={draft}
+        placeholder={item.value === "" ? "محذوف — لا يظهر في الموقع" : ""}
+        onChange={(e) => setDraft(e.target.value)}
+      />
+      <div className={s.actions}>
+        <button
+          type="button"
+          className={s.button}
+          disabled={r.busy || draft === item.value}
+          onClick={() => r.write("PUT", { key: item.key, value: draft })}
+        >
+          حفظ «{label}»
+        </button>
+        <button
+          type="button"
+          className={s.danger}
+          disabled={r.busy || item.value === ""}
+          onClick={() => r.write("PUT", { key: item.key, value: "" })}
+        >
+          حذف «{label}»
+        </button>
+        {item.edited && (
+          <button
+            type="button"
+            className={s.buttonSecondary}
+            disabled={r.busy}
+            onClick={() => r.write("PUT", { key: item.key, value: null })}
+          >
+            استعادة الأصل
+          </button>
+        )}
+      </div>
+    </div>
   );
 }

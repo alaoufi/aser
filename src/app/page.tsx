@@ -1,6 +1,6 @@
 import { FoodPhotos } from "@/components/public/food-photos";
 import { NajdiDoor } from "@/components/public/najdi-door";
-import { getSiteTemplate } from "@/server/settings";
+import { getSiteTemplate, getSiteTexts } from "@/server/settings";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { TodayTable, regionsOf } from "@/components/public/today-table";
@@ -26,7 +26,10 @@ export default async function Home({
   const region =
     [asked ?? saved].find((r) => r && regions.some((x) => x.id === r)) ?? "";
   const today = await searchProducts({ status: "available", region });
-  const template = await getSiteTemplate();
+  const [template, texts] = await Promise.all([
+    getSiteTemplate(),
+    getSiteTexts(),
+  ]);
   // لا يظهر القسم للعامة إلا إذا اختارته أسرة معتمدة وعليه منتج منشور.
   const [categories, products, producers] = await Promise.all([
     publicCategories(),
@@ -41,16 +44,19 @@ export default async function Home({
           <h1 className="sr-only">أكلات جدتنا وأصالة الماضي</h1>
           <form action="/browse" className="hero-search" autoComplete="off">
             <label>
-              <span className="sr-only">وش تطلب اليوم</span>
+              <span className="sr-only">
+                {texts["home.search"] || "وش تطلب اليوم"}
+              </span>
               <input
                 type="search"
                 name="q"
                 autoComplete="off"
-                placeholder="وش تطلب اليوم"
+                placeholder={texts["home.search"]}
               />
             </label>
             <button className="button" type="submit">
-              ابحث <span aria-hidden="true">←</span>
+              {texts["home.searchButton"] || "ابحث"}{" "}
+              <span aria-hidden="true">←</span>
             </button>
           </form>
         </div>
@@ -64,6 +70,7 @@ export default async function Home({
         region={region}
         capacity={6}
         path="/"
+        texts={texts}
       />
       {categories.length > 0 && (
         <section className="section wrap" aria-label="الأقسام">
@@ -124,11 +131,11 @@ export default async function Home({
       <section className="availability-section wrap" aria-label="التوفر">
         <Link href="/browse?status=available" className="availability-card">
           <span className="status-dot" />
-          <h3>متوفر الآن</h3>
+          <h3>{texts["avail.now"] || "متوفر الآن"}</h3>
         </Link>
         <Link href="/browse?status=preorder" className="availability-card warm">
           <span aria-hidden="true">◷</span>
-          <h3>اطلب الآن</h3>
+          <h3>{texts["avail.order"] || "اطلب الآن"}</h3>
         </Link>
       </section>
       {producers.length > 0 && (

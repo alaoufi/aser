@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import { Lines } from "@/components/public/ui";
+import { getSiteTexts } from "@/server/settings";
 export const metadata: Metadata = { title: "حكايتنا" };
-export default function About() {
+export default async function About() {
+  const t = await getSiteTexts();
   return (
     <article className="wrap prose page-space">
       <Image
@@ -13,34 +16,25 @@ export default function About() {
         sizes="192px"
         loading="eager"
       />
-      <p className="eyebrow">موروث نحبه، وخير نقرّبه</p>
+      {t["about.eyebrow"] && <p className="eyebrow">{t["about.eyebrow"]}</p>}
       <h1>
-        لكل بيت حكاية.
-        <br />
-        وللأصالة مكان بيننا.
+        <Lines text={t["about.title"] || "حكايتنا"} />
       </h1>
-      <p className="lead">
-        أكلات جدتنا مساحة سعودية للتعريف بالأسر المنتجة الغذائية، وحفظ حضور
-        الأكلات الشعبية والمنتجات البلدية في حياتنا اليومية.
-      </p>
-      <h2>من أهل الصنعة إليك</h2>
-      <p>
-        تصفح الأسر والمنتجات دون تسجيل، واختر المدينة والتصنيف، ثم تواصل مباشرة
-        مع الأسرة المنتجة للتأكد من التفاصيل والسعر وطريقة الاستلام. لا نعتبر
-        الاتصال أو رسالة واتساب طلبًا مكتملًا أو عملية بيع مؤكدة.
-      </p>
-      <h2>بداية بسيطة وواضحة</h2>
-      <p>
-        التسجيل مجاني حاليًا، دون عمولات أو اشتراكات أو دفع إلكتروني. الإصدار
-        الحالي يتيح عروض الأسر وطلبات الوجبات بمدة محددة وسجلًا للمسجل، مع بقاء
-        تأكيد التفاصيل والاتفاق والسداد بين العميل والأسرة المنتجة خارج الموقع.
-      </p>
-      <h2>للأسر المنتجة الغذائية فقط</h2>
-      <p>
-        تُراجع ملفات الأسر قبل نشرها. المراجعة الإدارية لا تعني إصدار ترخيص
-        حكومي ولا تُغني عن المتطلبات النظامية للنشاط. لا تُنشر مستندات الأهلية
-        أو عنوان المنزل للعامة.
-      </p>
+      {t["about.lead"] && (
+        <p className="lead">
+          <Lines text={t["about.lead"]} />
+        </p>
+      )}
+      {(["1", "2", "3"] as const).map((n) => (
+        <section key={n}>
+          {t[`about.h${n}`] && <h2>{t[`about.h${n}`]}</h2>}
+          {t[`about.p${n}`] && (
+            <p>
+              <Lines text={t[`about.p${n}`]} />
+            </p>
+          )}
+        </section>
+      ))}
     </article>
   );
 }

@@ -2,10 +2,7 @@
 
 import { useState } from "react";
 
-const introduction =
-  "أكلات جدتنا — نكهات أصيلة تحفظ موروثنا، تجمع الأسر المنتجة ومحبي الأكل التراثي، وتقرّبكم من أكلات أهلنا ومنتجاتهم الغذائية.";
-
-export function AboutTicker() {
+export function AboutTicker({ text: introduction }: { text: string }) {
   const [paused, setPaused] = useState(false);
   return (
     <aside className="about-ticker" aria-label="نبذة عن أكلات جدتنا">

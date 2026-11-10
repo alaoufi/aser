@@ -462,6 +462,11 @@ function FamilyCategories({
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [success, setSuccess] = useState("");
+  const feedback = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (success || error)
+      feedback.current?.scrollIntoView({ block: "nearest" });
+  }, [success, error]);
   async function save(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const ids = new FormData(e.currentTarget).getAll("categoryIds").map(String);
@@ -493,7 +498,6 @@ function FamilyCategories({
           تختار منها عند إضافة منتج. لا يظهر القسم للزوار إلا إذا كان عليه منتج
           منشور.
         </p>
-        <Message error={error} success={success} />
         <div className={s.checks}>
           {categories.map((c) => (
             <label key={c.id}>
@@ -502,6 +506,7 @@ function FamilyCategories({
                 type="checkbox"
                 value={c.id}
                 defaultChecked={selected.includes(c.id)}
+                onChange={() => setSuccess("")}
               />
               {categoryLabel(c, categories)}
             </label>
@@ -510,6 +515,10 @@ function FamilyCategories({
         <button className={s.button} disabled={busy}>
           {busy ? "جارٍ الحفظ…" : "حفظ أقسامي"}
         </button>
+        {/* الرسالة بجانب زر الحفظ حتى تُرى بعد الضغط مباشرة. */}
+        <div ref={feedback}>
+          <Message error={error} success={success} />
+        </div>
       </form>
     </section>
   );
