@@ -1474,29 +1474,35 @@ button.food-dish:focus-visible .food-dish-visual {
   z-index: 1;
 }
 
-/* علامة «مائدة اليوم» المائية: كبيرة شفافة تطفو فوق خشب المائدة خلف الأطباق */
+/* علامة «مائدة اليوم» المائية: شريط أعلى الطاولة وآخر أسفلها، بعيدًا عن الكتابة والأطباق */
 .table-top {
+  --wm: clamp(1.25rem, 6.5vw, 2.6rem);
   overflow: hidden;
-  container-type: inline-size;
+}
+.table-3d .table-top {
+  padding-block: calc(var(--wm) + 26px);
 }
 .table-watermark {
   position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
+  inset-inline: 0;
   z-index: 0;
+  text-align: center;
   pointer-events: none;
   user-select: none;
   white-space: nowrap;
-  font-family: var(--font-display, inherit);
   font-weight: 800;
-  /* يتبع عرض المائدة نفسها فلا يخرج عن حدودها */
-  font-size: clamp(1.8rem, 17cqi, 7rem);
+  font-size: var(--wm);
   line-height: 1;
   color: #f4ead9;
-  opacity: 0.06;
-  text-shadow: none;
+  opacity: 0.24;
   animation: table-watermark-float 7s ease-in-out infinite;
+}
+.table-watermark.is-top {
+  top: 12px;
+}
+.table-watermark.is-bottom {
+  bottom: 12px;
+  animation-delay: -3.5s;
 }
 .table-top > :not(.table-watermark) {
   position: relative;
@@ -1505,10 +1511,10 @@ button.food-dish:focus-visible .food-dish-visual {
 @keyframes table-watermark-float {
   0%,
   100% {
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
   }
   50% {
-    transform: translateY(-8px) scale(1.02);
+    transform: translateY(-3px);
   }
 }
 @media (prefers-reduced-motion: reduce) {
