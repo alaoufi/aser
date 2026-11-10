@@ -1,3 +1,4 @@
+import { SITE_VERSION } from "@/lib/version";
 import { db, databaseConfigured } from "@/server/db";
 import {
   registrationOpen,
@@ -17,6 +18,7 @@ export async function GET() {
     {
       status: database ? "ready" : "not_ready",
       version: process.env.SOURCE_COMMIT || "local",
+      release: SITE_VERSION,
       database,
       registrationOpen: registrationOpen() && database,
       smsConfigured: smsConfigured(),

@@ -3,6 +3,8 @@ import { AboutTicker } from "@/components/public/about-ticker";
 import { AccountLink } from "@/components/public/account-link";
 import { OrderAlert } from "@/components/public/order-alert";
 import { FamilyWelcome } from "@/components/public/family-welcome";
+import { StarDefs } from "@/components/public/stars";
+import { SITE_VERSION } from "@/lib/version";
 import { FamilyStatusChip } from "@/components/forms/family-status";
 import "./fonts.css";
 import type { Metadata } from "next";
@@ -50,6 +52,7 @@ export default async function RootLayout({
       data-template={template}
     >
       <body>
+        <StarDefs />
         <a href="#main" className="skip-link">
           انتقل إلى المحتوى
         </a>
@@ -124,6 +127,9 @@ export default async function RootLayout({
           <div className="footer-bottom">
             <span>
               © {new Date().getFullYear()} أكلات جدتنا
+              <small className="site-version">
+                الإصدار <bdi dir="ltr">{SITE_VERSION}</bdi>
+              </small>
               {texts["footer.affiliation"] && (
                 <small className="footer-affiliation">
                   {texts["footer.affiliation"]}

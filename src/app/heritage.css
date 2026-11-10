@@ -1335,3 +1335,141 @@ main::before {
   color: #3b4628;
   font-size: 12px;
 }
+
+/* النجوم: ذهب لامع متدرج، كل نجمة أسطع من التي قبلها */
+.stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  vertical-align: middle;
+}
+.star.shine-1 {
+  filter: drop-shadow(0 0 0 #f4c64a00);
+}
+.star.shine-2 {
+  filter: drop-shadow(0 0 1px #f4c64a55);
+}
+.star.shine-3 {
+  filter: drop-shadow(0 0 1.5px #f4c64a77);
+}
+.star.shine-4 {
+  filter: drop-shadow(0 0 2px #f4c64a99);
+}
+.star.shine-5 {
+  filter: drop-shadow(0 0 3px #f4c64acc);
+}
+.stars-count {
+  margin-inline-start: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.rating-box {
+  margin-block: 14px;
+  padding: 12px 14px;
+  border: 1px solid #e3cfae;
+  border-radius: 12px;
+  background: #fffdf8;
+}
+.rating-box.compact {
+  margin-block: 8px;
+  padding: 8px 10px;
+}
+.rating-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.rating-summary h3 {
+  margin: 0;
+  font-size: 15px;
+}
+.rating-form {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.rating-form fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+.rating-form legend {
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+.star-input {
+  display: flex;
+  gap: 4px;
+}
+.star-input label {
+  position: relative;
+  cursor: pointer;
+  min-width: 34px;
+  min-height: 34px;
+  display: grid;
+  place-items: center;
+}
+.star-input input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  cursor: pointer;
+}
+.star-input label:has(input:focus-visible) {
+  outline: 2px solid var(--rust);
+  border-radius: 6px;
+}
+.rating-comment textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #d6b98d;
+  border-radius: 8px;
+  padding: 8px;
+  font: inherit;
+  background: #fff;
+}
+.rating-ok {
+  margin: 0;
+  color: #2f4a1f;
+  font-weight: 600;
+}
+.rating-error {
+  margin: 0;
+  color: #7c2416;
+}
+/* الصحون الصغيرة أزرار تكبّر الصحن المختار */
+button.food-dish {
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+}
+button.food-dish:hover .food-dish-visual,
+button.food-dish:focus-visible .food-dish-visual {
+  transform: translateY(-3px);
+  box-shadow: 0 0 0 3px #b48a5c;
+}
+.food-dish-visual {
+  display: block;
+  position: relative;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.site-version {
+  display: block;
+  font-size: 12px;
+  opacity: 0.85;
+}
+/* النقر على النجمة يصل لزر الاختيار نفسه */
+.star-input svg {
+  pointer-events: none;
+}
+.star-input input {
+  z-index: 1;
+}

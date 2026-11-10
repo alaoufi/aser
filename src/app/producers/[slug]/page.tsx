@@ -3,6 +3,8 @@ import { getPublicCoverage } from "@/server/coverage";
 import { ShareButton } from "@/components/public/share-button";
 import { ChatButton } from "@/components/forms/chat";
 import { LocationCheck } from "@/components/maps/location-check";
+import { RatingBox } from "@/components/forms/rating-box";
+import { getSiteTexts } from "@/server/settings";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getProducer, getProducerProducts } from "@/server/catalog";
@@ -29,7 +31,10 @@ export default async function ProducerDetail({
 }) {
   const p = await getProducer((await params).slug);
   if (!p) notFound();
-  const products = await getProducerProducts(p.id);
+  const [products, texts] = await Promise.all([
+    getProducerProducts(p.id),
+    getSiteTexts(),
+  ]);
   const coverage = p.delivery ? await getPublicCoverage(p.id) : [];
   const phone = phoneNumber(p.phone);
   const whatsapp = p.whatsapp ? phoneNumber(p.whatsapp) : null;
@@ -79,6 +84,12 @@ export default async function ProducerDetail({
           <h2>تواصل مع الأسرة المنتجة</h2>
           <ShareButton title={p.name} />
           <p>اتفق مباشرة على السعر والكمية ووقت التجهيز والاستلام.</p>
+          <RatingBox
+            kind="family"
+            target={p.id}
+            title={texts["rating.family"] || "تقييم الأسرة المنتجة"}
+            prompt={texts["rating.prompt"] || "رأيك مهم؟"}
+          />
           <div className="contact-actions">
             <ChatButton producerSlug={p.slug} />
             {phone && (
