@@ -1619,11 +1619,16 @@ button.food-dish:focus-visible .food-dish-visual {
   display: none;
 }
 @media (max-width: 850px) {
+  /* المحادثات بجانب زر القائمة يمينًا، ويبقى الشعار على الحافة يسارًا */
+  .site-header .mobile-nav {
+    order: -2;
+  }
   .messages-link.mobile-messages {
     display: inline-flex;
-    margin-inline-start: auto;
-    width: 46px;
-    height: 46px;
+    order: -1;
+    flex: none;
+    width: 44px;
+    height: 44px;
   }
 }
 
