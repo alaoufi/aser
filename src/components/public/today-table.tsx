@@ -68,13 +68,16 @@ export function TodayTable({
       {/* مائدة خشب كبيرة ثلاثية الأبعاد بأرجل قصيرة */}
       <div className="table-3d">
         <div className="table-top">
-          {/* علامة مائية عائمة باسم المائدة: شريط أعلى الطاولة وآخر أسفلها */}
-          <span className="table-watermark is-top" aria-hidden="true">
-            {texts["table.title"] || "مائدة اليوم"}
-          </span>
-          <span className="table-watermark is-bottom" aria-hidden="true">
-            {texts["table.title"] || "مائدة اليوم"}
-          </span>
+          {/* علامة مائية على الجوانب الأربعة، كل واحدة تُقرأ من جهة الجالس أمامها */}
+          {(["bottom", "top", "right", "left"] as const).map((side) => (
+            <span
+              key={side}
+              className={`table-watermark is-${side}`}
+              aria-hidden="true"
+            >
+              {texts["table.title"] || "مائدة اليوم"}
+            </span>
+          ))}
           {shown.length === 0 ? (
             <p className="table-empty">
               {texts["table.empty"]}

@@ -1497,12 +1497,37 @@ button.food-dish:focus-visible .food-dish-visual {
   opacity: 0.24;
   animation: table-watermark-float 7s ease-in-out infinite;
 }
-.table-watermark.is-top {
-  top: 12px;
-}
+/* الجالس أسفل الطاولة يقرأ العلامة عادية، والمقابل له أعلاها يقرؤها مقلوبة،
+   والجالسان على الجانبين يقرآنها مدوّرة نحوهما. */
 .table-watermark.is-bottom {
   bottom: 12px;
+}
+.table-watermark.is-top {
+  top: 12px;
+  rotate: 180deg;
   animation-delay: -3.5s;
+}
+.table-watermark.is-left,
+.table-watermark.is-right {
+  inset-inline: auto;
+  top: 50%;
+  width: max-content;
+  translate: 0 -50%;
+  animation-delay: -1.75s;
+}
+.table-watermark.is-left {
+  left: 10px;
+  translate: calc(-50% + var(--wm) / 2) -50%;
+  rotate: 90deg;
+}
+.table-watermark.is-right {
+  right: 10px;
+  translate: calc(50% - var(--wm) / 2) -50%;
+  rotate: -90deg;
+  animation-delay: -5.25s;
+}
+.table-3d .table-top {
+  padding-inline: calc(var(--wm) + 22px);
 }
 .table-top > :not(.table-watermark) {
   position: relative;
