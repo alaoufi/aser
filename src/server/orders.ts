@@ -136,7 +136,7 @@ export async function submitOrder(user: SessionUser | null, input: unknown) {
   const fingerprint = createHash("sha256")
     .update(JSON.stringify({ ...value, userId: user?.id ?? null }))
     .digest("hex");
-  return transaction(async (client) => {
+  const result = await transaction(async (client) => {
     // Serialize retries before checking availability; only an identical request can retrieve its receipt.
     await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [
       value.requestKey,
@@ -150,11 +150,11 @@ export async function submitOrder(user: SessionUser | null, input: unknown) {
     if (existing) {
       if (existing.request_hash !== fingerprint)
         throw new HttpError(409, "مفتاح الطلب مستخدم لطلب مختلف");
-      return { id: existing.id, status: existing.status };
+      return { id: existing.id, status: existing.status, notify: null };
     }
     const product = (
       await client.query(
-        `SELECT x.name,x.unit,x.price,x.status,x.visible,x.delivery_scope AS "deliveryScope",x.shipping_fee AS "shippingFee",p.id AS "producerId",COALESCE(p.trade_name,p.name) AS "producerName",p.status AS "producerStatus" FROM jdatna.products x JOIN jdatna.producer_profiles p ON p.id=x.producer_id WHERE x.id=$1 FOR SHARE OF x,p`,
+        `SELECT x.name,x.unit,x.price,x.status,x.visible,x.delivery_scope AS "deliveryScope",x.shipping_fee AS "shippingFee",p.id AS "producerId",p.user_id AS "producerUser",COALESCE(p.trade_name,p.name) AS "producerName",p.status AS "producerStatus" FROM jdatna.products x JOIN jdatna.producer_profiles p ON p.id=x.producer_id WHERE x.id=$1 FOR SHARE OF x,p`,
         [value.productId],
       )
     ).rows[0];
@@ -200,8 +200,27 @@ export async function submitOrder(user: SessionUser | null, input: unknown) {
         value.notes,
       ],
     );
-    return { id, status: "pending" };
+    return {
+      id,
+      status: "pending",
+      notify: {
+        to: (product as unknown as { producerUser: string }).producerUser,
+        title: `طلب جديد: ${product.name}`,
+        body: `${value.name} — ${value.quantity} ${product.unit}`,
+      },
+    };
   });
+  // إشعار الجوال للأسرة المنتجة بالطلب الجديد (لا يُعاد عند تكرار نفس الطلب).
+  if (result.notify) {
+    const { notifyUser } = await import("./push");
+    void notifyUser(result.notify.to, {
+      title: result.notify.title,
+      body: result.notify.body,
+      url: "/dashboard/orders",
+      tag: `order-${result.id}`,
+    });
+  }
+  return { id: result.id, status: result.status };
 }
 const fields = `o.id,o.product_id AS "productId",o.snapshot,o.customer_name AS name,o.phone,o.quantity,o.meal,o.start_date::text AS "startDate",o.end_date::text AS "endDate",(o.end_date-o.start_date+1) AS days,o.notes,o.status,o.created_at AS "createdAt"`;
 export async function memberOrders(user: SessionUser) {
