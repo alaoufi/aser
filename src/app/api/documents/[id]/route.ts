@@ -6,7 +6,7 @@ import { can } from "@/lib/permissions";
 import { HttpError } from "@/server/security";
 export const runtime = "nodejs";
 export const GET = api(async (request, context) => {
-  const user = await requireUser(request, ["admin", "staff"]);
+  const user = await requireUser(request);
   // المستندات الخاصة لمن يراجع الأسر فقط.
   if (!can(user, "producers"))
     throw new HttpError(403, "لا تملك صلاحية الوصول");

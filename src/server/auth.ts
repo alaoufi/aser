@@ -259,7 +259,7 @@ export async function verifyAdminLogin(id: string, code: string) {
       );
       const user = (
         await client.query(
-          "SELECT id,name,phone,role,username,permissions FROM jdatna.users WHERE phone=$1 AND role IN ('admin','staff') AND suspended_at IS NULL AND phone_verified_at IS NOT NULL",
+          "SELECT id,name,phone,role,username,permissions FROM jdatna.users WHERE phone=$1 AND (role='admin' OR cardinality(permissions)>0) AND suspended_at IS NULL AND phone_verified_at IS NOT NULL",
           [challenge.phone],
         )
       ).rows[0] as SessionUser | undefined;

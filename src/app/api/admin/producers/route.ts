@@ -2,6 +2,6 @@ import { api, json } from "@/server/http";
 import { requireUser } from "@/server/auth";
 import { adminProducers } from "@/server/management";
 export const GET = api(async (request) => {
-  const user = await requireUser(request, ["admin", "staff"]);
+  const user = await requireUser(request);
   return json({ producers: await adminProducers(user) });
 });

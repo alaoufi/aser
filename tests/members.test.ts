@@ -10,24 +10,30 @@ import {
   saveCategory,
 } from "../src/server/admin";
 import { adminProducers } from "../src/server/management";
-import { can } from "../src/lib/permissions";
+import { can, isManager } from "../src/lib/permissions";
 
-test("permission helper: admin has all, staff only granted, others none", () => {
+test("admin permissions are independent of the account type", () => {
   assert.equal(can({ role: "admin" }, "orders"), true);
-  assert.equal(can({ role: "staff", permissions: ["orders"] }, "orders"), true);
-  assert.equal(
-    can({ role: "staff", permissions: ["orders"] }, "producers"),
-    false,
-  );
   assert.equal(
     can({ role: "customer", permissions: ["orders"] }, "orders"),
+    true,
+  );
+  assert.equal(
+    can({ role: "producer", permissions: ["reports"] }, "reports"),
+    true,
+  );
+  assert.equal(
+    can({ role: "customer", permissions: ["orders"] }, "producers"),
     false,
   );
+  assert.equal(can({ role: "customer", permissions: [] }, "orders"), false);
   assert.equal(can(null, "orders"), false);
+  assert.equal(isManager({ role: "producer", permissions: ["reports"] }), true);
+  assert.equal(isManager({ role: "producer", permissions: [] }), false);
 });
 
 test(
-  "isolated members: admin-only management, staff limited to granted sections, suspension logs out and blocks",
+  "isolated members: admin adds members and grants permissions to any account, limited to granted sections, suspension logs out",
   { skip: process.env.JDATNA_TEST_DB !== "true" },
   async () => {
     const pool = db();
@@ -43,25 +49,27 @@ test(
       role,
     });
     const admin = mk("admin", "مدير الأعضاء"),
-      member = mk("customer", "عضو سيصبح مشرفًا"),
+      member = mk("customer", "عضو يُعطى صلاحيات"),
       family = mk("producer", "صاحبة أسرة");
-    const ids = [admin.id, member.id, family.id];
+    const ids: string[] = [admin.id, member.id, family.id];
     const token = randomBytes(32).toString("hex");
     const asRequest = () =>
       new Request("https://test.invalid/", {
         headers: { cookie: "jdatna_session=" + token },
       });
+    const session = () =>
+      pool.query(
+        "INSERT INTO jdatna.sessions(token_hash,user_id,expires_at) VALUES($1,$2,now()+interval '1 hour')",
+        [hash(token), member.id],
+      );
     try {
       for (const u of [admin, member, family])
         await pool.query(
           "INSERT INTO jdatna.users(id,name,phone,role,phone_verified_at) VALUES($1,$2,$3,$4,now())",
           [u.id, u.name, u.phone, u.role],
         );
-      await pool.query(
-        "INSERT INTO jdatna.sessions(token_hash,user_id,expires_at) VALUES($1,$2,now()+interval '1 hour')",
-        [hash(token), member.id],
-      );
-      // إدارة الأعضاء للمدير فقط.
+      await session();
+      // إدارة الأعضاء للمدير الكامل فقط.
       await assert.rejects(listMembers(member), { status: 403 });
       assert.ok(
         (await listMembers(admin, member.phone.slice(-6))).some(
@@ -74,50 +82,63 @@ test(
       );
       await assert.rejects(
         updateMember(admin, {
-          action: "role",
+          action: "access",
           id: member.id,
-          role: "staff",
           permissions: ["everything"],
         }),
       );
+      // الأسرة المنتجة تُعطى صلاحيات محددة وتبقى أسرة، ولا تصبح مديرًا كاملًا.
       await assert.rejects(
-        updateMember(admin, { action: "role", id: family.id, role: "admin" }),
-        /مراجعة الأسر/,
+        updateMember(admin, {
+          action: "access",
+          id: family.id,
+          fullAdmin: true,
+        }),
+        /صلاحيات محددة/,
       );
-      // ترقية العضو لمشرف بصلاحية الطلبات فقط: تُنهى جلساته ليدخل من جديد.
       await updateMember(admin, {
-        action: "role",
+        action: "access",
+        id: family.id,
+        permissions: ["reports"],
+      });
+      assert.deepEqual(
+        (
+          await pool.query(
+            "SELECT role,permissions FROM jdatna.users WHERE id=$1",
+            [family.id],
+          )
+        ).rows[0],
+        { role: "producer", permissions: ["reports"] },
+      );
+      // العضو يُعطى صلاحية الطلبات فقط ويبقى عميلًا؛ تُنهى جلساته ليدخل من جديد.
+      await updateMember(admin, {
+        action: "access",
         id: member.id,
-        role: "staff",
         permissions: ["orders"],
       });
       assert.equal(await sessionUser(asRequest()), null);
-      const staff = {
+      const granted = {
         ...member,
-        role: "staff" as const,
+        role: "customer" as const,
         permissions: ["orders"],
       };
-      await adminOrders(staff);
-      await assert.rejects(adminProducers(staff), { status: 403 });
-      await assert.rejects(adminCategories(staff), { status: 403 });
+      await adminOrders(granted);
+      await assert.rejects(adminProducers(granted), { status: 403 });
+      await assert.rejects(adminCategories(granted), { status: 403 });
       await assert.rejects(
         saveCategory(
-          staff,
-          { name: "قسم", slug: "staff-denied", icon: "✦" },
+          granted,
+          { name: "قسم", slug: "granted-denied", icon: "✦" },
           false,
         ),
         { status: 403 },
       );
-      await assert.rejects(listMembers(staff), { status: 403 });
+      await assert.rejects(listMembers(granted), { status: 403 });
+      await session();
+      const seen = await sessionUser(asRequest());
+      assert.equal(seen?.role, "customer");
+      assert.deepEqual(seen?.permissions, ["orders"]);
       // الإيقاف: يحذف الجلسات ويمنع أي جلسة لاحقة.
-      await pool.query(
-        "INSERT INTO jdatna.sessions(token_hash,user_id,expires_at) VALUES($1,$2,now()+interval '1 hour')",
-        [hash(token), member.id],
-      );
-      assert.equal((await sessionUser(asRequest()))?.role, "staff");
-      assert.deepEqual((await sessionUser(asRequest()))?.permissions, [
-        "orders",
-      ]);
       await updateMember(admin, { action: "suspend", id: member.id });
       assert.equal(await sessionUser(asRequest()), null);
       assert.equal(
@@ -129,13 +150,34 @@ test(
         ).rows[0].n,
         0,
       );
-      await pool.query(
-        "INSERT INTO jdatna.sessions(token_hash,user_id,expires_at) VALUES($1,$2,now()+interval '1 hour')",
-        [hash(token), member.id],
-      );
+      await session();
       assert.equal(await sessionUser(asRequest()), null, "suspended stays out");
       await updateMember(admin, { action: "unsuspend", id: member.id });
       assert.equal((await sessionUser(asRequest()))?.id, member.id);
+      // إضافة عضو جديد برقم جواله مع صلاحياته؛ الرقم المكرر يُرفض.
+      const added = (await updateMember(admin, {
+        action: "create",
+        name: "مشرفة جديدة",
+        phone: "05" + String(Math.floor(Math.random() * 1e8)).padStart(8, "0"),
+        permissions: ["content"],
+      })) as unknown as { id: string };
+      ids.push(added.id);
+      const created = (
+        await pool.query(
+          "SELECT role,permissions,phone FROM jdatna.users WHERE id=$1",
+          [added.id],
+        )
+      ).rows[0];
+      assert.equal(created.role, "customer");
+      assert.deepEqual(created.permissions, ["content"]);
+      await assert.rejects(
+        updateMember(admin, {
+          action: "create",
+          name: "مكرر",
+          phone: created.phone,
+        }),
+        { status: 409 },
+      );
       const audits = (
         await pool.query(
           "SELECT action FROM jdatna.admin_audit_logs WHERE actor_id=$1 ORDER BY created_at",
@@ -143,9 +185,11 @@ test(
         )
       ).rows.map((r) => r.action);
       assert.deepEqual(audits, [
-        "member.role",
+        "member.access",
+        "member.access",
         "member.suspend",
         "member.unsuspend",
+        "member.create",
       ]);
     } finally {
       await pool.query(

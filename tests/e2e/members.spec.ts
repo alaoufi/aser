@@ -15,7 +15,7 @@ async function as(page: Page, user: Record<string, unknown>) {
   );
 }
 
-test("admin grants a member limited moderator permissions and can suspend", async ({
+test("admin adds a member and grants permissions to members and families", async ({
   page,
 }) => {
   await as(page, {
@@ -65,51 +65,99 @@ test("admin grants a member limited moderator permissions and can suspend", asyn
   await page
     .getByRole("button", { name: "الأعضاء والصلاحيات", exact: true })
     .click();
+  // إضافة عضو جديد برقم جواله وصلاحيات محددة.
+  await page.getByRole("button", { name: "＋ إضافة عضو أو مشرف" }).click();
+  const add = page.getByRole("form", { name: "إضافة عضو" });
+  await add.getByLabel("اسم العضو").fill("نورة");
+  await add.getByLabel("رقم الجوال").fill("0500000099");
+  await add.getByRole("radio", { name: "صلاحيات إدارية محددة" }).check();
+  await add.getByRole("checkbox", { name: "الطلبات" }).check();
+  await add.getByRole("button", { name: "إضافة العضو" }).click();
+  await expect.poll(() => sent.length).toBe(1);
+  expect(sent[0]).toEqual({
+    action: "create",
+    name: "نورة",
+    phone: "0500000099",
+    fullAdmin: false,
+    permissions: ["orders"],
+  });
   // حساب المدير نفسه لا يُعدَّل.
   await page.getByRole("button", { name: /المدير \(حسابك\)/ }).click();
   await expect(page.getByText("لا يمكنك تعديل صلاحيات حسابك")).toBeVisible();
+  // عضو عادي يُعطى صلاحيات محددة.
   await page.getByRole("button", { name: /سارة/ }).click();
-  await page.getByLabel("الدور").selectOption("staff");
+  await page.getByRole("radio", { name: "صلاحيات إدارية محددة" }).check();
   await page.getByRole("checkbox", { name: "الطلبات" }).check();
   await page.getByRole("checkbox", { name: "البلاغات" }).check();
   await page.getByRole("button", { name: "حفظ الصلاحيات" }).click();
-  await expect.poll(() => sent.length).toBe(1);
-  expect(sent[0]).toEqual({
-    action: "role",
+  await expect.poll(() => sent.length).toBe(2);
+  expect(sent[1]).toEqual({
+    action: "access",
     id: "m",
-    role: "staff",
+    fullAdmin: false,
     permissions: ["orders", "reports"],
   });
-  // الأسرة المنتجة: إيقاف فقط، بلا تغيير دور.
+  // الأسرة المنتجة: صلاحيات محددة متاحة، والمدير الكامل غير متاح، ويمكن إيقافها.
   await page.getByRole("button", { name: /أم محمد/ }).click();
-  await expect(page.getByText("دوره يُدار من مراجعة الأسر")).toBeVisible();
+  await expect(
+    page.getByRole("radio", { name: "مدير كامل (كل الصلاحيات)" }),
+  ).toBeDisabled();
+  await page.getByRole("radio", { name: "صلاحيات إدارية محددة" }).check();
+  await page.getByRole("checkbox", { name: "المنتجات" }).check();
+  await page.getByRole("button", { name: "حفظ الصلاحيات" }).click();
+  await expect.poll(() => sent.length).toBe(3);
+  expect(sent[2]).toEqual({
+    action: "access",
+    id: "f",
+    fullAdmin: false,
+    permissions: ["products"],
+  });
   await page.getByRole("button", { name: "إيقاف الحساب" }).click();
   await page.getByRole("button", { name: "تأكيد إيقاف أم محمد" }).click();
-  await expect.poll(() => sent.length).toBe(2);
-  expect(sent[1]).toEqual({ action: "suspend", id: "f" });
+  await expect.poll(() => sent.length).toBe(4);
+  expect(sent[3]).toEqual({ action: "suspend", id: "f" });
 });
 
-test("a moderator sees only the admin sections granted to them", async ({
+test("a family with admin permissions keeps its own account and gets an admin account", async ({
   page,
 }) => {
+  await page.addInitScript(() => {
+    try {
+      sessionStorage.setItem("jdatna:family-welcome", "1");
+    } catch {}
+  });
   await as(page, {
     id: "s",
-    name: "مشرف",
+    name: "أم محمد",
     phone: "+966500000012",
-    role: "staff",
+    role: "producer",
     permissions: ["orders"],
   });
+  await page.route("**/api/producer/status", (r) =>
+    r.fulfill({ json: { state: null } }),
+  );
+  await page.route("**/api/producer/orders**", (r) =>
+    r.fulfill({ json: { orders: [], alerts: [], pending: 0 } }),
+  );
+  await page.goto("/");
+  const mobile = (page.viewportSize()?.width ?? 1280) <= 850;
+  if (mobile) await page.locator(".mobile-nav summary").click();
+  const scope = mobile
+    ? page.getByRole("navigation", { name: "التنقل للجوال" })
+    : page.locator(".site-header .header-actions");
+  await expect(
+    scope.getByRole("link", { name: "حسابي الخاص" }),
+  ).toHaveAttribute("href", "/dashboard");
+  await expect(
+    scope.getByRole("link", { name: "حساب الإدارة" }),
+  ).toHaveAttribute("href", "/admin");
   await page.goto("/admin");
   const nav = page.getByRole("navigation", { name: "أقسام الإدارة" });
   await expect(nav.getByRole("button")).toHaveText(["الطلبات"]);
-  await expect(
-    nav.getByRole("link", { name: "إدارة التغطية التفصيلية" }),
-  ).toHaveCount(0);
   await expect(page.getByRole("button", { name: "الطلبات" })).toHaveAttribute(
     "aria-pressed",
     "true",
   );
-  await expect(page.getByText("الهوية الوطنية ليست ترخيصًا")).toHaveCount(0);
 });
 
 test("visitors pick the site look themselves and it is remembered", async ({

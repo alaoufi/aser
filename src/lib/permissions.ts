@@ -11,14 +11,16 @@ export const adminPermissions = {
 export type AdminPermission = keyof typeof adminPermissions;
 type Who = { role: string; permissions?: string[] | null } | null | undefined;
 
-/** هل يدخل لوحة الإدارة أصلًا (مدير أو مشرف)؟ */
+/**
+ * هل له «حساب الإدارة»؟ المدير الكامل، أو أي عضو (عميل أو أسرة منتجة)
+ * أُعطي صلاحية إدارية واحدة على الأقل. نوع حسابه الخاص لا يتغير.
+ */
 export function isManager(user: Who) {
-  return user?.role === "admin" || user?.role === "staff";
+  return user?.role === "admin" || Boolean(user?.permissions?.length);
 }
-/** المدير الكامل يملك كل شيء؛ المشرف ما أُعطي فقط. */
+/** المدير الكامل يملك كل شيء؛ غيره ما أُعطي من صلاحيات فقط. */
 export function can(user: Who, permission: AdminPermission) {
   return (
-    user?.role === "admin" ||
-    (user?.role === "staff" && Boolean(user.permissions?.includes(permission)))
+    user?.role === "admin" || Boolean(user?.permissions?.includes(permission))
   );
 }
