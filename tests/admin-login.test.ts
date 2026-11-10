@@ -91,6 +91,19 @@ test(
           )
         ).rows[0].n as number;
 
+      // الافتراضي: المدير يدخل بكلمة المرور مباشرة، ورمز الجوال للتسجيل والاستعادة فقط.
+      const direct = await passwordLogin({ identifier: admin.phone, password });
+      assert.equal(direct.otp, undefined);
+      assert.ok(
+        direct.token,
+        "admin logs in with the password alone by default",
+      );
+      await db().query("DELETE FROM jdatna.sessions WHERE user_id=$1", [
+        admin.id,
+      ]);
+
+      // الخطوة الثانية اختيارية عند تفعيلها صراحة.
+      process.env.ADMIN_LOGIN_OTP = "on";
       const step1 = await passwordLogin({ identifier: admin.phone, password });
       assert.ok(step1.otp?.challengeId);
       assert.equal(step1.token, null);
@@ -124,14 +137,11 @@ test(
       assert.ok(plain.token, "non-admin accounts keep one-step login");
 
       process.env.ADMIN_LOGIN_OTP = "off";
-      const emergency = await passwordLogin({
+      const off = await passwordLogin({
         identifier: admin.phone,
         password,
       });
-      assert.ok(
-        emergency.token,
-        "emergency switch restores one-step admin login",
-      );
+      assert.ok(off.token, "switching it off restores one-step admin login");
       delete process.env.ADMIN_LOGIN_OTP;
 
       // تعيين كلمة مرور جديدة للمدير يتطلب 10 خانات على الأقل.

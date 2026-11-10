@@ -202,10 +202,22 @@ export async function verifyOtp(
     },
   );
 }
-// دخول الإدارة بخطوتين: بعد صحة كلمة المرور يُرسل رمز إلى جوال المدير.
-// ADMIN_LOGIN_OTP=off يعطّل الخطوة الثانية للطوارئ فقط (يتطلب وصولًا للخادم).
+// رمز الجوال عند التسجيل أول مرة ونسيان كلمة المرور فقط (بطلب المالك).
+// الخطوة الثانية لدخول الإدارة اختيارية: ADMIN_LOGIN_OTP=on يعيدها (يتطلب وصولًا للخادم).
 export function adminOtpRequired() {
-  return process.env.ADMIN_LOGIN_OTP !== "off" && smsConfigured();
+  return process.env.ADMIN_LOGIN_OTP === "on" && smsConfigured();
+}
+/** الدخول يبقى سنة كاملة، ويتجدد مع كل زيارة فلا يُطلب مرة أخرى. */
+export const SESSION_SECONDS = 60 * 60 * 24 * 365;
+/** يمدد الجلسة النشطة سنة من آخر زيارة (مرة كل يوم على الأكثر). */
+export async function renewSession(request: Request) {
+  const token = sessionToken(request);
+  if (!token || !databaseConfigured()) return false;
+  const r = await db().query(
+    "UPDATE jdatna.sessions SET expires_at=now()+interval '365 days' WHERE token_hash=$1 AND expires_at>now() AND NOT setup_only AND expires_at<now()+interval '364 days'",
+    [hash(token)],
+  );
+  return (r.rowCount ?? 0) > 0;
 }
 export async function startAdminChallenge(
   client: { query: (sql: string, args: unknown[]) => Promise<unknown> },
@@ -266,15 +278,15 @@ export async function verifyAdminLogin(id: string, code: string) {
       if (!user) return null;
       const token = randomBytes(32).toString("hex");
       await client.query(
-        "INSERT INTO jdatna.sessions(token_hash,user_id,expires_at) VALUES($1,$2,now()+interval '12 hours')",
+        "INSERT INTO jdatna.sessions(token_hash,user_id,expires_at) VALUES($1,$2,now()+interval '365 days')",
         [hash(token), user.id],
       );
       return { user, token };
     },
   );
 }
-export const ADMIN_SESSION_SECONDS = 43200;
-export function sessionCookie(token: string, maxAge = 604800) {
+export const ADMIN_SESSION_SECONDS = SESSION_SECONDS;
+export function sessionCookie(token: string, maxAge = SESSION_SECONDS) {
   return `${cookieName}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${process.env.NODE_ENV === "production" ? "; Secure" : ""}`;
 }
 export async function logout(request: Request) {
