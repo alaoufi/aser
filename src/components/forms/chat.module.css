@@ -148,12 +148,16 @@
   background: #d9fdd3;
   align-self: flex-start;
 }
-.bubble time {
-  display: block;
+.meta {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 2px;
   margin-top: 2px;
+}
+.bubble time {
   font-size: 11px;
   color: #667781;
-  text-align: end;
 }
 .day {
   align-self: center;
@@ -322,4 +326,15 @@
   background: #f0f2f5;
   color: #54656f;
   text-align: center;
+}
+
+/* علامات الرسالة: رمادي للإرسال والوصول، وأزرق للقراءة */
+.ticks {
+  display: inline-flex;
+  vertical-align: middle;
+  margin-inline-start: 4px;
+  color: #8696a0;
+}
+.ticksRead {
+  color: #53bdeb;
 }
