@@ -8,6 +8,7 @@ import type {
 } from "@/server/coverage";
 import { api, s, AccountShell, Guard, Message, useSession } from "./shared";
 import { ZoneEditor } from "./zones";
+import { can } from "@/lib/permissions";
 function Select({
   title,
   value,
@@ -448,7 +449,7 @@ export function CoverageAdmin() {
       setNodes(d.nodes),
     );
   useEffect(() => {
-    if (session.user?.role === "admin")
+    if (can(session.user, "locations"))
       load().catch((e) => setError(e.message));
   }, [session.user]);
   const parents = nodes.filter((n) =>
@@ -465,7 +466,7 @@ export function CoverageAdmin() {
       <h1>التصنيف الإداري للتغطية</h1>
       <Guard {...session} admin />
       <Message error={error} success={success} />
-      {session.user?.role === "admin" && (
+      {can(session.user, "locations") && (
         <>
           <p>
             أضف التصنيف بناءً على معلومات معتمدة فقط. ربط المدينة بالمحافظة يحفظ

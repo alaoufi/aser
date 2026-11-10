@@ -1,4 +1,14 @@
 import { test, expect } from "@playwright/test";
+
+// ترحيب الأسرة يُختبر في family-welcome.spec؛ هنا نعدّه ظاهرًا في هذه الزيارة.
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    try {
+      sessionStorage.setItem("jdatna:family-welcome", "1");
+    } catch {}
+  });
+});
+
 const user = {
   id: "00000000-0000-4000-8000-000000000001",
   name: "أسرة الاختبار",

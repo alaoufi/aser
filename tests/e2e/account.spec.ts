@@ -1,5 +1,14 @@
 import { test, expect } from "@playwright/test";
 
+// ترحيب الأسرة يُختبر في family-welcome.spec؛ هنا نعدّه ظاهرًا في هذه الزيارة.
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    try {
+      sessionStorage.setItem("jdatna:family-welcome", "1");
+    } catch {}
+  });
+});
+
 test("unavailable verification disables sending and explains registration status", async ({
   page,
 }) => {

@@ -491,7 +491,7 @@ function FamilyCategories({
     }
   }
   return (
-    <section aria-label="أقسام منتجاتي">
+    <section aria-label="أقسام منتجاتي" id="family-categories">
       <form className={`${s.form} ${s.card}`} onSubmit={save}>
         <h2>أقسام منتجاتي</h2>
         <p className={s.muted}>

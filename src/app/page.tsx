@@ -1,6 +1,6 @@
 import { FoodPhotos } from "@/components/public/food-photos";
 import { NajdiDoor } from "@/components/public/najdi-door";
-import { getSiteTemplate, getSiteTexts } from "@/server/settings";
+import { getSiteTexts, visitorTemplate } from "@/server/settings";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { TodayTable, regionsOf } from "@/components/public/today-table";
@@ -27,7 +27,7 @@ export default async function Home({
     [asked ?? saved].find((r) => r && regions.some((x) => x.id === r)) ?? "";
   const today = await searchProducts({ status: "available", region });
   const [template, texts] = await Promise.all([
-    getSiteTemplate(),
+    visitorTemplate(),
     getSiteTexts(),
   ]);
   // لا يظهر القسم للعامة إلا إذا اختارته أسرة معتمدة وعليه منتج منشور.

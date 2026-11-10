@@ -4,6 +4,7 @@ import type { SessionUser } from "../lib/types";
 import { db, transaction } from "./db";
 import { HttpError } from "./security";
 import { compareRegions } from "../lib/regions";
+import { can } from "../lib/permissions";
 export type CoverageKind =
   "region" | "governorate" | "city" | "center" | "neighborhood";
 export type CoverageNode = {
@@ -121,8 +122,11 @@ export function validCoverageParent(kind: CoverageKind, parent: CoverageKind) {
             parent === "city"
           : false;
 }
-export function requireCoverageAdmin(user: { role: string }) {
-  if (user.role !== "admin")
+export function requireCoverageAdmin(user: {
+  role: string;
+  permissions?: string[] | null;
+}) {
+  if (!can(user, "locations"))
     throw new HttpError(403, "هذه العملية للإدارة فقط");
 }
 export async function getCoverageTree(): Promise<CoverageNode[]> {

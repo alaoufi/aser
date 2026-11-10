@@ -1,5 +1,14 @@
 import { test, expect, type Page } from "@playwright/test";
 
+// ترحيب الأسرة يُختبر في family-welcome.spec؛ هنا نعدّه ظاهرًا في هذه الزيارة.
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    try {
+      sessionStorage.setItem("jdatna:family-welcome", "1");
+    } catch {}
+  });
+});
+
 const producer = {
   id: "family-alert-user",
   name: "أسرة التنبيه",

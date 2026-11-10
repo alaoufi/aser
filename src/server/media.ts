@@ -7,6 +7,7 @@ import {
 } from "@aws-sdk/client-s3";
 import type { SessionUser } from "../lib/types";
 import { db, transaction } from "./db";
+import { can } from "../lib/permissions";
 import { storage } from "./storage";
 import {
   HttpError,
@@ -148,7 +149,8 @@ export async function productImage(id: string, user: SessionUser | null) {
     !(
       (media.status === "approved" && media.visible) ||
       user?.id === media.user_id ||
-      user?.role === "admin"
+      can(user, "products") ||
+      can(user, "producers")
     )
   )
     throw new HttpError(404, "الصورة غير موجودة");

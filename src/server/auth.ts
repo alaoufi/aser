@@ -64,7 +64,7 @@ export async function sessionInfo(request: Request): Promise<{
   if (!token) return null;
   const row = (
     await db().query(
-      'SELECT u.id,u.name,u.phone,u.role,u.username,(u.password_hash IS NOT NULL) AS "hasPassword",false AS "canSetCredentials" FROM jdatna.sessions s JOIN jdatna.users u ON u.id=s.user_id WHERE s.token_hash=$1 AND s.expires_at>now() AND NOT s.setup_only',
+      'SELECT u.id,u.name,u.phone,u.role,u.username,u.permissions,(u.password_hash IS NOT NULL) AS "hasPassword",false AS "canSetCredentials" FROM jdatna.sessions s JOIN jdatna.users u ON u.id=s.user_id WHERE s.token_hash=$1 AND s.expires_at>now() AND NOT s.setup_only AND u.suspended_at IS NULL',
       [hash(token)],
     )
   ).rows[0];
@@ -259,7 +259,7 @@ export async function verifyAdminLogin(id: string, code: string) {
       );
       const user = (
         await client.query(
-          "SELECT id,name,phone,role,username FROM jdatna.users WHERE phone=$1 AND role='admin' AND phone_verified_at IS NOT NULL",
+          "SELECT id,name,phone,role,username,permissions FROM jdatna.users WHERE phone=$1 AND role IN ('admin','staff') AND suspended_at IS NULL AND phone_verified_at IS NOT NULL",
           [challenge.phone],
         )
       ).rows[0] as SessionUser | undefined;

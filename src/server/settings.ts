@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { SessionUser } from "../lib/types";
 import { db, databaseConfigured, transaction } from "./db";
 import { HttpError } from "./security";
+import { can } from "../lib/permissions";
 import {
   isSiteTextKey,
   siteTextDefaults,
@@ -28,8 +29,17 @@ export async function getSiteTemplate(): Promise<SiteTemplate> {
   }
 }
 
+/** قالب هذا الزائر: اختياره المحفوظ في جهازه، وإلا قالب الإدارة الافتراضي. */
+export async function visitorTemplate(): Promise<SiteTemplate> {
+  const { cookies } = await import("next/headers");
+  const chosen = (await cookies()).get("jdatna_template")?.value;
+  return siteTemplates.includes(chosen as SiteTemplate)
+    ? (chosen as SiteTemplate)
+    : getSiteTemplate();
+}
+
 export async function setSiteTemplate(user: SessionUser, input: unknown) {
-  if (user.role !== "admin") throw new HttpError(403, "لا تملك صلاحية الإدارة");
+  if (!can(user, "content")) throw new HttpError(403, "لا تملك صلاحية الإدارة");
   const { template } = z
     .object({ template: z.enum(siteTemplates) })
     .strict()
@@ -68,7 +78,7 @@ export async function getSiteTexts(): Promise<SiteTexts> {
 
 /** قائمة الإدارة: لكل نص قيمته الحالية والأصلية وهل عُدِّل. */
 export async function adminSiteTexts(user: SessionUser) {
-  if (user.role !== "admin") throw new HttpError(403, "لا تملك صلاحية الإدارة");
+  if (!can(user, "content")) throw new HttpError(403, "لا تملك صلاحية الإدارة");
   const current = await getSiteTexts();
   return (Object.keys(siteTextDefaults) as (keyof SiteTexts)[]).map((key) => ({
     key,
@@ -80,7 +90,7 @@ export async function adminSiteTexts(user: SessionUser) {
 
 /** تعديل نص أو حذفه («») أو إعادته للأصل (null). */
 export async function setSiteText(user: SessionUser, input: unknown) {
-  if (user.role !== "admin") throw new HttpError(403, "لا تملك صلاحية الإدارة");
+  if (!can(user, "content")) throw new HttpError(403, "لا تملك صلاحية الإدارة");
   const { key, value } = z
     .object({
       key: z.string().refine(isSiteTextKey, "نص غير معروف"),
