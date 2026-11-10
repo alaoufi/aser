@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { ORDERS_CHANGED } from "@/components/public/order-alert";
+import { RatingBox } from "./rating-box";
 import {
   AccountShell,
   Guard,
@@ -109,6 +110,8 @@ type Order = {
   notes: string;
   status: string;
   isNew?: boolean;
+  /** للأسرة فقط: صاحب الطلب لتقييمه. */
+  customerId?: string | null;
 };
 const today = () =>
   new Intl.DateTimeFormat("en-CA", {
@@ -776,6 +779,14 @@ export function Orders({ producer = false }: { producer?: boolean }) {
                     إعداد طلب جديد من المنتج
                   </button>
                 }
+                {!["declined", "cancelled"].includes(order.status) && (
+                  <RatingBox
+                    kind="product"
+                    target={order.productId}
+                    title="تقييم المنتج"
+                    compact
+                  />
+                )}
               </article>
             ))}
         </>
@@ -856,6 +867,15 @@ function ProducerOrder({
           <dd>{price(order)}</dd>
         </div>
       </dl>
+      {order.customerId &&
+        !["declined", "cancelled"].includes(order.status) && (
+          <RatingBox
+            kind="member"
+            target={order.customerId}
+            title="تقييم العميل"
+            compact
+          />
+        )}
       {order.notes && (
         <p className={s.orderNotes}>ملاحظات العميل: {order.notes}</p>
       )}

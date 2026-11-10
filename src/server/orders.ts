@@ -238,7 +238,7 @@ export async function reorderDraft(user: SessionUser, id: string) {
 export async function producerOrders(user: SessionUser) {
   return (
     await db().query(
-      `SELECT ${fields},o.producer_seen_at IS NULL AS "isNew" FROM jdatna.order_requests o JOIN jdatna.producer_profiles p ON p.id=o.producer_id WHERE p.user_id=$1 ORDER BY o.created_at DESC LIMIT 200`,
+      `SELECT ${fields},o.producer_seen_at IS NULL AS "isNew",o.user_id AS "customerId" FROM jdatna.order_requests o JOIN jdatna.producer_profiles p ON p.id=o.producer_id WHERE p.user_id=$1 ORDER BY o.created_at DESC LIMIT 200`,
       [user.id],
     )
   ).rows;

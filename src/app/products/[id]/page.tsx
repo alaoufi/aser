@@ -3,6 +3,7 @@ import { OrderRequestForm } from "@/components/forms/orders";
 import { ChatButton } from "@/components/forms/chat";
 import { LocationCheck } from "@/components/maps/location-check";
 import { getSiteTexts } from "@/server/settings";
+import { RatingBox } from "@/components/forms/rating-box";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getProducer, getProduct } from "@/server/catalog";
@@ -111,6 +112,12 @@ export default async function ProductDetail({
           {p.delivery && p.deliveryScope !== "kingdom" && (
             <LocationCheck producerSlug={p.producerSlug} />
           )}
+          <RatingBox
+            kind="product"
+            target={p.id}
+            title={texts["rating.product"] || "تقييم المنتج"}
+            prompt={texts["rating.prompt"] || "رأيك مهم؟"}
+          />
           <ChatButton producerSlug={p.producerSlug} />
           <Link className="button" href={`/producers/${p.producerSlug}`}>
             {p.price === null
