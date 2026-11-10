@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { SessionUser } from "@/lib/types";
 import s from "./account.module.css";
+import { isManager } from "@/lib/permissions";
 export { s };
 export async function api<T>(url: string, options?: RequestInit): Promise<T> {
   const r = await fetch(url, {
@@ -82,9 +83,7 @@ function AccountNavigation() {
           <Link href="/dashboard/coverage">مناطق التغطية</Link>
         </>
       )}
-      {(user.role === "admin" || user.role === "staff") && (
-        <Link href="/admin">الإدارة</Link>
-      )}
+      {isManager(user) && <Link href="/admin">حساب الإدارة</Link>}
     </nav>
   );
 }
@@ -121,7 +120,7 @@ export function Guard({
         يلزم <Link href="/login">تسجيل الدخول</Link> للمتابعة.
       </p>
     );
-  if (admin && user.role !== "admin" && user.role !== "staff")
+  if (admin && !isManager(user))
     return (
       <p role="alert" className={s.error}>
         هذه الصفحة مخصصة للإدارة. ليست لديك صلاحية الوصول.
@@ -166,7 +165,7 @@ export function LoginForm({
       return;
     }
     const destination =
-      user.role === "admin" || user.role === "staff"
+      user.role === "admin"
         ? "/admin"
         : user.role === "producer"
           ? "/dashboard"
@@ -271,7 +270,7 @@ export function LoginForm({
   if (!session.ready) return <p role="status">جارٍ التحقق من الحساب…</p>;
   if (session.user && !verified) {
     const destination =
-      session.user.role === "admin" || session.user.role === "staff"
+      session.user.role === "admin"
         ? "/admin"
         : session.user.role === "producer"
           ? "/dashboard"

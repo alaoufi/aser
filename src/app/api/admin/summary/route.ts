@@ -3,6 +3,6 @@ import { requireUser } from "@/server/auth";
 import { adminSummary } from "@/server/admin";
 export const GET = api(async (request) =>
   json({
-    summary: await adminSummary(await requireUser(request, ["admin", "staff"])),
+    summary: await adminSummary(await requireUser(request)),
   }),
 );

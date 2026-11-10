@@ -70,7 +70,7 @@ export async function verifyPassword(
   return timingSafeEqual(key, Buffer.from(parsed[2], "hex")) && Boolean(valid);
 }
 export function roleDestination(role: SessionUser["role"]) {
-  return role === "admin" || role === "staff"
+  return role === "admin"
     ? "/admin"
     : role === "producer"
       ? "/dashboard"
@@ -123,7 +123,7 @@ export async function passwordLogin(input: unknown) {
       throw new HttpError(403, "هذا الحساب موقوف؛ تواصل مع إدارة المنصة");
     // المدير والمشرف يدخلان بخطوتين: كلمة المرور ثم رمز الجوال.
     if (
-      (user.role === "admin" || user.role === "staff") &&
+      (user.role === "admin" || Boolean(user.permissions?.length)) &&
       adminOtpRequired()
     ) {
       // لا جلسة قبل رمز الجوال لحساب الإدارة.
@@ -177,12 +177,13 @@ export async function setCredentials(request: Request, input: unknown) {
       if (!proof?.fresh)
         throw new HttpError(403, "يلزم تحقق جديد بالجوال لتعيين كلمة المرور");
       const role = (
-        await client.query("SELECT role FROM jdatna.users WHERE id=$1", [
-          proof.user_id,
-        ])
-      ).rows[0]?.role;
+        await client.query(
+          "SELECT role,cardinality(permissions) AS perms FROM jdatna.users WHERE id=$1",
+          [proof.user_id],
+        )
+      ).rows[0];
       if (
-        (role === "admin" || role === "staff") &&
+        (role?.role === "admin" || role?.perms > 0) &&
         value.password.length < ADMIN_PASSWORD_MIN
       )
         throw new HttpError(
