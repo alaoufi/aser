@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import {
   AdminSummary,
+  AppLinksAdmin,
   CategoriesAdmin,
   LocationsAdmin,
   OrdersAdmin,
@@ -30,13 +31,14 @@ const adminTabs: [
   ["reports", "البلاغات", "reports"],
   ["template", "قالب الموقع", "content"],
   ["texts", "نصوص الموقع", "content"],
+  ["app", "تطبيق الجوال", "content"],
   ["members", "الأعضاء والصلاحيات", "owner"],
 ];
 /** تجميع الأقسام في شاشة الإدارة (الأسماء للقارئ الآلي فقط). */
 const adminGroups: [group: string, ids: string[]][] = [
   ["الأسر والطلبات", ["producers", "orders", "products", "reports"]],
   ["الأقسام والمواقع", ["categories", "locations"]],
-  ["الموقع والأعضاء", ["template", "texts", "members"]],
+  ["الموقع والأعضاء", ["template", "texts", "app", "members"]],
 ];
 type Application = {
   id: string;
@@ -295,6 +297,8 @@ export function Admin() {
             <TemplateAdmin />
           ) : active === "texts" ? (
             <TextsAdmin />
+          ) : active === "app" ? (
+            <AppLinksAdmin />
           ) : active !== "producers" ? (
             <p className={s.notice}>
               لا توجد أقسام مسموحة لحسابك بعد؛ تواصل مع مدير المنصة.

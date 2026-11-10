@@ -130,7 +130,7 @@ async function participant(
     throw new HttpError(404, "المحادثة غير موجودة");
   const row = (
     await client.query(
-      `SELECT c.id,c.customer_id,p.user_id AS producer_user,
+      `SELECT c.id,c.customer_id,p.user_id AS producer_user,c.blocked_by,c.producer_id,
         CASE WHEN c.customer_id=$1 THEN COALESCE(p.trade_name,p.name) ELSE u.name END AS title,
         p.slug AS "producerSlug"
        FROM jdatna.conversations c
@@ -148,6 +148,8 @@ async function participant(
     title: string;
     producerSlug: string;
     side: "customer" | "producer";
+    blocked_by: string | null;
+    producer_id: string;
   };
 }
 
@@ -181,6 +183,8 @@ export async function conversationMessages(
         title: c.title,
         side: c.side,
         producerSlug: c.producerSlug,
+        blocked: Boolean(c.blocked_by),
+        blockedByMe: c.blocked_by === user.id,
       },
       messages: rows,
     };
@@ -198,6 +202,13 @@ export async function sendMessage(
     .parse(input);
   const sent = await transaction(async (client) => {
     const c = await participant(client, user, id, true);
+    if (c.blocked_by)
+      throw new HttpError(
+        403,
+        c.blocked_by === user.id
+          ? "حظرت هذه المحادثة؛ ألغِ الحظر لترسل"
+          : "لا يمكن الإرسال في هذه المحادثة",
+      );
     const message = (
       await client.query(
         `INSERT INTO jdatna.messages(id,conversation_id,sender_id,body) VALUES($1,$2,$3,$4)
@@ -224,4 +235,67 @@ export async function sendMessage(
     tag: `chat-${sent.conversation}`,
   });
   return sent.message;
+}
+
+/**
+ * أمان المحادثات (شرط المتاجر للمحتوى من المستخدمين): الإبلاغ للإدارة، والحظر
+ * الذي يمنع الطرفين من الإرسال، وإلغاء الحظر لمن حظر فقط.
+ */
+export async function moderateConversation(
+  user: SessionUser,
+  id: string,
+  input: unknown,
+) {
+  const value = z
+    .discriminatedUnion("action", [
+      z.object({ action: z.literal("block") }).strict(),
+      z.object({ action: z.literal("unblock") }).strict(),
+      z
+        .object({
+          action: z.literal("report"),
+          reason: z.string().trim().min(10).max(1000),
+          block: z.boolean().optional(),
+        })
+        .strict(),
+    ])
+    .parse(input);
+  return transaction(async (client) => {
+    const c = await participant(client, user, id, true);
+    if (value.action === "unblock") {
+      if (c.blocked_by && c.blocked_by !== user.id)
+        throw new HttpError(403, "الطرف الآخر هو من حظر المحادثة");
+      await client.query(
+        "UPDATE jdatna.conversations SET blocked_by=NULL WHERE id=$1",
+        [c.id],
+      );
+      return { blocked: false, blockedByMe: false };
+    }
+    if (value.action === "report") {
+      await client.query(
+        "INSERT INTO jdatna.reports(id,reporter_id,producer_id,reason) VALUES($1,$2,$3,$4)",
+        [
+          randomUUID(),
+          user.id,
+          c.producer_id,
+          `بلاغ محادثة (${c.id}) من ${c.side === "customer" ? "العميل" : "الأسرة"}: ${value.reason}`,
+        ],
+      );
+      if (!value.block)
+        return {
+          reported: true,
+          blocked: Boolean(c.blocked_by),
+          blockedByMe: c.blocked_by === user.id,
+        };
+    }
+    if (!c.blocked_by)
+      await client.query(
+        "UPDATE jdatna.conversations SET blocked_by=$2 WHERE id=$1",
+        [c.id, user.id],
+      );
+    return {
+      reported: value.action === "report",
+      blocked: true,
+      blockedByMe: !c.blocked_by || c.blocked_by === user.id,
+    };
+  });
 }

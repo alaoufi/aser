@@ -959,6 +959,34 @@ main::before {
   color: #fbf3e4;
   text-shadow: 0 1px 2px #00000080;
 }
+.table-empty p {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.table-bouquet {
+  width: clamp(84px, 22vw, 120px);
+  height: auto;
+  filter: drop-shadow(0 6px 6px #00000055);
+  animation: table-bouquet-sway 6s ease-in-out infinite;
+  transform-origin: 50% 100%;
+}
+@keyframes table-bouquet-sway {
+  0%,
+  100% {
+    rotate: -2deg;
+  }
+  50% {
+    rotate: 2deg;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .table-bouquet {
+    animation: none;
+  }
+}
 .table-empty small {
   font-family: var(--display);
   font-size: 13px;
@@ -1712,4 +1740,38 @@ button.food-dish:focus-visible .food-dish-visual {
 }
 .push-bar-actions .button {
   min-height: 40px;
+}
+
+/* حذف الحساب */
+.delete-account {
+  display: grid;
+  gap: 10px;
+  max-width: 520px;
+  margin-top: 24px;
+  padding: 18px;
+  border: 1px solid #e3b9ae;
+  border-radius: 12px;
+  background: #fff6f3;
+}
+.delete-account h2 {
+  margin: 0;
+}
+.delete-account input {
+  min-height: 46px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font: inherit;
+}
+.delete-account .button.danger {
+  background: var(--rust, #9c2f1e);
+  border-color: var(--rust, #9c2f1e);
+  color: #fff;
+}
+.delete-account .button.danger:disabled {
+  opacity: 0.5;
+}
+.delete-account-error {
+  color: #9d2929;
+  margin: 0;
 }
