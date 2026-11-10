@@ -4,6 +4,7 @@ import type { Category, City } from "@/lib/types";
 import { categoryLabel, categoryParentOptions } from "@/lib/category-label";
 import {
   siteTextLabels,
+  siteTextParagraphs,
   siteTextTitleKeys,
   type SiteTextKey,
 } from "@/lib/site-texts";
@@ -737,33 +738,84 @@ export function TextsAdmin() {
       <h2>نصوص الموقع</h2>
       <p className={s.muted}>
         عدّل النص واحفظه، أو أخفِ العنوان أو النص مؤقتًا دون أن يُمسح، أو احذفه،
-        أو أعده لأصله. العناوين والأزرار الأساسية تعود لنصها الأصلي إذا حُذفت أو
-        أُخفيت.
+        أو أعده لأصله. الأزرار الأساسية تعود لنصها الأصلي إذا حُذفت أو أُخفيت.
       </p>
       <Message error={r.error} success={r.success} />
       {!r.data && !r.error && <p role="status">جارٍ تحميل النصوص…</p>}
       {[...groups].map(([group, items]) => (
         <fieldset key={group} className={`${s.card} ${s.form}`}>
           <legend>{group}</legend>
-          {items.map((t) => (
-            <TextRow key={t.key + t.value + t.hidden} item={t} resource={r} />
-          ))}
+          {items.map((t) => {
+            const key = t.key as SiteTextKey;
+            // فقرة: عنوانها ونصها في بطاقة واحدة، وخيارا الإخفاء متجاوران أعلاها.
+            const textKey = siteTextParagraphs.get(key);
+            const text = textKey && items.find((x) => x.key === textKey);
+            if (text)
+              return (
+                <div key={t.key} className={s.paragraphCard}>
+                  <div
+                    className={s.hideBar}
+                    role="group"
+                    aria-label={"إخفاء " + siteTextLabels[key][1]}
+                  >
+                    <HideToggle item={t} resource={r} label="إخفاء العنوان" />
+                    <HideToggle item={text} resource={r} label="إخفاء النص" />
+                  </div>
+                  <TextRow item={t} resource={r} toggle={false} />
+                  <TextRow item={text} resource={r} toggle={false} />
+                </div>
+              );
+            if ([...siteTextParagraphs.values()].includes(key)) return null;
+            return <TextRow key={t.key} item={t} resource={r} />;
+          })}
         </fieldset>
       ))}
     </section>
   );
 }
+type TextsResource = ReturnType<typeof useResource<{ texts: AdminText[] }>>;
+/** إخفاء نص من الموقع دون مسحه؛ يعود كما هو عند إلغاء الإخفاء. */
+function HideToggle({
+  item,
+  resource: r,
+  label,
+}: {
+  item: AdminText;
+  resource: TextsResource;
+  label: string;
+}) {
+  const [hidden, setHidden] = useState(item.hidden);
+  useEffect(() => setHidden(item.hidden), [item.hidden]);
+  return (
+    <label className={s.hideToggle}>
+      <input
+        type="checkbox"
+        checked={hidden}
+        disabled={r.busy}
+        aria-describedby={"text-" + item.key.replace(/\W/g, "-")}
+        onChange={(e) => {
+          setHidden(e.target.checked);
+          r.write("PUT", { key: item.key, hidden: e.target.checked });
+        }}
+      />
+      {label}
+    </label>
+  );
+}
 function TextRow({
   item,
   resource: r,
+  toggle = true,
 }: {
   item: AdminText;
-  resource: ReturnType<typeof useResource<{ texts: AdminText[] }>>;
+  resource: TextsResource;
+  /** خيار الإخفاء داخل السطر؛ في الفقرات يكون أعلى البطاقة. */
+  toggle?: boolean;
 }) {
   const label = siteTextLabels[item.key as SiteTextKey]?.[1] ?? item.key;
   const id = "text-" + item.key.replace(/\W/g, "-");
   const [draft, setDraft] = useState(item.value);
-  const [hidden, setHidden] = useState(item.hidden);
+  useEffect(() => setDraft(item.value), [item.value]);
   const status = [
     item.hidden ? "مخفي" : "",
     !item.edited ? "" : item.value === "" ? "محذوف" : "معدّل",
@@ -787,19 +839,7 @@ function TextRow({
         placeholder={item.value === "" ? "محذوف — لا يظهر في الموقع" : ""}
         onChange={(e) => setDraft(e.target.value)}
       />
-      <label className={s.hideToggle}>
-        <input
-          type="checkbox"
-          checked={hidden}
-          disabled={r.busy}
-          aria-describedby={id}
-          onChange={(e) => {
-            setHidden(e.target.checked);
-            r.write("PUT", { key: item.key, hidden: e.target.checked });
-          }}
-        />
-        {hideLabel}
-      </label>
+      {toggle && <HideToggle item={item} resource={r} label={hideLabel} />}
       <div className={s.actions}>
         <button
           type="button"

@@ -33,6 +33,20 @@ test("admin edits, deletes and restores visible site texts", async ({
       hidden: false,
     },
     {
+      key: "about.h1",
+      value: "من أهل الصنعة إليك",
+      original: "من أهل الصنعة إليك",
+      edited: false,
+      hidden: false,
+    },
+    {
+      key: "about.p1",
+      value: "تصفح الأسر والمنتجات",
+      original: "تصفح الأسر والمنتجات",
+      edited: false,
+      hidden: false,
+    },
+    {
       key: "footer.made",
       value: "",
       original: "صُنع ليقرّب أهل الدار",
@@ -79,20 +93,32 @@ test("admin edits, deletes and restores visible site texts", async ({
   expect(sent[2]).toEqual({ key: "table.empty", value: "" });
 
   // إخفاء العنوان أو النص دون مسحه، ثم إظهاره.
-  const titleRow = page.getByLabel("عنوان المائدة").locator("..");
-  await titleRow.getByRole("checkbox", { name: "إخفاء العنوان" }).check();
+  // المائدة: عنوانها ونصها في بطاقة واحدة بخياري الإخفاء.
+  const table = page.getByRole("group", { name: "إخفاء عنوان المائدة" });
+  await expect(
+    table.getByRole("checkbox", { name: "إخفاء النص" }),
+  ).toBeVisible();
+  await table.getByRole("checkbox", { name: "إخفاء العنوان" }).check();
   await expect.poll(() => sent.length).toBe(4);
   expect(sent[3]).toEqual({ key: "table.title", hidden: true });
   await expect(page.getByText("(مخفي)")).toBeVisible();
-  await expect(page.getByLabel("عنوان المائدة")).toHaveValue("مائدة اليوم");
-  await page
-    .getByLabel("عنوان المائدة")
-    .locator("..")
-    .getByRole("checkbox", { name: "إخفاء العنوان" })
-    .uncheck();
+  await expect(
+    page.getByRole("textbox", { name: /^عنوان المائدة/ }),
+  ).toHaveValue("مائدة اليوم");
+  await table.getByRole("checkbox", { name: "إخفاء العنوان" }).uncheck();
   await expect.poll(() => sent.length).toBe(5);
   expect(sent[4]).toEqual({ key: "table.title", hidden: false });
+  // الفقرة: «إخفاء العنوان» و«إخفاء النص» متجاوران أعلى بطاقتها.
+  const paragraph = page.getByRole("group", {
+    name: "إخفاء العنوان الفرعي الأول",
+  });
+  await paragraph.getByRole("checkbox", { name: "إخفاء النص" }).check();
+  await expect.poll(() => sent.length).toBe(6);
+  expect(sent[5]).toEqual({ key: "about.p1", hidden: true });
   await expect(
-    page.getByRole("checkbox", { name: "إخفاء النص" }).first(),
-  ).toBeVisible();
+    paragraph.getByRole("checkbox", { name: "إخفاء العنوان" }),
+  ).not.toBeChecked();
+  await expect(page.getByLabel("الفقرة الأولى")).toHaveValue(
+    "تصفح الأسر والمنتجات",
+  );
 });

@@ -49,7 +49,12 @@ export function TodayTable({
       aria-labelledby="today-table-title"
     >
       <div className="today-table-head">
-        <h2 id="today-table-title">{texts["table.title"] || "مائدة اليوم"}</h2>
+        <h2
+          id="today-table-title"
+          className={texts["table.title"] ? undefined : "sr-only"}
+        >
+          {texts["table.title"] || "مائدة اليوم"}
+        </h2>
         <RegionPicker regions={regions} value={region} path={path} />
       </div>
       {/* مائدة خشب كبيرة ثلاثية الأبعاد بأرجل قصيرة */}

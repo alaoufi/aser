@@ -17,7 +17,7 @@ export default async function About() {
         loading="eager"
       />
       {t["about.eyebrow"] && <p className="eyebrow">{t["about.eyebrow"]}</p>}
-      <h1>
+      <h1 className={t["about.title"] ? undefined : "sr-only"}>
         <Lines text={t["about.title"] || "حكايتنا"} />
       </h1>
       {t["about.lead"] && (
