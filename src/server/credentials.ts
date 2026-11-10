@@ -137,7 +137,7 @@ export async function passwordLogin(input: unknown) {
     }
     const token = randomBytes(32).toString("hex");
     await client.query(
-      "INSERT INTO jdatna.sessions(token_hash,user_id,expires_at) VALUES($1,$2,now()+interval '7 days')",
+      "INSERT INTO jdatna.sessions(token_hash,user_id,expires_at) VALUES($1,$2,now()+interval '365 days')",
       [hash(token), user.id],
     );
     return { user, token, next: roleDestination(user.role) };
@@ -207,7 +207,7 @@ export async function setCredentials(request: Request, input: unknown) {
       ]);
       const freshToken = randomBytes(32).toString("hex");
       await client.query(
-        "INSERT INTO jdatna.sessions(token_hash,user_id,expires_at) VALUES($1,$2,now()+interval '7 days')",
+        "INSERT INTO jdatna.sessions(token_hash,user_id,expires_at) VALUES($1,$2,now()+interval '365 days')",
         [hash(freshToken), user.id],
       );
       return { user, token: freshToken, next: roleDestination(user.role) };
