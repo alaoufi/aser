@@ -6,6 +6,7 @@ import { db, transaction } from "./db";
 import { storage } from "./storage";
 import { HttpError, encryptDocument } from "./security";
 import { prepareProductImage } from "./media";
+import { can } from "../lib/permissions";
 
 export type LibraryPhoto = {
   id: string;
@@ -177,7 +178,12 @@ export async function libraryMedia(id: string, user: SessionUser | null) {
     )
   ).rows[0];
   if (!row) return null;
-  if (!(row.public || user?.id === row.user_id || user?.role === "admin"))
+  if (!(
+    row.public ||
+    user?.id === row.user_id ||
+    can(user, "products") ||
+    can(user, "producers")
+  ))
     throw new HttpError(404, "الصورة غير موجودة");
   return { objectKey: row.object_key as string, mime: row.mime as string };
 }

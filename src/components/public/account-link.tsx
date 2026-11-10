@@ -5,7 +5,7 @@ import { useSession } from "@/components/forms/shared";
 export function AccountLink({ className }: { className?: string }) {
   const { user } = useSession();
   const href =
-    user?.role === "admin"
+    user?.role === "admin" || user?.role === "staff"
       ? "/admin"
       : user?.role === "producer"
         ? "/dashboard"

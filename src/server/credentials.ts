@@ -70,7 +70,7 @@ export async function verifyPassword(
   return timingSafeEqual(key, Buffer.from(parsed[2], "hex")) && Boolean(valid);
 }
 export function roleDestination(role: SessionUser["role"]) {
-  return role === "admin"
+  return role === "admin" || role === "staff"
     ? "/admin"
     : role === "producer"
       ? "/dashboard"
@@ -103,7 +103,7 @@ export async function passwordLogin(input: unknown) {
     const row = validIdentifier
       ? (
           await client.query(
-            `SELECT id,name,phone,role,username,password_hash FROM jdatna.users WHERE ${phone ? "phone" : "username"}=$1 AND phone_verified_at IS NOT NULL FOR UPDATE`,
+            `SELECT id,name,phone,role,username,permissions,password_hash,suspended_at FROM jdatna.users WHERE ${phone ? "phone" : "username"}=$1 AND phone_verified_at IS NOT NULL FOR UPDATE`,
             [identifier],
           )
         ).rows[0]
@@ -111,10 +111,21 @@ export async function passwordLogin(input: unknown) {
     const matches = await verifyPassword(value.password, row?.password_hash);
     if (!row || !matches)
       throw new HttpError(401, "اسم الدخول أو كلمة المرور غير صحيحة");
-    const { password_hash: _, ...user } = row as SessionUser & {
+    const {
+      password_hash: _,
+      suspended_at: suspended,
+      ...user
+    } = row as SessionUser & {
       password_hash: string;
+      suspended_at: string | null;
     };
-    if (user.role === "admin" && adminOtpRequired()) {
+    if (suspended)
+      throw new HttpError(403, "هذا الحساب موقوف؛ تواصل مع إدارة المنصة");
+    // المدير والمشرف يدخلان بخطوتين: كلمة المرور ثم رمز الجوال.
+    if (
+      (user.role === "admin" || user.role === "staff") &&
+      adminOtpRequired()
+    ) {
       // لا جلسة قبل رمز الجوال لحساب الإدارة.
       const challengeId = await startAdminChallenge(client, user.phone);
       return {
@@ -170,7 +181,10 @@ export async function setCredentials(request: Request, input: unknown) {
           proof.user_id,
         ])
       ).rows[0]?.role;
-      if (role === "admin" && value.password.length < ADMIN_PASSWORD_MIN)
+      if (
+        (role === "admin" || role === "staff") &&
+        value.password.length < ADMIN_PASSWORD_MIN
+      )
         throw new HttpError(
           400,
           `كلمة مرور الإدارة ${ADMIN_PASSWORD_MIN} خانات على الأقل`,

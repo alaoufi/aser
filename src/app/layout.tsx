@@ -10,7 +10,8 @@ import Image from "next/image";
 import "./globals.css";
 import "./heritage.css";
 import "./najdi.css";
-import { getSiteTemplate, getSiteTexts } from "@/server/settings";
+import { getSiteTexts, visitorTemplate } from "@/server/settings";
+import { TemplateSwitcher } from "@/components/public/template-switcher";
 // القالب يُقرأ عند كل طلب حتى يسري اختيار الإدارة فورًا على كل الصفحات.
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -37,7 +38,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   const [template, texts] = await Promise.all([
-    getSiteTemplate(),
+    visitorTemplate(),
     getSiteTexts(),
   ]);
   return (
@@ -78,10 +79,13 @@ export default async function RootLayout({
             <Link href="/about">حكايتنا</Link>
           </nav>
           <div className="header-actions">
+            <TemplateSwitcher current={template} className="desktop-only" />
             <FamilyStatusChip place="header" />
             <AccountLink className="button small" />
           </div>
-          <MobileNavigation />
+          <MobileNavigation
+            switcher={<TemplateSwitcher current={template} />}
+          />
         </header>
         <main id="main">{children}</main>
         <OrderAlert />

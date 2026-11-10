@@ -43,33 +43,40 @@ export function TodayTable({
         <h2 id="today-table-title">{texts["table.title"] || "مائدة اليوم"}</h2>
         <RegionPicker regions={regions} value={region} path={path} />
       </div>
-      <div className="table-top">
-        {shown.length === 0 ? (
-          <p className="table-empty">
-            {texts["table.empty"]}
-            {regionName ? <small>في {regionName}</small> : null}
-          </p>
-        ) : (
-          <ul className="table-dishes">
-            {shown.map((p) => (
-              <li key={p.id}>
-                <Link href={`/products/${p.id}`} className="table-dish">
-                  <span className="plate">
-                    {p.imageUrl && safeMediaUrl(p.imageUrl) ? (
-                      <img src={p.imageUrl} alt="" loading="lazy" />
-                    ) : (
-                      <span aria-hidden="true">♨</span>
-                    )}
-                  </span>
-                  <strong>{p.name}</strong>
-                  <small>
-                    {p.producerName} · {priceLabel(p.price)}
-                  </small>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
+      {/* مائدة خشب كبيرة ثلاثية الأبعاد بأرجل قصيرة */}
+      <div className="table-3d">
+        <div className="table-top">
+          {shown.length === 0 ? (
+            <p className="table-empty">
+              {texts["table.empty"]}
+              {regionName ? <small>في {regionName}</small> : null}
+            </p>
+          ) : (
+            <ul className="table-dishes">
+              {shown.map((p) => (
+                <li key={p.id}>
+                  <Link href={`/products/${p.id}`} className="table-dish">
+                    <span className="plate">
+                      {p.imageUrl && safeMediaUrl(p.imageUrl) ? (
+                        <img src={p.imageUrl} alt="" loading="lazy" />
+                      ) : (
+                        <span aria-hidden="true">♨</span>
+                      )}
+                    </span>
+                    <strong>{p.name}</strong>
+                    <small>
+                      {p.producerName} · {priceLabel(p.price)}
+                    </small>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <span className="table-leg leg-1" aria-hidden="true" />
+        <span className="table-leg leg-2" aria-hidden="true" />
+        <span className="table-leg leg-3" aria-hidden="true" />
+        <span className="table-leg leg-4" aria-hidden="true" />
       </div>
       {capacity && products.length > 0 && (
         <Link href={full} className="table-more">

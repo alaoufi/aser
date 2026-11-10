@@ -12,6 +12,25 @@ import {
 } from "./admin-tools";
 import { familyAccountState, type FamilyState } from "@/lib/family-status";
 import { AccountShell, Guard, Message, api, s, useSession } from "./shared";
+import { can, isManager, type AdminPermission } from "@/lib/permissions";
+import { MembersAdmin } from "./members";
+
+/** أقسام الإدارة وصلاحية كل قسم؛ «الأعضاء» للمدير الكامل فقط. */
+const adminTabs: [
+  id: string,
+  label: string,
+  permission: AdminPermission | "owner",
+][] = [
+  ["producers", "مراجعة الأسر", "producers"],
+  ["orders", "الطلبات", "orders"],
+  ["products", "المنتجات", "products"],
+  ["categories", "إدارة الأقسام", "categories"],
+  ["locations", "المواقع", "locations"],
+  ["reports", "البلاغات", "reports"],
+  ["template", "قالب الموقع", "content"],
+  ["texts", "نصوص الموقع", "content"],
+  ["members", "الأعضاء والصلاحيات", "owner"],
+];
 type Application = {
   id: string;
   name: string;
@@ -194,12 +213,19 @@ export function Admin() {
   const [success, setSuccess] = useState("");
   const [filter, setFilter] = useState("review");
   const [query, setQuery] = useState("");
+  const allowed = adminTabs.filter(([, , permission]) =>
+    permission === "owner"
+      ? session.user?.role === "admin"
+      : can(session.user, permission),
+  );
+  // المشرف يبدأ بأول قسم مسموح له.
+  const active = allowed.some(([id]) => id === tab) ? tab : allowed[0]?.[0];
   async function load() {
     const d = await api<{ producers: Application[] }>("/api/admin/producers");
     setProducers(d.producers);
   }
   useEffect(() => {
-    if (session.user?.role === "admin")
+    if (can(session.user, "producers"))
       load()
         .catch((e) => setError(e.message))
         .finally(() => setLoaded(true));
@@ -208,48 +234,47 @@ export function Admin() {
     <AccountShell>
       <h1>إدارة المنصة</h1>
       <Guard {...session} admin />
-      {session.user?.role === "admin" && (
+      {isManager(session.user) && (
         <>
           <AdminSummary onOpen={setTab} />
           <nav className={s.actions} aria-label="أقسام الإدارة">
-            <a className={s.button} href="/admin/coverage">
-              إدارة التغطية التفصيلية
-            </a>
-            {[
-              ["producers", "مراجعة الأسر"],
-              ["orders", "الطلبات"],
-              ["products", "المنتجات"],
-              ["categories", "إدارة الأقسام"],
-              ["locations", "المواقع"],
-              ["reports", "البلاغات"],
-              ["template", "قالب الموقع"],
-              ["texts", "نصوص الموقع"],
-            ].map(([id, label]) => (
+            {can(session.user, "locations") && (
+              <a className={s.button} href="/admin/coverage">
+                إدارة التغطية التفصيلية
+              </a>
+            )}
+            {allowed.map(([id, label]) => (
               <button
                 type="button"
                 className={s.button}
                 key={id}
-                aria-pressed={tab === id}
+                aria-pressed={active === id}
                 onClick={() => setTab(id)}
               >
                 {label}
               </button>
             ))}
           </nav>
-          {tab === "orders" ? (
+          {active === "members" ? (
+            <MembersAdmin />
+          ) : active === "orders" ? (
             <OrdersAdmin />
-          ) : tab === "products" ? (
+          ) : active === "products" ? (
             <ProductsAdmin />
-          ) : tab === "categories" ? (
+          ) : active === "categories" ? (
             <CategoriesAdmin />
-          ) : tab === "locations" ? (
+          ) : active === "locations" ? (
             <LocationsAdmin />
-          ) : tab === "reports" ? (
+          ) : active === "reports" ? (
             <ReportsAdmin />
-          ) : tab === "template" ? (
+          ) : active === "template" ? (
             <TemplateAdmin />
-          ) : tab === "texts" ? (
+          ) : active === "texts" ? (
             <TextsAdmin />
+          ) : active !== "producers" ? (
+            <p className={s.notice}>
+              لا توجد أقسام مسموحة لحسابك بعد؛ تواصل مع مدير المنصة.
+            </p>
           ) : (
             <>
               <p className={s.notice}>

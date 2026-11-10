@@ -7,10 +7,13 @@ import { db, transaction } from "./db";
 import { getCategories, getCities } from "./catalog";
 import { HttpError } from "./security";
 import { canReparentCategory } from "../lib/category-label";
+import { can, isManager, type AdminPermission } from "../lib/permissions";
 import type { Category } from "../lib/types";
 
-export function assertAdmin(user: SessionUser) {
-  if (user.role !== "admin") throw new HttpError(403, "لا تملك صلاحية الإدارة");
+/** المدير الكامل، أو مشرف يملك الصلاحية المطلوبة (بدونها: أي مشرف). */
+export function assertAdmin(user: SessionUser, permission?: AdminPermission) {
+  if (permission ? !can(user, permission) : !isManager(user))
+    throw new HttpError(403, "لا تملك صلاحية الإدارة");
 }
 export const categorySchema = z.object({
   id: z.string().min(1).max(30).optional(),
@@ -76,7 +79,7 @@ async function audit(
   );
 }
 export async function adminProducts(user: SessionUser) {
-  assertAdmin(user);
+  assertAdmin(user, "products");
   return (
     await db().query(
       `SELECT x.id,x.name,x.status,x.visible,x.featured,x.producer_id AS "producerId",p.name AS "producerName",c.name AS "cityName",p.status AS "producerStatus",ARRAY(SELECT category_id FROM jdatna.product_categories WHERE product_id=x.id) AS "categoryIds" FROM jdatna.products x JOIN jdatna.producer_profiles p ON p.id=x.producer_id JOIN jdatna.cities c ON c.id=p.city_id ORDER BY x.created_at DESC LIMIT 200`,
@@ -84,7 +87,7 @@ export async function adminProducts(user: SessionUser) {
   ).rows;
 }
 export async function moderateProduct(user: SessionUser, input: unknown) {
-  assertAdmin(user);
+  assertAdmin(user, "products");
   const value = moderationSchema.parse(input);
   return transaction(async (client) => {
     const product = (
@@ -121,7 +124,7 @@ export type AdminCategory = Category & {
 export async function adminCategories(
   user: SessionUser,
 ): Promise<AdminCategory[]> {
-  assertAdmin(user);
+  assertAdmin(user, "categories");
   const categories = await getCategories();
   const counts = new Map(
     (
@@ -143,7 +146,7 @@ export async function adminCategories(
 }
 /** يحذف قسمًا فقط إذا لم يبقَ له منتجات ولا أقسام فرعية؛ واختيارات الأسر له تُزال معه. */
 export async function deleteCategory(user: SessionUser, input: unknown) {
-  assertAdmin(user);
+  assertAdmin(user, "categories");
   const { id } = z.object({ id: z.string().min(1).max(30) }).parse(input);
   return transaction(async (client) => {
     await client.query(
@@ -202,7 +205,7 @@ export async function saveCategory(
   input: unknown,
   editing: boolean,
 ) {
-  assertAdmin(user);
+  assertAdmin(user, "categories");
   const value = categorySchema.parse(input);
   if (editing && !value.id) throw new HttpError(400, "معرف التصنيف مطلوب");
   return transaction(async (client) => {
@@ -257,7 +260,7 @@ export async function saveCategory(
   });
 }
 export async function adminLocations(user: SessionUser) {
-  assertAdmin(user);
+  assertAdmin(user, "locations");
   const [regions, cities, neighborhoods] = await Promise.all([
     db().query("SELECT id,name FROM jdatna.regions ORDER BY name LIMIT 100"),
     getCities(),
@@ -272,7 +275,7 @@ export async function adminLocations(user: SessionUser) {
   };
 }
 export async function createLocation(user: SessionUser, input: unknown) {
-  assertAdmin(user);
+  assertAdmin(user, "locations");
   const value = locationSchema.parse(input);
   return transaction(async (client) => {
     const id = randomUUID();
@@ -312,7 +315,7 @@ export async function createLocation(user: SessionUser, input: unknown) {
   });
 }
 export async function adminReports(user: SessionUser) {
-  assertAdmin(user);
+  assertAdmin(user, "reports");
   return (
     await db().query(
       `SELECT r.id,r.product_id AS "productId",r.producer_id AS "producerId",x.name AS "productName",p.name AS "producerName",r.reason,r.status,r.resolution_reason AS "reviewReason",r.created_at AS "createdAt" FROM jdatna.reports r LEFT JOIN jdatna.products x ON x.id=r.product_id LEFT JOIN jdatna.producer_profiles p ON p.id=COALESCE(r.producer_id,x.producer_id) ORDER BY r.created_at DESC LIMIT 200`,
@@ -320,7 +323,7 @@ export async function adminReports(user: SessionUser) {
   ).rows;
 }
 export async function resolveReport(user: SessionUser, input: unknown) {
-  assertAdmin(user);
+  assertAdmin(user, "reports");
   const value = reportSchema.parse(input);
   return transaction(async (client) => {
     const result = await client.query(
@@ -351,7 +354,7 @@ export async function adminSummary(user: SessionUser) {
 }
 // متابعة الطلبات للإدارة: قراءة فقط، آخر 200 طلب مع اسم الأسرة المنتجة.
 export async function adminOrders(user: SessionUser) {
-  assertAdmin(user);
+  assertAdmin(user, "orders");
   return (
     await db().query(
       `SELECT o.id,o.status,o.snapshot->>'productName' AS "productName",COALESCE(p.trade_name,p.name) AS "producerName",p.slug AS "producerSlug",o.customer_name AS "customerName",o.phone,o.quantity,o.meal,o.start_date::text AS "startDate",o.created_at AS "createdAt",o.updated_at AS "updatedAt",

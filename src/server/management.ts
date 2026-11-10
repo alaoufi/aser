@@ -11,6 +11,7 @@ import {
 } from "./security";
 import { profileSchema, productSchema, reviewSchema } from "./validation";
 import { productSelect, mapProduct } from "./catalog";
+import { can } from "../lib/permissions";
 type ProducerPrivate = { nationalId: string; workLocation: string };
 export function mergeProducerPrivate(
   existing: ProducerPrivate | null,
@@ -414,7 +415,7 @@ export async function saveProduct(
   });
 }
 export async function adminProducers(user: SessionUser) {
-  if (user.role !== "admin")
+  if (!can(user, "producers"))
     throw new HttpError(403, "لا تملك صلاحية المراجعة");
   const profiles = (
     await db().query(
@@ -445,7 +446,7 @@ export async function reviewProducer(
   id: string,
   input: unknown,
 ) {
-  if (user.role !== "admin")
+  if (!can(user, "producers"))
     throw new HttpError(403, "لا تملك صلاحية المراجعة");
   const value = reviewSchema.parse(input);
   return transaction(async (client) => {

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { AccountLink } from "./account-link";
 import { FamilyStatusChip } from "@/components/forms/family-status";
 import { useEffect, useRef } from "react";
-export function MobileNavigation() {
+export function MobileNavigation({ switcher }: { switcher?: React.ReactNode }) {
   const ref = useRef<HTMLDetailsElement>(null);
   useEffect(() => {
     const outside = (event: PointerEvent) => {
@@ -75,6 +75,7 @@ export function MobileNavigation() {
         <Link href="/orders">طلباتي</Link>
         <Link href="/about">حكايتنا</Link>
         <AccountLink />
+        {switcher}
       </nav>
     </details>
   );
