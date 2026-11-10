@@ -102,7 +102,9 @@ test("admin edits, deletes and restores visible site texts", async ({
   await expect.poll(() => sent.length).toBe(4);
   expect(sent[3]).toEqual({ key: "table.title", hidden: true });
   await expect(page.getByText("(مخفي)")).toBeVisible();
-  await expect(page.getByLabel("عنوان المائدة")).toHaveValue("مائدة اليوم");
+  await expect(
+    page.getByRole("textbox", { name: /^عنوان المائدة/ }),
+  ).toHaveValue("مائدة اليوم");
   await table.getByRole("checkbox", { name: "إخفاء العنوان" }).uncheck();
   await expect.poll(() => sent.length).toBe(5);
   expect(sent[4]).toEqual({ key: "table.title", hidden: false });
