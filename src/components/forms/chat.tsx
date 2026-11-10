@@ -546,7 +546,24 @@ export function ChatButton({ producerSlug }: { producerSlug: string }) {
   const router = useRouter();
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [own, setOwn] = useState<boolean | null>(null);
+  const role = session.user?.role;
+  useEffect(() => {
+    if (role !== "producer") {
+      setOwn(false);
+      return;
+    }
+    // الأسرة لا تراسل نفسها: لا يظهر الزر في صفحاتها هي.
+    let active = true;
+    api<{ slug: string | null }>("/api/producer/status")
+      .then((d) => active && setOwn(d.slug === producerSlug))
+      .catch(() => active && setOwn(false));
+    return () => {
+      active = false;
+    };
+  }, [role, producerSlug]);
   if (!session.ready) return null;
+  if (session.user && own !== false) return null;
   if (!session.user)
     return (
       <Link className="button" href="/login">

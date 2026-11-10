@@ -9,5 +9,9 @@ const today = () =>
 export const GET = api(async (request) => {
   const user = await requireUser(request);
   const row = await familyStatus(user);
-  return json({ state: row ? familyAccountState(row, today()) : null });
+  return json({
+    state: row ? familyAccountState(row, today()) : null,
+    // رابط أسرة صاحب الحساب: لإخفاء «مراسلة الأسرة» عن صفحاتها هي.
+    slug: row?.slug ?? null,
+  });
 });
