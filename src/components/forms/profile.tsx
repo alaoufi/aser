@@ -11,6 +11,7 @@ import {
 } from "./profile-advanced";
 import { CookingAvailability } from "./cooking-availability";
 import { SectionIcon } from "./section-icon";
+import { stopPushOnLogout } from "@/components/public/push-setup";
 import {
   AccountShell,
   Guard,
@@ -553,6 +554,7 @@ export function Dashboard() {
               className={s.button}
               onClick={async () => {
                 try {
+                  await stopPushOnLogout();
                   await api("/api/logout", { method: "POST" });
                   window.location.assign("/");
                 } catch {

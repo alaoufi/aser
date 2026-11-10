@@ -4,6 +4,7 @@ import type { PoolClient } from "pg";
 import type { SessionUser } from "../lib/types";
 import { db, transaction } from "./db";
 import { HttpError } from "./security";
+import { notifyUser } from "./push";
 
 export type ConversationSummary = {
   id: string;
@@ -195,7 +196,7 @@ export async function sendMessage(
     .object({ body: z.string().trim().min(1).max(2000) })
     .strict()
     .parse(input);
-  return transaction(async (client) => {
+  const sent = await transaction(async (client) => {
     const c = await participant(client, user, id, true);
     const message = (
       await client.query(
@@ -208,6 +209,19 @@ export async function sendMessage(
       `UPDATE jdatna.conversations SET last_message_at=$2,${c.side === "customer" ? "customer_read_at" : "producer_read_at"}=$2 WHERE id=$1`,
       [c.id, message.createdAt],
     );
-    return message;
+    const raw = c as unknown as { customer_id: string; producer_user: string };
+    return {
+      message,
+      to: c.side === "customer" ? raw.producer_user : raw.customer_id,
+      conversation: c.id,
+    };
   });
+  // إشعار الجوال للطرف الآخر بعد حفظ الرسالة، دون انتظار يؤخر المرسل.
+  void notifyUser(sent.to, {
+    title: `رسالة جديدة من ${user.name}`,
+    body: body.length > 140 ? `${body.slice(0, 140)}…` : body,
+    url: `/messages?c=${sent.conversation}`,
+    tag: `chat-${sent.conversation}`,
+  });
+  return sent.message;
 }

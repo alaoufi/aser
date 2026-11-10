@@ -2,13 +2,14 @@ import { MobileNavigation } from "@/components/public/mobile-navigation";
 import { AboutTicker } from "@/components/public/about-ticker";
 import { AccountLink } from "@/components/public/account-link";
 import { OrderAlert } from "@/components/public/order-alert";
+import { PushSetup } from "@/components/public/push-setup";
 import { MessageAlert, MessagesLink } from "@/components/public/message-alert";
 import { FamilyWelcome } from "@/components/public/family-welcome";
 import { StarDefs } from "@/components/public/stars";
 import { SITE_VERSION } from "@/lib/version";
 import { FamilyStatusChip } from "@/components/forms/family-status";
 import "./fonts.css";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import "./globals.css";
@@ -35,7 +36,13 @@ export const metadata: Metadata = {
     },
     apple: { url: "/brand/jdatna-apple-icon.png", sizes: "180x180" },
   },
+  appleWebApp: {
+    capable: true,
+    title: "أكلات جدتنا",
+    statusBarStyle: "default",
+  },
 };
+export const viewport: Viewport = { themeColor: "#2e1d12" };
 export default async function RootLayout({
   children,
 }: {
@@ -95,6 +102,15 @@ export default async function RootLayout({
             switcher={<TemplateSwitcher current={template} />}
           />
         </header>
+        <PushSetup
+          texts={{
+            title: texts["push.title"] || "فعّل الإشعارات",
+            body: texts["push.body"],
+            enable: texts["push.enable"] || "تفعيل الإشعارات",
+            later: texts["push.later"] || "لاحقًا",
+            ios: texts["push.ios"],
+          }}
+        />
         <main id="main">{children}</main>
         <FamilyWelcome texts={texts} />
         <OrderAlert />
