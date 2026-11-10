@@ -22,6 +22,11 @@ test("category and linked location validation bound values and hierarchy", () =>
       .success,
     false,
   );
+  // الرابط المختصر اختياري: يُنشأ داخليًا من رقم القسم.
+  assert.equal(
+    categorySchema.safeParse({ name: "اسم", icon: "✦" }).success,
+    true,
+  );
   assert.equal(
     locationSchema.safeParse({ kind: "city", name: "مدينة" }).success,
     false,

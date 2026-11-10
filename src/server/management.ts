@@ -10,6 +10,8 @@ import {
   decryptDocument,
 } from "./security";
 import { profileSchema, productSchema, reviewSchema } from "./validation";
+import { getProductFields } from "./settings";
+import { fieldShown } from "../lib/product-fields";
 import { productSelect, mapProduct } from "./catalog";
 import { can } from "../lib/permissions";
 type ProducerPrivate = { nationalId: string; workLocation: string };
@@ -320,7 +322,7 @@ export async function saveProfile(user: SessionUser, input: unknown) {
 export async function ownProducts(user: SessionUser) {
   return (
     await db().query(
-      `${productSelect} WHERE p.user_id=$1 ORDER BY x.created_at DESC`,
+      `${productSelect.replace("SELECT ", 'SELECT x.visible,x.hidden_by AS "hiddenBy",')} WHERE p.user_id=$1 AND x.deleted_at IS NULL ORDER BY x.created_at DESC`,
       [user.id],
     )
   ).rows.map(mapProduct);
@@ -332,6 +334,11 @@ export async function saveProduct(
 ) {
   const value = productSchema.parse(input);
   if (editing && !value.id) throw new HttpError(400, "معرف المنتج مطلوب");
+  if (
+    value.description.length < 5 &&
+    fieldShown(await getProductFields(), "description")
+  )
+    throw new HttpError(400, "اكتب تفاصيل المنتج في خمسة أحرف على الأقل");
   return transaction(async (client) => {
     const producer = (
       await client.query(
@@ -384,7 +391,7 @@ export async function saveProduct(
     ];
     if (editing)
       await client.query(
-        `UPDATE jdatna.products SET name=$3,description=$4,price=$5,unit=$6,status=$7,ingredients=$8,storage=$9,shelf_life=$10,preparation_time=$11,story=$12,updated_at=now() WHERE id=$1 AND producer_id=$2`,
+        `UPDATE jdatna.products SET name=$3,description=$4,price=$5,unit=$6,status=$7,ingredients=$8,storage=$9,shelf_life=$10,preparation_time=$11,story=$12,updated_at=now() WHERE id=$1 AND producer_id=$2 AND deleted_at IS NULL`,
         args,
       );
     else
@@ -539,7 +546,7 @@ export async function reviewProducer(
 export async function familyStatus(user: SessionUser) {
   const row = (
     await db().query(
-      `SELECT p.status,p.verified,v.document_id AS "documentId",v.document_type AS "documentType",v.document_expires_at::text AS "documentExpiresAt",v.reason AS "reviewReason"
+      `SELECT p.status,p.verified,p.slug,v.document_id AS "documentId",v.document_type AS "documentType",v.document_expires_at::text AS "documentExpiresAt",v.reason AS "reviewReason"
        FROM jdatna.producer_profiles p
        LEFT JOIN LATERAL(SELECT document_id,document_type,document_expires_at,reason FROM jdatna.producer_verifications WHERE producer_id=p.id ORDER BY created_at DESC LIMIT 1)v ON true
        WHERE p.user_id=$1`,
@@ -547,4 +554,44 @@ export async function familyStatus(user: SessionUser) {
     )
   ).rows[0];
   return row ?? null;
+}
+
+/**
+ * الأسرة تخفي منتجها أو تظهره أو تحذفه. الحذف أرشفة: يختفي نهائيًا من الأسرة والزوار
+ * وتبقى سجلات طلباته، وتتوقف عروضه. إخفاء الإدارة لا تلغيه الأسرة.
+ */
+export async function manageProduct(user: SessionUser, input: unknown) {
+  const { id, action } = z
+    .object({ id: z.uuid(), action: z.enum(["hide", "show", "delete"]) })
+    .strict()
+    .parse(input);
+  return transaction(async (client) => {
+    const product = (
+      await client.query(
+        `SELECT x.id,x.visible,x.hidden_by FROM jdatna.products x JOIN jdatna.producer_profiles p ON p.id=x.producer_id
+         WHERE x.id=$1 AND p.user_id=$2 AND x.deleted_at IS NULL FOR UPDATE OF x`,
+        [id, user.id],
+      )
+    ).rows[0] as
+      { id: string; visible: boolean; hidden_by: string | null } | undefined;
+    if (!product) throw new HttpError(404, "المنتج غير موجود");
+    if (action === "delete") {
+      await client.query(
+        "UPDATE jdatna.products SET deleted_at=now(),visible=false,featured=false,updated_at=now() WHERE id=$1",
+        [id],
+      );
+      await client.query(
+        "UPDATE jdatna.offers SET enabled=false,updated_at=now() WHERE product_id=$1",
+        [id],
+      );
+      return { id, deleted: true };
+    }
+    if (product.hidden_by === "admin")
+      throw new HttpError(403, "أخفت الإدارة هذا المنتج؛ تواصل معها لإظهاره");
+    await client.query(
+      `UPDATE jdatna.products SET visible=$2,hidden_by=$3,updated_at=now() WHERE id=$1`,
+      [id, action === "show", action === "show" ? null : "family"],
+    );
+    return { id, visible: action === "show" };
+  });
 }

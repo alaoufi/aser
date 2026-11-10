@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import type { Category, City } from "@/lib/types";
 import { categoryLabel, categoryParentOptions } from "@/lib/category-label";
 import {
@@ -9,6 +9,12 @@ import {
   type SiteTextKey,
 } from "@/lib/site-texts";
 import { api, Message, s } from "./shared";
+import {
+  productFieldKeys,
+  productFieldLabels,
+  type ProductFields,
+  type ProductFieldState,
+} from "@/lib/product-fields";
 function useResource<T>(url: string) {
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState("");
@@ -36,7 +42,7 @@ function useResource<T>(url: string) {
       setBusy(false);
     }
   }
-  return { data, error, busy, success, write };
+  return { data, error, busy, success, write, refresh, setError, setSuccess };
 }
 type AdminCategory = Category & {
   productCount?: number;
@@ -76,20 +82,58 @@ export function CategoriesAdmin() {
         {!r.data && !r.error && <p role="status">جارٍ تحميل الأقسام…</p>}
         {all.map((c) => (
           <div className={s.categoryItem} key={c.id}>
-            <button
-              type="button"
-              className={s.categoryRow}
-              aria-expanded={openId === c.id}
-              onClick={() => toggle(c.id)}
-            >
-              <span>
-                {c.icon} {categoryLabel(c, all)}
-              </span>
-              <small>
-                {c.productCount ?? 0} منتج{" "}
-                <span aria-hidden="true">{openId === c.id ? "▴" : "▾"}</span>
-              </small>
-            </button>
+            <div className={s.categoryLine}>
+              <button
+                type="button"
+                className={s.categoryRow}
+                aria-expanded={openId === c.id}
+                onClick={() => toggle(c.id)}
+              >
+                <span>
+                  {c.icon} {categoryLabel(c, all)}
+                  {c.hidden && <em className={s.hiddenTag}> · مخفي</em>}
+                </span>
+                <small>
+                  {c.productCount ?? 0} منتج{" "}
+                  <span aria-hidden="true">{openId === c.id ? "▴" : "▾"}</span>
+                </small>
+              </button>
+              <div className={s.productActions}>
+                <button
+                  type="button"
+                  onClick={() => toggle(c.id)}
+                  aria-label={`تعديل قسم ${c.name}`}
+                >
+                  تعديل
+                </button>
+                <button
+                  type="button"
+                  disabled={r.busy}
+                  onClick={() =>
+                    r.write("PUT", { id: c.id, hidden: !c.hidden })
+                  }
+                  aria-label={`${c.hidden ? "إظهار" : "إخفاء"} قسم ${c.name}`}
+                >
+                  {c.hidden ? "إظهار" : "إخفاء"}
+                </button>
+                <button
+                  type="button"
+                  className={s.deleteAction}
+                  disabled={r.busy}
+                  onClick={() => {
+                    if (
+                      window.confirm(
+                        `حذف قسم «${c.name}»؟ لا يُحذف إلا إذا لم تبقَ فيه منتجات ولا أقسام فرعية؛ أو أخفِه بدلًا من ذلك.`,
+                      )
+                    )
+                      r.write("DELETE", { id: c.id });
+                  }}
+                  aria-label={`حذف قسم ${c.name}`}
+                >
+                  حذف
+                </button>
+              </div>
+            </div>
             {openId === c.id && (
               <CategoryEditor
                 key={c.id}
@@ -126,7 +170,6 @@ function CategoryEditor({
     const ok = await r.write(editing ? "PATCH" : "POST", {
       id: editing?.id,
       name: f.get("name"),
-      slug: f.get("slug"),
       icon: f.get("icon"),
       parentId: f.get("parentId") || null,
     });
@@ -148,18 +191,6 @@ function CategoryEditor({
             required
             maxLength={120}
             defaultValue={editing?.name}
-          />
-        </label>
-        <label className={s.field}>
-          الرابط المختصر
-          <input
-            name="slug"
-            dir="ltr"
-            required
-            pattern="[a-z0-9\x2d]+"
-            maxLength={100}
-            title="حروف إنجليزية صغيرة وأرقام وشرطة فقط"
-            defaultValue={editing?.slug}
           />
         </label>
         <label className={s.field}>
@@ -193,6 +224,18 @@ function CategoryEditor({
         <button className={s.button} disabled={r.busy}>
           {r.busy ? "جارٍ الحفظ…" : editing ? "حفظ التعديل" : "حفظ التصنيف"}
         </button>
+        {editing && (
+          <button
+            type="button"
+            className={s.buttonSecondary}
+            disabled={r.busy}
+            onClick={() =>
+              r.write("PUT", { id: editing.id, hidden: !editing.hidden })
+            }
+          >
+            {editing.hidden ? "إظهار القسم" : "إخفاء القسم"}
+          </button>
+        )}
         {editing && !confirming && (
           <button
             type="button"
@@ -350,14 +393,27 @@ export function LocationsAdmin() {
 type ModeratedProduct = {
   id: string;
   name: string;
+  producerId: string;
   producerName: string;
+  producerSlug?: string;
+  producerStatus?: string;
   cityName: string;
   status: string;
   visible: boolean;
+  hiddenBy?: "admin" | "family" | null;
   featured: boolean;
   categoryIds?: string[];
 };
-function ProductModeration({
+/** يطلب سبب الإجراء (يُحفظ في سجل الإدارة)؛ الإلغاء يعيد null. */
+function askReason(question: string, fallback: string) {
+  const v = window.prompt(
+    `${question}\nاكتب السبب (يُحفظ في سجل الإدارة):`,
+    fallback,
+  );
+  if (v === null) return null;
+  return v.trim().length >= 5 ? v.trim() : fallback;
+}
+function ProductCategories({
   product,
   categories,
   busy,
@@ -371,42 +427,19 @@ function ProductModeration({
   return (
     <form
       className={`${s.card} ${s.form}`}
+      aria-label={`أقسام ${product.name}`}
       onSubmit={async (e) => {
         e.preventDefault();
         const f = new FormData(e.currentTarget);
         await onSave({
           id: product.id,
-          visible: f.has("visible"),
-          featured: f.has("featured"),
           categoryIds: f.getAll("categoryIds"),
-          reason: f.get("reason"),
+          reason: "نقل المنتج إلى القسم المناسب",
         });
       }}
     >
-      <h3>{product.name}</h3>
-      <p>
-        {product.producerName} · {product.cityName}
-      </p>
-      <div className={s.checks}>
-        <label>
-          <input
-            name="visible"
-            type="checkbox"
-            defaultChecked={product.visible}
-          />
-          ظاهر في المنصة
-        </label>
-        <label>
-          <input
-            name="featured"
-            type="checkbox"
-            defaultChecked={product.featured}
-          />
-          منتج مميز
-        </label>
-      </div>
       <fieldset>
-        <legend>التصنيفات المناسبة</legend>
+        <legend>أقسام «{product.name}»</legend>
         <div className={s.checks}>
           {categories.map((c) => (
             <label key={c.id}>
@@ -421,39 +454,267 @@ function ProductModeration({
           ))}
         </div>
       </fieldset>
-      <label className={s.field}>
-        سبب التغيير
-        <textarea name="reason" required minLength={3} maxLength={2000} />
-      </label>
       <button className={s.button} disabled={busy}>
-        حفظ إشراف المنتج
+        حفظ الأقسام
       </button>
     </form>
   );
 }
+/**
+ * «المنتجات» في الإدارة: كل منتجات الأسر في الموقع، وأمام كل منتج
+ * عرض، إخفاء/إظهار، تمييز، نقل القسم، حذف، وإيقاف الأسرة المخالفة.
+ */
 export function ProductsAdmin() {
   const r = useResource<{ products: ModeratedProduct[] }>(
     "/api/admin/products",
   );
   const c = useResource<{ categories: Category[] }>("/api/admin/categories");
+  const [query, setQuery] = useState("");
+  const [openId, setOpenId] = useState("");
+  const all = r.data?.products ?? [];
+  const [show, setShow] = useState<"all" | "visible" | "hidden" | "featured">(
+    "all",
+  );
+  const q = query.trim();
+  const list = all
+    .filter((p) => !q || p.name.includes(q) || p.producerName.includes(q))
+    .filter((p) =>
+      show === "visible"
+        ? p.visible
+        : show === "hidden"
+          ? !p.visible
+          : show === "featured"
+            ? p.featured
+            : true,
+    );
+  const busy = r.busy;
+  async function blockFamily(p: ModeratedProduct) {
+    const reason = askReason(
+      `إيقاف أسرة «${p.producerName}»؟ تختفي كل منتجاتها من الموقع ولا تستقبل طلبات حتى تُعاد من «مراجعة الأسر».`,
+      "مخالفة شروط المنصة",
+    );
+    if (!reason) return;
+    r.setError("");
+    r.setSuccess("");
+    try {
+      await api(`/api/admin/producers/${p.producerId}/review`, {
+        method: "POST",
+        body: JSON.stringify({ decision: "suspended", reason }),
+      });
+      await r.refresh();
+      r.setSuccess(`أُوقفت أسرة «${p.producerName}».`);
+    } catch (e) {
+      r.setError((e as Error).message);
+    }
+  }
   return (
-    <section>
-      <h2>الإشراف على المنتجات</h2>
+    <section aria-labelledby="admin-products-title">
+      <h2 id="admin-products-title">المنتجات</h2>
+      <p className={s.muted}>
+        هنا كل منتجات الأسر المنشورة في الموقع، لمراقبة المحتوى وإدارته. أمام كل
+        منتج: <strong>عرض</strong> صفحته، <strong>إخفاء</strong> عن الزوار (لا
+        تستطيع الأسرة إظهاره)، <strong>تمييز</strong> في الواجهة، تغيير
+        <strong> القسم</strong>، <strong>حذف</strong> نهائي من الموقع، و
+        <strong>حظر الأسرة</strong> المخالفة فتختفي كل منتجاتها.
+      </p>
       <Message error={r.error || c.error} success={r.success} />
+      <label className={s.field}>
+        بحث باسم المنتج أو الأسرة
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      </label>
+      <div className={s.filterChips} role="group" aria-label="عرض المنتجات">
+        {(
+          [
+            ["all", "الكل"],
+            ["visible", "الظاهرة"],
+            ["hidden", "المخفية"],
+            ["featured", "المميزة"],
+          ] as const
+        ).map(([v, label]) => (
+          <button
+            key={v}
+            type="button"
+            aria-pressed={show === v}
+            onClick={() => setShow(v)}
+          >
+            {label} (
+            {v === "all"
+              ? all.length
+              : all.filter((p) =>
+                  v === "visible"
+                    ? p.visible
+                    : v === "hidden"
+                      ? !p.visible
+                      : p.featured,
+                ).length}
+            )
+          </button>
+        ))}
+      </div>
       {!r.data && !r.error ? (
         <p role="status">جارٍ تحميل المنتجات…</p>
-      ) : r.data?.products.length ? (
-        r.data.products.map((p) => (
-          <ProductModeration
-            key={`${p.id}-${p.visible}-${p.featured}-${p.categoryIds?.join()}`}
-            product={p}
-            categories={c.data?.categories || []}
-            busy={r.busy || !c.data}
-            onSave={(body) => r.write("PATCH", body)}
-          />
-        ))
+      ) : list.length ? (
+        <div className={s.tableWrap}>
+          <table className={s.adminTable}>
+            <thead>
+              <tr>
+                <th scope="col">اسم المنتج</th>
+                <th scope="col">الأسرة المنتجة</th>
+                <th scope="col">الإجراءات</th>
+              </tr>
+            </thead>
+            <tbody>
+              {list.map((p) => {
+                const blocked = p.producerStatus === "suspended";
+                return (
+                  <Fragment key={p.id}>
+                    <tr>
+                      <td>
+                        <strong>{p.name}</strong>
+                        {!p.visible && (
+                          <em className={s.hiddenTag}>
+                            {p.hiddenBy === "family"
+                              ? "أخفته الأسرة"
+                              : "مخفي من الإدارة"}
+                          </em>
+                        )}
+                        {p.featured && <em className={s.hiddenTag}>مميز</em>}
+                      </td>
+                      <td>
+                        {p.producerSlug ? (
+                          <a
+                            href={`/producers/${p.producerSlug}`}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            {p.producerName}
+                          </a>
+                        ) : (
+                          p.producerName
+                        )}
+                        <small>{p.cityName}</small>
+                        {blocked && (
+                          <em className={s.hiddenTag}>الأسرة موقوفة</em>
+                        )}
+                      </td>
+                      <td>
+                        <div className={s.productActions}>
+                          <a
+                            href={`/products/${p.id}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            aria-label={`عرض ${p.name}`}
+                          >
+                            عرض
+                          </a>
+                          <button
+                            type="button"
+                            disabled={busy}
+                            aria-label={`${p.visible ? "إخفاء" : "إظهار"} ${p.name}`}
+                            onClick={() => {
+                              const reason = p.visible
+                                ? askReason(
+                                    `إخفاء «${p.name}» عن الزوار؟`,
+                                    "مخالفة المحتوى",
+                                  )
+                                : "إظهار المنتج بعد المراجعة";
+                              if (reason)
+                                r.write("PATCH", {
+                                  id: p.id,
+                                  visible: !p.visible,
+                                  reason,
+                                });
+                            }}
+                          >
+                            {p.visible ? "إخفاء" : "إظهار"}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={busy}
+                            aria-label={`${p.featured ? "إلغاء تمييز" : "تمييز"} ${p.name}`}
+                            onClick={() =>
+                              r.write("PATCH", {
+                                id: p.id,
+                                featured: !p.featured,
+                                reason: p.featured
+                                  ? "إلغاء تمييز المنتج"
+                                  : "تمييز المنتج في الواجهة",
+                              })
+                            }
+                          >
+                            {p.featured ? "إلغاء التمييز" : "تمييز"}
+                          </button>
+                          <button
+                            type="button"
+                            aria-expanded={openId === p.id}
+                            aria-label={`أقسام ${p.name}`}
+                            onClick={() =>
+                              setOpenId(openId === p.id ? "" : p.id)
+                            }
+                          >
+                            القسم
+                          </button>
+                          <button
+                            type="button"
+                            className={s.deleteAction}
+                            disabled={busy}
+                            aria-label={`حذف ${p.name}`}
+                            onClick={() => {
+                              const reason = askReason(
+                                `حذف «${p.name}» نهائيًا من الموقع؟`,
+                                "مخالفة المحتوى",
+                              );
+                              if (reason)
+                                r.write("PATCH", {
+                                  id: p.id,
+                                  deleted: true,
+                                  reason,
+                                });
+                            }}
+                          >
+                            حذف
+                          </button>
+                          {!blocked && (
+                            <button
+                              type="button"
+                              className={s.deleteAction}
+                              disabled={busy}
+                              aria-label={`حظر أسرة ${p.producerName}`}
+                              onClick={() => blockFamily(p)}
+                            >
+                              حظر الأسرة
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                    {openId === p.id && (
+                      <tr>
+                        <td colSpan={3}>
+                          <ProductCategories
+                            key={p.categoryIds?.join()}
+                            product={p}
+                            categories={c.data?.categories || []}
+                            busy={busy || !c.data}
+                            onSave={(body) => r.write("PATCH", body)}
+                          />
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       ) : (
-        <p className={s.notice}>لا توجد منتجات للمراجعة.</p>
+        <p className={s.notice}>
+          {q ? "لا توجد منتجات بهذا الاسم." : "لا توجد منتجات بعد."}
+        </p>
       )}
     </section>
   );
@@ -954,6 +1215,92 @@ export function AppLinksAdmin() {
           </button>
         </form>
       ) : null}
+    </section>
+  );
+}
+
+/** حقول نموذج «إضافة منتج» عند الأسر: إخفاء أو حذف أو إعادة كل حقل. */
+export function ProductFieldsAdmin() {
+  const r = useResource<{ fields: ProductFields }>("/api/admin/product-fields");
+  const fields = r.data?.fields;
+  const set = (key: string, state: ProductFieldState) =>
+    r.write("PUT", { key, state });
+  const shown = productFieldKeys.filter((k) => fields?.[k] !== "deleted");
+  const deleted = productFieldKeys.filter((k) => fields?.[k] === "deleted");
+  return (
+    <section aria-labelledby="product-fields-title">
+      <h2 id="product-fields-title">حقول إضافة المنتج</h2>
+      <p className={s.muted}>
+        الحقول التي تظهر للأسرة عند إضافة منتج. اسم المنتج والقسم أساسيان ولا
+        يُخفيان. الحقل المخفي أو المحذوف لا يظهر في النموذج، وتبقى قيم المنتجات
+        السابقة كما هي.
+      </p>
+      <Message error={r.error} success={r.success} />
+      {!fields && !r.error && <p role="status">جارٍ التحميل…</p>}
+      {fields && (
+        <div className={s.productRows}>
+          {shown.map((k) => (
+            <div className={s.productRow} key={k}>
+              <span className={s.productInfo}>
+                {productFieldLabels[k]}
+                {fields[k] === "hidden" && (
+                  <em className={s.hiddenTag}> · مخفي</em>
+                )}
+              </span>
+              <div className={s.productActions}>
+                <button
+                  type="button"
+                  disabled={r.busy}
+                  onClick={() =>
+                    set(k, fields[k] === "hidden" ? "shown" : "hidden")
+                  }
+                  aria-label={`${fields[k] === "hidden" ? "إظهار" : "إخفاء"} حقل ${productFieldLabels[k]}`}
+                >
+                  {fields[k] === "hidden" ? "إظهار" : "إخفاء"}
+                </button>
+                <button
+                  type="button"
+                  className={s.deleteAction}
+                  disabled={r.busy}
+                  onClick={() => {
+                    if (
+                      window.confirm(
+                        `حذف حقل «${productFieldLabels[k]}» من نموذج إضافة المنتج؟ يمكنك استعادته لاحقًا.`,
+                      )
+                    )
+                      set(k, "deleted");
+                  }}
+                  aria-label={`حذف حقل ${productFieldLabels[k]}`}
+                >
+                  حذف
+                </button>
+              </div>
+            </div>
+          ))}
+          {deleted.length > 0 && (
+            <>
+              <h3>حقول محذوفة</h3>
+              {deleted.map((k) => (
+                <div className={s.productRow} key={k}>
+                  <span className={s.productInfo}>
+                    <s>{productFieldLabels[k]}</s>
+                  </span>
+                  <div className={s.productActions}>
+                    <button
+                      type="button"
+                      disabled={r.busy}
+                      onClick={() => set(k, "shown")}
+                      aria-label={`استعادة حقل ${productFieldLabels[k]}`}
+                    >
+                      استعادة
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+        </div>
+      )}
     </section>
   );
 }

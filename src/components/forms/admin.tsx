@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import {
   AdminSummary,
   AppLinksAdmin,
+  ProductFieldsAdmin,
   CategoriesAdmin,
   LocationsAdmin,
   OrdersAdmin,
@@ -288,7 +289,10 @@ export function Admin() {
           ) : active === "products" ? (
             <ProductsAdmin />
           ) : active === "categories" ? (
-            <CategoriesAdmin />
+            <>
+              <CategoriesAdmin />
+              <ProductFieldsAdmin />
+            </>
           ) : active === "locations" ? (
             <LocationsAdmin />
           ) : active === "reports" ? (

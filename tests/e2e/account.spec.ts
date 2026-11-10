@@ -92,6 +92,9 @@ test("phone verification moves to code entry and reports server failure", async 
 test("admin category validates slug before sending and preserves errors from server", async ({
   page,
 }) => {
+  await page.route("**/api/admin/product-fields", (route) =>
+    route.fulfill({ json: { fields: {} } }),
+  );
   await page.route("**/api/session", (route) =>
     route.fulfill({
       json: {
@@ -122,12 +125,8 @@ test("admin category validates slug before sending and preserves errors from ser
     .click();
   await page.getByRole("button", { name: "＋ قسم جديد" }).click();
   await page.getByLabel("اسم القسم").fill("الخبز");
-  const slug = page.getByLabel("الرابط المختصر");
-  await slug.fill("Invalid Slug");
-  expect(
-    await slug.evaluate((el: HTMLInputElement) => el.validity.patternMismatch),
-  ).toBe(true);
-  await slug.fill("bread");
+  // الرابط المختصر يُنشأ داخليًا ولا يُعرض.
+  await expect(page.getByLabel("الرابط المختصر")).toHaveCount(0);
   await page.getByRole("button", { name: "حفظ التصنيف" }).click();
   await expect(page.locator("main").getByRole("alert")).toHaveText(
     "التصنيف مسجل مسبقًا",
@@ -285,6 +284,8 @@ test("product photo reports unavailable storage without claiming success", async
     }),
   );
   await page.goto("/dashboard/products");
+  // رفع الصورة من شاشة تعديل المنتج.
+  await page.getByRole("button", { name: "تعديل الخبز" }).click();
   await page
     .getByLabel("صورة المنتج · JPEG أو PNG حتى 5 ميجابايت")
     .setInputFiles({

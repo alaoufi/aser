@@ -149,7 +149,8 @@ export const profileSchema = z
 export const productSchema = z.object({
   id: z.uuid().optional(),
   name: z.string().trim().min(2).max(160),
-  description: z.string().trim().min(5).max(5000),
+  // مطلوب (5 أحرف فأكثر) ما دام حقله ظاهرًا في النموذج؛ يُتحقق منه في الحفظ.
+  description: z.string().trim().max(5000).default(""),
   price: z.number().min(0).max(1000000).nullable(),
   unit: z.string().trim().min(1).max(60),
   status: z.enum(["available", "unavailable", "preorder"]),

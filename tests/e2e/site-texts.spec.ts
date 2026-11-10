@@ -80,6 +80,8 @@ test("admin edits, deletes and restores visible site texts", async ({
   await page.getByRole("button", { name: "حفظ «المائدة الفارغة»" }).click();
   await expect.poll(() => sent.length).toBe(1);
   expect(sent[0]).toEqual({ key: "table.empty", value: "الصحون جاية" });
+  // كل حفظ يُظهر «تم الحفظ» أسفل الشاشة.
+  await expect(page.locator(".save-toast")).toContainText("تم الحفظ");
   await expect(page.getByText("(معدّل)")).toBeVisible();
 
   // نص محذوف: يُستعاد لأصله.

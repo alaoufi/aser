@@ -3,12 +3,15 @@ import { db, databaseConfigured } from "./db";
 import { categories, cities } from "./constants";
 import { notCookingTodaySql } from "./cooking-availability";
 import { sortCategoryTree, visibleCategoryTree } from "../lib/category-label";
-export async function getCategories(): Promise<Category[]> {
+/** الأقسام؛ المخفية من الإدارة لا تظهر للزوار ولا في اختيار الأسر، وتظهر للإدارة فقط. */
+export async function getCategories(
+  includeHidden = false,
+): Promise<Category[]> {
   return databaseConfigured()
     ? sortCategoryTree(
         (
           await db().query(
-            'SELECT id,name,slug,icon,parent_id AS "parentId" FROM jdatna.categories ORDER BY length(COALESCE(parent_id,id)),COALESCE(parent_id,id),parent_id NULLS FIRST,id',
+            `SELECT id,name,slug,icon,parent_id AS "parentId",hidden FROM jdatna.categories${includeHidden ? "" : " WHERE NOT hidden"} ORDER BY length(COALESCE(parent_id,id)),COALESCE(parent_id,id),parent_id NULLS FIRST,id`,
           )
         ).rows,
       )

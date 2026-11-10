@@ -4,6 +4,8 @@ export type Category = {
   slug: string;
   icon: string;
   parentId?: string | null;
+  /** مخفي من الإدارة: لا يظهر للزوار ولا في اختيار الأسر. */
+  hidden?: boolean;
 };
 export type City = {
   id: string;
@@ -34,6 +36,9 @@ export type Producer = {
   deliveryAreas?: { cityId: string; cityName: string; fee: number | null }[];
 };
 export type Product = {
+  /** لصاحب المنتج فقط: ظاهر للزوار؟ ومن أخفاه (الأسرة أو الإدارة). */
+  visible?: boolean;
+  hiddenBy?: "admin" | "family" | null;
   notCookingToday?: boolean;
   id: string;
   producerId: string;

@@ -26,7 +26,9 @@ export const categorySchema = z.object({
     .regex(
       /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
       "الرابط المختصر أحرف إنجليزية صغيرة وأرقام وشرطات فقط",
-    ),
+    )
+    // يُنشأ داخليًا من رقم القسم إن لم يُرسل، ولا يُعرض في الإدارة.
+    .optional(),
   icon: z.string().trim().min(1).max(20),
   parentId: z.string().min(1).max(30).nullable().optional(),
 });
@@ -52,12 +54,15 @@ export const moderationSchema = z
     visible: z.boolean().optional(),
     featured: z.boolean().optional(),
     categoryIds: z.array(z.string().min(1).max(30)).min(1).max(100).optional(),
+    /** حذف المنتج (أرشفة): يختفي من الموقع ومن الأسرة. */
+    deleted: z.literal(true).optional(),
     reason: z.string().trim().min(5).max(2000),
   })
   .refine(
     (v) =>
       v.visible !== undefined ||
       v.featured !== undefined ||
+      v.deleted !== undefined ||
       v.categoryIds !== undefined,
     { message: "حدد التعديل المطلوب" },
   );
@@ -82,7 +87,7 @@ export async function adminProducts(user: SessionUser) {
   assertAdmin(user, "products");
   return (
     await db().query(
-      `SELECT x.id,x.name,x.status,x.visible,x.featured,x.producer_id AS "producerId",p.name AS "producerName",c.name AS "cityName",p.status AS "producerStatus",ARRAY(SELECT category_id FROM jdatna.product_categories WHERE product_id=x.id) AS "categoryIds" FROM jdatna.products x JOIN jdatna.producer_profiles p ON p.id=x.producer_id JOIN jdatna.cities c ON c.id=p.city_id ORDER BY x.created_at DESC LIMIT 200`,
+      `SELECT x.id,x.name,x.status,x.visible,x.hidden_by AS "hiddenBy",x.featured,x.producer_id AS "producerId",p.name AS "producerName",p.slug AS "producerSlug",c.name AS "cityName",p.status AS "producerStatus",ARRAY(SELECT category_id FROM jdatna.product_categories WHERE product_id=x.id) AS "categoryIds" FROM jdatna.products x JOIN jdatna.producer_profiles p ON p.id=x.producer_id JOIN jdatna.cities c ON c.id=p.city_id WHERE x.deleted_at IS NULL ORDER BY x.created_at DESC LIMIT 200`,
     )
   ).rows;
 }
@@ -92,13 +97,28 @@ export async function moderateProduct(user: SessionUser, input: unknown) {
   return transaction(async (client) => {
     const product = (
       await client.query(
-        "SELECT id FROM jdatna.products WHERE id=$1 FOR UPDATE",
+        "SELECT id FROM jdatna.products WHERE id=$1 AND deleted_at IS NULL FOR UPDATE",
         [value.id],
       )
     ).rows[0];
     if (!product) throw new HttpError(404, "المنتج غير موجود");
+    if (value.deleted) {
+      await client.query(
+        "UPDATE jdatna.products SET deleted_at=now(),visible=false,featured=false,hidden_by='admin',updated_at=now() WHERE id=$1",
+        [value.id],
+      );
+      await client.query(
+        "UPDATE jdatna.offers SET enabled=false,updated_at=now() WHERE product_id=$1",
+        [value.id],
+      );
+      await audit(client, user, "product.delete", value.id, value);
+      return { ok: true, deleted: true };
+    }
     await client.query(
-      "UPDATE jdatna.products SET visible=COALESCE($2,visible),featured=COALESCE($3,featured),updated_at=now() WHERE id=$1",
+      // إخفاء الإدارة يُنسب لها، فلا تلغيه الأسرة.
+      `UPDATE jdatna.products SET visible=COALESCE($2,visible),
+         hidden_by=CASE WHEN $2::boolean IS NULL THEN hidden_by WHEN $2 THEN NULL ELSE 'admin' END,
+         featured=COALESCE($3,featured),updated_at=now() WHERE id=$1`,
       [value.id, value.visible ?? null, value.featured ?? null],
     );
     if (value.categoryIds) {
@@ -125,7 +145,7 @@ export async function adminCategories(
   user: SessionUser,
 ): Promise<AdminCategory[]> {
   assertAdmin(user, "categories");
-  const categories = await getCategories();
+  const categories = await getCategories(true);
   const counts = new Map(
     (
       await db().query(
@@ -227,11 +247,11 @@ export async function saveCategory(
     }
     if (editing) {
       const result = await client.query(
-        "UPDATE jdatna.categories SET name=$2,slug=$3,icon=$4,parent_id=CASE WHEN $6 THEN $5 ELSE parent_id END WHERE id=$1 RETURNING id",
+        "UPDATE jdatna.categories SET name=$2,slug=COALESCE($3,slug),icon=$4,parent_id=CASE WHEN $6 THEN $5 ELSE parent_id END WHERE id=$1 RETURNING id",
         [
           id,
           value.name,
-          value.slug,
+          value.slug ?? null,
           value.icon,
           value.parentId ?? null,
           value.parentId !== undefined,
@@ -246,7 +266,13 @@ export async function saveCategory(
       ).rows[0].id;
       await client.query(
         "INSERT INTO jdatna.categories(id,name,slug,icon,parent_id) VALUES($1,$2,$3,$4,$5)",
-        [id, value.name, value.slug, value.icon, value.parentId ?? null],
+        [
+          id,
+          value.name,
+          value.slug ?? `cat-${id}`,
+          value.icon,
+          value.parentId ?? null,
+        ],
       );
     }
     await audit(
@@ -363,4 +389,30 @@ export async function adminOrders(user: SessionUser) {
        ORDER BY (o.status='pending') DESC,o.created_at DESC LIMIT 200`,
     )
   ).rows;
+}
+
+/** إخفاء القسم أو إظهاره للزوار وللأسر، دون حذفه ولا فصل منتجاته. */
+export async function setCategoryHidden(user: SessionUser, input: unknown) {
+  assertAdmin(user, "categories");
+  const { id, hidden } = z
+    .object({ id: z.string().min(1).max(30), hidden: z.boolean() })
+    .strict()
+    .parse(input);
+  return transaction(async (client) => {
+    const r = await client.query(
+      "UPDATE jdatna.categories SET hidden=$2 WHERE id=$1",
+      [id, hidden],
+    );
+    if (!r.rowCount) throw new HttpError(404, "القسم غير موجود");
+    await audit(
+      client,
+      user,
+      hidden ? "category.hide" : "category.show",
+      null,
+      {
+        id,
+      },
+    );
+    return { id, hidden };
+  });
 }

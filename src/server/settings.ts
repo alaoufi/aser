@@ -9,6 +9,11 @@ import {
   siteTextDefaults,
   type SiteTexts,
 } from "../lib/site-texts";
+import {
+  defaultProductFields,
+  isProductFieldKey,
+  type ProductFields,
+} from "../lib/product-fields";
 
 export const siteTemplates = ["najdi", "classic"] as const;
 export type SiteTemplate = (typeof siteTemplates)[number];
@@ -228,5 +233,55 @@ export async function setAppLinks(user: SessionUser, input: unknown) {
       [randomUUID(), user.id, JSON.stringify(value)],
     );
     return value;
+  });
+}
+
+/** حالة حقول نموذج المنتج (ظاهر/مخفي/محذوف)؛ أي خطأ يعيدها كلها ظاهرة. */
+export async function getProductFields(): Promise<ProductFields> {
+  const fields = defaultProductFields();
+  if (!databaseConfigured()) return fields;
+  try {
+    const raw = (
+      await db().query(
+        "SELECT value FROM jdatna.site_settings WHERE key='product:fields'",
+      )
+    ).rows[0]?.value;
+    const stored = raw ? (JSON.parse(raw) as Record<string, string>) : {};
+    for (const [k, v] of Object.entries(stored))
+      if (isProductFieldKey(k) && (v === "hidden" || v === "deleted"))
+        fields[k] = v;
+  } catch {
+    // تبقى الحقول ظاهرة.
+  }
+  return fields;
+}
+
+/** إخفاء حقل من نموذج المنتج أو حذفه أو إعادته. */
+export async function setProductField(user: SessionUser, input: unknown) {
+  if (!can(user, "categories"))
+    throw new HttpError(403, "لا تملك صلاحية إدارة الأقسام");
+  const { key, state } = z
+    .object({
+      key: z.string().refine(isProductFieldKey, "حقل غير معروف"),
+      state: z.enum(["shown", "hidden", "deleted"]),
+    })
+    .strict()
+    .parse(input);
+  const fields = await getProductFields();
+  fields[key as keyof ProductFields] = state;
+  const stored = Object.fromEntries(
+    Object.entries(fields).filter(([, v]) => v !== "shown"),
+  );
+  return transaction(async (client) => {
+    await client.query(
+      `INSERT INTO jdatna.site_settings(key,value,updated_at,updated_by) VALUES('product:fields',$1,now(),$2)
+       ON CONFLICT(key) DO UPDATE SET value=EXCLUDED.value,updated_at=now(),updated_by=EXCLUDED.updated_by`,
+      [JSON.stringify(stored), user.id],
+    );
+    await client.query(
+      "INSERT INTO jdatna.admin_audit_logs(id,actor_id,action,target_id,details) VALUES($1,$2,'product.field',NULL,$3)",
+      [randomUUID(), user.id, JSON.stringify({ key, state })],
+    );
+    return fields;
   });
 }

@@ -131,7 +131,7 @@ test("adding a product picks its photo from the library and fills the dish detai
     return r.fulfill({ json: { products: [] } });
   });
   await page.goto("/dashboard/products");
-  await page.getByRole("button", { name: "+ إضافة منتج" }).click();
+  await page.getByRole("button", { name: "إضافة منتج", exact: true }).click();
   await page.getByRole("radio", { name: /جريش بالدجاج/ }).check();
   await expect(page.getByLabel("اسم المنتج")).toHaveValue("جريش بالدجاج");
   await expect(

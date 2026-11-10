@@ -16,7 +16,32 @@ export async function api<T>(url: string, options?: RequestInit): Promise<T> {
   const data = await r.json().catch(() => ({}));
   if (!r.ok)
     throw new Error(data.error || "تعذر إتمام الطلب. يرجى المحاولة مجددًا.");
+  announceSaved(url, options?.method);
   return data as T;
+}
+/** يُبث بعد كل حفظ ناجح لتظهر رسالة «تم الحفظ» أسفل الشاشة. */
+export const SAVED_EVENT = "jdatna:saved";
+/** عمليات ليست «حفظًا» يراه المستخدم: الرسائل، والدخول، والإشعارات، والفحص. */
+const NOT_A_SAVE = [
+  "/api/conversations",
+  "/api/auth",
+  "/api/logout",
+  "/api/push",
+  "/api/coverage/check",
+  "/api/account/delete",
+  "/api/producer/orders/alerts",
+  "/api/session",
+];
+function announceSaved(url: string, method = "GET") {
+  const m = method.toUpperCase();
+  if (m === "GET" || typeof window === "undefined") return;
+  const path = url.split("?")[0];
+  if (NOT_A_SAVE.some((p) => path.startsWith(p))) return;
+  window.dispatchEvent(
+    new CustomEvent(SAVED_EVENT, {
+      detail: m === "DELETE" ? "تم الحذف" : "تم الحفظ",
+    }),
+  );
 }
 export function useSession() {
   const [user, setUser] = useState<SessionUser | null>(null);
