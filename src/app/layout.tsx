@@ -9,6 +9,10 @@ import Link from "next/link";
 import Image from "next/image";
 import "./globals.css";
 import "./heritage.css";
+import "./najdi.css";
+import { getSiteTemplate } from "@/server/settings";
+// القالب يُقرأ عند كل طلب حتى يسري اختيار الإدارة فورًا على كل الصفحات.
+export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   metadataBase: new URL("https://jdatna.com"),
   title: {
@@ -27,13 +31,19 @@ export const metadata: Metadata = {
     apple: { url: "/brand/jdatna-apple-icon.png", sizes: "180x180" },
   },
 };
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const template = await getSiteTemplate();
   return (
-    <html lang="ar" dir="rtl" data-scroll-behavior="smooth">
+    <html
+      lang="ar"
+      dir="rtl"
+      data-scroll-behavior="smooth"
+      data-template={template}
+    >
       <body>
         <a href="#main" className="skip-link">
           انتقل إلى المحتوى

@@ -1,4 +1,6 @@
 import { FoodPhotos } from "@/components/public/food-photos";
+import { NajdiDoor } from "@/components/public/najdi-door";
+import { getSiteTemplate } from "@/server/settings";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { TodayTable, regionsOf } from "@/components/public/today-table";
@@ -24,6 +26,7 @@ export default async function Home({
   const region =
     [asked ?? saved].find((r) => r && regions.some((x) => x.id === r)) ?? "";
   const today = await searchProducts({ status: "available", region });
+  const template = await getSiteTemplate();
   // لا يظهر القسم للعامة إلا إذا اختارته أسرة معتمدة وعليه منتج منشور.
   const [categories, products, producers] = await Promise.all([
     publicCategories(),
@@ -52,7 +55,7 @@ export default async function Home({
           </form>
         </div>
         <div className="hero-visual">
-          <FoodPhotos />
+          {template === "najdi" ? <NajdiDoor /> : <FoodPhotos />}
         </div>
       </section>
       <TodayTable

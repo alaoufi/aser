@@ -7,6 +7,7 @@ import {
   OrdersAdmin,
   ProductsAdmin,
   ReportsAdmin,
+  TemplateAdmin,
 } from "./admin-tools";
 import { familyAccountState, type FamilyState } from "@/lib/family-status";
 import { AccountShell, Guard, Message, api, s, useSession } from "./shared";
@@ -220,6 +221,7 @@ export function Admin() {
               ["categories", "إدارة الأقسام"],
               ["locations", "المواقع"],
               ["reports", "البلاغات"],
+              ["template", "قالب الموقع"],
             ].map(([id, label]) => (
               <button
                 type="button"
@@ -242,6 +244,8 @@ export function Admin() {
             <LocationsAdmin />
           ) : tab === "reports" ? (
             <ReportsAdmin />
+          ) : tab === "template" ? (
+            <TemplateAdmin />
           ) : (
             <>
               <p className={s.notice}>

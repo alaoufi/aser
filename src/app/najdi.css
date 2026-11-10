@@ -1,0 +1,159 @@
+/* القالب النجدي: باب ونوافذ خشب، وجدار طين، وشُرفات وسدو.
+   كل القواعد تحت [data-template="najdi"]، والقالب الكلاسيكي يبقى كما هو. */
+[data-template="najdi"] {
+  --wood: #7a4a24;
+  --wood-dark: #5c3518;
+  --wood-deep: #3e2310;
+  --wood-light: #9a6232;
+}
+
+/* شُرفات الطين فوق الترويسة */
+[data-template="najdi"] .site-header {
+  position: relative;
+  overflow: visible;
+  border-top: 14px solid var(--ink);
+}
+[data-template="najdi"] .site-header::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: -14px;
+  height: 14px;
+  pointer-events: none;
+  background:
+    linear-gradient(45deg, transparent 50%, #e2c9a0 50%) 0 0 / 16px 16px
+      repeat-x,
+    linear-gradient(-45deg, transparent 50%, #e2c9a0 50%) 0 0 / 16px 16px
+      repeat-x;
+}
+
+/* زر القائمة لوح خشب */
+[data-template="najdi"] .mobile-nav summary {
+  background: repeating-linear-gradient(
+    90deg,
+    var(--wood) 0 3px,
+    var(--wood-light) 3px 4px,
+    var(--wood) 4px 9px
+  );
+  border-color: var(--wood-dark);
+  box-shadow:
+    inset 0 0 0 3px var(--wood-dark),
+    0 2px 0 var(--wood-dark);
+  color: #f4ead9;
+}
+[data-template="najdi"] .mobile-nav summary * {
+  color: #f4ead9;
+  stroke: #f4ead9;
+}
+
+/* البحث بإطار خشب */
+[data-template="najdi"] .hero-search {
+  border: 2px solid var(--wood-dark);
+  border-radius: 6px;
+  box-shadow: 0 4px 0 var(--wood-dark);
+}
+
+/* الجدار والباب والنوافذ */
+.najdi-wall {
+  margin: 0;
+  padding-top: 22px;
+  background:
+    radial-gradient(circle at 20% 30%, #c9a877 1px, transparent 1.6px) 0 0 /
+      11px 13px,
+    radial-gradient(circle at 70% 60%, #efdcb9 1px, transparent 1.6px) 0 0 /
+      17px 15px,
+    linear-gradient(#e6cfa6, #dcc093);
+  border-radius: 10px 10px 0 0;
+}
+.najdi-wall-inner {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: clamp(10px, 4vw, 26px);
+  padding-inline: 10px;
+}
+.najdi-door {
+  width: min(56%, 260px);
+  height: auto;
+  filter: drop-shadow(0 6px 6px #2e1d1240);
+}
+.najdi-window {
+  width: clamp(48px, 15%, 78px);
+  height: auto;
+  margin-bottom: 38%;
+  filter: drop-shadow(0 4px 4px #2e1d1230);
+}
+.najdi-threshold {
+  height: 14px;
+  background: linear-gradient(#b89466, #9d7a4f);
+  border-top: 2px solid #8a6740;
+  border-radius: 0 0 6px 6px;
+}
+
+/* الأقسام نوافذ خشب */
+[data-template="najdi"] .category-card {
+  background: #fbf5ea;
+  border: 6px solid var(--wood);
+  border-radius: 4px;
+  box-shadow:
+    inset 0 0 0 2px var(--wood-dark),
+    0 3px 0 var(--wood-dark);
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  padding-top: 26px;
+  position: relative;
+}
+[data-template="najdi"] .category-card::before {
+  content: "";
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  width: 80px;
+  height: 11px;
+  transform: translateX(-50%);
+  background:
+    linear-gradient(135deg, transparent 50%, var(--wood-dark) 50%) 0 0 / 16px
+      11px repeat-x,
+    linear-gradient(225deg, transparent 50%, var(--wood-dark) 50%) 0 0 / 16px
+      11px repeat-x;
+}
+[data-template="najdi"] .category-card .category-icon,
+[data-template="najdi"] .category-card .category-arrow {
+  display: none;
+}
+[data-template="najdi"] .category-card .category-title {
+  text-align: center;
+}
+
+/* «متوفر الآن» و«اطلب الآن» بابان خشب */
+[data-template="najdi"] .availability-card {
+  position: relative;
+  border: 6px solid var(--wood-dark);
+  border-radius: 4px;
+  box-shadow: 0 4px 0 var(--wood-deep);
+  background: repeating-linear-gradient(90deg, #4f5d36 0 6px, #56653b 6px 7px);
+}
+[data-template="najdi"] .availability-card.warm {
+  background: repeating-linear-gradient(90deg, #9c2f1e 0 6px, #a63623 6px 7px);
+}
+[data-template="najdi"] .availability-card::before {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border: 2px solid #f4ead955;
+  border-radius: 2px;
+  pointer-events: none;
+}
+[data-template="najdi"] .availability-card::after {
+  content: "";
+  position: absolute;
+  inset-inline-end: 12px;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 0 2px var(--wood-dark);
+}
