@@ -2,7 +2,11 @@
 import { useEffect, useState } from "react";
 import type { Category, City } from "@/lib/types";
 import { categoryLabel, categoryParentOptions } from "@/lib/category-label";
-import { siteTextLabels, type SiteTextKey } from "@/lib/site-texts";
+import {
+  siteTextLabels,
+  siteTextTitleKeys,
+  type SiteTextKey,
+} from "@/lib/site-texts";
 import { api, Message, s } from "./shared";
 function useResource<T>(url: string) {
   const [data, setData] = useState<T | null>(null);
@@ -718,6 +722,7 @@ type AdminText = {
   value: string;
   original: string;
   edited: boolean;
+  hidden: boolean;
 };
 /** نصوص الموقع: تعديل أي نص ظاهر، أو حذفه، أو إعادته للأصل. */
 export function TextsAdmin() {
@@ -731,8 +736,9 @@ export function TextsAdmin() {
     <section>
       <h2>نصوص الموقع</h2>
       <p className={s.muted}>
-        عدّل النص واحفظه، أو احذفه فلا يظهر، أو أعده لأصله. العناوين والأزرار
-        الأساسية تعود لنصها الأصلي إذا حُذفت.
+        عدّل النص واحفظه، أو أخفِ العنوان أو النص مؤقتًا دون أن يُمسح، أو احذفه،
+        أو أعده لأصله. العناوين والأزرار الأساسية تعود لنصها الأصلي إذا حُذفت أو
+        أُخفيت.
       </p>
       <Message error={r.error} success={r.success} />
       {!r.data && !r.error && <p role="status">جارٍ تحميل النصوص…</p>}
@@ -740,7 +746,7 @@ export function TextsAdmin() {
         <fieldset key={group} className={`${s.card} ${s.form}`}>
           <legend>{group}</legend>
           {items.map((t) => (
-            <TextRow key={t.key + t.value} item={t} resource={r} />
+            <TextRow key={t.key + t.value + t.hidden} item={t} resource={r} />
           ))}
         </fieldset>
       ))}
@@ -757,7 +763,16 @@ function TextRow({
   const label = siteTextLabels[item.key as SiteTextKey]?.[1] ?? item.key;
   const id = "text-" + item.key.replace(/\W/g, "-");
   const [draft, setDraft] = useState(item.value);
-  const status = !item.edited ? "" : item.value === "" ? "محذوف" : "معدّل";
+  const [hidden, setHidden] = useState(item.hidden);
+  const status = [
+    item.hidden ? "مخفي" : "",
+    !item.edited ? "" : item.value === "" ? "محذوف" : "معدّل",
+  ]
+    .filter(Boolean)
+    .join("، ");
+  const hideLabel = siteTextTitleKeys.has(item.key as SiteTextKey)
+    ? "إخفاء العنوان"
+    : "إخفاء النص";
   return (
     <div className={s.field}>
       <label htmlFor={id}>
@@ -772,6 +787,19 @@ function TextRow({
         placeholder={item.value === "" ? "محذوف — لا يظهر في الموقع" : ""}
         onChange={(e) => setDraft(e.target.value)}
       />
+      <label className={s.hideToggle}>
+        <input
+          type="checkbox"
+          checked={hidden}
+          disabled={r.busy}
+          aria-describedby={id}
+          onChange={(e) => {
+            setHidden(e.target.checked);
+            r.write("PUT", { key: item.key, hidden: e.target.checked });
+          }}
+        />
+        {hideLabel}
+      </label>
       <div className={s.actions}>
         <button
           type="button"

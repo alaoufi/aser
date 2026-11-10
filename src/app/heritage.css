@@ -1473,3 +1473,46 @@ button.food-dish:focus-visible .food-dish-visual {
 .star-input input {
   z-index: 1;
 }
+
+/* علامة «مائدة اليوم» المائية: كبيرة شفافة تطفو فوق خشب المائدة خلف الأطباق */
+.table-top {
+  overflow: hidden;
+}
+.table-watermark {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  z-index: 0;
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+  font-family: var(--font-display, inherit);
+  font-weight: 800;
+  font-size: clamp(4.2rem, 18vw, 10rem);
+  line-height: 1;
+  color: #f4ead9;
+  opacity: 0.16;
+  text-shadow:
+    0 2px 0 #2e1d12,
+    0 0 24px #f4ead955;
+  animation: table-watermark-float 7s ease-in-out infinite;
+}
+.table-top > :not(.table-watermark) {
+  position: relative;
+  z-index: 1;
+}
+@keyframes table-watermark-float {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-8px) scale(1.02);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .table-watermark {
+    animation: none;
+  }
+}

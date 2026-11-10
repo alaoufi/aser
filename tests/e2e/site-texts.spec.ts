@@ -23,12 +23,21 @@ test("admin edits, deletes and restores visible site texts", async ({
       value: "بانتظار العروض",
       original: "بانتظار العروض",
       edited: false,
+      hidden: false,
+    },
+    {
+      key: "table.title",
+      value: "مائدة اليوم",
+      original: "مائدة اليوم",
+      edited: false,
+      hidden: false,
     },
     {
       key: "footer.made",
       value: "",
       original: "صُنع ليقرّب أهل الدار",
       edited: true,
+      hidden: false,
     },
   ];
   const sent: unknown[] = [];
@@ -37,6 +46,10 @@ test("admin edits, deletes and restores visible site texts", async ({
       const body = r.request().postDataJSON();
       sent.push(body);
       const t = texts.find((x) => x.key === body.key)!;
+      if ("hidden" in body) {
+        t.hidden = body.hidden;
+        return r.fulfill({ json: { texts } });
+      }
       t.value = body.value ?? t.original;
       t.edited = t.value !== t.original;
     }
@@ -64,4 +77,22 @@ test("admin edits, deletes and restores visible site texts", async ({
   await page.getByRole("button", { name: "حذف «المائدة الفارغة»" }).click();
   await expect.poll(() => sent.length).toBe(3);
   expect(sent[2]).toEqual({ key: "table.empty", value: "" });
+
+  // إخفاء العنوان أو النص دون مسحه، ثم إظهاره.
+  const titleRow = page.getByLabel("عنوان المائدة").locator("..");
+  await titleRow.getByRole("checkbox", { name: "إخفاء العنوان" }).check();
+  await expect.poll(() => sent.length).toBe(4);
+  expect(sent[3]).toEqual({ key: "table.title", hidden: true });
+  await expect(page.getByText("(مخفي)")).toBeVisible();
+  await expect(page.getByLabel("عنوان المائدة")).toHaveValue("مائدة اليوم");
+  await page
+    .getByLabel("عنوان المائدة")
+    .locator("..")
+    .getByRole("checkbox", { name: "إخفاء العنوان" })
+    .uncheck();
+  await expect.poll(() => sent.length).toBe(5);
+  expect(sent[4]).toEqual({ key: "table.title", hidden: false });
+  await expect(
+    page.getByRole("checkbox", { name: "إخفاء النص" }).first(),
+  ).toBeVisible();
 });

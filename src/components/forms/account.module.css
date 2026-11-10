@@ -572,3 +572,28 @@
   object-fit: cover;
   border-radius: 6px;
 }
+
+/* نصوص الموقع: إخفاء العنوان أو النص دون مسحه */
+.hideToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px dashed #c9b28a;
+  border-radius: 999px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.hideToggle input {
+  width: 18px;
+  height: 18px;
+  accent-color: #4f5d36;
+}
+.hideToggle:has(input:checked) {
+  background: #4f5d36;
+  border-style: solid;
+  border-color: #4f5d36;
+  color: #fff;
+}
