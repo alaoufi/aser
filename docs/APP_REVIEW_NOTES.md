@@ -17,7 +17,7 @@ Attached: a screen recording from an iPhone (iOS Simulator) that starts at app l
 "Akalat Jadatna" (أكلات جدتنا, "Our Grandmother's Dishes") is a free Arabic marketplace that connects customers in Saudi Arabia with home-cook families ("productive families", الأسر المنتجة) who sell traditional Saudi dishes such as jareesh, marqooq and matazeez. Customers browse the dishes of the day, filter by region and city, see which families cover their area, send an order request and chat with the family. Families register, pass an eligibility review by our admins, and manage their products, offers, coverage areas and incoming orders. Audience: adults in Saudi Arabia who want home-cooked food, and the home-cook families who sell it. The app shows our website jdatna.com inside a native iOS shell.
 
 3) HOW TO ACCESS THE FEATURES (DEMO ACCOUNT)
-Browsing, family pages, dish pages, reporting and placing an order request work without an account.
+Browsing, family pages, dish pages and placing an order request work without an account. Chats and sending a report need sign-in.
 Sign in: tap the menu (☰) at the top → "تسجيل الدخول" (Sign in) → enter the mobile number and password from the Sign-In Information fields → "دخول". The demo account is already verified, so no SMS code is needed.
 - Chats: menu ☰ → "المحادثات" (Messages), or open a family page → message the family. In a chat, the ⋮ button at the top has Report and Block.
 - Orders: menu ☰ → "طلباتي" (My orders).
