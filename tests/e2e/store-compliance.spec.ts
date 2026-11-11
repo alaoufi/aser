@@ -36,9 +36,17 @@ test("store pages: support, account deletion and app verification files are publ
     page.getByRole("heading", { name: "حذف الحساب", level: 1 }),
   ).toBeVisible();
   await expect(page.getByRole("link", { name: "سجّل الدخول" })).toBeVisible();
-  expect(
-    await (await request.get("/.well-known/assetlinks.json")).json(),
-  ).toEqual(expect.any(Array));
+  // تطبيق Google Play مربوط بالموقع: الحزمة وبصمة توقيع Google وبصمة الرفع.
+  const links = await (
+    await request.get("/.well-known/assetlinks.json")
+  ).json();
+  expect(links[0].target.package_name).toBe("com.jdatna.app");
+  expect(links[0].target.sha256_cert_fingerprints).toEqual(
+    expect.arrayContaining([
+      "44:E3:68:B2:E0:67:D3:ED:83:C3:A6:71:32:2F:08:84:15:A8:3D:03:D3:3A:6A:EA:F3:83:B7:CC:95:69:BA:3C",
+      "6B:DB:F8:75:9A:D3:D2:6C:7C:37:70:C5:97:D0:AA:F0:D6:C6:68:8C:C5:9F:F3:C0:41:B9:B7:08:5A:49:B7:20",
+    ]),
+  );
   const aasa = await (
     await request.get("/.well-known/apple-app-site-association")
   ).json();
