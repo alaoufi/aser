@@ -9,6 +9,8 @@ import {
   type SiteTextKey,
 } from "@/lib/site-texts";
 import { api, Message, s } from "./shared";
+import { adminCache, fetchAdmin } from "./admin-cache";
+export { prefetchAdmin } from "./admin-cache";
 import {
   productFieldKeys,
   productFieldLabels,
@@ -16,12 +18,14 @@ import {
   type ProductFieldState,
 } from "@/lib/product-fields";
 function useResource<T>(url: string) {
-  const [data, setData] = useState<T | null>(null);
+  const [data, setData] = useState<T | null>(
+    () => (adminCache.get(url) as T | undefined) ?? null,
+  );
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [success, setSuccess] = useState("");
   async function refresh() {
-    setData(await api<T>(url));
+    setData(await fetchAdmin<T>(url));
   }
   useEffect(() => {
     refresh().catch((e) => setError(e.message));

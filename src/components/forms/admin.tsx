@@ -1,5 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import { COVERAGE_URL } from "./admin-cache";
 import {
   AdminSummary,
   AppLinksAdmin,
@@ -11,6 +13,7 @@ import {
   ReportsAdmin,
   TemplateAdmin,
   TextsAdmin,
+  prefetchAdmin,
 } from "./admin-tools";
 import { familyAccountState, type FamilyState } from "@/lib/family-status";
 import { AccountShell, Guard, Message, api, s, useSession } from "./shared";
@@ -18,6 +21,18 @@ import { can, isManager, type AdminPermission } from "@/lib/permissions";
 import { MembersAdmin } from "./members";
 import { SectionIcon as AdminIcon } from "./section-icon";
 
+/** بيانات كل قسم، تُحمَّل مسبقًا عند المرور على زره أو التركيز عليه. */
+const tabData: Record<string, string[]> = {
+  orders: ["/api/admin/orders"],
+  products: ["/api/admin/products", "/api/admin/categories"],
+  categories: ["/api/admin/categories", "/api/admin/product-fields"],
+  locations: ["/api/admin/locations"],
+  reports: ["/api/admin/reports"],
+  template: ["/api/admin/settings"],
+  texts: ["/api/admin/texts"],
+  app: ["/api/admin/app-links"],
+  members: ["/api/admin/members?q="],
+};
 /** أقسام الإدارة وصلاحية كل قسم؛ «الأعضاء» للمدير الكامل فقط. */
 const adminTabs: [
   id: string,
@@ -267,16 +282,24 @@ export function Admin() {
                       key={id}
                       aria-pressed={active === id}
                       onClick={() => setTab(id)}
+                      onPointerEnter={() => prefetchAdmin(tabData[id] ?? [])}
+                      onFocus={() => prefetchAdmin(tabData[id] ?? [])}
                     >
                       <AdminIcon name={id} />
                       <span>{label}</span>
                     </button>
                   ))}
                   {coverage && (
-                    <a className={s.adminNavItem} href="/admin/coverage">
+                    // تنقّل داخل الموقع بلا إعادة تحميل، وبياناتها تُحمَّل مسبقًا عند المرور.
+                    <Link
+                      className={s.adminNavItem}
+                      href="/admin/coverage"
+                      onPointerEnter={() => prefetchAdmin([COVERAGE_URL])}
+                      onFocus={() => prefetchAdmin([COVERAGE_URL])}
+                    >
                       <AdminIcon name="coverage" />
                       <span>إدارة التغطية التفصيلية</span>
-                    </a>
+                    </Link>
                   )}
                 </div>
               );

@@ -152,5 +152,10 @@ export async function rate(user: SessionUser, input: unknown) {
       value.comment,
     ],
   );
+  if (value.kind === "family") {
+    // التقييم العاشر بخمس نجوم يُصدر شهادة «أسرة مميزة»؛ تعذّر الإصدار لا يُفشل التقييم.
+    const { awardIfEligible } = await import("./certificates");
+    await awardIfEligible(value.target).catch(() => null);
+  }
   return ratingSummary(value.kind, value.target);
 }

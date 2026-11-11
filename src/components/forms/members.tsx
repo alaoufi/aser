@@ -1,4 +1,5 @@
 "use client";
+import { adminCache, fetchAdmin } from "./admin-cache";
 import { useEffect, useState } from "react";
 import { adminPermissions, type AdminPermission } from "@/lib/permissions";
 import { Message, api, s, useSession } from "./shared";
@@ -99,11 +100,17 @@ function AccessFields({
   );
 }
 
+/** قائمة الأعضاء بلا بحث؛ تُحفظ وتُحمَّل مسبقًا كبقية أقسام الإدارة. */
+export const MEMBERS_URL = "/api/admin/members?q=";
 /** الأعضاء والصلاحيات (للمدير): إضافة عضو، صلاحيات إدارية لأي عضو، وإيقاف. */
 export function MembersAdmin() {
   const session = useSession();
   const [query, setQuery] = useState("");
-  const [members, setMembers] = useState<Member[] | null>(null);
+  const [members, setMembers] = useState<Member[] | null>(
+    () =>
+      (adminCache.get(MEMBERS_URL) as { members: Member[] } | undefined)
+        ?.members ?? null,
+  );
   const [openId, setOpenId] = useState("");
   const [adding, setAdding] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -112,9 +119,11 @@ export function MembersAdmin() {
   async function load(q = query) {
     setMembers(
       (
-        await api<{ members: Member[] }>(
-          `/api/admin/members?q=${encodeURIComponent(q)}`,
-        )
+        await (q
+          ? api<{ members: Member[] }>(
+              `/api/admin/members?q=${encodeURIComponent(q)}`,
+            )
+          : fetchAdmin<{ members: Member[] }>(MEMBERS_URL))
       ).members,
     );
   }

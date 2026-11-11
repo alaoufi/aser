@@ -59,7 +59,10 @@ export async function deleteAccount(user: SessionUser, input: unknown) {
           [family.id],
         )
       ).rows.map((r) => r.id as string);
-      // طلبات الأسرة وعروضها ومنتجاتها وتقييماتها وكل بياناتها.
+      // طلبات الأسرة وعروضها ومنتجاتها وتقييماتها وشهادتها وكل بياناتها.
+      await del("DELETE FROM jdatna.certificates WHERE producer_id=$1", [
+        family.id,
+      ]);
       await del("DELETE FROM jdatna.order_requests WHERE producer_id=$1", [
         family.id,
       ]);

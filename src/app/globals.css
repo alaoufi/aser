@@ -593,6 +593,14 @@ img {
   display: inline-block;
   background: #e8ecdf;
 }
+/* شارة «أسرة مميزة» الذهبية في صفحة الأسرة، رابط لشهادتها */
+.badge.inline.distinguished-badge {
+  background: linear-gradient(180deg, #f3d58b, #d9a94e);
+  color: #4a2f08;
+  border-color: #b8862e;
+  text-decoration: none;
+  font-weight: 800;
+}
 .card-body {
   padding: 19px;
 }
@@ -2262,4 +2270,56 @@ main {
 }
 .category-branches a:hover {
   border-color: var(--olive);
+}
+
+/* إعلان الرئيسية: أسرة حصلت على شهادة تميّز، ورابط شهادتها */
+.certificate-news {
+  display: grid;
+  gap: 8px;
+  margin-block: 14px;
+}
+.certificate-news p {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 0;
+  padding: 12px 16px;
+  border: 1px solid #b8862e;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #fff8e6, #f3dfae);
+  color: #4a2f08;
+  font-weight: 700;
+  line-height: 1.5;
+}
+.certificate-news-icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fbe7a8, #b8862e);
+  color: #fff;
+  font-size: 18px;
+  flex: none;
+}
+.certificate-news a {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 14px;
+  border-radius: 8px;
+  background: #4f5d36;
+  color: #fff;
+  text-decoration: none;
+}
+@media (max-width: 640px) {
+  .certificate-news p {
+    grid-template-columns: auto 1fr;
+  }
+  .certificate-news a {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
 }

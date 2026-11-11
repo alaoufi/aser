@@ -8,6 +8,7 @@ import type {
 } from "@/server/coverage";
 import { api, s, AccountShell, Guard, Message, useSession } from "./shared";
 import { ZoneEditor } from "./zones";
+import { adminCache, COVERAGE_URL, fetchAdmin } from "./admin-cache";
 import { can } from "@/lib/permissions";
 function Select({
   title,
@@ -438,21 +439,30 @@ export function CoverageForm() {
 }
 export function CoverageAdmin() {
   const session = useSession();
-  const [nodes, setNodes] = useState<CoverageNode[]>([]),
+  const cached = adminCache.get(COVERAGE_URL) as
+    { nodes: CoverageNode[] } | undefined;
+  const [nodes, setNodes] = useState<CoverageNode[] | null>(
+      cached?.nodes ?? null,
+    ),
     [kind, setKind] = useState<Exclude<CoverageKind, "region">>("governorate"),
     [parent, setParent] = useState(""),
     [error, setError] = useState(""),
     [success, setSuccess] = useState(""),
     [busy, setBusy] = useState(false);
-  const load = () =>
-    api<{ nodes: CoverageNode[] }>("/api/admin/coverage").then((d) =>
-      setNodes(d.nodes),
-    );
+  const load = (fresh = false) =>
+    (fresh
+      ? api<{ nodes: CoverageNode[] }>(COVERAGE_URL)
+      : fetchAdmin<{ nodes: CoverageNode[] }>(COVERAGE_URL)
+    ).then((d) => {
+      adminCache.set(COVERAGE_URL, d);
+      setNodes(d.nodes);
+    });
+  // تُطلب البيانات فورًا مع طلب الجلسة لا بعده؛ الخادم يتحقق من الدخول.
   useEffect(() => {
-    if (can(session.user, "locations"))
-      load().catch((e) => setError(e.message));
-  }, [session.user]);
-  const parents = nodes.filter((n) =>
+    load().catch(() => {});
+  }, []);
+  const all = nodes ?? [];
+  const parents = all.filter((n) =>
     kind === "governorate"
       ? n.kind === "region"
       : kind === "city"
@@ -492,7 +502,7 @@ export function CoverageAdmin() {
                       : { name: f.get("name") }),
                   }),
                 });
-                await load();
+                await load(true);
                 form.reset();
                 setSuccess("تم حفظ التصنيف وتسجيل العملية");
               } catch (e) {
@@ -546,13 +556,13 @@ export function CoverageAdmin() {
                   key={parent}
                 >
                   <option value="">المدينة القائمة غير المصنفة</option>
-                  {nodes
+                  {all
                     .filter(
                       (n) =>
                         n.kind === "city" &&
                         n.legacy &&
                         n.regionId ===
-                          nodes.find((p) => p.id === parent)?.regionId,
+                          all.find((p) => p.id === parent)?.regionId,
                     )
                     .map((n) => (
                       <option key={n.id} value={n.cityId!}>
@@ -571,8 +581,9 @@ export function CoverageAdmin() {
               {busy ? "جارٍ الحفظ…" : "حفظ التصنيف"}
             </button>
           </form>
+          {!nodes && <p role="status">جارٍ تحميل التغطية…</p>}
           <ul>
-            {nodes
+            {all
               .filter((n) => n.kind !== "region" && !n.legacy)
               .map((n) => (
                 <li key={n.id}>{n.label}</li>

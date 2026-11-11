@@ -51,7 +51,8 @@ export async function getCities(): Promise<City[]> {
 }
 export const producerSelect = `SELECT ${notCookingTodaySql()} AS "notCookingToday",p.id,p.slug,COALESCE(p.trade_name,p.name) AS name,p.description,p.city_id AS "cityId",
 c.name AS "cityName",r.name AS "regionName",p.neighborhood,p.verified,p.phone,p.whatsapp,
-p.delivery,p.pickup,(SELECT s.url FROM jdatna.producer_social_links s WHERE s.producer_id=p.id AND s.platform='website') AS website,p.logo_url AS "logoUrl",p.cover_url AS "coverUrl",
+p.delivery,p.pickup,(SELECT s.url FROM jdatna.producer_social_links s WHERE s.producer_id=p.id AND s.platform='website') AS website,
+(SELECT k.id FROM jdatna.certificates k WHERE k.producer_id=p.id) AS "certificateId",p.logo_url AS "logoUrl",p.cover_url AS "coverUrl",
 COALESCE((SELECT json_agg(json_build_object('platform',s.platform,'url',s.url))
  FROM jdatna.producer_social_links s WHERE s.producer_id=p.id AND s.platform<>'website'),'[]') AS "socialLinks",
 COALESCE((SELECT json_agg(json_build_object('cityId',a.city_id,'cityName',ac.name,'fee',a.fee) ORDER BY ac.name)

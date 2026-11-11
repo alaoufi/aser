@@ -15,6 +15,8 @@ export type City = {
 };
 export type Producer = {
   notCookingToday?: boolean;
+  /** شهادة «أسرة مميزة» إن صدرت. */
+  certificateId?: string | null;
   id: string;
   slug: string;
   name: string;

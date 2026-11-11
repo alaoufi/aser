@@ -12,6 +12,7 @@ import {
   searchProducers,
 } from "@/server/catalog";
 import { ProductCard, ProducerCard } from "@/components/public/ui";
+import { recentCertificates } from "@/server/certificates";
 export const dynamic = "force-dynamic";
 export default async function Home({
   searchParams,
@@ -19,24 +20,34 @@ export default async function Home({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const raw = await searchParams;
-  const cities = await getCities();
-  const regions = regionsOf(cities);
-  // منطقة المائدة: المختارة في الرابط، وإلا المحفوظة في الجهاز.
-  const asked = typeof raw.region === "string" ? raw.region : undefined;
-  const saved = (await cookies()).get("jdatna_region")?.value ?? "";
-  const region =
-    [asked ?? saved].find((r) => r && regions.some((x) => x.id === r)) ?? "";
-  const today = await todayProducts({ region });
-  const [template, texts] = await Promise.all([
+  // كل ما لا يعتمد على المنطقة يُطلب معًا بالتوازي بدل التسلسل.
+  const [
+    cities,
+    jar,
+    template,
+    texts,
+    categories,
+    products,
+    producers,
+    certificates,
+  ] = await Promise.all([
+    getCities(),
+    cookies(),
     visitorTemplate(),
     getSiteTexts(),
-  ]);
-  // لا يظهر القسم للعامة إلا إذا اختارته أسرة معتمدة وعليه منتج منشور.
-  const [categories, products, producers] = await Promise.all([
+    // لا يظهر القسم للعامة إلا إذا اختارته أسرة معتمدة وعليه منتج منشور.
     publicCategories(),
     searchProducts({}),
     searchProducers({}),
+    recentCertificates(),
   ]);
+  const regions = regionsOf(cities);
+  // منطقة المائدة: المختارة في الرابط، وإلا المحفوظة في الجهاز.
+  const asked = typeof raw.region === "string" ? raw.region : undefined;
+  const saved = jar.get("jdatna_region")?.value ?? "";
+  const region =
+    [asked ?? saved].find((r) => r && regions.some((x) => x.id === r)) ?? "";
+  const today = await todayProducts({ region });
   return (
     <>
       <section className="hero wrap">
@@ -73,6 +84,27 @@ export default async function Home({
         path="/"
         texts={texts}
       />
+      {certificates.length > 0 && texts["certificate.announce"] && (
+        <section
+          className="wrap certificate-news"
+          aria-label="أسر حصلت على شهادة تميّز"
+        >
+          {certificates.map((c) => (
+            <p key={c.id}>
+              <span className="certificate-news-icon" aria-hidden="true">
+                ★
+              </span>
+              <span>
+                {texts["certificate.announce"].replace("{name}", c.familyName)}
+              </span>
+              <Link href={`/certificates/${c.id}`}>
+                {texts["certificate.announceLink"] || "عرض الشهادة"}{" "}
+                <span aria-hidden="true">←</span>
+              </Link>
+            </p>
+          ))}
+        </section>
+      )}
       {categories.length > 0 && (
         <section className="section wrap" aria-label="الأقسام">
           <div className="category-grid">
