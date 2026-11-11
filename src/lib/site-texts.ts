@@ -45,6 +45,8 @@ export const siteTextDefaults = {
   "certificate.body":
     "تتقدم إدارة أكلات جدتنا بخالص الشكر والتقدير للأسرة المنتجة المميزة لحصولها على 10 تقييمات كلها 5 نجوم من عملائنا الكرام",
   "certificate.badge": "أسرة مميزة",
+  "certificate.announce": "مبروك! حصلت أسرة «{name}» على شهادة تميّز",
+  "certificate.announceLink": "عرض الشهادة",
   "certificate.how":
     "تصدر شهادة «أسرة مميزة» تلقائيًا عند حصول أسرتك على 10 تقييمات كلها 5 نجوم.",
   "welcome.title": "مرحبا بك جيت ومعك الخير",
@@ -111,6 +113,11 @@ export const siteTextLabels: Record<
   "certificate.title": ["شهادة الأسرة المميزة", "عنوان الشهادة"],
   "certificate.body": ["شهادة الأسرة المميزة", "نص الشهادة"],
   "certificate.badge": ["شهادة الأسرة المميزة", "شارة الأسرة في صفحتها"],
+  "certificate.announce": [
+    "شهادة الأسرة المميزة",
+    "إعلان الرئيسية ({name} مكان اسم الأسرة)",
+  ],
+  "certificate.announceLink": ["شهادة الأسرة المميزة", "رابط الإعلان"],
   "certificate.how": ["شهادة الأسرة المميزة", "شرح الشهادة في لوحة الأسرة"],
   "welcome.title": ["ترحيب الأسرة المنتجة", "السطر الأول"],
   "welcome.subtitle": ["ترحيب الأسرة المنتجة", "السطر الثاني"],

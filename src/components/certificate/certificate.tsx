@@ -178,10 +178,10 @@ export function CertificateArt({
         </div>
         <div className={s.foot}>
           <div className={s.date}>
+            <div className={s.lab}>تاريخ الإصدار</div>
             <div className={s.val}>{gregorian}</div>
             <div className={s.sub}>{hijri}</div>
             <div className={s.line} />
-            <div className={s.lab}>تاريخ الإصدار</div>
           </div>
           <svg className={s.seal} viewBox="0 0 200 200" aria-hidden="true">
             {rays.map((d) => (

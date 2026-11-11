@@ -7,6 +7,7 @@ import {
   awardIfEligible,
   familyCertificate,
   getCertificate,
+  recentCertificates,
 } from "../src/server/certificates";
 
 test(
@@ -101,6 +102,12 @@ test(
       assert.equal(pub?.familyName, "صاحبة المطبخ");
       assert.equal(pub?.producerSlug, "cert-" + familyId);
       assert.equal(await getCertificate("not-a-uuid"), null);
+      // تُعلن في الرئيسية مع رابطها.
+      assert.ok(
+        (await recentCertificates(50)).some(
+          (c) => c.id === cert.id && c.familyName === "صاحبة المطبخ",
+        ),
+      );
 
       // أسرة فيها تقييم واحد أقل من خمس قبل العاشر لا تحصل عليها.
       for (const r of raters.slice(0, 9)) await give(otherId, r.id, 5);

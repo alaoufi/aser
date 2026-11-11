@@ -85,3 +85,21 @@ export async function getCertificate(id: string): Promise<Certificate | null> {
     ? { ...row, issuedAt: new Date(row.issuedAt).toISOString() }
     : null;
 }
+
+/** أحدث الشهادات للإعلان في الرئيسية: آخر 30 يومًا، والأسر المعتمدة فقط. */
+export async function recentCertificates(limit = 3) {
+  if (!databaseConfigured()) return [];
+  try {
+    return (
+      await db().query(
+        `SELECT k.id,k.family_name AS "familyName" FROM jdatna.certificates k
+         JOIN jdatna.producer_profiles p ON p.id=k.producer_id
+         WHERE p.status='approved' AND k.issued_at > now() - interval '30 days'
+         ORDER BY k.issued_at DESC LIMIT $1`,
+        [limit],
+      )
+    ).rows as { id: string; familyName: string }[];
+  } catch {
+    return [];
+  }
+}

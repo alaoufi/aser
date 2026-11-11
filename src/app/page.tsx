@@ -12,6 +12,7 @@ import {
   searchProducers,
 } from "@/server/catalog";
 import { ProductCard, ProducerCard } from "@/components/public/ui";
+import { recentCertificates } from "@/server/certificates";
 export const dynamic = "force-dynamic";
 export default async function Home({
   searchParams,
@@ -32,10 +33,11 @@ export default async function Home({
     getSiteTexts(),
   ]);
   // لا يظهر القسم للعامة إلا إذا اختارته أسرة معتمدة وعليه منتج منشور.
-  const [categories, products, producers] = await Promise.all([
+  const [categories, products, producers, certificates] = await Promise.all([
     publicCategories(),
     searchProducts({}),
     searchProducers({}),
+    recentCertificates(),
   ]);
   return (
     <>
@@ -73,6 +75,27 @@ export default async function Home({
         path="/"
         texts={texts}
       />
+      {certificates.length > 0 && texts["certificate.announce"] && (
+        <section
+          className="wrap certificate-news"
+          aria-label="أسر حصلت على شهادة تميّز"
+        >
+          {certificates.map((c) => (
+            <p key={c.id}>
+              <span className="certificate-news-icon" aria-hidden="true">
+                ★
+              </span>
+              <span>
+                {texts["certificate.announce"].replace("{name}", c.familyName)}
+              </span>
+              <Link href={`/certificates/${c.id}`}>
+                {texts["certificate.announceLink"] || "عرض الشهادة"}{" "}
+                <span aria-hidden="true">←</span>
+              </Link>
+            </p>
+          ))}
+        </section>
+      )}
       {categories.length > 0 && (
         <section className="section wrap" aria-label="الأقسام">
           <div className="category-grid">
