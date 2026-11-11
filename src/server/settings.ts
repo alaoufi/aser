@@ -194,13 +194,23 @@ const PLAY_ANDROID_FINGERPRINTS = [
   "44:E3:68:B2:E0:67:D3:ED:83:C3:A6:71:32:2F:08:84:15:A8:3D:03:D3:3A:6A:EA:F3:83:B7:CC:95:69:BA:3C",
   "6B:DB:F8:75:9A:D3:D2:6C:7C:37:70:C5:97:D0:AA:F0:D6:C6:68:8C:C5:9F:F3:C0:41:B9:B7:08:5A:49:B7:20",
 ];
+/** تطبيق الآيفون في App Store: رقم فريق آبل ومعرّف الحزمة (ملف apple-app-site-association). */
+const APP_STORE_IOS_ID = "F6RN596WCX.com.jdatna.app";
 function withPlayApp(links: AppLinks): AppLinks {
+  const iosAppIds = links.iosAppIds.includes(APP_STORE_IOS_ID)
+    ? links.iosAppIds
+    : [...links.iosAppIds, APP_STORE_IOS_ID];
   const pkg = links.androidPackage || PLAY_ANDROID_PACKAGE;
-  if (pkg !== PLAY_ANDROID_PACKAGE) return links;
+  if (pkg !== PLAY_ANDROID_PACKAGE) return { ...links, iosAppIds };
   const prints = [...links.androidFingerprints];
   for (const f of PLAY_ANDROID_FINGERPRINTS)
     if (!prints.some((x) => x.toUpperCase() === f)) prints.push(f);
-  return { ...links, androidPackage: pkg, androidFingerprints: prints };
+  return {
+    ...links,
+    androidPackage: pkg,
+    androidFingerprints: prints,
+    iosAppIds,
+  };
 }
 const appLinksSchema = z
   .object({

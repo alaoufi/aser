@@ -1,0 +1,20 @@
+{
+  "appId": "com.jdatna.app",
+  "appName": "أكلات جدتنا",
+  "webDir": "www",
+  "server": {
+    "url": "https://jdatna.com/?source=ios",
+    "cleartext": false,
+    "allowNavigation": ["jdatna.com"],
+    "errorPath": "offline.html"
+  },
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#F4EAD9",
+    "limitsNavigationsToAppBoundDomains": true,
+    "scheme": "Jadatna"
+  },
+  "plugins": {
+    "PushNotifications": { "presentationOptions": ["badge", "sound", "alert"] }
+  }
+}

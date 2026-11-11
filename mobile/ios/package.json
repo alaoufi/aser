@@ -1,0 +1,16 @@
+{
+  "name": "jdatna-ios",
+  "private": true,
+  "description": "غلاف تطبيق الآيفون لأكلات جدتنا: يعرض jdatna.com مع إشعارات آبل الأصلية. يُبنى سحابيًا من GitHub Actions (ios.yml).",
+  "scripts": {
+    "configure": "node scripts/configure-ios.mjs"
+  },
+  "dependencies": {
+    "@capacitor/core": "8.6.0",
+    "@capacitor/ios": "8.6.0",
+    "@capacitor/push-notifications": "8.1.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.6.0"
+  }
+}

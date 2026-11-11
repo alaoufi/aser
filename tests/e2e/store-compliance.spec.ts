@@ -50,7 +50,10 @@ test("store pages: support, account deletion and app verification files are publ
   const aasa = await (
     await request.get("/.well-known/apple-app-site-association")
   ).json();
-  expect(aasa.applinks).toBeTruthy();
+  expect(aasa.applinks.details[0].appIDs).toContain(
+    "F6RN596WCX.com.jdatna.app",
+  );
+  expect(aasa.webcredentials.apps).toContain("F6RN596WCX.com.jdatna.app");
 });
 
 test("a member deletes their account from inside the app after typing the confirmation", async ({

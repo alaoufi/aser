@@ -22,20 +22,19 @@
 4. jdatna.com ← الإدارة ← **تطبيق الجوال** ← اسم الحزمة `com.jdatna.app` والبصمة ← حفظ. تحقق: https://jdatna.com/.well-known/assetlinks.json
 5. املأ **Store listing** و**Data safety** و**Content rating** و**App access** (الجوال التجريبي) من `LISTING.md`، ثم انقل الإصدار للإنتاج.
 
-## آبل ستور (الحساب جاهز)
+## آبل ستور (بناء سحابي بلا ماك)
 
-1. App Store Connect ← **My Apps ← +** ← Bundle ID: `com.jdatna.app`، الاسم: أكلات جدتنا، اللغة الأساسية: العربية.
-2. البناء يحتاج جهاز Mac مع Xcode:
-   ```
-   npm create @capacitor/app jdatna-ios && cd jdatna-ios
-   npm i @capacitor/ios @capacitor/push-notifications @capacitor/geolocation
-   انسخ store/ios/capacitor.config.json إلى المشروع
-   npx cap add ios && npx cap open ios
-   ```
-   - في Xcode: Signing (فريقكم)، Capabilities: **Push Notifications** و**Associated Domains** (`applinks:jdatna.com`)، وفي Info.plist: `NSLocationWhenInUseUsageDescription` = «نستخدم موقعك لعرض أطباق منطقتك ومعرفة هل توصل الأسرة المنتجة إليك».
-   - Product ← Archive ← Distribute ← App Store Connect.
-3. jdatna.com ← الإدارة ← **تطبيق الجوال** ← `TeamID.com.jdatna.app`. تحقق: https://jdatna.com/.well-known/apple-app-site-association
-4. املأ الصفحة والخصوصية وملاحظات المراجع من `LISTING.md`، وارفع لقطات `iphone67-*` و`iphone65-*`.
+التطبيق مسجّل: App Store Connect ← «أكلات جدتنا»، المعرف `com.jdatna.app`، فريق آبل `F6RN596WCX`.
+
+1. **مرة واحدة:** App Store Connect ← Users and Access ← Integrations ← App Store Connect API ← Team Keys ← «+»، الاسم `GitHub Build`، الصلاحية **Admin**، ثم حمّل ملف `AuthKey_XXXX.p8` (يُحمَّل مرة واحدة فقط).
+2. **مرة واحدة:** GitHub ← المستودع ← Settings ← Secrets and variables ← Actions ← New repository secret، وأضف:
+   - `ASC_KEY_ID`: رقم المفتاح (Key ID).
+   - `ASC_ISSUER_ID`: Issuer ID أعلى الصفحة نفسها.
+   - `ASC_KEY_P8`: محتوى ملف `.p8` كاملًا (افتحه بالمفكرة وانسخ كل ما فيه).
+3. **كل إصدار:** GitHub ← Actions ← «بناء تطبيق الآيفون» ← Run workflow ← رقم الإصدار. يُبنى على ماك سحابي ويُرفع إلى TestFlight خلال 20–30 دقيقة.
+4. App Store Connect ← TestFlight: جرّب البناء على جوالك، ثم في صفحة الإصدار اختر البناء واملأ الصفحة من `LISTING.md`، ثم Add for Review.
+
+مصدر التطبيق في `mobile/ios/`: إعداد Capacitor، وصفحة «لا يوجد اتصال»، وسكربت `scripts/configure-ios.sh` (الاسم «جدتنا» تحت الأيقونة، نصوص الأذونات بالعربي، الإشعارات الأصلية، روابط jdatna.com، الآيفون فقط). ملف `/.well-known/apple-app-site-association` يحمل `F6RN596WCX.com.jdatna.app` تلقائيًا.
 
 ## تنبيه مهم عن إشعارات الآيفون
 

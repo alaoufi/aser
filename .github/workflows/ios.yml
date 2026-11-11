@@ -1,0 +1,95 @@
+# بناء تطبيق الآيفون سحابيًا على ماك ورفعه إلى App Store Connect (TestFlight)، بلا جهاز ماك لدى المالك.
+# يُشغَّل يدويًا: Actions ← «بناء تطبيق الآيفون» ← Run workflow.
+# الأسرار المطلوبة (Settings ← Secrets and variables ← Actions):
+#   ASC_KEY_ID و ASC_ISSUER_ID و ASC_KEY_P8 (محتوى ملف AuthKey_XXXX.p8 كاملًا) من App Store Connect ← Users and Access ← Integrations.
+name: بناء تطبيق الآيفون
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "رقم الإصدار الظاهر في المتجر (مثل 1.0.0)"
+        required: true
+        default: "1.0.0"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-build
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: mobile/ios
+    env:
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      VERSION: ${{ inputs.version }}
+      BUILD_NUMBER: ${{ github.run_number }}
+    steps:
+      - name: التحقق من مفاتيح آبل ورقم الإصدار
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        working-directory: .
+        run: |
+          for v in ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_P8; do
+            [ -n "${!v}" ] || { echo "::error::السر $v غير موجود في إعدادات GitHub ← Secrets"; exit 1; }
+          done
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?$ ]] || { echo "::error::رقم الإصدار غير صالح: $VERSION"; exit 1; }
+
+      - uses: actions/checkout@v4
+
+      - name: أحدث Xcode
+        working-directory: .
+        run: |
+          X=$(ls -d /Applications/Xcode*.app | grep -v beta | sort -V | tail -1)
+          sudo xcode-select -s "$X"
+          xcodebuild -version
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/ios/package-lock.json
+
+      - name: إنشاء مشروع الآيفون
+        run: |
+          npm ci
+          npx cap add ios --packagemanager SPM
+          bash scripts/configure-ios.sh
+
+      - name: مفتاح App Store Connect
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          dir="$RUNNER_TEMP/asc"
+          mkdir -p "$dir"
+          printf '%s\n' "$ASC_KEY_P8" > "$dir/AuthKey_${ASC_KEY_ID}.p8"
+          chmod 600 "$dir/AuthKey_${ASC_KEY_ID}.p8"
+          echo "KEY_PATH=$dir/AuthKey_${ASC_KEY_ID}.p8" >> "$GITHUB_ENV"
+
+      - name: البناء والتوقيع
+        run: |
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/App.xcarchive" archive \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$KEY_PATH" -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            DEVELOPMENT_TEAM=F6RN596WCX CODE_SIGN_STYLE=Automatic \
+            MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="$BUILD_NUMBER"
+
+      - name: الرفع إلى App Store Connect (TestFlight)
+        run: |
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            -exportOptionsPlist ExportOptions.plist -exportPath "$RUNNER_TEMP/export" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$KEY_PATH" -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+          echo "::notice::رُفع الإصدار $VERSION (البناء $BUILD_NUMBER). يظهر في TestFlight بعد معالجة آبل (10–30 دقيقة)."
+
+      - name: حذف المفتاح من الجهاز
+        if: always()
+        working-directory: .
+        run: rm -rf "$RUNNER_TEMP/asc"

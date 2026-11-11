@@ -5,4 +5,4 @@
  *  ج، د = التعديلات السريعة
  * يُرفع الرقم المناسب مع كل دمج إلى الفرع المنشور (انظر AGENTS.md).
  */
-export const SITE_VERSION = "5.6.1.1";
+export const SITE_VERSION = "5.6.2.0";
