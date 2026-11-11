@@ -3,6 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, useSession } from "@/components/forms/shared";
+import { onLive } from "@/components/forms/live";
 
 type Unread = {
   total: number;
@@ -14,7 +15,7 @@ type Unread = {
     lastAt: string;
   }[];
 };
-const POLL_MS = 20_000;
+const POLL_MS = 60_000;
 /** يُبث بعدد غير المقروء ليحدّث شارة «المحادثات» في كل مكان. */
 const UNREAD_EVENT = "jdatna:unread";
 /** يُطلب به فحص فوري (مثل فتح محادثة وقراءتها). */
@@ -116,7 +117,7 @@ function markSeen(value: string) {
   }
 }
 
-/** تنبيه قوي «لديك رسالة جديدة» لكل حساب مسجّل، بصوت واهتزاز، يتحدث كل 20 ثانية. */
+/** تنبيه قوي «لديك رسالة جديدة» لكل حساب مسجّل، بصوت واهتزاز، لحظيًا، والتحديث كل دقيقة احتياط. */
 export function MessageAlert() {
   const { user } = useSession();
   const pathname = usePathname();
@@ -151,7 +152,12 @@ export function MessageAlert() {
     };
     document.addEventListener("visibilitychange", onVisible);
     window.addEventListener(UNREAD_REFRESH, check);
+    // تنبيه «لديك رسالة جديدة» لحظي في كل صفحات الموقع.
+    const off = onLive((e) => {
+      if (e.type === "message") check();
+    });
     return () => {
+      off();
       window.clearInterval(timer);
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener(UNREAD_REFRESH, check);

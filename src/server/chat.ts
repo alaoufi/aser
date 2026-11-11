@@ -5,6 +5,7 @@ import type { SessionUser } from "../lib/types";
 import { db, transaction } from "./db";
 import { HttpError } from "./security";
 import { notifyUser } from "./push";
+import { publishLive } from "./live";
 
 export type ConversationSummary = {
   id: string;
@@ -196,6 +197,17 @@ export async function conversationMessages(
       )
     ).rows as ChatMessage[];
     // فتح المحادثة = قراءة واستلام (✓✓ أزرق عند الطرف الآخر).
+    const raw = c as unknown as { customer_id: string; producer_user: string };
+    const otherUser =
+      c.side === "customer" ? raw.producer_user : raw.customer_id;
+    const newlyRead = (
+      await client.query(
+        "SELECT EXISTS(SELECT 1 FROM jdatna.messages WHERE conversation_id=$1 AND sender_id<>$2 AND created_at>$3) AS n",
+        [c.id, user.id, c[`${c.side}_read_at`]],
+      )
+    ).rows[0].n as boolean;
+    if (newlyRead)
+      await publishLive([otherUser], { type: "read", c: c.id }, client);
     await client.query(
       `UPDATE jdatna.conversations SET ${c.side === "customer" ? "customer_read_at=now(),customer_delivered_at=now()" : "producer_read_at=now(),producer_delivered_at=now()"} WHERE id=$1`,
       [c.id],
@@ -253,6 +265,11 @@ export async function sendMessage(
       to: c.side === "customer" ? raw.producer_user : raw.customer_id,
       conversation: c.id,
     };
+  });
+  // تصل الرسالة لحظيًا للطرفين (وأي نافذة أخرى مفتوحة للمرسل).
+  void publishLive([sent.to, user.id], {
+    type: "message",
+    c: sent.conversation,
   });
   // إشعار الجوال للطرف الآخر بعد حفظ الرسالة، دون انتظار يؤخر المرسل.
   void notifyUser(sent.to, {

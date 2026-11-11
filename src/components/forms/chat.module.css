@@ -224,8 +224,8 @@
 @media (max-width: 760px) {
   .app {
     grid-template-columns: 1fr;
-    /* يتسع للرأس وقائمة الحساب فلا ينزل حقل الكتابة تحت الشاشة */
-    height: calc(100dvh - 210px);
+    /* يتسع للرأس فقط (لا سطر روابط ولا فراغ علوي) فلا ينزل حقل الكتابة تحت الشاشة */
+    height: calc(100dvh - 190px);
     min-height: 420px;
   }
   .app[data-open="true"] .list,

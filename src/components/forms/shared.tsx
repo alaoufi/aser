@@ -124,12 +124,15 @@ function AccountNavigation() {
 export function AccountShell({
   children,
   navigation = true,
+  compact = false,
 }: {
   children: React.ReactNode;
   navigation?: boolean;
+  /** بلا هوامش علوية كبيرة (صفحة المحادثات) لتوفير المساحة. */
+  compact?: boolean;
 }) {
   return (
-    <section className={s.shell}>
+    <section className={`${s.shell}${compact ? ` ${s.shellCompact}` : ""}`}>
       {navigation && <AccountNavigation />}
       {children}
     </section>
