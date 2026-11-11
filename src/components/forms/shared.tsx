@@ -43,13 +43,29 @@ function announceSaved(url: string, method = "GET") {
     }),
   );
 }
+type SessionData = { user: SessionUser | null; registrationOpen: boolean };
+/**
+ * طلب الجلسة مشترك بين كل مكوّنات الصفحة: كانت صفحة الإدارة وحدها تطلبه 11 مرة.
+ * يُعاد استخدام الطلب نفسه لثوانٍ قليلة ثم يُطلب من جديد، فلا تبقى جلسة قديمة بعد الدخول أو الخروج.
+ */
+let sessionRequest: { at: number; p: Promise<SessionData> } | null = null;
+export function loadSession(fresh = false) {
+  if (fresh || !sessionRequest || Date.now() - sessionRequest.at > 4000) {
+    const p = api<SessionData>("/api/session");
+    sessionRequest = { at: Date.now(), p };
+    p.catch(() => {
+      sessionRequest = null;
+    });
+  }
+  return sessionRequest.p;
+}
 export function useSession() {
   const [user, setUser] = useState<SessionUser | null>(null);
   const [ready, setReady] = useState(false);
   const [open, setOpen] = useState(false);
   const [error, setError] = useState("");
   useEffect(() => {
-    api<{ user: SessionUser | null; registrationOpen: boolean }>("/api/session")
+    loadSession()
       .then((d) => {
         setUser(d.user);
         setOpen(d.registrationOpen);

@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import type { FamilyState } from "@/lib/family-status";
 import s from "./account.module.css";
+import { loadSession } from "./shared";
 
 export const FAMILY_STATUS_CHANGED = "jdatna:family-status";
 const steps: FamilyState["key"][] = [
@@ -16,8 +17,9 @@ let shared: Promise<FamilyState | null> | null = null;
 function fetchState(force = false) {
   if (!shared || force)
     // الزوار والعملاء لا يطلبون حالة الأسرة المنتجة أصلًا: نتحقق من دور الجلسة أولًا.
-    shared = fetch("/api/session")
-      .then((r) => (r.ok ? r.json() : { user: null }))
+    // عند تغيّر الحالة (مثل التسجيل كأسرة) يُطلب دور الجلسة من جديد لا من الذاكرة.
+    shared = loadSession(force)
+      .catch(() => ({ user: null }))
       .then((d: { user: { role?: string } | null }) =>
         d.user?.role === "producer"
           ? fetch("/api/producer/status")

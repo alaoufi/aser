@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { cache } from "react";
 import { z } from "zod";
 import type { SessionUser } from "../lib/types";
 import { db, databaseConfigured, transaction } from "./db";
@@ -20,7 +21,8 @@ export type SiteTemplate = (typeof siteTemplates)[number];
 const fallback: SiteTemplate = "classic";
 
 /** قالب الواجهة الحالي؛ أي خطأ في القراءة يعيد القالب الافتراضي ولا يوقف الصفحة. */
-export async function getSiteTemplate(): Promise<SiteTemplate> {
+/** تُقرأ مرة واحدة لكل طلب صفحة (القالب والصفحة يطلبانها معًا). */
+export const getSiteTemplate = cache(async (): Promise<SiteTemplate> => {
   if (!databaseConfigured()) return fallback;
   try {
     const value = (
@@ -32,7 +34,7 @@ export async function getSiteTemplate(): Promise<SiteTemplate> {
   } catch {
     return fallback;
   }
-}
+});
 
 /** قالب هذا الزائر: اختياره المحفوظ في جهازه، وإلا قالب الإدارة الافتراضي. */
 export async function visitorTemplate(): Promise<SiteTemplate> {
@@ -90,11 +92,12 @@ async function storedSiteTexts() {
 }
 
 /** نصوص الواجهة: الأصلية مع ما عدّلته الإدارة («» = محذوف أو مخفي). */
-export async function getSiteTexts(): Promise<SiteTexts> {
+/** تُقرأ مرة واحدة لكل طلب صفحة (القالب والصفحة يطلبانها معًا). */
+export const getSiteTexts = cache(async (): Promise<SiteTexts> => {
   const { texts, hidden } = await storedSiteTexts();
   for (const key of hidden) texts[key] = "";
   return texts;
-}
+});
 
 /** قائمة الإدارة: لكل نص قيمته الحالية والأصلية وهل عُدِّل وهل هو مخفي. */
 export async function adminSiteTexts(user: SessionUser) {
