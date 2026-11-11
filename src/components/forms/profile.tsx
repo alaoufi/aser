@@ -12,6 +12,7 @@ import {
 import { CookingAvailability } from "./cooking-availability";
 import { SectionIcon } from "./section-icon";
 import { DeleteAccountSection } from "./delete-account";
+import { CertificateCard } from "./certificate-card";
 import { stopPushOnLogout } from "@/components/public/push-setup";
 import {
   AccountShell,
@@ -582,6 +583,7 @@ export function Dashboard() {
               </div>
             </nav>
           )}
+          {session.user.role === "producer" && <CertificateCard />}
           <ProfileForm />
           <DeleteAccountSection />
         </>

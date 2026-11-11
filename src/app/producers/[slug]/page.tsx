@@ -61,6 +61,15 @@ export default async function ProducerDetail({
           {p.verified && (
             <span className="badge inline">تمت مراجعتها إداريًا</span>
           )}
+          {p.certificateId && (
+            <Link
+              className="badge inline distinguished-badge"
+              href={`/certificates/${p.certificateId}`}
+            >
+              <span aria-hidden="true">★</span>{" "}
+              {texts["certificate.badge"] || "أسرة مميزة"}
+            </Link>
+          )}
           <p className="profile-description">{p.description}</p>
         </div>
       </section>

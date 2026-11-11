@@ -1,0 +1,273 @@
+/* شهادة «أسرة مميزة»: تصميم ثابت النسب (1600×1131) يتمدد مع عرض الحاوية ويُطبع A4 أفقيًا. */
+.stage {
+  container-type: inline-size;
+  width: min(100%, 1100px);
+  margin: 0 auto;
+}
+.c {
+  --u: calc(100cqw / 1600);
+  position: relative;
+  width: 100cqw;
+  aspect-ratio: 1600 / 1131;
+  overflow: hidden;
+  color: #2e1d12;
+  font-family: var(--display, "Noto Sans Arabic", sans-serif);
+  background: radial-gradient(
+    ellipse at 50% 42%,
+    #fffaf0 0%,
+    #f8efdc 58%,
+    #eedfc2 100%
+  );
+  box-shadow: 0 10px 40px #2e1d1229;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+.c * {
+  box-sizing: border-box;
+}
+.paper {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.35;
+  mix-blend-mode: multiply;
+}
+.frame {
+  position: absolute;
+  inset: calc(var(--u) * 34);
+  border: calc(var(--u) * 3) solid #8a5a14;
+  border-radius: calc(var(--u) * 6);
+  box-shadow:
+    inset 0 0 0 calc(var(--u) * 7) #fbf4e6,
+    inset 0 0 0 calc(var(--u) * 9) #d9a94e;
+}
+.frame2 {
+  position: absolute;
+  inset: calc(var(--u) * 66);
+  border: calc(var(--u) * 1.5) solid rgba(138, 90, 20, 0.55);
+}
+.sadu {
+  position: absolute;
+  left: calc(var(--u) * 66);
+  right: calc(var(--u) * 66);
+  width: calc(100% - var(--u) * 132);
+  height: calc(var(--u) * 26);
+}
+.saduTop {
+  top: calc(var(--u) * 66);
+}
+.saduBottom {
+  bottom: calc(var(--u) * 66);
+  transform: scaleY(-1);
+}
+.corner {
+  position: absolute;
+  width: calc(var(--u) * 150);
+  height: calc(var(--u) * 150);
+}
+.tr {
+  top: calc(var(--u) * 100);
+  right: calc(var(--u) * 76);
+}
+.tl {
+  top: calc(var(--u) * 100);
+  left: calc(var(--u) * 76);
+  transform: scaleX(-1);
+}
+.br {
+  bottom: calc(var(--u) * 100);
+  right: calc(var(--u) * 76);
+  transform: scaleY(-1);
+}
+.bl {
+  bottom: calc(var(--u) * 100);
+  left: calc(var(--u) * 76);
+  transform: scale(-1, -1);
+}
+.logo {
+  position: absolute;
+  top: calc(var(--u) * 104);
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(var(--u) * 150);
+  height: auto;
+}
+.gold {
+  background: linear-gradient(
+    180deg,
+    #8a5a14 0%,
+    #b8862e 30%,
+    #f3d58b 52%,
+    #b8862e 70%,
+    #8a5a14 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.title {
+  position: absolute;
+  top: calc(var(--u) * 282);
+  width: 100%;
+  margin: 0;
+  text-align: center;
+  font-size: calc(var(--u) * 88);
+  font-weight: 800;
+  line-height: 1.15;
+}
+.lead {
+  position: absolute;
+  top: calc(var(--u) * 418);
+  left: calc(var(--u) * 330);
+  right: calc(var(--u) * 330);
+  margin: 0;
+  text-align: center;
+  font-size: calc(var(--u) * 27);
+  line-height: 1.75;
+  font-weight: 500;
+  color: #3a2a1c;
+  text-wrap: balance;
+}
+.stars {
+  position: absolute;
+  top: calc(var(--u) * 525);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: calc(var(--u) * 18);
+}
+.stars svg {
+  width: calc(var(--u) * 58);
+  height: calc(var(--u) * 58);
+}
+.nameBox {
+  position: absolute;
+  top: calc(var(--u) * 612);
+  left: calc(var(--u) * 300);
+  right: calc(var(--u) * 300);
+  height: calc(var(--u) * 150);
+  display: grid;
+  place-items: center;
+}
+.rule {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: calc(var(--u) * 22);
+}
+.ruleTop {
+  top: 0;
+}
+.ruleBottom {
+  bottom: 0;
+}
+.name {
+  margin: 0;
+  font-size: calc(var(--u) * 84);
+  font-weight: 800;
+  line-height: 1.2;
+  white-space: nowrap;
+  background: linear-gradient(180deg, #2e1d12 0%, #5a3d17 48%, #8a5a14 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.foot {
+  position: absolute;
+  bottom: calc(var(--u) * 130);
+  left: calc(var(--u) * 150);
+  right: calc(var(--u) * 150);
+  height: calc(var(--u) * 190);
+}
+.date,
+.sign {
+  position: absolute;
+  bottom: calc(var(--u) * 24);
+  width: calc(var(--u) * 330);
+  text-align: center;
+}
+.date {
+  left: 0;
+}
+.sign {
+  right: 0;
+}
+.val {
+  font-size: calc(var(--u) * 25);
+  font-weight: 700;
+  line-height: 1.5;
+}
+.sub {
+  font-size: calc(var(--u) * 19);
+  color: #6b5843;
+}
+.line {
+  height: calc(var(--u) * 1.5);
+  margin: calc(var(--u) * 8) calc(var(--u) * 20);
+  background: linear-gradient(90deg, transparent, #8a5a14, transparent);
+}
+.lab {
+  font-size: calc(var(--u) * 20);
+  font-weight: 700;
+  color: #8a5a14;
+}
+.signature {
+  height: calc(var(--u) * 92);
+  width: auto;
+  margin-bottom: calc(var(--u) * -6);
+  transform: rotate(-4deg);
+}
+.seal {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--u) * -6);
+  transform: translateX(-50%);
+  width: calc(var(--u) * 200);
+  height: calc(var(--u) * 200);
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin: 18px 0 0;
+}
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 0;
+  }
+  /* تُطبع الشهادة وحدها في صفحة A4 أفقية واحدة: يُخفى كل ما سواها. */
+  :global(body > *:not(main)),
+  :global(main)::before,
+  :global(main)::after,
+  .actions {
+    display: none !important;
+  }
+  :global(html),
+  :global(body),
+  :global(main),
+  :global(main > *) {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    min-height: 0 !important;
+  }
+  .stage {
+    width: 297mm;
+    margin: 0;
+  }
+  .c {
+    box-shadow: none;
+  }
+  /* تدرّج النص لا يُطبع بدقة؛ لون ثابت بدلًا منه. */
+  .gold {
+    background: none;
+    color: #a8761f;
+  }
+  .name {
+    background: none;
+    color: #4a3214;
+  }
+}

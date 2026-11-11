@@ -593,6 +593,14 @@ img {
   display: inline-block;
   background: #e8ecdf;
 }
+/* شارة «أسرة مميزة» الذهبية في صفحة الأسرة، رابط لشهادتها */
+.badge.inline.distinguished-badge {
+  background: linear-gradient(180deg, #f3d58b, #d9a94e);
+  color: #4a2f08;
+  border-color: #b8862e;
+  text-decoration: none;
+  font-weight: 800;
+}
 .card-body {
   padding: 19px;
 }

@@ -829,3 +829,17 @@
     font-size: 13px;
   }
 }
+
+/* بطاقة شهادة «أسرة مميزة» في لوحة الأسرة */
+.certificateCard {
+  border-color: #d9a94e;
+  background: linear-gradient(135deg, #fffaf0, #f6e9cc);
+}
+.certificateCard h2 {
+  color: #8a5a14;
+}
+.certificateCard progress {
+  width: 100%;
+  height: 12px;
+  accent-color: #b8862e;
+}
