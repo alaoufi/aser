@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { AccountShell, Guard, api, useSession } from "./shared";
 import c from "./chat.module.css";
 import { UNREAD_REFRESH } from "@/components/public/message-alert";
+import { onLive } from "./live";
 
 type Summary = {
   id: string;
@@ -65,16 +66,19 @@ export function Messages() {
         .then((d) => active && setList(d.conversations))
         .catch((e) => active && setError((e as Error).message));
     load();
-    const timer = setInterval(load, 15000);
+    const timer = setInterval(load, 30000);
+    const off = onLive(() => load());
     return () => {
       active = false;
       clearInterval(timer);
+      off();
     };
   }, [session.user?.id, openId]);
   const open = (id: string) =>
     router.push(id ? `/messages?c=${encodeURIComponent(id)}` : "/messages");
   return (
-    <AccountShell>
+    // صفحة المحادثات بلا سطر روابط الحساب ولا فراغ علوي: الرسائل والقائمة في الرأس أصلًا.
+    <AccountShell navigation={false} compact>
       <Guard {...session} />
       {session.user && (
         <div className={c.app} data-open={openId ? "true" : "false"}>
@@ -220,7 +224,7 @@ function Conversation({ id, onBack }: { id: string; onBack: () => void }) {
   const last = thread?.messages.at(-1)?.createdAt;
   useEffect(() => {
     if (!thread) return;
-    const timer = setInterval(() => {
+    const refresh = () => {
       const after = last ? `?after=${encodeURIComponent(last)}` : "";
       api<Thread>(`/api/conversations/${encodeURIComponent(id)}${after}`)
         .then((d) => {
@@ -240,8 +244,16 @@ function Conversation({ id, onBack }: { id: string; onBack: () => void }) {
           );
         })
         .catch(() => {});
-    }, 4000);
-    return () => clearInterval(timer);
+    };
+    // الرسائل والقراءة تصل لحظيًا، والتحديث كل 20 ثانية احتياط عند انقطاع البث.
+    const timer = setInterval(refresh, 20000);
+    const off = onLive((e) => {
+      if (e.c === id) refresh();
+    });
+    return () => {
+      clearInterval(timer);
+      off();
+    };
   }, [id, Boolean(thread), last]);
   useEffect(() => {
     bottom.current?.scrollIntoView({ block: "end" });

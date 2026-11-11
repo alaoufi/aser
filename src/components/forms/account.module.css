@@ -843,3 +843,15 @@
   height: 12px;
   accent-color: #b8862e;
 }
+
+/* صفحة المحادثات: هوامش صغيرة لتوفير المساحة */
+.shell.shellCompact {
+  margin: 8px auto;
+  padding: 8px 12px;
+}
+@media (max-width: 640px) {
+  .shell.shellCompact {
+    margin: 6px auto;
+    padding: 6px 8px;
+  }
+}
