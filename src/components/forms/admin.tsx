@@ -1,5 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import { COVERAGE_URL } from "./admin-cache";
 import {
   AdminSummary,
   AppLinksAdmin,
@@ -288,10 +290,16 @@ export function Admin() {
                     </button>
                   ))}
                   {coverage && (
-                    <a className={s.adminNavItem} href="/admin/coverage">
+                    // تنقّل داخل الموقع بلا إعادة تحميل، وبياناتها تُحمَّل مسبقًا عند المرور.
+                    <Link
+                      className={s.adminNavItem}
+                      href="/admin/coverage"
+                      onPointerEnter={() => prefetchAdmin([COVERAGE_URL])}
+                      onFocus={() => prefetchAdmin([COVERAGE_URL])}
+                    >
                       <AdminIcon name="coverage" />
                       <span>إدارة التغطية التفصيلية</span>
-                    </a>
+                    </Link>
                   )}
                 </div>
               );

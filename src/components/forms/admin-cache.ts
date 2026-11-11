@@ -5,6 +5,8 @@ import { api } from "./shared";
  * ذاكرة بيانات أقسام الإدارة داخل الصفحة: القسم الذي فُتح من قبل يظهر فورًا
  * ببياناته الأخيرة ثم يُحدَّث في الخلفية، فلا يُنتظر التحميل عند كل تنقل.
  */
+/** بيانات شجرة التغطية لصفحة «إدارة التغطية التفصيلية». */
+export const COVERAGE_URL = "/api/admin/coverage";
 export const adminCache = new Map<string, unknown>();
 const inflight = new Map<string, Promise<unknown>>();
 export function fetchAdmin<T>(url: string): Promise<T> {
