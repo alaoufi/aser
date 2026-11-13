@@ -167,3 +167,25 @@ test("inside my account, deleting takes three confirmations and can be cancelled
   await expect(page.getByText("حُذف حسابك نهائيًا")).toBeVisible();
   expect(deleted).toBe(1);
 });
+
+test("inside the iPhone app the browser-only add-to-home-screen notifications bar is hidden", async ({
+  browser,
+}) => {
+  const context = await browser.newContext({
+    userAgent:
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
+  });
+  const page = await context.newPage();
+  await signedIn(page);
+  // في المتصفح يظهر شريط «فعّل الإشعارات».
+  await page.goto("/orders");
+  await expect(page.locator(".push-bar")).toBeVisible();
+  // داخل التطبيق (يفتح بـ ?source=ios) لا يظهر، ويبقى مخفيًا عند التنقل.
+  const app = await context.newPage();
+  await signedIn(app);
+  await app.goto("/?source=ios");
+  await app.goto("/orders");
+  await expect(app.getByRole("heading", { name: "طلباتي" })).toBeVisible();
+  await expect(app.locator(".push-bar")).toHaveCount(0);
+  await context.close();
+});
