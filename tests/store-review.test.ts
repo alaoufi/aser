@@ -153,6 +153,27 @@ test(
 
     // رمز التحقق: لرقم إنشاء الحساب التجريبي أثناء الوضع فقط، وحسابا المراجعة بكلمة المرور.
     assert.equal(await reviewOtpCode(REVIEW.signupPhone), REVIEW.code);
+    // حساب مراجعة سابق على رقم إنشاء الحساب يُحذف عند طلب رمز تسجيل جديد، فيبقى الرقم متاحًا.
+    const leftover = randomUUID();
+    await pool.query("DELETE FROM jdatna.users WHERE phone=$1", [
+      REVIEW.signupPhone,
+    ]);
+    await pool.query(
+      "INSERT INTO jdatna.users(id,name,phone,role,phone_verified_at,review_account) VALUES($1,'Review Test',$2,'customer',now(),true)",
+      [leftover, REVIEW.signupPhone],
+    );
+    assert.equal(
+      await reviewOtpCode(REVIEW.signupPhone, "signup"),
+      REVIEW.code,
+    );
+    const freed = (
+      await pool.query(
+        "SELECT phone,deleted_at IS NOT NULL AS deleted FROM jdatna.users WHERE id=$1",
+        [leftover],
+      )
+    ).rows[0];
+    assert.equal(freed.deleted, true);
+    assert.notEqual(freed.phone, REVIEW.signupPhone);
     await assert.rejects(reviewOtpCode(REVIEW.client.phone), /بكلمة المرور/);
     assert.equal(await reviewOtpCode(real.phone), null);
     await setupReview(admin, { days: 0 });
