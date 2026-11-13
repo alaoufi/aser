@@ -94,7 +94,16 @@ test(
       password,
     });
     assert.ok("token" in signed && signed.token);
-    const reviewer = (signed as { user: typeof real }).user;
+    // حساب المراجع من قاعدة البيانات (لا من نتيجة الدخول التي تحمل كلمة المرور).
+    const reviewer = {
+      ...(
+        await pool.query(
+          "SELECT id,name,phone,role FROM jdatna.users WHERE username=$1",
+          [REVIEW.client.username],
+        )
+      ).rows[0],
+      permissions: [] as string[],
+    } as typeof real;
     const familyLogin = await passwordLogin({
       identifier: REVIEW.family.username,
       password,
