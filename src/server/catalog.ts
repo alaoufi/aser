@@ -29,9 +29,9 @@ export async function publicCategories(): Promise<Category[]> {
       `SELECT DISTINCT pc.category_id AS id
        FROM jdatna.product_categories pc
        JOIN jdatna.products x ON x.id=pc.product_id AND x.visible=true
-       JOIN jdatna.producer_profiles p ON p.id=x.producer_id AND p.status='approved'
+       JOIN jdatna.producer_profiles p ON p.id=x.producer_id AND p.status='approved' AND NOT p.review_only
        WHERE EXISTS(SELECT 1 FROM jdatna.producer_categories f
-         JOIN jdatna.producer_profiles fp ON fp.id=f.producer_id AND fp.status='approved'
+         JOIN jdatna.producer_profiles fp ON fp.id=f.producer_id AND fp.status='approved' AND NOT fp.review_only
          WHERE f.category_id=pc.category_id)`,
     ),
   ]);
@@ -95,7 +95,8 @@ function normalized(column: string) {
 function conditions(f: Filters, products: boolean) {
   const args: unknown[] = [];
   const where = [
-    "p.status='approved'",
+    // أسرة مراجعة المتاجر لا تظهر في البحث والقوائم العامة.
+    "p.status='approved' AND NOT p.review_only",
     ...(products ? ["x.visible=true"] : []),
   ];
   const add = (sql: string, value: unknown) => {
@@ -253,7 +254,7 @@ export async function browseLists(f: { region?: string; city?: string } = {}) {
         count(x.id) FILTER (WHERE x.status<>'unavailable')::int AS available
        FROM jdatna.producer_profiles p JOIN jdatna.cities c ON c.id=p.city_id
        LEFT JOIN jdatna.products x ON x.producer_id=p.id AND x.visible=true
-       WHERE p.status='approved'${extra}
+       WHERE p.status='approved' AND NOT p.review_only${extra}
        GROUP BY p.id,c.name ORDER BY available DESC,name LIMIT 300`,
       args,
     ),
@@ -261,7 +262,7 @@ export async function browseLists(f: { region?: string; city?: string } = {}) {
       `SELECT pc.category_id AS id,count(DISTINCT x.id)::int AS n
        FROM jdatna.products x JOIN jdatna.producer_profiles p ON p.id=x.producer_id
        JOIN jdatna.product_categories pc ON pc.product_id=x.id
-       WHERE p.status='approved' AND x.visible=true AND x.status<>'unavailable'${extra}
+       WHERE p.status='approved' AND NOT p.review_only AND x.visible=true AND x.status<>'unavailable'${extra}
        GROUP BY pc.category_id`,
       args,
     ),

@@ -3,8 +3,11 @@ import Link from "next/link";
 import { useState } from "react";
 import { api, useSession } from "./shared";
 import { stopPushOnLogout } from "@/components/public/push-setup";
-
-const CONFIRM = "حذف حسابي";
+import {
+  DELETE_CONFIRMATION as CONFIRM,
+  DELETE_CONFIRMATION_LATIN,
+  isDeleteConfirmation,
+} from "@/lib/delete-confirmation";
 
 /** نموذج حذف الحساب: يكتب المستخدم «حذف حسابي» ثم يؤكد. */
 export function DeleteAccount({
@@ -65,7 +68,10 @@ export function DeleteAccount({
         الحساب: <strong>{session.user.name}</strong> (
         <bdi>{session.user.phone}</bdi>)
       </p>
-      <label htmlFor="delete-confirm">اكتب «{CONFIRM}» للتأكيد</label>
+      <label htmlFor="delete-confirm">
+        اكتب «{CONFIRM}» للتأكيد (أو{" "}
+        <bdi dir="ltr">{DELETE_CONFIRMATION_LATIN}</bdi>)
+      </label>
       <input
         id="delete-confirm"
         value={text}
@@ -80,7 +86,7 @@ export function DeleteAccount({
       <button
         type="submit"
         className="button danger"
-        disabled={busy || text.trim() !== CONFIRM}
+        disabled={busy || !isDeleteConfirmation(text)}
       >
         {busy ? "جارٍ الحذف…" : "حذف حسابي نهائيًا"}
       </button>

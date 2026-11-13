@@ -64,6 +64,8 @@ export async function startConversation(user: SessionUser, input: unknown) {
     if (!family) throw new HttpError(404, "الأسرة المنتجة غير متاحة للمراسلة");
     if (family.user_id === user.id)
       throw new HttpError(400, "لا يمكنك مراسلة أسرتك من حسابك نفسه");
+    const { assertReviewPair } = await import("./store-review");
+    await assertReviewPair(db(), user.id, family.id);
     customerId = user.id;
     producerId = family.id;
   }

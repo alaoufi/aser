@@ -5,6 +5,7 @@ import { COVERAGE_URL } from "./admin-cache";
 import {
   AdminSummary,
   AppLinksAdmin,
+  StoreReviewAdmin,
   ProductFieldsAdmin,
   CategoriesAdmin,
   LocationsAdmin,
@@ -31,6 +32,7 @@ const tabData: Record<string, string[]> = {
   template: ["/api/admin/settings"],
   texts: ["/api/admin/texts"],
   app: ["/api/admin/app-links"],
+  review: ["/api/admin/store-review"],
   members: ["/api/admin/members?q="],
 };
 /** أقسام الإدارة وصلاحية كل قسم؛ «الأعضاء» للمدير الكامل فقط. */
@@ -48,13 +50,14 @@ const adminTabs: [
   ["template", "قالب الموقع", "content"],
   ["texts", "نصوص الموقع", "content"],
   ["app", "تطبيق الجوال", "content"],
+  ["review", "مراجعة المتاجر", "owner"],
   ["members", "الأعضاء والصلاحيات", "owner"],
 ];
 /** تجميع الأقسام في شاشة الإدارة (الأسماء للقارئ الآلي فقط). */
 const adminGroups: [group: string, ids: string[]][] = [
   ["الأسر والطلبات", ["producers", "orders", "products", "reports"]],
   ["الأقسام والمواقع", ["categories", "locations"]],
-  ["الموقع والأعضاء", ["template", "texts", "app", "members"]],
+  ["الموقع والأعضاء", ["template", "texts", "app", "review", "members"]],
 ];
 type Application = {
   id: string;
@@ -326,6 +329,8 @@ export function Admin() {
             <TextsAdmin />
           ) : active === "app" ? (
             <AppLinksAdmin />
+          ) : active === "review" ? (
+            <StoreReviewAdmin />
           ) : active !== "producers" ? (
             <p className={s.notice}>
               لا توجد أقسام مسموحة لحسابك بعد؛ تواصل مع مدير المنصة.
