@@ -116,12 +116,16 @@ export async function requestOtp(phoneValue: string, purpose: OtpPurpose) {
     );
   if (purpose === "reset" && !exists)
     throw new HttpError(400, "لا يوجد حساب لهذا الجوال؛ أنشئ حسابًا جديدًا");
+  // أرقام مراجعة المتاجر: لا رسالة، والرمز الثابت أثناء «وضع المراجعة» فقط.
+  const { reviewOtpCode } = await import("./store-review");
+  const fixed = await reviewOtpCode(phone);
   const id = randomUUID(),
-    code = createOtp();
+    code = fixed ?? createOtp();
   await db().query(
     "INSERT INTO jdatna.otp_challenges(id,phone,code_hash,expires_at,purpose) VALUES($1,$2,$3,now()+interval '5 minutes',$4)",
     [id, phone, otpHash(id, code), purpose],
   );
+  if (fixed) return { challengeId: id };
   try {
     await sendSms(phone, otpMessage(code));
   } catch {
@@ -180,8 +184,13 @@ export async function verifyOtp(
       if (challenge.purpose === "signup") {
         user = (
           await client.query(
-            `INSERT INTO jdatna.users(id,phone,name,phone_verified_at) VALUES($1,$2,$3,now()) ON CONFLICT(phone) DO NOTHING RETURNING id,name,phone,role,username`,
-            [randomUUID(), challenge.phone, name?.trim() || "مستخدم"],
+            `INSERT INTO jdatna.users(id,phone,name,phone_verified_at,review_account) VALUES($1,$2,$3,now(),$4) ON CONFLICT(phone) DO NOTHING RETURNING id,name,phone,role,username`,
+            [
+              randomUUID(),
+              challenge.phone,
+              name?.trim() || "مستخدم",
+              (await import("./store-review")).isReviewPhone(challenge.phone),
+            ],
           )
         ).rows[0];
       } else {
@@ -223,8 +232,11 @@ export async function startAdminChallenge(
   client: { query: (sql: string, args: unknown[]) => Promise<unknown> },
   phone: string,
 ) {
+  // أرقام مراجعة المتاجر: لا رسالة، والرمز الثابت أثناء «وضع المراجعة» فقط.
+  const { reviewOtpCode } = await import("./store-review");
+  const fixed = await reviewOtpCode(phone);
   const id = randomUUID(),
-    code = createOtp();
+    code = fixed ?? createOtp();
   await client.query(
     "INSERT INTO jdatna.otp_challenges(id,phone,code_hash,expires_at,purpose) VALUES($1,$2,$3,now()+interval '5 minutes','admin')",
     [id, phone, otpHash(id, code)],

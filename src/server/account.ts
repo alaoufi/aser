@@ -6,7 +6,11 @@ import { db, transaction } from "./db";
 import { HttpError } from "./security";
 
 /** العبارة التي يكتبها المستخدم لتأكيد الحذف النهائي. */
-export const DELETE_CONFIRMATION = "حذف حسابي";
+import {
+  DELETE_CONFIRMATION,
+  isDeleteConfirmation,
+} from "../lib/delete-confirmation";
+export { DELETE_CONFIRMATION };
 
 /**
  * حذف الحساب من داخل التطبيق (شرط آبل وقوقل بلاي): يُحذف الحساب وكل متعلقاته نهائيًا
@@ -15,7 +19,7 @@ export const DELETE_CONFIRMATION = "حذف حسابي";
  */
 export async function deleteAccount(user: SessionUser, input: unknown) {
   const { confirm } = z.object({ confirm: z.string() }).strict().parse(input);
-  if (confirm.trim() !== DELETE_CONFIRMATION)
+  if (!isDeleteConfirmation(confirm))
     throw new HttpError(400, `اكتب «${DELETE_CONFIRMATION}» لتأكيد الحذف`);
   const objectKeys = await transaction(async (client) => {
     const me = (

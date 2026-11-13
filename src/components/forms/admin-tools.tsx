@@ -1223,6 +1223,128 @@ export function AppLinksAdmin() {
   );
 }
 
+type StoreReview = {
+  until: string | null;
+  client: boolean;
+  family: boolean;
+  familySlug: string;
+  usernames: { client: string; family: string };
+  phones: { client: string; family: string; signup: string };
+  code: string;
+};
+/**
+ * حسابات مراجعة المتاجر (Apple وGoogle): المالك يختار كلمة المرور هنا فلا تُحفظ في المستودع،
+ * و«وضع المراجعة» يوقف رمز SMS لرقم إنشاء الحساب التجريبي فقط حتى تنتهي مدته.
+ */
+export function StoreReviewAdmin() {
+  const r = useResource<StoreReview>("/api/admin/store-review");
+  const d = r.data;
+  const local = (p: string) => p.replace("+966", "0");
+  return (
+    <section>
+      <h2>مراجعة المتاجر</h2>
+      <p className={s.muted}>
+        حسابان لمراجع Apple وGoogle يدخلان باسم المستخدم وكلمة المرور بلا رمز
+        جوال: حساب عميل وحساب أسرة منتجة، ومعهما طبق وطلب ومحادثة تجريبية.
+        الأسرة التجريبية لا تظهر في قوائم الموقع، ولا يتعامل معها إلا حساب
+        مراجعة، وحساب المراجعة لا يطلب من أسرة حقيقية.
+      </p>
+      <Message error={r.error} success={r.success} />
+      {!d && !r.error ? (
+        <p role="status">جارٍ التحميل…</p>
+      ) : d ? (
+        <>
+          <div className={s.card}>
+            <p>
+              حساب العميل: <bdi dir="ltr">{d.usernames.client}</bdi>{" "}
+              {d.client ? "✅ جاهز" : "— لم يُنشأ بعد"}
+            </p>
+            <p>
+              حساب الأسرة: <bdi dir="ltr">{d.usernames.family}</bdi>{" "}
+              {d.family ? "✅ جاهز" : "— لم يُنشأ بعد"}
+              {d.family && (
+                <>
+                  {" "}
+                  (<a href={`/producers/${d.familySlug}`}>صفحة الأسرة</a>)
+                </>
+              )}
+            </p>
+            <p>
+              وضع المراجعة:{" "}
+              {d.until
+                ? `مفتوح حتى ${new Date(d.until).toLocaleString("ar-SA")}`
+                : "مغلق"}
+            </p>
+            <p className={s.muted}>
+              أثناء وضع المراجعة فقط يُنشأ حساب جديد بالرقم{" "}
+              <bdi dir="ltr">{local(d.phones.signup)}</bdi> والرمز{" "}
+              <bdi dir="ltr">{d.code}</bdi> بلا رسالة (لعرض إنشاء الحساب ثم
+              حذفه). باقي الأرقام يصلها رمز SMS كالمعتاد دائمًا.
+            </p>
+          </div>
+          <form
+            className={`${s.card} ${s.form}`}
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const form = e.currentTarget;
+              const f = new FormData(form);
+              const password = String(f.get("password") ?? "");
+              if (password !== String(f.get("confirm") ?? "")) {
+                r.setError("كلمتا المرور غير متطابقتين");
+                return;
+              }
+              if (
+                await r.write("PUT", {
+                  ...(password ? { password } : {}),
+                  days: Number(f.get("days")),
+                })
+              )
+                form.reset();
+            }}
+          >
+            <div className={s.field}>
+              <label htmlFor="review-password">
+                كلمة مرور الحسابين (ثمانية أحرف على الأقل؛ اتركها فارغة للإبقاء
+                على الحالية)
+              </label>
+              <input
+                id="review-password"
+                name="password"
+                type="password"
+                autoComplete="new-password"
+                minLength={8}
+                required={!d.client || !d.family}
+              />
+            </div>
+            <div className={s.field}>
+              <label htmlFor="review-confirm">تأكيد كلمة المرور</label>
+              <input
+                id="review-confirm"
+                name="confirm"
+                type="password"
+                autoComplete="new-password"
+              />
+            </div>
+            <div className={s.field}>
+              <label htmlFor="review-days">مدة وضع المراجعة</label>
+              <select id="review-days" name="days" defaultValue="14">
+                <option value="1">يوم واحد</option>
+                <option value="7">سبعة أيام</option>
+                <option value="14">أسبوعان (حتى تنتهي مراجعة المتجر)</option>
+                <option value="30">شهر</option>
+                <option value="0">إغلاق وضع المراجعة الآن</option>
+              </select>
+            </div>
+            <button className={s.button} disabled={r.busy}>
+              {r.busy ? "جارٍ التجهيز…" : "تجهيز الحسابين وحفظ المدة"}
+            </button>
+          </form>
+        </>
+      ) : null}
+    </section>
+  );
+}
+
 /** حقول نموذج «إضافة منتج» عند الأسر: إخفاء أو حذف أو إعادة كل حقل. */
 export function ProductFieldsAdmin() {
   const r = useResource<{ fields: ProductFields }>("/api/admin/product-fields");

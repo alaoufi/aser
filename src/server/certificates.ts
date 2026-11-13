@@ -94,7 +94,7 @@ export async function recentCertificates(limit = 3) {
       await db().query(
         `SELECT k.id,k.family_name AS "familyName" FROM jdatna.certificates k
          JOIN jdatna.producer_profiles p ON p.id=k.producer_id
-         WHERE p.status='approved' AND k.issued_at > now() - interval '30 days'
+         WHERE p.status='approved' AND NOT p.review_only AND k.issued_at > now() - interval '30 days'
          ORDER BY k.issued_at DESC LIMIT $1`,
         [limit],
       )

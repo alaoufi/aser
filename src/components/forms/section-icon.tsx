@@ -11,6 +11,7 @@ const icons: Record<string, string> = {
   template: "M3 4h18v16H3zM3 9h18M9 9v11",
   texts: "M5 6h14M12 6v13M8 19h8",
   app: "M7 2h10v20H7zM11 18h2",
+  review: "M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5zM8.5 12l2.5 2.5 4.5-5",
   library:
     "M3 5h18v14H3zM3 15l5-5 4 4 3-3 6 6M15.5 9.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3",
   offers: "M3 12V3h9l9 9-9 9zM7.5 7.5h.01",

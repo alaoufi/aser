@@ -159,6 +159,8 @@ export async function submitOrder(user: SessionUser | null, input: unknown) {
       )
     ).rows[0];
     assertOrderProduct(product);
+    const { assertReviewPair } = await import("./store-review");
+    await assertReviewPair(client, user.id, product.producerId);
     const cooking = (
       await client.query(
         `SELECT ${notCookingTodaySql()} AS closed,${riyadhTodaySql}::text AS day FROM jdatna.producer_profiles p WHERE p.id=$1`,

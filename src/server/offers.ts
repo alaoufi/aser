@@ -55,7 +55,7 @@ export function offerVisible(
   );
 }
 const select = `SELECT o.id,o.producer_id AS "producerId",o.product_id AS "productId",o.title,o.description,o.terms,o.price::float8 AS price,o.audience,o.meal,o.starts_at AS "startsAt",o.ends_at AS "endsAt",o.enabled,COALESCE(p.trade_name,p.name) AS "producerName",p.slug AS "producerSlug" FROM jdatna.offers o JOIN jdatna.producer_profiles p ON p.id=o.producer_id`;
-const visible = `p.status='approved' AND o.enabled AND o.starts_at<=now() AND o.ends_at>now() AND (o.product_id IS NULL OR EXISTS(SELECT 1 FROM jdatna.products x WHERE x.id=o.product_id AND x.producer_id=o.producer_id AND x.visible AND x.status IN ('available','preorder'))) AND (o.audience='general' OR EXISTS(SELECT 1 FROM jdatna.offer_preferences f WHERE f.user_id=$1 AND f.audience=o.audience))`;
+const visible = `p.status='approved' AND NOT p.review_only AND o.enabled AND o.starts_at<=now() AND o.ends_at>now() AND (o.product_id IS NULL OR EXISTS(SELECT 1 FROM jdatna.products x WHERE x.id=o.product_id AND x.producer_id=o.producer_id AND x.visible AND x.status IN ('available','preorder'))) AND (o.audience='general' OR EXISTS(SELECT 1 FROM jdatna.offer_preferences f WHERE f.user_id=$1 AND f.audience=o.audience))`;
 export async function listOffers(user: SessionUser | null) {
   return (
     await db().query(
