@@ -17,6 +17,25 @@ const supported = () =>
 const isIos = () =>
   typeof navigator !== "undefined" &&
   /iPhone|iPad|iPod/.test(navigator.userAgent);
+/**
+ * داخل تطبيق الآيفون (غلاف Capacitor يعرض jdatna.com): تعليمات «أضف إلى الشاشة الرئيسية»
+ * خاصة بالمتصفح ولا تنطبق هنا، فلا يُعرض الشريط (مراجعة Apple 2.1).
+ */
+const SOURCE = "jdatna:app-source";
+export function inNativeApp() {
+  if (typeof window === "undefined") return false;
+  const cap = (
+    window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }
+  ).Capacitor;
+  if (cap?.isNativePlatform?.()) return true;
+  try {
+    const source = new URLSearchParams(window.location.search).get("source");
+    if (source === "ios") sessionStorage.setItem(SOURCE, source);
+    return sessionStorage.getItem(SOURCE) === "ios";
+  } catch {
+    return false;
+  }
+}
 const installed = () =>
   typeof window !== "undefined" &&
   (window.matchMedia?.("(display-mode: standalone)").matches ||
@@ -93,6 +112,10 @@ export function PushSetup({ texts }: { texts: Texts }) {
     try {
       later = Boolean(sessionStorage.getItem(LATER));
     } catch {}
+    if (inNativeApp()) {
+      setShow("");
+      return;
+    }
     if (!supported()) {
       // الآيفون: الإشعارات تعمل بعد إضافة الموقع للشاشة الرئيسية.
       setShow(isIos() && !installed() && !later ? "ios" : "");
