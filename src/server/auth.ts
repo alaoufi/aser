@@ -105,6 +105,10 @@ export async function requestOtp(phoneValue: string, purpose: OtpPurpose) {
   const phone = normalizePhone(phoneValue);
   await rateLimit("otp-global", 100, 3600);
   await rateLimit("otp-phone:" + hash(phone), 3, 900);
+  // أرقام مراجعة المتاجر: لا رسالة، والرمز الثابت أثناء «وضع المراجعة» فقط
+  // (قبل فحص «الجوال مسجل» لأنها تحرر رقم إنشاء الحساب من حساب مراجعة سابق).
+  const { reviewOtpCode } = await import("./store-review");
+  const fixed = await reviewOtpCode(phone, purpose);
   const exists = Boolean(
     (await db().query("SELECT id FROM jdatna.users WHERE phone=$1", [phone]))
       .rowCount,
@@ -116,9 +120,6 @@ export async function requestOtp(phoneValue: string, purpose: OtpPurpose) {
     );
   if (purpose === "reset" && !exists)
     throw new HttpError(400, "لا يوجد حساب لهذا الجوال؛ أنشئ حسابًا جديدًا");
-  // أرقام مراجعة المتاجر: لا رسالة، والرمز الثابت أثناء «وضع المراجعة» فقط.
-  const { reviewOtpCode } = await import("./store-review");
-  const fixed = await reviewOtpCode(phone);
   const id = randomUUID(),
     code = fixed ?? createOtp();
   await db().query(
@@ -232,11 +233,8 @@ export async function startAdminChallenge(
   client: { query: (sql: string, args: unknown[]) => Promise<unknown> },
   phone: string,
 ) {
-  // أرقام مراجعة المتاجر: لا رسالة، والرمز الثابت أثناء «وضع المراجعة» فقط.
-  const { reviewOtpCode } = await import("./store-review");
-  const fixed = await reviewOtpCode(phone);
   const id = randomUUID(),
-    code = fixed ?? createOtp();
+    code = createOtp();
   await client.query(
     "INSERT INTO jdatna.otp_challenges(id,phone,code_hash,expires_at,purpose) VALUES($1,$2,$3,now()+interval '5 minutes','admin')",
     [id, phone, otpHash(id, code)],

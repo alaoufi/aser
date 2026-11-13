@@ -59,7 +59,7 @@ export async function reviewWindowUntil(
  * التحقق بالجوال لأرقام المراجعة: يرفض خارج «وضع المراجعة»، وداخله يعيد الرمز الثابت
  * بدل إرسال رسالة. لغير أرقام المراجعة يعيد null فيبقى المسار العادي كما هو.
  */
-export async function reviewOtpCode(phone: string) {
+export async function reviewOtpCode(phone: string, purpose?: string) {
   if (!isReviewPhone(phone)) return null;
   // حسابا المراجعة يدخلان بكلمة المرور فقط؛ فلا يغيّر أحد كلمتهما برمز التحقق.
   if (phone !== REVIEW.signupPhone)
@@ -69,6 +69,19 @@ export async function reviewOtpCode(phone: string) {
       403,
       "هذا الرقم مخصص لمراجعة المتاجر، ووضع المراجعة مغلق",
     );
+  // كل عرض لإنشاء حساب يبدأ من رقم متاح: حساب مراجعة سابق على الرقم يُحذف بالطريقة المعتادة.
+  if (purpose === "signup") {
+    const previous = (
+      await db().query(
+        "SELECT id,name,phone,role FROM jdatna.users WHERE phone=$1 AND review_account AND deleted_at IS NULL",
+        [phone],
+      )
+    ).rows[0] as SessionUser | undefined;
+    if (previous) {
+      const { deleteAccount } = await import("./account");
+      await deleteAccount(previous, { confirm: "DELETE" });
+    }
+  }
   return REVIEW.code;
 }
 
