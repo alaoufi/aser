@@ -175,6 +175,13 @@ test("inside the iPhone app the browser-only add-to-home-screen notifications ba
     userAgent:
       "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
   });
+  // حالة الإشعارات ثابتة «لم يُسأل بعد» (متصفح CI يرفضها مسبقًا فيختفي الشريط في الحالتين).
+  await context.addInitScript(() => {
+    if ("Notification" in window)
+      Object.defineProperty(Notification, "permission", {
+        get: () => "default",
+      });
+  });
   const page = await context.newPage();
   await signedIn(page);
   // في المتصفح يظهر شريط «فعّل الإشعارات».
