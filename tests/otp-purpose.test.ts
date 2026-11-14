@@ -91,7 +91,8 @@ test(
         return Response.json({ accepted: true });
       };
       await pool.query(
-        "INSERT INTO jdatna.users(id,phone,name,role,phone_verified_at) VALUES($1,$2,'known admin','admin',now())",
+        // حساب مكتمل (له كلمة مرور): التسجيل الجديد عليه «الجوال مسجل». الحساب بلا كلمة مرور يُكمل تسجيله.
+        "INSERT INTO jdatna.users(id,phone,name,role,phone_verified_at,password_hash) VALUES($1,$2,'known admin','admin',now(),'scrypt$32768$8$3$'||repeat('0',32)||'$'||repeat('0',128))",
         [knownId, phones[0]],
       );
       const ordinaryToken = randomBytes(32).toString("hex");

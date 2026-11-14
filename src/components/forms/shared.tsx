@@ -194,6 +194,32 @@ export function LoginForm({
   const [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const [phone, setPhone] = useState("");
+  // إعادة إرسال الرمز بعد دقيقة من آخر إرسال.
+  const [resendIn, setResendIn] = useState(0);
+  useEffect(() => {
+    if (resendIn <= 0) return;
+    const t = setTimeout(() => setResendIn((n) => n - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendIn]);
+  async function resend() {
+    setBusy(true);
+    setError("");
+    try {
+      const d = await api<{ challengeId: string }>("/api/auth/request-otp", {
+        method: "POST",
+        body: JSON.stringify({
+          phone,
+          purpose: mode === "signup" ? "signup" : "reset",
+        }),
+      });
+      setChallenge(d.challengeId);
+      setResendIn(60);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
   const [username, setUsername] = useState("");
   const [clearUsername, setClearUsername] = useState(false);
   function switchMode(next: typeof mode) {
@@ -284,6 +310,7 @@ export function LoginForm({
           }),
         });
         setChallenge(d.challengeId);
+        setResendIn(60);
       } else {
         const d = await api<{
           user: SessionUser;
@@ -449,7 +476,7 @@ export function LoginForm({
                 name="adminCode"
                 inputMode="numeric"
                 autoComplete="one-time-code"
-                pattern="[0-9]{4}"
+                pattern="[0-9٠-٩۰-۹]{4}"
                 minLength={4}
                 maxLength={4}
                 required
@@ -553,7 +580,7 @@ export function LoginForm({
                   name="code"
                   inputMode="numeric"
                   autoComplete="one-time-code"
-                  pattern="[0-9]{4}"
+                  pattern="[0-9٠-٩۰-۹]{4}"
                   minLength={4}
                   maxLength={4}
                   required
@@ -572,14 +599,26 @@ export function LoginForm({
                   : "أرسل رمز التحقق"}
             </button>
             {challenge && (
-              <button
-                type="button"
-                className={s.button}
-                disabled={busy}
-                onClick={() => setChallenge("")}
-              >
-                تغيير الرقم
-              </button>
+              <div className={s.actions}>
+                <button
+                  type="button"
+                  className={s.buttonSecondary}
+                  disabled={busy || resendIn > 0}
+                  onClick={resend}
+                >
+                  {resendIn > 0
+                    ? `إعادة إرسال الرمز بعد ${resendIn} ثانية`
+                    : "إعادة إرسال الرمز"}
+                </button>
+                <button
+                  type="button"
+                  className={s.button}
+                  disabled={busy}
+                  onClick={() => setChallenge("")}
+                >
+                  تغيير الرقم
+                </button>
+              </div>
             )}
           </>
         )}

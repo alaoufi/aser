@@ -1,3 +1,4 @@
+import { toAsciiDigits } from "@/lib/digits";
 import { z } from "zod";
 import { api, jsonBody } from "@/server/http";
 import {
@@ -9,7 +10,13 @@ import { otpCodePattern } from "@/server/otp";
 import { HttpError } from "@/server/security";
 export const POST = api(async (request) => {
   const body = z
-    .object({ challengeId: z.uuid(), code: z.string().regex(otpCodePattern) })
+    .object({
+      challengeId: z.uuid(),
+      code: z
+        .string()
+        .transform((v) => toAsciiDigits(v.trim()))
+        .pipe(z.string().regex(otpCodePattern)),
+    })
     .strict()
     .parse(await jsonBody(request));
   const result = await verifyAdminLogin(body.challengeId, body.code);

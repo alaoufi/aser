@@ -1,3 +1,4 @@
+import { toAsciiDigits } from "@/lib/digits";
 import { otpCodePattern } from "@/server/otp";
 import { z } from "zod";
 import { api, jsonBody } from "@/server/http";
@@ -8,7 +9,11 @@ export const POST = api(async (request) => {
   const body = z
     .object({
       challengeId: z.uuid(),
-      code: z.string().regex(otpCodePattern),
+      // الرمز بالأرقام العربية (١٢٣٤) أو اللاتينية.
+      code: z
+        .string()
+        .transform((v) => toAsciiDigits(v.trim()))
+        .pipe(z.string().regex(otpCodePattern)),
       name: z.string().trim().min(2).max(120).optional(),
       purpose: otpPurposeSchema,
     })

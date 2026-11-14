@@ -10,6 +10,7 @@ import {
   startAdminChallenge,
 } from "./auth";
 import { HttpError, normalizePhone } from "./security";
+import { toAsciiDigits } from "../lib/digits";
 const passwordSchema = z
   .string()
   .min(4, "كلمة المرور أربع خانات على الأقل")
@@ -56,6 +57,8 @@ function derive(password: string, salt: string) {
 }
 export async function hashPassword(password: string) {
   passwordSchema.parse(password);
+  // تُحفظ بأرقام لاتينية، فتطابق «١٢٣٤» و«1234» أيًّا كانت لوحة المفاتيح عند الدخول.
+  password = toAsciiDigits(password);
   const salt = randomBytes(16).toString("hex");
   const key = await derive(password, salt);
   return `scrypt$32768$8$3$${salt}$${key.toString("hex")}`;
@@ -67,8 +70,15 @@ export async function verifyPassword(
   if (!passwordSchema.safeParse(password).success) return false;
   const valid = typeof stored === "string" ? hashPattern.exec(stored) : null;
   const parsed = valid ?? hashPattern.exec(dummyHash)!;
-  const key = await derive(password, parsed[1]);
-  return timingSafeEqual(key, Buffer.from(parsed[2], "hex")) && Boolean(valid);
+  const matches = async (candidate: string) =>
+    timingSafeEqual(
+      await derive(candidate, parsed[1]),
+      Buffer.from(parsed[2], "hex"),
+    );
+  // بالأرقام اللاتينية أولًا (الحفظ الحالي)، ثم كما كُتبت (كلمات حُفظت قبل التوحيد بأرقام عربية).
+  const ascii = toAsciiDigits(password);
+  if (await matches(ascii)) return Boolean(valid);
+  return ascii !== password && (await matches(password)) && Boolean(valid);
 }
 export function roleDestination(role: SessionUser["role"]) {
   return role === "admin"

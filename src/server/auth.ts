@@ -109,11 +109,16 @@ export async function requestOtp(phoneValue: string, purpose: OtpPurpose) {
   // (قبل فحص «الجوال مسجل» لأنها تحرر رقم إنشاء الحساب من حساب مراجعة سابق).
   const { reviewOtpCode } = await import("./store-review");
   const fixed = await reviewOtpCode(phone, purpose);
-  const exists = Boolean(
-    (await db().query("SELECT id FROM jdatna.users WHERE phone=$1", [phone]))
-      .rowCount,
-  );
-  if (purpose === "signup" && exists)
+  const existing = (
+    await db().query(
+      `SELECT id,(password_hash IS NOT NULL OR role<>'customer' OR cardinality(permissions)>0) AS "hasPassword" FROM jdatna.users WHERE phone=$1`,
+      [phone],
+    )
+  ).rows[0] as { id: string; hasPassword: boolean } | undefined;
+  const exists = Boolean(existing);
+  // تسجيل لم يكتمل (عميل تحقق من الجوال ثم خرج قبل كلمة المرور): يُكمل التسجيل، لا «الجوال مسجل».
+  // حسابات الإدارة والمشرفين بلا كلمة مرور تُكمَل بـ«نسيت كلمة المرور» فقط.
+  if (purpose === "signup" && existing?.hasPassword)
     throw new HttpError(
       409,
       "الجوال مسجل؛ ادخل بكلمة المرور أو استخدم نسيت كلمة المرور",
@@ -185,7 +190,12 @@ export async function verifyOtp(
       if (challenge.purpose === "signup") {
         user = (
           await client.query(
-            `INSERT INTO jdatna.users(id,phone,name,phone_verified_at,review_account) VALUES($1,$2,$3,now(),$4) ON CONFLICT(phone) DO NOTHING RETURNING id,name,phone,role,username`,
+            // تسجيل جديد، أو إكمال تسجيل سابق لم تُعيَّن له كلمة مرور (ولا يمس حسابًا مكتملًا).
+            `INSERT INTO jdatna.users(id,phone,name,phone_verified_at,review_account) VALUES($1,$2,$3,now(),$4)
+             ON CONFLICT(phone) DO UPDATE SET phone_verified_at=now()
+             WHERE jdatna.users.password_hash IS NULL AND jdatna.users.deleted_at IS NULL
+               AND jdatna.users.role='customer' AND cardinality(jdatna.users.permissions)=0
+             RETURNING id,name,phone,role,username`,
             [
               randomUUID(),
               challenge.phone,
