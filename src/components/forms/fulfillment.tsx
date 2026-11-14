@@ -16,7 +16,9 @@ export function FulfillmentCard() {
     [delivery, setDelivery] = useState(false),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
-    [success, setSuccess] = useState("");
+    [success, setSuccess] = useState(""),
+    // تعذر التحميل (جلسة منتهية أو انقطاع): لا تظهر البطاقة بدل رسالة خطأ.
+    [failed, setFailed] = useState(false);
   useEffect(() => {
     api<State>("/api/producer/fulfillment")
       .then((v) => {
@@ -24,7 +26,7 @@ export function FulfillmentCard() {
         setPickup(v.pickup);
         setDelivery(v.delivery);
       })
-      .catch((e) => setError(e.message));
+      .catch(() => setFailed(true));
   }, []);
   async function save(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -53,6 +55,7 @@ export function FulfillmentCard() {
       setBusy(false);
     }
   }
+  if (failed) return null;
   return (
     <section
       className={s.card}

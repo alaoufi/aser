@@ -149,15 +149,14 @@ export function advancedPayload(f: FormData) {
       throw new Error("أدخل بداية ونهاية صحيحتين لكل يوم عمل محدد.");
     return [{ day, opens, closes }];
   });
-  const deliveryAreas = f.has("delivery")
-    ? f.getAll("deliveryCities").map((v) => {
-        const cityId = String(v);
-        const raw = String(f.get(`fee-${cityId}`) || "");
-        const fee = raw === "" ? null : Number(raw);
-        if (fee !== null && (!Number.isFinite(fee) || fee < 0))
-          throw new Error("رسوم التوصيل يجب أن تكون صفرًا أو قيمة موجبة.");
-        return { cityId, fee };
-      })
-    : [];
+  // مدن التوصيل تُرسل دائمًا؛ الخادم يحفظها فقط إن كان التوصيل مفعّلًا من «طرق التسليم».
+  const deliveryAreas = f.getAll("deliveryCities").map((v) => {
+    const cityId = String(v);
+    const raw = String(f.get(`fee-${cityId}`) || "");
+    const fee = raw === "" ? null : Number(raw);
+    if (fee !== null && (!Number.isFinite(fee) || fee < 0))
+      throw new Error("رسوم التوصيل يجب أن تكون صفرًا أو قيمة موجبة.");
+    return { cityId, fee };
+  });
   return { socialLinks, businessHours, deliveryAreas };
 }

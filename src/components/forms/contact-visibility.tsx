@@ -14,13 +14,18 @@ export function ContactVisibilityCard() {
   const [state, setState] = useState<State | null>(null),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
-    [success, setSuccess] = useState("");
+    [success, setSuccess] = useState(""),
+    // تعذر التحميل (جلسة منتهية أو انقطاع): لا تظهر البطاقة بدل رسالة خطأ.
+    [failed, setFailed] = useState(false);
   useEffect(() => {
     api<State>("/api/producer/contact")
       .then(setState)
-      .catch((e) => setError(e.message));
+      .catch(() => setFailed(true));
   }, []);
   async function save(next: Pick<State, "showPhone" | "showWhatsapp">) {
+    const before = state;
+    // يظهر الاختيار فورًا، ويعود كما كان إن تعذر الحفظ.
+    setState((v) => v && { ...v, ...next });
     setBusy(true);
     setError("");
     setSuccess("");
@@ -33,11 +38,13 @@ export function ContactVisibilityCard() {
       );
       setSuccess("تم الحفظ ✓");
     } catch (e) {
+      setState(before);
       setError((e as Error).message);
     } finally {
       setBusy(false);
     }
   }
+  if (failed) return null;
   return (
     <section
       className={s.card}
@@ -51,7 +58,7 @@ export function ContactVisibilityCard() {
       </p>
       <Message error={error} success={success} />
       {state && (
-        <fieldset disabled={busy}>
+        <fieldset aria-busy={busy}>
           <legend className="sr-only">بيانات التواصل الظاهرة</legend>
           <div className={s.checks}>
             <label>
