@@ -95,6 +95,10 @@ export default async function ProductDetail({
                     : "غير متاح"}
               </span>
             </p>
+            <p>
+              <strong>التسليم المباشر</strong>
+              <span>{p.pickup ? "متاح من موقع الأسرة" : "غير متاح"}</span>
+            </p>
             {p.deliveryScope === "kingdom" && (
               <p>
                 <strong>الشحن</strong>
@@ -143,6 +147,11 @@ export default async function ProductDetail({
           contactPhone={familyPhone ?? undefined}
           contactWhatsapp={familyWhatsapp ?? undefined}
           notCookingToday={p.notCookingToday}
+          fulfillmentOptions={{
+            pickup: Boolean(p.pickup),
+            delivery: p.delivery,
+            deliveryScope: p.deliveryScope,
+          }}
           offerId={Array.isArray(offer) ? "invalid" : offer}
           shipping={
             p.deliveryScope === "kingdom"

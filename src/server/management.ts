@@ -352,6 +352,46 @@ async function saveProfileRecord(user: SessionUser, input: unknown) {
     };
   });
 }
+const fulfillmentSchema = z
+  .object({
+    pickup: z.boolean(),
+    delivery: z.boolean(),
+    pickupLocation: z.string().trim().max(1000).nullable().optional(),
+  })
+  .strict()
+  .refine((v) => v.pickup || v.delivery, {
+    message: "اختر التسليم المباشر أو التوصيل، أو كليهما",
+  })
+  .refine((v) => !v.pickup || (v.pickupLocation ?? "").length >= 5, {
+    message: "حدد موقع التسليم المباشر: العنوان أو رابط الخرائط",
+  });
+/** طرق التسليم في لوحة الأسرة. تعديلها لا يعيد الملف للمراجعة. */
+export async function ownFulfillment(user: SessionUser) {
+  const row = (
+    await db().query(
+      `SELECT pickup,delivery,pickup_location AS "pickupLocation" FROM jdatna.producer_profiles WHERE user_id=$1`,
+      [user.id],
+    )
+  ).rows[0];
+  if (!row) throw new HttpError(404, "سجّل ملف الأسرة المنتجة أولًا");
+  return row as {
+    pickup: boolean;
+    delivery: boolean;
+    pickupLocation: string | null;
+  };
+}
+export async function saveFulfillment(user: SessionUser, input: unknown) {
+  const v = fulfillmentSchema.parse(input);
+  const row = (
+    await db().query(
+      `UPDATE jdatna.producer_profiles SET pickup=$2,delivery=$3,pickup_location=$4,updated_at=now() WHERE user_id=$1
+       RETURNING pickup,delivery,pickup_location AS "pickupLocation"`,
+      [user.id, v.pickup, v.delivery, v.pickup ? v.pickupLocation : null],
+    )
+  ).rows[0];
+  if (!row) throw new HttpError(404, "سجّل ملف الأسرة المنتجة أولًا");
+  return row;
+}
 /** عدد الأسر التي تنتظر الاعتماد: لتبويب «اعتماد الأسر المنتجة» وتنبيه المشرفين. */
 export async function pendingApprovals(user: SessionUser) {
   if (!can(user, "producers"))

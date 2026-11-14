@@ -10,6 +10,7 @@ import {
   type AdvancedProfile,
 } from "./profile-advanced";
 import { CookingAvailability } from "./cooking-availability";
+import { FulfillmentCard } from "./fulfillment";
 import { SectionIcon } from "./section-icon";
 import { DeleteAccountSection } from "./delete-account";
 import { CertificateCard } from "./certificate-card";
@@ -112,15 +113,11 @@ export function ProfileForm({
     }
     try {
       if (extrasOpen) {
-        if (!f.has("delivery") && !f.has("pickup"))
-          throw Error("حدد التوصيل أو الاستلام.");
         optional = {
           ...advancedPayload(f),
           description: f.get("description"),
           neighborhood: f.get("neighborhood"),
           whatsapp: f.get("whatsapp"),
-          delivery: f.has("delivery"),
-          pickup: f.has("pickup"),
           documentNumber: f.get("documentNumber") || null,
           documentExpiresAt: f.get("documentExpiresAt") || null,
         };
@@ -201,6 +198,7 @@ export function ProfileForm({
     <>
       <FamilyStatusBanner />
       {profile && <CookingAvailability />}
+      {profile && <FulfillmentCard />}
       {profile && (
         <Link className={s.button} href="/dashboard/coverage">
           تحديد نطاق التغطية: المدن والمراكز والأحياء
@@ -416,27 +414,6 @@ export function ProfileForm({
                     defaultValue={profile?.description}
                   />
                 </label>
-                <fieldset>
-                  <legend>التوصيل والاستلام</legend>
-                  <div className={s.checks}>
-                    <label>
-                      <input
-                        name="delivery"
-                        type="checkbox"
-                        defaultChecked={profile?.delivery}
-                      />
-                      التوصيل متاح
-                    </label>
-                    <label>
-                      <input
-                        name="pickup"
-                        type="checkbox"
-                        defaultChecked={profile?.pickup ?? true}
-                      />
-                      الاستلام متاح
-                    </label>
-                  </div>
-                </fieldset>
                 <AdvancedFields profile={profile} cities={cities} />
               </div>
             )}

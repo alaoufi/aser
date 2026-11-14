@@ -33,6 +33,9 @@ const schema = z
     days: z.number().int().min(1).max(366).optional(),
     endDate: date.optional(),
     notes: z.string().trim().max(2000).default(""),
+    /** تسليم مباشر من موقع الأسرة، أو توصيل لموقع العميل. */
+    fulfillment: z.enum(["pickup", "delivery"]).optional(),
+    deliveryLocation: z.string().trim().max(1000).optional(),
   })
   .strict()
   .refine(
@@ -61,6 +64,43 @@ export function parseOrderRequest(input: unknown, now = new Date()) {
     days,
     endDate: new Date(start + (days - 1) * 86400000).toISOString().slice(0, 10),
   };
+}
+export type FulfillmentOptions = {
+  delivery: boolean;
+  pickup: boolean;
+  /** الشحن لكل المملكة توصيل كذلك. */
+  deliveryScope?: string | null;
+};
+/**
+ * طريقة الاستلام في الطلب: ما تقدمه الأسرة فقط. إن قدّمت طريقة واحدة اختيرت تلقائيًا،
+ * وإن قدّمت الاثنتين اختار العميل. التوصيل يحتاج موقع العميل.
+ */
+export function chooseFulfillment(
+  family: FulfillmentOptions,
+  wanted?: "pickup" | "delivery",
+  location?: string,
+): { method: "pickup" | "delivery"; location: string | null } {
+  const offered = [
+    ...(family.pickup ? (["pickup"] as const) : []),
+    ...(family.delivery || family.deliveryScope === "kingdom"
+      ? (["delivery"] as const)
+      : []),
+  ];
+  const method = wanted ?? (offered.length === 1 ? offered[0] : undefined);
+  if (!method)
+    throw new HttpError(400, "اختر طريقة الاستلام: تسليم مباشر أو توصيل");
+  if (!offered.includes(method))
+    throw new HttpError(
+      400,
+      method === "delivery"
+        ? "هذه الأسرة لا توصّل؛ اختر التسليم المباشر"
+        : "هذه الأسرة لا تقدم التسليم المباشر؛ اختر التوصيل",
+    );
+  if (method === "pickup") return { method, location: null };
+  const where = location?.trim() ?? "";
+  if (where.length < 5)
+    throw new HttpError(400, "أرسل موقعك للتوصيل: العنوان أو رابط الخرائط");
+  return { method, location: where };
 }
 type OrderProduct = {
   notCookingToday?: boolean;
@@ -154,7 +194,7 @@ export async function submitOrder(user: SessionUser | null, input: unknown) {
     }
     const product = (
       await client.query(
-        `SELECT x.name,x.unit,x.price,x.status,x.visible,x.delivery_scope AS "deliveryScope",x.shipping_fee AS "shippingFee",p.id AS "producerId",p.user_id AS "producerUser",COALESCE(p.trade_name,p.name) AS "producerName",p.status AS "producerStatus" FROM jdatna.products x JOIN jdatna.producer_profiles p ON p.id=x.producer_id WHERE x.id=$1 FOR SHARE OF x,p`,
+        `SELECT x.name,x.unit,x.price,x.status,x.visible,x.delivery_scope AS "deliveryScope",x.shipping_fee AS "shippingFee",p.delivery,p.pickup,p.id AS "producerId",p.user_id AS "producerUser",COALESCE(p.trade_name,p.name) AS "producerName",p.status AS "producerStatus" FROM jdatna.products x JOIN jdatna.producer_profiles p ON p.id=x.producer_id WHERE x.id=$1 FOR SHARE OF x,p`,
         [value.productId],
       )
     ).rows[0];
@@ -166,6 +206,11 @@ export async function submitOrder(user: SessionUser | null, input: unknown) {
       throw new HttpError(403, "لا يمكن طلب منتجات أسرتك من حسابك");
     const { assertReviewPair } = await import("./store-review");
     await assertReviewPair(client, user.id, product.producerId);
+    const fulfillment = chooseFulfillment(
+      product as unknown as FulfillmentOptions,
+      value.fulfillment,
+      value.deliveryLocation,
+    );
     const cooking = (
       await client.query(
         `SELECT ${notCookingTodaySql()} AS closed,${riyadhTodaySql}::text AS day FROM jdatna.producer_profiles p WHERE p.id=$1`,
@@ -188,7 +233,7 @@ export async function submitOrder(user: SessionUser | null, input: unknown) {
     }
     const id = randomUUID();
     await client.query(
-      `INSERT INTO jdatna.order_requests(id,request_key,request_hash,user_id,producer_id,product_id,offer_id,snapshot,customer_name,phone,quantity,meal,start_date,end_date,notes) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
+      `INSERT INTO jdatna.order_requests(id,request_key,request_hash,user_id,producer_id,product_id,offer_id,snapshot,customer_name,phone,quantity,meal,start_date,end_date,notes,fulfillment,delivery_location) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)`,
       [
         id,
         value.requestKey,
@@ -205,6 +250,8 @@ export async function submitOrder(user: SessionUser | null, input: unknown) {
         value.startDate,
         value.endDate,
         value.notes,
+        fulfillment.method,
+        fulfillment.location,
       ],
     );
     return {
@@ -229,12 +276,14 @@ export async function submitOrder(user: SessionUser | null, input: unknown) {
   }
   return { id: result.id, status: result.status };
 }
-const fields = `o.id,o.product_id AS "productId",o.snapshot,o.customer_name AS name,o.phone,o.quantity,o.meal,o.start_date::text AS "startDate",o.end_date::text AS "endDate",(o.end_date-o.start_date+1) AS days,o.notes,o.status,o.created_at AS "createdAt"`;
+const fields = `o.id,o.product_id AS "productId",o.snapshot,o.customer_name AS name,o.phone,o.quantity,o.meal,o.start_date::text AS "startDate",o.end_date::text AS "endDate",(o.end_date-o.start_date+1) AS days,o.notes,o.status,o.created_at AS "createdAt",o.fulfillment,o.delivery_location AS "deliveryLocation"`;
 export async function memberOrders(user: SessionUser) {
   // Ownership never comes from a phone, body, or query string.
   return (
     await db().query(
-      `SELECT ${fields} FROM jdatna.order_requests o WHERE o.user_id=$1 ORDER BY o.created_at DESC LIMIT 200`,
+      // موقع التسليم المباشر يظهر للعميل بعد قبول الأسرة طلبه، لا قبل ذلك.
+      `SELECT ${fields},CASE WHEN o.fulfillment='pickup' AND o.status IN ('accepted','preparing','ready','completed') THEN p.pickup_location END AS "pickupLocation"
+       FROM jdatna.order_requests o JOIN jdatna.producer_profiles p ON p.id=o.producer_id WHERE o.user_id=$1 ORDER BY o.created_at DESC LIMIT 200`,
       [user.id],
     )
   ).rows;
@@ -243,14 +292,14 @@ export async function reorderDraft(user: SessionUser, id: string) {
   z.uuid().parse(id);
   const previous = (
     await db().query(
-      `SELECT product_id AS "productId",quantity,meal,(end_date-start_date+1) AS days,notes FROM jdatna.order_requests WHERE id=$1 AND user_id=$2`,
+      `SELECT product_id AS "productId",quantity,meal,(end_date-start_date+1) AS days,notes,fulfillment,delivery_location AS "deliveryLocation" FROM jdatna.order_requests WHERE id=$1 AND user_id=$2`,
       [id, user.id],
     )
   ).rows[0];
   if (!previous) throw new HttpError(404, "الطلب غير موجود");
   const product = (
     await db().query(
-      `SELECT x.name,x.status,x.visible,p.status AS "producerStatus",${notCookingTodaySql()} AS "notCookingToday" FROM jdatna.products x JOIN jdatna.producer_profiles p ON p.id=x.producer_id WHERE x.id=$1`,
+      `SELECT x.name,x.status,x.visible,p.status AS "producerStatus",p.delivery,p.pickup,x.delivery_scope AS "deliveryScope",${notCookingTodaySql()} AS "notCookingToday" FROM jdatna.products x JOIN jdatna.producer_profiles p ON p.id=x.producer_id WHERE x.id=$1`,
       [previous.productId],
     )
   ).rows[0];
@@ -259,6 +308,11 @@ export async function reorderDraft(user: SessionUser, id: string) {
     ...previous,
     productName: product.name,
     notCookingToday: product.notCookingToday,
+    fulfillmentOptions: {
+      delivery: Boolean((product as unknown as FulfillmentOptions).delivery),
+      pickup: Boolean((product as unknown as FulfillmentOptions).pickup),
+      deliveryScope: (product as unknown as FulfillmentOptions).deliveryScope,
+    },
   };
 }
 export async function producerOrders(user: SessionUser) {

@@ -61,6 +61,8 @@ export type Product = {
   preparationTime: string | null;
   story: string | null;
   delivery: boolean;
+  /** التسليم المباشر من موقع الأسرة. */
+  pickup?: boolean;
   /** داخل نطاق التغطية، أو جميع مناطق المملكة بالشحن. */
   deliveryScope?: "coverage" | "kingdom";
   /** رسوم الشحن تضاف على السعر (للشحن لكل المملكة). */

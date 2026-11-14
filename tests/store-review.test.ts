@@ -189,5 +189,10 @@ test(
     await setupReview(admin, { days: 0 });
     assert.equal((await reviewStatus(admin)).until, null);
     await assert.rejects(reviewOtpCode(REVIEW.signupPhone), /مغلق/);
+    // الأسرة الحقيقية المؤقتة لا تبقى في قاعدة الاختبار فتظهر في «مائدة اليوم» لاختبارات المتصفح.
+    await pool.query("DELETE FROM jdatna.products WHERE id=$1", [realProduct]);
+    await pool.query("DELETE FROM jdatna.producer_profiles WHERE id=$1", [
+      realFamily,
+    ]);
   },
 );
