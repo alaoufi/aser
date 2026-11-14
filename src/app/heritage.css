@@ -1940,3 +1940,27 @@ button.food-dish:focus-visible .food-dish-visual {
     animation: none;
   }
 }
+
+/* صفحة «مائدة اليوم» كاملة: الصحون في وسط المائدة (لا في طرفها) وبحجم معتدل، وتلتف صفوفًا عند الكثرة. */
+.today-table.is-full .table-dishes:not(.is-row) {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 140px;
+  align-content: center;
+}
+.today-table.is-full .table-dishes:not(.is-row) > li {
+  width: 120px;
+}
+.today-table.is-full .table-3d .table-dish .plate {
+  width: 92px;
+}
+@media (max-width: 600px) {
+  .today-table.is-full .table-dishes:not(.is-row) > li {
+    width: 100px;
+  }
+  .today-table.is-full .table-3d .table-dish .plate {
+    width: 76px;
+  }
+}
