@@ -21,6 +21,7 @@ import { AccountShell, Guard, Message, api, s, useSession } from "./shared";
 import { can, isManager, type AdminPermission } from "@/lib/permissions";
 import { MembersAdmin } from "./members";
 import { SectionIcon as AdminIcon } from "./section-icon";
+import { APPROVALS_CHANGED } from "@/components/public/approval-alert";
 
 /** بيانات كل قسم، تُحمَّل مسبقًا عند المرور على زره أو التركيز عليه. */
 const tabData: Record<string, string[]> = {
@@ -41,7 +42,8 @@ const adminTabs: [
   label: string,
   permission: AdminPermission | "owner",
 ][] = [
-  ["producers", "مراجعة الأسر", "producers"],
+  ["approvals", "اعتماد الأسر المنتجة", "producers"],
+  ["producers", "الأسر المنتجة", "producers"],
   ["orders", "الطلبات", "orders"],
   ["products", "المنتجات", "products"],
   ["categories", "إدارة الأقسام", "categories"],
@@ -55,7 +57,10 @@ const adminTabs: [
 ];
 /** تجميع الأقسام في شاشة الإدارة (الأسماء للقارئ الآلي فقط). */
 const adminGroups: [group: string, ids: string[]][] = [
-  ["الأسر والطلبات", ["producers", "orders", "products", "reports"]],
+  [
+    "الأسر والطلبات",
+    ["approvals", "producers", "orders", "products", "reports"],
+  ],
   ["الأقسام والمواقع", ["categories", "locations"]],
   ["الموقع والأعضاء", ["template", "texts", "app", "review", "members"]],
 ];
@@ -248,12 +253,12 @@ function Review({
 }
 export function Admin() {
   const session = useSession();
-  const [tab, setTab] = useState("producers");
+  const [tab, setTab] = useState("approvals");
   const [producers, setProducers] = useState<Application[]>([]);
   const [error, setError] = useState("");
   const [loaded, setLoaded] = useState(false);
   const [success, setSuccess] = useState("");
-  const [filter, setFilter] = useState("review");
+  const [filter, setFilter] = useState("all");
   const [query, setQuery] = useState("");
   const allowed = adminTabs.filter(([, , permission]) =>
     permission === "owner"
@@ -266,6 +271,12 @@ export function Admin() {
     const d = await api<{ producers: Application[] }>("/api/admin/producers");
     setProducers(d.producers);
   }
+  // رابط التنبيه «أسرة تنتظر الاعتماد» يفتح التبويب مباشرة: /admin?tab=approvals
+  useEffect(() => {
+    const wanted = new URLSearchParams(window.location.search).get("tab");
+    if (wanted && adminTabs.some(([id]) => id === wanted)) setTab(wanted);
+  }, []);
+  const waiting = producers.filter((p) => p.status === "pending");
   useEffect(() => {
     if (can(session.user, "producers"))
       load()
@@ -304,6 +315,14 @@ export function Admin() {
                     >
                       <AdminIcon name={id} />
                       <span>{label}</span>
+                      {id === "approvals" && waiting.length > 0 && (
+                        <span
+                          className={s.navBadge}
+                          aria-label={`${waiting.length} تنتظر الاعتماد`}
+                        >
+                          {waiting.length}
+                        </span>
+                      )}
                     </button>
                   ))}
                   {coverage && (
@@ -345,6 +364,33 @@ export function Admin() {
             <AppLinksAdmin />
           ) : active === "review" ? (
             <StoreReviewAdmin />
+          ) : active === "approvals" ? (
+            <section aria-label="اعتماد الأسر المنتجة">
+              <h2>اعتماد الأسر المنتجة</h2>
+              <p className={s.muted}>
+                كل أسرة سجّلت أو عدّلت بياناتها وتنتظر قرارك. فعّلها ولو دون
+                مستندات واكتب النواقص في الملاحظة، أو اطلب الاستكمال قبل
+                التفعيل. يصلك تنبيه عند كل تسجيل جديد.
+              </p>
+              <Message error={error} success={success} />
+              {!loaded ? (
+                <p role="status">جارٍ تحميل الطلبات…</p>
+              ) : waiting.length ? (
+                waiting.map((p) => (
+                  <Review
+                    key={p.id}
+                    producer={p}
+                    onSaved={async () => {
+                      await load();
+                      window.dispatchEvent(new Event(APPROVALS_CHANGED));
+                      setSuccess("تم حفظ قرار المراجعة.");
+                    }}
+                  />
+                ))
+              ) : (
+                <p className={s.notice}>لا توجد أسر تنتظر الاعتماد الآن.</p>
+              )}
+            </section>
           ) : active !== "producers" ? (
             <p className={s.notice}>
               لا توجد أقسام مسموحة لحسابك بعد؛ تواصل مع مدير المنصة.
@@ -411,6 +457,7 @@ export function Admin() {
                         producer={p}
                         onSaved={async () => {
                           await load();
+                          window.dispatchEvent(new Event(APPROVALS_CHANGED));
                           setSuccess("تم حفظ قرار المراجعة.");
                         }}
                       />

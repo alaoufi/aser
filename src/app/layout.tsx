@@ -2,6 +2,7 @@ import { MobileNavigation } from "@/components/public/mobile-navigation";
 import { AboutTicker } from "@/components/public/about-ticker";
 import { AccountLink } from "@/components/public/account-link";
 import { OrderAlert } from "@/components/public/order-alert";
+import { ApprovalAlert } from "@/components/public/approval-alert";
 import { PushSetup } from "@/components/public/push-setup";
 import { SaveToast } from "@/components/public/save-toast";
 import { MessageAlert, MessagesLink } from "@/components/public/message-alert";
@@ -127,6 +128,7 @@ export default async function RootLayout({
         <main id="main">{children}</main>
         <FamilyWelcome texts={texts} />
         <OrderAlert />
+        <ApprovalAlert />
         <MessageAlert />
         <SaveToast />
         <footer className="site-footer">

@@ -78,6 +78,9 @@ export function FamilyStatusBanner() {
       <p className={s.familyStatusHead}>
         حالة الحساب: <strong>{state.label}</strong>
       </p>
+      {state.congrats && (
+        <p className={s.familyStatusCongrats}>{state.congrats}</p>
+      )}
       <p>{state.detail}</p>
       {state.reason && (
         <p className={s.familyStatusReason}>ملاحظة الإدارة: {state.reason}</p>

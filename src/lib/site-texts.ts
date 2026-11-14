@@ -52,6 +52,8 @@ export const siteTextDefaults = {
   "certificate.announceLink": "عرض الشهادة",
   "certificate.how":
     "تصدر شهادة «أسرة مميزة» تلقائيًا عند حصول أسرتك على 10 تقييمات كلها 5 نجوم.",
+  "approval.title": "مبارك اعتماد أسرتك",
+  "approval.message": "مبارك، تم اعتماد تسجيلك. نسأل الله لنا ولكم التوفيق",
   "welcome.title": "مرحبا بك جيت ومعك الخير",
   "welcome.subtitle": "وش جبت معك اليوم؟",
   "welcome.products": "إضافة منتجاتك",
@@ -125,6 +127,11 @@ export const siteTextLabels: Record<
   ],
   "certificate.announceLink": ["شهادة الأسرة المميزة", "رابط الإعلان"],
   "certificate.how": ["شهادة الأسرة المميزة", "شرح الشهادة في لوحة الأسرة"],
+  "approval.title": ["اعتماد الأسر المنتجة", "عنوان إشعار الاعتماد"],
+  "approval.message": [
+    "اعتماد الأسر المنتجة",
+    "رسالة المباركة بعد الاعتماد (إشعار وأعلى لوحة الأسرة)",
+  ],
   "welcome.title": ["ترحيب الأسرة المنتجة", "السطر الأول"],
   "welcome.subtitle": ["ترحيب الأسرة المنتجة", "السطر الثاني"],
   "welcome.products": ["ترحيب الأسرة المنتجة", "زر إضافة المنتجات"],

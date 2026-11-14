@@ -12,6 +12,8 @@ export type FamilyState = {
   label: string;
   detail: string;
   reason?: string;
+  /** مباركة الاعتماد (من «نصوص الموقع») تظهر أعلى لوحة الأسرة شهرًا بعد اعتمادها. */
+  congrats?: string;
 };
 
 export function familyAccountState(
