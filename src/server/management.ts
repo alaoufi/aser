@@ -77,6 +77,54 @@ export async function ownProfile(user: SessionUser) {
   };
 }
 type Query = { query: PoolClient["query"] };
+/** يوحّد الاسم للمقارنة: بلا تشكيل وتطويل ومسافات زائدة، والهمزات والتاء المربوطة والألف المقصورة موحدة. */
+const normalizedName = (column: string) =>
+  `regexp_replace(regexp_replace(translate(lower(btrim(${column})),'أإآٱىة','اااايه'),'[\u064B-\u0652\u0640]','','g'),'\\s+',' ','g')`;
+/**
+ * الاسم المعلن لا يتكرر: يُقارن بالاسم الظاهر لكل أسرة أخرى (المعلن، أو الاسم إن لم يكن لها معلن).
+ * القفل يمنع أسرتين من حجز الاسم نفسه في اللحظة نفسها.
+ */
+export const TRADE_NAME_TAKEN = "هذا الاسم مستخدم، اختر اسمًا آخر";
+/** فحص فوري للاسم التجاري المعلن أثناء الكتابة (قبل الحفظ). */
+export async function tradeNameAvailable(user: SessionUser, name: string) {
+  const value = z.string().trim().min(2).max(120).safeParse(name);
+  if (!value.success) return { available: false };
+  const own = (
+    await db().query(
+      "SELECT id FROM jdatna.producer_profiles WHERE user_id=$1",
+      [user.id],
+    )
+  ).rows[0]?.id as string | undefined;
+  const taken = (
+    await db().query(
+      `SELECT 1 FROM jdatna.producer_profiles
+       WHERE ($2::uuid IS NULL OR id<>$2) AND ${normalizedName("COALESCE(trade_name,name)")}=${normalizedName("$1")}
+       LIMIT 1`,
+      [value.data, own ?? null],
+    )
+  ).rowCount;
+  return taken
+    ? { available: false, message: TRADE_NAME_TAKEN }
+    : { available: true };
+}
+async function assertUniqueTradeName(
+  client: Query,
+  tradeName: string,
+  ownId?: string,
+) {
+  await client.query(
+    "SELECT pg_advisory_xact_lock(hashtextextended('jdatna.trade-name',0))",
+  );
+  const taken = (
+    await client.query(
+      `SELECT 1 FROM jdatna.producer_profiles
+       WHERE ($2::uuid IS NULL OR id<>$2) AND ${normalizedName("COALESCE(trade_name,name)")}=${normalizedName("$1")}
+       LIMIT 1`,
+      [tradeName, ownId ?? null],
+    )
+  ).rowCount;
+  if (taken) throw new HttpError(409, TRADE_NAME_TAKEN);
+}
 /**
  * يستبدل أقسام الأسرة. إزالة قسم عليه منتجات قائمة تحتاج تأكيدًا (removeProducts)،
  * فيُفصل المنتج عن القسم إن بقي له قسم آخر، ويُحذف (أرشفة) إن لم يبق له قسم.
@@ -226,6 +274,10 @@ async function saveProfileRecord(user: SessionUser, input: unknown) {
     ).rows[0];
     if (!existing && !value.categoryIds?.length)
       throw new HttpError(400, "اختر قسمًا واحدًا على الأقل لمنتجاتك");
+    if (!existing && !value.tradeName)
+      throw new HttpError(400, "اكتب الاسم التجاري المعلن للأسرة");
+    if (value.tradeName)
+      await assertUniqueTradeName(client, value.tradeName, existing?.id);
     const id = existing?.id ?? randomUUID();
     const delivery = value.delivery ?? existing?.delivery ?? false,
       pickup = value.pickup ?? existing?.pickup ?? true;
@@ -278,7 +330,7 @@ async function saveProfileRecord(user: SessionUser, input: unknown) {
         pickup,
         value.tradeName === undefined
           ? (existing?.trade_name ?? null)
-          : value.tradeName || null,
+          : value.tradeName,
       ],
     );
     if (encrypted)

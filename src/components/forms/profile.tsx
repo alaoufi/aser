@@ -78,6 +78,8 @@ export function ProfileForm({
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [success, setSuccess] = useState("");
+  const [nameTaken, setNameTaken] = useState("");
+  const nameTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const uploaded = useRef<{ file: File; type: string; id: string } | null>(
     null,
   );
@@ -165,7 +167,7 @@ export function ProfileForm({
           ...(!profile ? { categoryIds } : {}),
           ...readDeliveryScope(f),
           name: f.get("name"),
-          tradeName: f.get("tradeName") || null,
+          tradeName: String(f.get("tradeName") ?? "").trim(),
           phone: user.phone,
           cityId: f.get("cityId"),
           nationalId: f.get("nationalId"),
@@ -229,24 +231,58 @@ export function ProfileForm({
           onSubmit={save}
         >
           <div className={s.grid}>
-            <label className={s.field}>
-              الاسم
+            <div className={s.field}>
+              <label htmlFor="family-trade-name">الاسم التجاري المعلن</label>
               <input
+                id="family-trade-name"
+                name="tradeName"
+                required
+                minLength={2}
+                maxLength={120}
+                defaultValue={profile?.tradeName || ""}
+                aria-describedby="trade-name-hint trade-name-taken"
+                aria-invalid={Boolean(nameTaken)}
+                onChange={(e) => {
+                  setNameTaken("");
+                  // تنبيه فوري إن كان الاسم مستخدمًا، بعد توقف الكتابة لحظة.
+                  if (nameTimer.current) clearTimeout(nameTimer.current);
+                  const name = e.currentTarget.value.trim();
+                  if (name.length < 2) return;
+                  nameTimer.current = setTimeout(() => {
+                    api<{ available: boolean; message?: string }>(
+                      `/api/producer/trade-name?name=${encodeURIComponent(name)}`,
+                    )
+                      .then((r) =>
+                        setNameTaken(r.available ? "" : (r.message ?? "")),
+                      )
+                      .catch(() => {});
+                  }, 500);
+                }}
+              />
+              <small id="trade-name-hint">
+                يظهر في الموقع وللعملاء، ولا يتكرر لأسرتين.
+              </small>
+              <small
+                id="trade-name-taken"
+                aria-live="polite"
+                className={s.fieldError}
+              >
+                {nameTaken}
+              </small>
+            </div>
+            <div className={s.field}>
+              <label htmlFor="family-real-name">الاسم الحقيقي</label>
+              <input
+                id="family-real-name"
                 name="name"
                 required
                 minLength={2}
                 maxLength={120}
                 defaultValue={profile?.name || user.name}
+                aria-describedby="name-hint"
               />
-            </label>
-            <label className={s.field}>
-              الاسم التجاري (اختياري)
-              <input
-                name="tradeName"
-                maxLength={120}
-                defaultValue={profile?.tradeName || ""}
-              />
-            </label>
+              <small id="name-hint">للإدارة فقط، ولا يظهر للعملاء.</small>
+            </div>
             <label className={s.field}>
               رقم الهوية
               <input

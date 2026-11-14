@@ -156,6 +156,7 @@ test("profile validates working hours and sends optional links and city fees", a
       json: {
         profile: {
           name: "أسرة الاختبار",
+          tradeName: "مذاق الاختبار",
           cityId: "riyadh",
           phone: user.phone,
           categoryIds: ["food"],

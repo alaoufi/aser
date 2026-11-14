@@ -3,7 +3,12 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { profileSchema } from "../src/server/validation";
 import { db } from "../src/server/db";
-import { saveProfile, ownProfile, saveProduct } from "../src/server/management";
+import {
+  saveProfile,
+  ownProfile,
+  saveProduct,
+  tradeNameAvailable,
+} from "../src/server/management";
 import {
   getProducer,
   getProduct,
@@ -18,7 +23,7 @@ const basic = {
   nationalId: "1234567890",
   workLocation: "موقع عمل خاص للاختبار",
 };
-test("trade name is optional and bounded and explicit empty is allowed to clear", () => {
+test("the public (trade) name is trimmed, bounded and cannot be cleared", () => {
   assert.equal(
     profileSchema.parse({ ...basic, tradeName: "  مذاق جدتنا  " }).tradeName,
     "مذاق جدتنا",
@@ -29,11 +34,11 @@ test("trade name is optional and bounded and explicit empty is allowed to clear"
   );
   assert.equal(
     profileSchema.safeParse({ ...basic, tradeName: "" }).success,
-    true,
+    false,
   );
 });
 test(
-  "isolated optional trade name display, preservation, clearing and both-name search",
+  "isolated public name: required at signup, shown publicly, unique across families, and the internal name stays private",
   { skip: process.env.JDATNA_TEST_DB !== "true" },
   async () => {
     const pool = db();
@@ -46,6 +51,7 @@ test(
       doc = randomUUID();
     let pid: string | undefined;
     let productId: string | undefined;
+    let otherId: string | undefined, otherPid: string | undefined;
     const user = {
       id: uid,
       name: "اسم المالك",
@@ -71,6 +77,8 @@ test(
         name: "اسم-شخصي-" + uid,
         categoryIds: ["12"],
       };
+      // التسجيل دون اسم معلن مرفوض.
+      await assert.rejects(saveProfile(user, data), /الاسم التجاري المعلن/);
       pid = (await saveProfile(user, { ...data, tradeName: "تجاري-" + uid }))
         .id;
       assert.equal((await ownProfile(user)).tradeName, "تجاري-" + uid);
@@ -81,8 +89,15 @@ test(
         [pid],
       );
       assert.equal((await getProducer("family-" + pid))?.name, "تجاري-" + uid);
-      for (const q of [data.name, "تجاري-" + uid])
-        assert.ok((await searchProducers({ q })).some((p) => p.id === pid));
+      // البحث بالاسم المعلن فقط؛ الاسم الداخلي (للإدارة) لا يكشف الأسرة.
+      assert.ok(
+        (await searchProducers({ q: "تجاري-" + uid })).some(
+          (p) => p.id === pid,
+        ),
+      );
+      assert.ok(
+        !(await searchProducers({ q: data.name })).some((p) => p.id === pid),
+      );
       productId = (
         await saveProduct(
           user,
@@ -98,13 +113,48 @@ test(
         )
       ).id;
       assert.equal((await getProduct(productId))?.producerName, "تجاري-" + uid);
-      await saveProfile(user, { ...data, tradeName: "" });
-      assert.equal((await ownProfile(user)).tradeName, null);
+      await assert.rejects(saveProfile(user, { ...data, tradeName: "" }));
+      // أسرة أخرى لا تأخذ الاسم المعلن نفسه، ولو اختلفت الهمزة أو المسافات أو التاء المربوطة.
+      const other = {
+        id: randomUUID(),
+        name: "مالك آخر",
+        phone:
+          "+9665" + String(Math.floor(Math.random() * 1e8)).padStart(8, "0"),
+        role: "customer" as const,
+      };
       await pool.query(
-        "UPDATE jdatna.producer_profiles SET status='approved'WHERE id=$1",
-        [pid],
+        "INSERT INTO jdatna.users(id,phone,name,phone_verified_at)VALUES($1,$2,$3,now())",
+        [other.id, other.phone, other.name],
       );
-      assert.equal((await getProducer("family-" + pid))?.name, data.name);
+      otherId = other.id;
+      await saveProfile(user, { ...data, tradeName: "أكلة  جدة " + uid });
+      await assert.rejects(
+        saveProfile(other, {
+          ...data,
+          phone: other.phone,
+          documentId: undefined,
+          documentType: "producer_certificate",
+          tradeName: "اكلة جده " + uid,
+        }),
+        { status: 409, message: "هذا الاسم مستخدم، اختر اسمًا آخر" },
+      );
+      // الفحص الفوري أثناء الكتابة يعطي الرسالة نفسها، واسم الأسرة نفسها متاح لها.
+      assert.deepEqual(await tradeNameAvailable(other, "اكلة جده " + uid), {
+        available: false,
+        message: "هذا الاسم مستخدم، اختر اسمًا آخر",
+      });
+      assert.deepEqual(await tradeNameAvailable(user, "أكلة جدة " + uid), {
+        available: true,
+      });
+      // والاسم الداخلي يتكرر بلا مانع.
+      const second = await saveProfile(other, {
+        ...data,
+        phone: other.phone,
+        documentId: undefined,
+        documentType: "producer_certificate",
+        tradeName: "أسرة مختلفة " + uid,
+      });
+      otherPid = second.id;
     } finally {
       if (productId) {
         await pool.query(
@@ -128,10 +178,29 @@ test(
           pid,
         ]);
       }
+      if (otherPid) {
+        for (const t of ["producer_verifications", "producer_categories"])
+          await pool.query(`DELETE FROM jdatna.${t} WHERE producer_id=$1`, [
+            otherPid,
+          ]);
+        await pool.query(
+          "DELETE FROM jdatna.producer_private WHERE producer_id=$1",
+          [otherPid],
+        );
+        await pool.query("DELETE FROM jdatna.producer_profiles WHERE id=$1", [
+          otherPid,
+        ]);
+      }
+      await pool.query(
+        "DELETE FROM jdatna.producer_private WHERE producer_id=$1",
+        [pid ?? null],
+      );
       await pool.query("DELETE FROM jdatna.producer_documents WHERE id=$1", [
         doc,
       ]);
-      await pool.query("DELETE FROM jdatna.users WHERE id=$1", [uid]);
+      await pool.query("DELETE FROM jdatna.users WHERE id=ANY($1::uuid[])", [
+        [uid, otherId ?? uid],
+      ]);
       await pool.end();
     }
   },

@@ -14,6 +14,7 @@ const profile = {
   nationalId: "1234567890",
   workLocation: "عنوان اختبار أهلية خاص ومعزول",
   name: "أسرة اختبار الاستثناء",
+  tradeName: "أسرة معلنة للأهلية",
   cityId: "riyadh",
   phone: "0500000017",
   pickup: true,

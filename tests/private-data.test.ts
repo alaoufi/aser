@@ -18,6 +18,7 @@ import { GET as adminRoute } from "../src/app/api/admin/producers/route";
 import type { SessionUser } from "../src/lib/types";
 const basic = () => ({
   name: "أسرة الاختبار",
+  tradeName: "أسرة معلنة " + randomUUID(),
   phone: "0501234567",
   cityId: "riyadh",
   documentType: "producer_certificate",

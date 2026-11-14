@@ -121,6 +121,7 @@ test(
         nationalId: "1234567890",
         workLocation: "عنوان اختبار خاص ومعزول",
         name: "أسرة اختبار خاصة " + i,
+        tradeName: "أسرة اختبار معلنة " + i + " " + docIds[i],
         description: "ليس منتجًا حقيقيًا",
         cityId: "riyadh",
         phone: users[i].phone,
