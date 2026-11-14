@@ -327,17 +327,26 @@ for (const [role, destination] of [
     ).toHaveAttribute("href", destination);
     await page.reload();
     await expect(page.getByText("أنت مسجل الدخول بالفعل.")).toBeVisible();
-    await expect(
-      page.locator("header .header-actions a:not(.messages-link)"),
-    ).toHaveText("حسابي");
-    await expect(
-      page.locator("header .header-actions a:not(.messages-link)"),
-    ).toHaveAttribute("href", destination);
-    await expect(
-      page
-        .locator(".mobile-nav")
-        .getByRole("link", { name: "حسابي", includeHidden: true }),
-    ).toHaveAttribute("href", destination);
+    const links = page.locator("header .header-actions a:not(.messages-link)");
+    if (role === "admin") {
+      // المدير الكامل: حسابه الخاص (طلباته ومعلوماته) منفصل عن حساب الإدارة.
+      await expect(links).toHaveText(["حسابي الخاص", "حساب الإدارة"]);
+      await expect(links.nth(0)).toHaveAttribute("href", "/orders");
+      await expect(links.nth(1)).toHaveAttribute("href", "/admin");
+      await expect(
+        page
+          .locator(".mobile-nav")
+          .getByRole("link", { name: "حساب الإدارة", includeHidden: true }),
+      ).toHaveAttribute("href", "/admin");
+    } else {
+      await expect(links).toHaveText("حسابي");
+      await expect(links).toHaveAttribute("href", destination);
+      await expect(
+        page
+          .locator(".mobile-nav")
+          .getByRole("link", { name: "حسابي", includeHidden: true }),
+      ).toHaveAttribute("href", destination);
+    }
     active = false;
     await page.reload();
     await expect(
