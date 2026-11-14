@@ -9,11 +9,11 @@ authorize replacing Aykdmh application code or migrating its customer database.
 | Jdatna application      | Coolify Service bt4gbo9l0tq64cchxtms3ai4 | Node, private gateway8092                      | Existing jdatna DB/S3 only         |
 | Jdatna PostgreSQL       | jdatna-stack.service                     | jdatna-db,1GiB/1CPU                            | /srv/jdatna/data/postgres          |
 | Jdatna object storage   | jdatna-storage.service                   | SeaweedFS4.52,512MiB/.5CPU                     | /srv/jdatna/data/object-storage    |
-| Aykdmh frontend         | Coolify Service 0oo2kes5tlkjobgrc2ercloe | Exact existing Caddy image,private gateway8093 | Existing published files read-only |
-| Aykdmh API/DB/LiveKit   | Original Docker stack                    | Original images/containers unchanged           | Original volumes unchanged         |
-| Shared TLS/TURN ingress | Existing aykdmh-web                      | Original container,graceful config reload      | Existing certificates/config       |
 
-Coolify projects: Jdatna syfhtbuirhgcsxznkvx3jsxo; Aykdmh krplfrejyaryktomklbmyqhr.
+Coolify project: Jdatna syfhtbuirhgcsxznkvx3jsxo.
+Everything about «أي خدمة» (aykdmh) — its frontend service, API/DB/LiveKit and the shared TLS/TURN ingress — is
+documented in its own repository, alaoufi/aykdmah `deploy/coolify/README.md` (moved there 2026-11-14). This
+repository only states that the server is shared and that Jdatna must never change aykdmh.
 Control plane stays bound to localhost:8000. No new public admin port was opened.
 Connect privately with `ssh -N -L 18000:127.0.0.1:8000 aykdmh`, then open
 http://127.0.0.1:18000 and use the existing Coolify account. Never send its password
