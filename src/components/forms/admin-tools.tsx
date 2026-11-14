@@ -1141,6 +1141,8 @@ type AppLinksData = {
   androidPackage: string;
   androidFingerprints: string[];
   iosAppIds: string[];
+  showAppStore: boolean;
+  showPlayStore: boolean;
 };
 /** ربط تطبيقي قوقل بلاي وآبل بالموقع: يُعبَّأ مرة بعد إنشاء التطبيق في المتجر. */
 export function AppLinksAdmin() {
@@ -1174,6 +1176,8 @@ export function AppLinksAdmin() {
               androidPackage: String(f.get("androidPackage") ?? "").trim(),
               androidFingerprints: lines(f.get("androidFingerprints")),
               iosAppIds: lines(f.get("iosAppIds")),
+              showAppStore: f.get("showAppStore") === "on",
+              showPlayStore: f.get("showPlayStore") === "on",
             });
           }}
         >
@@ -1214,6 +1218,29 @@ export function AppLinksAdmin() {
               defaultValue={links.iosAppIds.join("\n")}
             />
           </div>
+          <fieldset className={s.field}>
+            <legend>أزرار تحميل التطبيق أسفل الموقع</legend>
+            <p className={s.muted}>
+              فعّل كل زر بعد موافقة المتجر ونشر التطبيق فيه؛ قبل ذلك يفتح الرابط
+              صفحة «غير موجود». لا تظهر الأزرار داخل التطبيقين نفسيهما.
+            </p>
+            <label className={s.checks}>
+              <input
+                type="checkbox"
+                name="showAppStore"
+                defaultChecked={links.showAppStore}
+              />
+              زر «حمّل من App Store» (آيفون)
+            </label>
+            <label className={s.checks}>
+              <input
+                type="checkbox"
+                name="showPlayStore"
+                defaultChecked={links.showPlayStore}
+              />
+              زر «احصل عليه من Google Play» (أندرويد)
+            </label>
+          </fieldset>
           <button className={s.button} disabled={r.busy}>
             {r.busy ? "جارٍ الحفظ…" : "حفظ بيانات التطبيق"}
           </button>
