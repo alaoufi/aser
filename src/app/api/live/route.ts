@@ -22,8 +22,16 @@ export async function GET(request: Request) {
       const unsubscribe = subscribeLive(user.id, (event) =>
         send(`data: ${JSON.stringify(event)}\n\n`),
       );
-      // نبضة كل 25 ثانية تبقي الاتصال مفتوحًا عبر الوسطاء.
-      const beat = setInterval(() => send(": ping\n\n"), 25_000);
+      // نبضة كل 25 ثانية تبقي الاتصال مفتوحًا عبر الوسطاء، ومعها فحص الجلسة:
+      // بعد الخروج أو الإيقاف أو انتهاء الجلسة يُغلق البث.
+      const beat = setInterval(() => {
+        send(": ping\n\n");
+        sessionUser(request)
+          .then((u) => {
+            if (u?.id !== user.id) cleanup();
+          })
+          .catch(() => {});
+      }, 25_000);
       cleanup = () => {
         clearInterval(beat);
         unsubscribe();

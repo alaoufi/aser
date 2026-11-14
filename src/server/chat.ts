@@ -103,30 +103,32 @@ export async function listConversations(
   ).rows;
 }
 
-export async function unreadTotal(user: SessionUser) {
-  return (await listConversations(user)).reduce((n, c) => n + c.unread, 0);
-}
-
 /**
  * وصلت رسائل الطرف الآخر لجهاز المستخدم (✓✓ رمادي عند المرسل): يُسجَّل عند كل فحص
  * من التطبيق المفتوح أو عند عرض قائمة المحادثات.
  */
 export async function markDelivered(user: SessionUser) {
-  await db().query(
-    "UPDATE jdatna.conversations SET customer_delivered_at=now() WHERE customer_id=$1",
-    [user.id],
-  );
-  await db().query(
-    `UPDATE jdatna.conversations c SET producer_delivered_at=now()
-     FROM jdatna.producer_profiles p WHERE p.id=c.producer_id AND p.user_id=$1`,
-    [user.id],
-  );
+  // يكتب فقط حين وصل جديد بعد آخر استلام، لا مع كل فحص دوري.
+  await Promise.all([
+    db().query(
+      "UPDATE jdatna.conversations SET customer_delivered_at=now() WHERE customer_id=$1 AND customer_delivered_at<last_message_at",
+      [user.id],
+    ),
+    db().query(
+      `UPDATE jdatna.conversations c SET producer_delivered_at=now()
+       FROM jdatna.producer_profiles p WHERE p.id=c.producer_id AND p.user_id=$1 AND c.producer_delivered_at<c.last_message_at`,
+      [user.id],
+    ),
+  ]);
 }
 
 /** تنبيه الرسائل الجديدة: مجموع غير المقروء وأحدث المحادثات التي فيها جديد. */
 export async function unreadConversations(user: SessionUser) {
-  await markDelivered(user);
-  const unread = (await listConversations(user)).filter((c) => c.unread > 0);
+  const [, all] = await Promise.all([
+    markDelivered(user),
+    listConversations(user),
+  ]);
+  const unread = all.filter((c) => c.unread > 0);
   return {
     total: unread.reduce((n, c) => n + c.unread, 0),
     conversations: unread.slice(0, 5).map((c) => ({
@@ -178,11 +180,15 @@ async function participant(
   };
 }
 
-/** رسائل المحادثة (الأحدث 200، أو ما بعد وقت معيّن للتحديث)، وتعليمها مقروءة. */
+/**
+ * رسائل المحادثة (الأحدث 200، أو ما بعد وقت معيّن للتحديث)، وتعليمها مقروءة.
+ * read=false: الصفحة مخفية، فتُجلب الرسائل دون تعليمها مقروءة.
+ */
 export async function conversationMessages(
   user: SessionUser,
   id: string,
   after?: string,
+  read = true,
 ) {
   const since =
     after && !Number.isNaN(Date.parse(after)) ? new Date(after) : null;
@@ -198,22 +204,31 @@ export async function conversationMessages(
         since ? [c.id, user.id, since] : [c.id, user.id],
       )
     ).rows as ChatMessage[];
-    // فتح المحادثة = قراءة واستلام (✓✓ أزرق عند الطرف الآخر).
+    // فتح المحادثة = قراءة واستلام (✓✓ أزرق عند الطرف الآخر)، حتى آخر رسالة عُرضت فعلًا.
     const raw = c as unknown as { customer_id: string; producer_user: string };
     const otherUser =
       c.side === "customer" ? raw.producer_user : raw.customer_id;
-    const newlyRead = (
+    const seenUpTo = rows.at(-1)?.createdAt;
+    const readAt = c[`${c.side}_read_at`];
+    if (
+      read &&
+      seenUpTo &&
+      new Date(seenUpTo).getTime() > new Date(readAt).getTime()
+    ) {
+      const newlyRead = rows.some(
+        (m) =>
+          !m.mine &&
+          new Date(m.createdAt).getTime() > new Date(readAt).getTime(),
+      );
+      // وقت القراءة بدقة القاعدة (ميكروثانية) من الرسائل المعروضة نفسها، لا من وقت جافاسكربت المقرَّب.
       await client.query(
-        "SELECT EXISTS(SELECT 1 FROM jdatna.messages WHERE conversation_id=$1 AND sender_id<>$2 AND created_at>$3) AS n",
-        [c.id, user.id, c[`${c.side}_read_at`]],
-      )
-    ).rows[0].n as boolean;
-    if (newlyRead)
-      await publishLive([otherUser], { type: "read", c: c.id }, client);
-    await client.query(
-      `UPDATE jdatna.conversations SET ${c.side === "customer" ? "customer_read_at=now(),customer_delivered_at=now()" : "producer_read_at=now(),producer_delivered_at=now()"} WHERE id=$1`,
-      [c.id],
-    );
+        `UPDATE jdatna.conversations SET ${c.side}_read_at=GREATEST(${c.side}_read_at,m.at),${c.side}_delivered_at=GREATEST(${c.side}_delivered_at,m.at)
+         FROM (SELECT max(created_at) AS at FROM jdatna.messages WHERE id=ANY($2::uuid[])) m WHERE id=$1`,
+        [c.id, rows.map((r) => r.id)],
+      );
+      if (newlyRead)
+        await publishLive([otherUser], { type: "read", c: c.id }, client);
+    }
     const other = c.side === "customer" ? "producer" : "customer";
     return {
       conversation: {

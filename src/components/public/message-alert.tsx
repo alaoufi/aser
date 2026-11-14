@@ -154,7 +154,7 @@ export function MessageAlert() {
     window.addEventListener(UNREAD_REFRESH, check);
     // تنبيه «لديك رسالة جديدة» لحظي في كل صفحات الموقع.
     const off = onLive((e) => {
-      if (e.type === "message") check();
+      if (e.type === "message" || e.type === "sync") check();
     });
     return () => {
       off();

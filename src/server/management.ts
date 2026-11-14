@@ -615,6 +615,15 @@ export async function reviewProducer(
     ).rows[0];
     if (value.decision === "approved" && verification?.expired === true)
       throw new HttpError(400, "المستند منتهي الصلاحية ويجب تحديثه");
+    // المباركة لأول اعتماد فقط؛ إعادة الاعتماد بعد تعديل البيانات لا تكررها.
+    const approvedBefore = Boolean(
+      (
+        await client.query(
+          "SELECT 1 FROM jdatna.producer_verifications WHERE producer_id=$1 AND decision='approved' LIMIT 1",
+          [id],
+        )
+      ).rowCount,
+    );
     // تفعيل الإدارة لا يشترط مستندًا (قرار المالك 2026-11-14)؛ الحساب دون مستند «نشط» لا «موثوق»،
     // وملاحظة القرار تظهر للأسرة بالنواقص.
     await client.query(
@@ -643,7 +652,9 @@ export async function reviewProducer(
     return {
       status: value.decision,
       congratulate:
-        value.decision === "approved" && producer.status !== "approved"
+        value.decision === "approved" &&
+        producer.status !== "approved" &&
+        !approvedBefore
           ? (producer.user_id as string)
           : null,
     };

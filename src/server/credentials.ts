@@ -100,6 +100,9 @@ export async function passwordLogin(input: unknown) {
   }
   await rateLimit("password-login-global", 600, 3600);
   await rateLimit("password-login:" + hash(identifier), 10, 900);
+  // سقف يومي لكل حساب: كلمات المرور القصيرة (أربع خانات) لا تُخمَّن بالمحاولات المتواصلة.
+  // صاحب الحساب يعود في اليوم التالي أو يستعيد كلمة المرور برمز الجوال.
+  await rateLimit("password-login-day:" + hash(identifier), 30, 86400);
   return transaction(async (client) => {
     const row = validIdentifier
       ? (
@@ -122,6 +125,10 @@ export async function passwordLogin(input: unknown) {
     };
     if (suspended)
       throw new HttpError(403, "هذا الحساب موقوف؛ تواصل مع إدارة المنصة");
+    // دخول صحيح: يُصفَّر العداد اليومي، فلا يُقفل صاحب الحساب بدخوله المعتاد.
+    await client.query("DELETE FROM jdatna.rate_limits WHERE key=$1", [
+      "password-login-day:" + hash(identifier),
+    ]);
     // المدير والمشرف يدخلان بخطوتين: كلمة المرور ثم رمز الجوال.
     if (
       (user.role === "admin" || Boolean(user.permissions?.length)) &&
