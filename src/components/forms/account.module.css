@@ -882,3 +882,10 @@
 .locationLine {
   margin: 6px 0;
 }
+.fieldError {
+  color: #9c2f1e;
+  font-weight: 700;
+}
+.fieldError:empty {
+  display: none;
+}

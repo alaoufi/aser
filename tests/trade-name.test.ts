@@ -3,7 +3,12 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { profileSchema } from "../src/server/validation";
 import { db } from "../src/server/db";
-import { saveProfile, ownProfile, saveProduct } from "../src/server/management";
+import {
+  saveProfile,
+  ownProfile,
+  saveProduct,
+  tradeNameAvailable,
+} from "../src/server/management";
 import {
   getProducer,
   getProduct,
@@ -131,8 +136,16 @@ test(
           documentType: "producer_certificate",
           tradeName: "اكلة جده " + uid,
         }),
-        { status: 409 },
+        { status: 409, message: "هذا الاسم مستخدم، اختر اسمًا آخر" },
       );
+      // الفحص الفوري أثناء الكتابة يعطي الرسالة نفسها، واسم الأسرة نفسها متاح لها.
+      assert.deepEqual(await tradeNameAvailable(other, "اكلة جده " + uid), {
+        available: false,
+        message: "هذا الاسم مستخدم، اختر اسمًا آخر",
+      });
+      assert.deepEqual(await tradeNameAvailable(user, "أكلة جدة " + uid), {
+        available: true,
+      });
       // والاسم الداخلي يتكرر بلا مانع.
       const second = await saveProfile(other, {
         ...data,

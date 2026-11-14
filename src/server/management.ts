@@ -84,6 +84,29 @@ const normalizedName = (column: string) =>
  * الاسم المعلن لا يتكرر: يُقارن بالاسم الظاهر لكل أسرة أخرى (المعلن، أو الاسم إن لم يكن لها معلن).
  * القفل يمنع أسرتين من حجز الاسم نفسه في اللحظة نفسها.
  */
+export const TRADE_NAME_TAKEN = "هذا الاسم مستخدم، اختر اسمًا آخر";
+/** فحص فوري للاسم التجاري المعلن أثناء الكتابة (قبل الحفظ). */
+export async function tradeNameAvailable(user: SessionUser, name: string) {
+  const value = z.string().trim().min(2).max(120).safeParse(name);
+  if (!value.success) return { available: false };
+  const own = (
+    await db().query(
+      "SELECT id FROM jdatna.producer_profiles WHERE user_id=$1",
+      [user.id],
+    )
+  ).rows[0]?.id as string | undefined;
+  const taken = (
+    await db().query(
+      `SELECT 1 FROM jdatna.producer_profiles
+       WHERE ($2::uuid IS NULL OR id<>$2) AND ${normalizedName("COALESCE(trade_name,name)")}=${normalizedName("$1")}
+       LIMIT 1`,
+      [value.data, own ?? null],
+    )
+  ).rowCount;
+  return taken
+    ? { available: false, message: TRADE_NAME_TAKEN }
+    : { available: true };
+}
 async function assertUniqueTradeName(
   client: Query,
   tradeName: string,
@@ -100,11 +123,7 @@ async function assertUniqueTradeName(
       [tradeName, ownId ?? null],
     )
   ).rowCount;
-  if (taken)
-    throw new HttpError(
-      409,
-      "الاسم التجاري المعلن مستخدم لأسرة أخرى؛ اختر اسمًا مميزًا لأسرتك",
-    );
+  if (taken) throw new HttpError(409, TRADE_NAME_TAKEN);
 }
 /**
  * يستبدل أقسام الأسرة. إزالة قسم عليه منتجات قائمة تحتاج تأكيدًا (removeProducts)،

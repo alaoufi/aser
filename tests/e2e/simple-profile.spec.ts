@@ -173,3 +173,38 @@ test("family saves only basic fields in one form and retries without reuploading
     ),
   ).toBe(true);
 });
+
+// الاسم التجاري المعلن المكرر: رسالة فورية أثناء الكتابة قبل الحفظ.
+test("a taken public name shows «هذا الاسم مستخدم، اختر اسمًا آخر» while typing", async ({
+  page,
+}) => {
+  await page.route("**/api/session", (r) =>
+    r.fulfill({ json: { user, registrationOpen: true } }),
+  );
+  await page.route("**/api/producer/status", (r) =>
+    r.fulfill({ json: { state: null } }),
+  );
+  await page.route("**/api/producer/profile", (r) =>
+    r.fulfill({ json: { profile: null, categories: [], cities: [city] } }),
+  );
+  await page.route("**/api/producer/trade-name**", (r) => {
+    const name = new URL(r.request().url()).searchParams.get("name");
+    return r.fulfill({
+      json:
+        name === "مذاق جدتي"
+          ? { available: false, message: "هذا الاسم مستخدم، اختر اسمًا آخر" }
+          : { available: true },
+    });
+  });
+  await page.goto("/register");
+  const field = page.getByLabel("الاسم التجاري المعلن", { exact: true });
+  await field.fill("مذاق جدتي");
+  await expect(
+    page.getByText("هذا الاسم مستخدم، اختر اسمًا آخر"),
+  ).toBeVisible();
+  await expect(field).toHaveAttribute("aria-invalid", "true");
+  await field.fill("مذاق جدتي الأصيل");
+  await expect(page.getByText("هذا الاسم مستخدم، اختر اسمًا آخر")).toHaveCount(
+    0,
+  );
+});
