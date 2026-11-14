@@ -73,7 +73,7 @@ test(
         categoryIds: ["12"],
       };
       // التسجيل دون اسم معلن مرفوض.
-      await assert.rejects(saveProfile(user, data), /الاسم المعلن/);
+      await assert.rejects(saveProfile(user, data), /الاسم التجاري المعلن/);
       pid = (await saveProfile(user, { ...data, tradeName: "تجاري-" + uid }))
         .id;
       assert.equal((await ownProfile(user)).tradeName, "تجاري-" + uid);

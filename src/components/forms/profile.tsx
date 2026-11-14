@@ -229,9 +229,10 @@ export function ProfileForm({
           onSubmit={save}
         >
           <div className={s.grid}>
-            <label className={s.field}>
-              الاسم المعلن (الاسم التجاري)
+            <div className={s.field}>
+              <label htmlFor="family-trade-name">الاسم التجاري المعلن</label>
               <input
+                id="family-trade-name"
                 name="tradeName"
                 required
                 minLength={2}
@@ -242,10 +243,11 @@ export function ProfileForm({
               <small id="trade-name-hint">
                 يظهر في الموقع وللعملاء، ولا يتكرر لأسرتين.
               </small>
-            </label>
-            <label className={s.field}>
-              الاسم
+            </div>
+            <div className={s.field}>
+              <label htmlFor="family-real-name">الاسم الحقيقي</label>
               <input
+                id="family-real-name"
                 name="name"
                 required
                 minLength={2}
@@ -254,7 +256,7 @@ export function ProfileForm({
                 aria-describedby="name-hint"
               />
               <small id="name-hint">للإدارة فقط، ولا يظهر للعملاء.</small>
-            </label>
+            </div>
             <label className={s.field}>
               رقم الهوية
               <input

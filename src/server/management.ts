@@ -103,7 +103,7 @@ async function assertUniqueTradeName(
   if (taken)
     throw new HttpError(
       409,
-      "الاسم المعلن مستخدم لأسرة أخرى؛ اختر اسمًا مميزًا لأسرتك",
+      "الاسم التجاري المعلن مستخدم لأسرة أخرى؛ اختر اسمًا مميزًا لأسرتك",
     );
 }
 /**
@@ -256,7 +256,7 @@ async function saveProfileRecord(user: SessionUser, input: unknown) {
     if (!existing && !value.categoryIds?.length)
       throw new HttpError(400, "اختر قسمًا واحدًا على الأقل لمنتجاتك");
     if (!existing && !value.tradeName)
-      throw new HttpError(400, "اكتب الاسم المعلن (الاسم التجاري) للأسرة");
+      throw new HttpError(400, "اكتب الاسم التجاري المعلن للأسرة");
     if (value.tradeName)
       await assertUniqueTradeName(client, value.tradeName, existing?.id);
     const id = existing?.id ?? randomUUID();

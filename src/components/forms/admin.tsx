@@ -158,8 +158,8 @@ function Review({
         </p>
       )}
       <p>
-        الاسم المعلن: {producer.tradeName || "لم يُحدد بعد"} · الاسم (للإدارة):{" "}
-        {producer.name}
+        الاسم التجاري المعلن: {producer.tradeName || "لم يُحدد بعد"} · الاسم
+        الحقيقي (للإدارة): {producer.name}
       </p>
       <p>{producer.cityName}</p>
       <p>{producer.description}</p>

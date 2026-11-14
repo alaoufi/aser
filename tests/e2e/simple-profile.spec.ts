@@ -84,15 +84,15 @@ test("family saves only basic fields in one form and retries without reuploading
     page.locator('details:has(summary:text-is("تفاصيل إضافية (اختيارية)"))'),
   ).not.toHaveAttribute("open", "");
   await expect(page.getByLabel("نبذة عن الأسرة المنتجة")).toHaveCount(0);
-  await expect(page.getByLabel("الاسم", { exact: true })).toHaveValue(
+  await expect(page.getByLabel("الاسم الحقيقي", { exact: true })).toHaveValue(
     user.name,
   );
   // الاسم المعلن (الظاهر للعملاء) مطلوب، والاسم للإدارة فقط.
   await expect(
-    page.getByLabel("الاسم المعلن (الاسم التجاري)", { exact: true }),
+    page.getByLabel("الاسم التجاري المعلن", { exact: true }),
   ).toHaveAttribute("required", "");
   await page
-    .getByLabel("الاسم المعلن (الاسم التجاري)", { exact: true })
+    .getByLabel("الاسم التجاري المعلن", { exact: true })
     .fill("مذاق الأسرة المنتجة التجريبي");
   await page.getByLabel("رقم الهوية", { exact: true }).fill("١٢٣٤٥٦٧٨٩٠");
   await expect(page.locator("input[name=phone]")).toHaveAttribute(
