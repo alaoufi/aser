@@ -176,12 +176,22 @@ export type AppLinks = {
   androidPackage: string;
   androidFingerprints: string[];
   iosAppIds: string[];
+  /** زر «حمّل من App Store» أسفل الموقع: يفعّله المالك بعد موافقة Apple ونشر التطبيق. */
+  showAppStore: boolean;
+  /** زر «احصل عليه من Google Play» أسفل الموقع: بعد موافقة Google ونشر التطبيق. */
+  showPlayStore: boolean;
 };
 const emptyAppLinks: AppLinks = {
   androidPackage: "",
   androidFingerprints: [],
   iosAppIds: [],
+  showAppStore: false,
+  showPlayStore: false,
 };
+/** صفحتا التطبيق في المتجرين (App Store: رقم التطبيق 6833382132). */
+export const APP_STORE_URL = "https://apps.apple.com/app/id6833382132";
+export const PLAY_STORE_URL =
+  "https://play.google.com/store/apps/details?id=com.jdatna.app";
 /**
  * تطبيق أندرويد المنشور في Google Play: اسم الحزمة وبصمتا الشهادتين ثابتة في الكود،
  * فيُربط التطبيق بالموقع (يفتح كاملًا بلا شريط المتصفح) دون أي إدخال في الإدارة.
@@ -235,6 +245,8 @@ const appLinksSchema = z
           .regex(/^[A-Z0-9]{10}\.[a-zA-Z0-9.-]+$/, "معرّف تطبيق آبل غير صالح"),
       )
       .max(5),
+    showAppStore: z.boolean().default(false),
+    showPlayStore: z.boolean().default(false),
   })
   .strict();
 

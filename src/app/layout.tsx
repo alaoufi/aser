@@ -16,7 +16,14 @@ import Image from "next/image";
 import "./globals.css";
 import "./heritage.css";
 import "./najdi.css";
-import { getSiteTexts, visitorTemplate } from "@/server/settings";
+import {
+  APP_STORE_URL,
+  PLAY_STORE_URL,
+  getAppLinks,
+  getSiteTexts,
+  visitorTemplate,
+} from "@/server/settings";
+import { StoreBadges } from "@/components/public/store-badges";
 import { TemplateSwitcher } from "@/components/public/template-switcher";
 // القالب يُقرأ عند كل طلب حتى يسري اختيار الإدارة فورًا على كل الصفحات.
 export const dynamic = "force-dynamic";
@@ -49,9 +56,10 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [template, texts] = await Promise.all([
+  const [template, texts, appLinks] = await Promise.all([
     visitorTemplate(),
     getSiteTexts(),
+    getAppLinks(),
   ]);
   return (
     <html
@@ -148,6 +156,16 @@ export default async function RootLayout({
               <Link href="/support">الدعم والتواصل</Link>
             </div>
           </div>
+          <StoreBadges
+            appStore={appLinks.showAppStore ? APP_STORE_URL : null}
+            playStore={appLinks.showPlayStore ? PLAY_STORE_URL : null}
+            texts={{
+              title: texts["store.title"] || "حمّل تطبيق أكلات جدتنا",
+              appStore: texts["store.appStore"] || "حمّل من App Store",
+              googlePlay:
+                texts["store.googlePlay"] || "احصل عليه من Google Play",
+            }}
+          />
           <div className="footer-bottom">
             <span>
               © {new Date().getFullYear()} أكلات جدتنا
