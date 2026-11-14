@@ -201,7 +201,10 @@ test.describe("requests on a real isolated catalog product", () => {
       await where.fill("عنيزة، حي الريان، بجوار المسجد");
       await expect(
         form.getByRole("link", { name: "معاينة في الخرائط" }),
-      ).toHaveAttribute("href", /google\.com\/maps\/search/);
+      ).toHaveAttribute(
+        "href",
+        /^https:\/\/www\.google\.com\/maps\/search\/\?api=1&query=/,
+      );
       await form
         .getByRole("button", { name: "مراجعة الطلب قبل الإرسال" })
         .click();
