@@ -14,7 +14,8 @@ const passwordSchema = z
   .string()
   .min(4, "كلمة المرور أربع خانات على الأقل")
   .max(128, "كلمة المرور طويلة جدًا");
-export const ADMIN_PASSWORD_MIN = 10;
+/** كلمة مرور الإدارة كغيرها: أربع خانات على الأقل (قرار المالك 2026-11-14). */
+export const ADMIN_PASSWORD_MIN = 4;
 export function normalizeUsername(input: string) {
   const value = input.trim().normalize("NFC").toLowerCase().normalize("NFC");
   let phoneAlias = false;
@@ -176,20 +177,6 @@ export async function setCredentials(request: Request, input: unknown) {
       ).rows[0];
       if (!proof?.fresh)
         throw new HttpError(403, "يلزم تحقق جديد بالجوال لتعيين كلمة المرور");
-      const role = (
-        await client.query(
-          "SELECT role,cardinality(permissions) AS perms FROM jdatna.users WHERE id=$1",
-          [proof.user_id],
-        )
-      ).rows[0];
-      if (
-        (role?.role === "admin" || role?.perms > 0) &&
-        value.password.length < ADMIN_PASSWORD_MIN
-      )
-        throw new HttpError(
-          400,
-          `كلمة مرور الإدارة ${ADMIN_PASSWORD_MIN} خانات على الأقل`,
-        );
       const passwordHash = await hashPassword(value.password);
       const user = (
         await client.query(

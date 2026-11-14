@@ -133,15 +133,12 @@ export const profileSchema = z
       )
       .optional(),
   })
+  // المستند اختياري: يُقبل التسجيل دونه، وتطلب الإدارة النواقص في ملاحظتها.
   .refine(
     (x) =>
-      x.documentType === "exception"
-        ? Boolean(x.exceptionReason && x.exceptionReason.length >= 10)
-        : Boolean(x.documentId),
-    {
-      message:
-        "أرفق مستند الأهلية، أو اشرح طلب الاستثناء في عشرة أحرف على الأقل",
-    },
+      x.documentType !== "exception" ||
+      Boolean(x.exceptionReason && x.exceptionReason.length >= 10),
+    { message: "اشرح طلب الاستثناء في عشرة أحرف على الأقل" },
   )
   .refine((x) => x.delivery !== false || x.pickup !== false, {
     message: "حدد وسيلة استلام واحدة على الأقل",

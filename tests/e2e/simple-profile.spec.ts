@@ -98,6 +98,14 @@ test("family saves only basic fields in one form and retries without reuploading
     "readonly",
     "",
   );
+  // المرفق اختياري (شهادة أو صورة الهوية)، والتسجيل يُقبل دونه.
+  await expect(page.locator("input[name=file]")).not.toHaveAttribute(
+    "required",
+    "",
+  );
+  await expect(
+    page.getByRole("combobox", { name: "نوع المرفق", exact: true }),
+  ).toHaveValue("producer_certificate");
   await page.locator("input[name=file]").setInputFiles({
     name: "activity-license.pdf",
     mimeType: "application/pdf",
@@ -155,7 +163,7 @@ test("family saves only basic fields in one form and retries without reuploading
     cityId: city.id,
     nationalId: "١٢٣٤٥٦٧٨٩٠",
     workLocation: "عنوان عمل خاص لا يظهر للزوار",
-    documentType: "other_document",
+    documentType: "producer_certificate",
     documentId: "00000000-0000-4000-8000-000000000002",
   });
   expect(

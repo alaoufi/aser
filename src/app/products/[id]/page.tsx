@@ -1,3 +1,4 @@
+import { productStatusLabels } from "@/lib/site-texts";
 import { ReportButton } from "@/components/public/report-button";
 import { OrderRequestForm } from "@/components/forms/orders";
 import { ChatButton } from "@/components/forms/chat";
@@ -7,12 +8,7 @@ import { RatingBox } from "@/components/forms/rating-box";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getProducer, getProduct } from "@/server/catalog";
-import {
-  availability,
-  phoneNumber,
-  priceLabel,
-  safeMediaUrl,
-} from "@/components/public/ui";
+import { phoneNumber, priceLabel, safeMediaUrl } from "@/components/public/ui";
 export const dynamic = "force-dynamic";
 export async function generateMetadata({
   params,
@@ -37,7 +33,7 @@ export default async function ProductDetail({
   const offer = (await searchParams).offer;
   // وسائل تواصل الأسرة المنتجة المنشورة في صفحتها العامة فقط، لعرضها بعد إرسال الطلب.
   const family = await getProducer(p.producerSlug);
-  const familyPhone = family ? phoneNumber(family.phone) : null;
+  const familyPhone = family?.phone ? phoneNumber(family.phone) : null;
   const familyWhatsapp = family?.whatsapp ? phoneNumber(family.whatsapp) : null;
   return (
     <div className="wrap page-space">
@@ -57,7 +53,9 @@ export default async function ProductDetail({
         </div>
         <section>
           <p className="eyebrow">{p.cityName}</p>
-          <span className="badge inline">{availability[p.status]}</span>
+          <span className="badge inline">
+            {productStatusLabels(texts)[p.status]}
+          </span>
           <h1>{p.name}</h1>
           {p.notCookingToday && (
             <p role="status" className="muted">
@@ -94,6 +92,10 @@ export default async function ProductDetail({
                       "متاح بالتنسيق مع الأسرة المنتجة"
                     : "غير متاح"}
               </span>
+            </p>
+            <p>
+              <strong>التسليم المباشر</strong>
+              <span>{p.pickup ? "متاح من موقع الأسرة" : "غير متاح"}</span>
             </p>
             {p.deliveryScope === "kingdom" && (
               <p>
@@ -143,6 +145,11 @@ export default async function ProductDetail({
           contactPhone={familyPhone ?? undefined}
           contactWhatsapp={familyWhatsapp ?? undefined}
           notCookingToday={p.notCookingToday}
+          fulfillmentOptions={{
+            pickup: Boolean(p.pickup),
+            delivery: p.delivery,
+            deliveryScope: p.deliveryScope,
+          }}
           offerId={Array.isArray(offer) ? "invalid" : offer}
           shipping={
             p.deliveryScope === "kingdom"

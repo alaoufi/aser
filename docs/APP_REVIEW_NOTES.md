@@ -43,7 +43,7 @@ a password only (no SMS code):
 The password is in the Password field above (same for both).
 Sign in: menu ☰ (top right) > "تسجيل الدخول" > username and password > "دخول".
 As the customer (opens on "طلباتي" = My orders):
-- The accepted order of "جريش بالدجاج (تجريبي)" from the demo family "أسرة المراجعة".
+- The delivered order ("تم التسليم") of "جريش بالدجاج (تجريبي)" from the demo family "أسرة المراجعة".
 - "مراسلة الأسرة المنتجة" opens the chat. In the chat, the ⋮ button has "إبلاغ عن المحادثة" (Report) and
   "حظر المحادثة" (Block; both sides can no longer send).
 - Rating: under the order choose stars, tick the honesty pledge, "إرسال التقييم". Comments are seen only by admins;

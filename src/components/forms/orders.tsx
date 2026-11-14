@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { ORDERS_CHANGED } from "@/components/public/order-alert";
+import { LocationInput, LocationLink } from "./location-share";
 import { RatingBox } from "./rating-box";
 import { OrderChatButton } from "./chat";
 import { DeleteAccountSection } from "./delete-account";
@@ -83,7 +84,28 @@ function whatsapp(phone: string, product: string) {
   const text = `السلام عليكم، بخصوص طلبك (${product}) من أكلات جدتنا`;
   return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
 }
+type FulfillmentOptions = {
+  pickup: boolean;
+  delivery: boolean;
+  deliveryScope?: string | null;
+};
+const methods: Record<string, string> = {
+  pickup: "تسليم مباشر",
+  delivery: "توصيل",
+};
+function offeredMethods(o?: FulfillmentOptions) {
+  if (!o) return [] as ("pickup" | "delivery")[];
+  return [
+    ...(o.pickup ? (["pickup"] as const) : []),
+    ...(o.delivery || o.deliveryScope === "kingdom"
+      ? (["delivery"] as const)
+      : []),
+  ];
+}
 type Draft = {
+  fulfillmentOptions?: FulfillmentOptions;
+  fulfillment?: string | null;
+  deliveryLocation?: string | null;
   notCookingToday?: boolean;
   productId: string;
   productName: string;
@@ -111,6 +133,10 @@ type Order = {
   endDate: string;
   notes: string;
   status: string;
+  fulfillment?: "pickup" | "delivery" | null;
+  deliveryLocation?: string | null;
+  /** للعميل: موقع التسليم المباشر بعد قبول الأسرة طلبه. */
+  pickupLocation?: string | null;
   isNew?: boolean;
   /** للأسرة فقط: صاحب الطلب لتقييمه. */
   customerId?: string | null;
@@ -130,6 +156,8 @@ type Summary = {
   startDate: string;
   period: string;
   notes: string;
+  fulfillment?: string;
+  deliveryLocation?: string;
 };
 function periodLabel(payload: Record<string, unknown>) {
   if (payload.endDate) return `حتى ${payload.endDate}`;
@@ -152,7 +180,10 @@ export function OrderRequestForm({
   contactPhone,
   contactWhatsapp,
   shipping,
+  fulfillmentOptions,
 }: {
+  /** طرق التسليم التي تقدمها الأسرة؛ يختار العميل منها. */
+  fulfillmentOptions?: FulfillmentOptions;
   /** الشحن لكل المملكة: رسومه تضاف على السعر (بلا رسوم = بالاتفاق). */
   shipping?: { label: string; fee: number | null };
   notCookingToday?: boolean;
@@ -174,6 +205,17 @@ export function OrderRequestForm({
         .slice(0, 10)
     : today();
   const [mode, setMode] = useState("days");
+  const offered = offeredMethods(
+    fulfillmentOptions ?? initialDraft?.fulfillmentOptions,
+  );
+  const [method, setMethod] = useState<string>(
+    initialDraft?.fulfillment &&
+      offered.includes(initialDraft.fulfillment as "pickup")
+      ? initialDraft.fulfillment
+      : offered.length === 1
+        ? offered[0]
+        : "",
+  );
   const [selectedOffer, setSelectedOffer] = useState<{
     id: string;
     productId: string;
@@ -245,6 +287,10 @@ export function OrderRequestForm({
       return;
     }
     setError("");
+    if (offered.length > 1 && !method) {
+      setError("اختر طريقة الاستلام: تسليم مباشر أو توصيل.");
+      return;
+    }
     const form = new FormData(event.currentTarget);
     const payload = {
       productId,
@@ -265,6 +311,10 @@ export function OrderRequestForm({
                   : Number(form.get("days")),
           }),
       notes: form.get("notes"),
+      ...(method ? { fulfillment: method } : {}),
+      ...(method === "delivery"
+        ? { deliveryLocation: String(form.get("deliveryLocation") ?? "") }
+        : {}),
     };
     setReview({
       payload,
@@ -276,6 +326,11 @@ export function OrderRequestForm({
         startDate: String(payload.startDate ?? ""),
         period: periodLabel(payload),
         notes: String(payload.notes ?? ""),
+        fulfillment: method || undefined,
+        deliveryLocation:
+          method === "delivery"
+            ? String(form.get("deliveryLocation") ?? "")
+            : undefined,
       },
     });
   }
@@ -374,6 +429,19 @@ export function OrderRequestForm({
             {shipping.fee === null
               ? "رسوم الشحن بالاتفاق"
               : `${shipping.fee} ر.س تضاف على السعر`}
+          </dd>
+        </div>
+      )}
+      {x.fulfillment && (
+        <div>
+          <dt>طريقة الاستلام</dt>
+          <dd>
+            {methods[x.fulfillment]}
+            {x.fulfillment === "pickup"
+              ? " — يظهر لك موقع الأسرة بعد قبول طلبك"
+              : x.deliveryLocation
+                ? ` — إلى: ${x.deliveryLocation}`
+                : ""}
           </dd>
         </div>
       )}
@@ -607,6 +675,42 @@ export function OrderRequestForm({
                 </label>
               )}
             </div>
+            {offered.length > 0 && (
+              <fieldset>
+                <legend>طريقة الاستلام</legend>
+                <div className={s.checks}>
+                  {offered.map((m) => (
+                    <label key={m}>
+                      <input
+                        type="radio"
+                        name="fulfillment"
+                        value={m}
+                        checked={method === m}
+                        onChange={() => setMethod(m)}
+                        required
+                      />
+                      {m === "pickup"
+                        ? "تسليم مباشر (أستلم من موقع الأسرة)"
+                        : "توصيل (لموقعي)"}
+                    </label>
+                  ))}
+                </div>
+                {method === "pickup" && (
+                  <p className={s.muted}>
+                    يظهر لك موقع التسليم في «طلباتي» بعد قبول الأسرة طلبك.
+                  </p>
+                )}
+              </fieldset>
+            )}
+            {method === "delivery" && (
+              <LocationInput
+                name="deliveryLocation"
+                label="موقع التوصيل"
+                hint="اكتب عنوانك أو الصق رابط موقعك من الخرائط، أو اضغط «استخدم موقعي الحالي». يصل للأسرة مع الطلب."
+                defaultValue={initialDraft?.deliveryLocation}
+                required
+              />
+            )}
             <label className={s.field}>
               ملاحظات
               <textarea
@@ -771,6 +875,35 @@ export function Orders({ producer = false }: { producer?: boolean }) {
                     ? "بالاتفاق"
                     : `${order.snapshot.offer ? order.snapshot.offer.price : order.snapshot.price} ر.س للوحدة، قبل الاتفاق`}
                 </p>
+                {order.fulfillment && (
+                  <p>طريقة الاستلام: {methods[order.fulfillment]}</p>
+                )}
+                {order.fulfillment === "pickup" &&
+                  (order.pickupLocation ? (
+                    <LocationLink
+                      label="موقع التسليم"
+                      location={order.pickupLocation}
+                    />
+                  ) : (
+                    <p className={s.muted}>
+                      {["declined", "cancelled"].includes(order.status)
+                        ? ""
+                        : [
+                              "accepted",
+                              "preparing",
+                              "ready",
+                              "completed",
+                            ].includes(order.status)
+                          ? "تواصل مع الأسرة لتحديد موقع التسليم."
+                          : "يظهر موقع التسليم بعد قبول الأسرة طلبك."}
+                    </p>
+                  ))}
+                {order.fulfillment === "delivery" && order.deliveryLocation && (
+                  <LocationLink
+                    label="موقع التوصيل"
+                    location={order.deliveryLocation}
+                  />
+                )}
                 {order.notes && <p>{order.notes}</p>}
                 <div className={s.actions}>
                   <OrderChatButton
@@ -870,6 +1003,12 @@ function ProducerOrder({
             <dd>{order.snapshot.offer.label}</dd>
           </div>
         )}
+        {order.fulfillment && (
+          <div>
+            <dt>طريقة الاستلام</dt>
+            <dd>{methods[order.fulfillment]}</dd>
+          </div>
+        )}
         <div>
           <dt>السعر عند الإرسال</dt>
           <dd>{price(order)}</dd>
@@ -887,6 +1026,12 @@ function ProducerOrder({
             compact
           />
         )}
+      {order.fulfillment === "delivery" && order.deliveryLocation && (
+        <LocationLink
+          label="موقع التوصيل للعميل"
+          location={order.deliveryLocation}
+        />
+      )}
       {order.notes && (
         <p className={s.orderNotes}>ملاحظات العميل: {order.notes}</p>
       )}

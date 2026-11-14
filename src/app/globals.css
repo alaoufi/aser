@@ -23,6 +23,8 @@ body {
   font-family: "Noto Sans Arabic", "Segoe UI", Tahoma, sans-serif;
   line-height: 1.5;
   font-size: 16px;
+  /* داخل تطبيق الآيفون: لا يدخل أول عنصر (شريط النبذة) تحت الساعة والكاميرا. */
+  padding-top: env(safe-area-inset-top, 0px);
 }
 a {
   color: inherit;
@@ -100,8 +102,9 @@ img {
   position: relative;
   background: #603c24;
   color: #fff8ea;
-  padding: 8px 50px 8px 16px;
-  font-size: 12px;
+  padding: 9px 52px 9px 16px;
+  font-size: 14px;
+  font-weight: 500;
   line-height: 1.8;
 }
 .about-ticker-window {
@@ -112,7 +115,7 @@ img {
   display: flex;
   width: max-content;
   direction: ltr;
-  animation: about-ticker-scroll 38s linear infinite;
+  animation: about-ticker-scroll 55s linear infinite;
 }
 .about-ticker-copy {
   flex-shrink: 0;
@@ -717,6 +720,39 @@ img {
   font-size: 12px;
   color: var(--muted);
   margin: 8px 0;
+}
+.store-badges {
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+  padding: 18px 0 6px;
+  border-top: 1px solid rgb(255 255 255 / 12%);
+}
+.store-badges h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+.store-badges-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.store-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 8px 16px;
+  border: 1px solid rgb(255 255 255 / 45%);
+  border-radius: 12px;
+  background: #000;
+  color: #fff;
+  font-weight: 700;
+  text-decoration: none;
+}
+.store-badge:hover,
+.store-badge:focus-visible {
+  border-color: #fff;
 }
 .footer-bottom {
   border-top: 1px solid #d9d0bf;

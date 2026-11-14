@@ -305,6 +305,13 @@
 .familyStatusHead {
   font-size: 17px;
 }
+.familyStatusCongrats {
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: #eef2e6;
+  color: var(--olive, #4f5d36);
+  font-weight: 700;
+}
 .familyStatusReason {
   padding: 8px 10px;
   border-radius: 6px;
@@ -459,6 +466,23 @@
     background 0.15s ease,
     color 0.15s ease,
     border-color 0.15s ease;
+}
+.adminNavItem {
+  position: relative;
+}
+.navBadge {
+  position: absolute;
+  top: 4px;
+  inset-inline-end: 6px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 10px;
+  background: #9c2f1e;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 20px;
 }
 .adminNavItem svg {
   color: #4f5d36;
@@ -854,4 +878,7 @@
     margin: 6px auto;
     padding: 6px 8px;
   }
+}
+.locationLine {
+  margin: 6px 0;
 }

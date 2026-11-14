@@ -1,3 +1,4 @@
+import { productStatusLabels } from "@/lib/site-texts";
 import { FoodPhotos } from "@/components/public/food-photos";
 import { NajdiDoor } from "@/components/public/najdi-door";
 import { getSiteTexts, visitorTemplate } from "@/server/settings";
@@ -184,7 +185,11 @@ export default async function Home({
         <section className="section wrap" aria-label="جديد المائدة">
           <div className="product-grid">
             {products.slice(0, 4).map((p) => (
-              <ProductCard key={p.id} product={p} />
+              <ProductCard
+                key={p.id}
+                product={p}
+                labels={productStatusLabels(texts)}
+              />
             ))}
           </div>
         </section>

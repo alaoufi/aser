@@ -12,6 +12,8 @@ export type FamilyState = {
   label: string;
   detail: string;
   reason?: string;
+  /** مباركة الاعتماد (من «نصوص الموقع») تظهر أعلى لوحة الأسرة شهرًا بعد اعتمادها. */
+  congrats?: string;
 };
 
 export function familyAccountState(
@@ -22,7 +24,6 @@ export function familyAccountState(
   const expired = Boolean(
     input.documentExpiresAt && input.documentExpiresAt.slice(0, 10) < today,
   );
-  const hasEligibility = Boolean(input.documentId) || exception;
   const reason = input.reviewReason?.trim() || undefined;
   switch (input.status) {
     case "approved":
@@ -38,7 +39,8 @@ export function familyAccountState(
         label: "نشط",
         detail: expired
           ? "حسابك نشط ومنتجاتك ظاهرة، لكن مستند الأهلية منتهي؛ حدّثه ليبقى الحساب موثوقًا."
-          : "حسابك نشط ومنتجاتك ظاهرة للعملاء. أضف مستند أهلية ليصبح الحساب موثوقًا.",
+          : "حسابك نشط ومنتجاتك ظاهرة للعملاء. أرفق شهادة أو صورة الهوية الوطنية ليصبح الحساب موثوقًا.",
+        reason,
       };
     case "rejected":
       return {
@@ -57,20 +59,23 @@ export function familyAccountState(
         reason,
       };
     default:
-      if (!hasEligibility || expired)
+      if (expired)
         return {
           key: "incomplete",
           label: "بانتظار إكمال المطلوب",
-          detail: expired
-            ? "مستند الأهلية منتهي الصلاحية. ارفع مستندًا ساريًا لإكمال المراجعة."
-            : "أكمل رفع مستند الأهلية (أو طلب استثناء إداري) حتى تبدأ المراجعة.",
+          detail:
+            "مستند الأهلية منتهي الصلاحية. ارفع مستندًا ساريًا لإكمال المراجعة.",
           reason,
         };
+      // التسجيل مقبول دون مستند؛ إرفاقه يسرّع الاعتماد.
       return {
         key: "review",
         label: "تحت المراجعة",
         detail:
-          "تم التسجيل وطلبك الآن تحت المراجعة. نبلغك عند الاعتماد، ويمكنك تجهيز منتجاتك خلال ذلك.",
+          input.documentId || exception
+            ? "تم التسجيل وطلبك الآن تحت المراجعة. نبلغك عند الاعتماد، ويمكنك تجهيز منتجاتك خلال ذلك."
+            : "تم التسجيل وطلبك الآن تحت المراجعة. إرفاق شهادة أو صورة الهوية الوطنية يسرّع الاعتماد، ويمكنك تجهيز منتجاتك خلال ذلك.",
+        reason,
       };
   }
 }

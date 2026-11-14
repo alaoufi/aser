@@ -1,11 +1,9 @@
 import Link from "next/link";
 import type { Product, Producer } from "@/lib/types";
+import { productStatusLabels } from "@/lib/site-texts";
 
-export const availability = {
-  available: "متوفر",
-  unavailable: "غير متوفر",
-  preorder: "حسب الطلب",
-};
+/** الأسماء الأصلية لحالة المنتج؛ الصفحات تمرر المعدّل من «نصوص الموقع». */
+export const availability = productStatusLabels();
 export function priceLabel(price: number | null) {
   return price === null
     ? "استفسر عن السعر"
@@ -49,7 +47,14 @@ export function EmptyState({
     </div>
   );
 }
-export function ProductCard({ product: p }: { product: Product }) {
+export function ProductCard({
+  product: p,
+  labels = availability,
+}: {
+  product: Product;
+  /** أسماء حالة المنتج من «نصوص الموقع». */
+  labels?: Record<string, string>;
+}) {
   return (
     <Link href={`/products/${p.id}`} className="product-card">
       <div className="card-image">
@@ -59,7 +64,7 @@ export function ProductCard({ product: p }: { product: Product }) {
           <span aria-hidden="true">♧</span>
         )}
         <span className="badge">
-          {p.notCookingToday ? "لا يوجد طبخ اليوم" : availability[p.status]}
+          {p.notCookingToday ? "لا يوجد طبخ اليوم" : labels[p.status]}
         </span>
       </div>
       <div className="card-body">

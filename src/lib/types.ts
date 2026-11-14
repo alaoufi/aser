@@ -26,7 +26,8 @@ export type Producer = {
   regionName: string;
   neighborhood: string | null;
   verified: boolean;
-  phone: string;
+  /** يظهر للعملاء إن اختارت الأسرة إظهاره. */
+  phone: string | null;
   whatsapp: string | null;
   delivery: boolean;
   pickup: boolean;
@@ -61,6 +62,8 @@ export type Product = {
   preparationTime: string | null;
   story: string | null;
   delivery: boolean;
+  /** التسليم المباشر من موقع الأسرة. */
+  pickup?: boolean;
   /** داخل نطاق التغطية، أو جميع مناطق المملكة بالشحن. */
   deliveryScope?: "coverage" | "kingdom";
   /** رسوم الشحن تضاف على السعر (للشحن لكل المملكة). */

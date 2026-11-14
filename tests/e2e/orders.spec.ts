@@ -167,6 +167,65 @@ test.describe("requests on a real isolated catalog product", () => {
     }
     expect(sent).toHaveLength(3);
   });
+  test("customer picks delivery among the family's methods and sends a location", async ({
+    page,
+  }) => {
+    await session(page, true);
+    await pool!.query(
+      "UPDATE jdatna.producer_profiles SET pickup=true,delivery=true WHERE id=$1",
+      [producerId],
+    );
+    try {
+      const sent: Record<string, unknown>[] = [];
+      await page.route("**/api/orders", (route) => {
+        sent.push(route.request().postDataJSON());
+        return route.fulfill({
+          status: 201,
+          json: { id: receiptId, status: "pending" },
+        });
+      });
+      await page.goto(`/products/${productId}`);
+      const form = await fillGuest(page);
+      await form
+        .getByRole("combobox", { name: "الوجبة", exact: true })
+        .selectOption("lunch");
+      // الطريقتان متاحتان: لا اختيار مسبق، ويُطلب الاختيار.
+      const pickup = form.getByRole("radio", { name: /تسليم مباشر/ });
+      const delivery = form.getByRole("radio", { name: /توصيل/ });
+      await expect(pickup).not.toBeChecked();
+      await pickup.check();
+      await expect(form).toContainText("يظهر لك موقع التسليم في «طلباتي»");
+      await delivery.check();
+      const where = form.getByLabel("موقع التوصيل", { exact: true });
+      await expect(where).toHaveAttribute("required", "");
+      await where.fill("عنيزة، حي الريان، بجوار المسجد");
+      await expect(
+        form.getByRole("link", { name: "معاينة في الخرائط" }),
+      ).toHaveAttribute(
+        "href",
+        /^https:\/\/www\.google\.com\/maps\/search\/\?api=1&query=/,
+      );
+      await form
+        .getByRole("button", { name: "مراجعة الطلب قبل الإرسال" })
+        .click();
+      await expect(form).toContainText(
+        "توصيل — إلى: عنيزة، حي الريان، بجوار المسجد",
+      );
+      await form.getByRole("button", { name: "تأكيد وإرسال الطلب" }).click();
+      await expect(form.getByRole("status")).toContainText(
+        "تم إرسال طلبك للأسرة المنتجة",
+      );
+      expect(sent.at(-1)).toMatchObject({
+        fulfillment: "delivery",
+        deliveryLocation: "عنيزة، حي الريان، بجوار المسجد",
+      });
+    } finally {
+      await pool!.query(
+        "UPDATE jdatna.producer_profiles SET pickup=true,delivery=false WHERE id=$1",
+        [producerId],
+      );
+    }
+  });
   test("selected offer displays terms and locks its meal in the submitted payload", async ({
     page,
   }) => {

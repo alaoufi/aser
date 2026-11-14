@@ -241,6 +241,11 @@ test(
         submitOrder(null, { ...payload, requestKey: randomUUID() }),
         { status: 401 },
       );
+      // الأسرة لا تطلب منتجها من حسابها.
+      await assert.rejects(
+        submitOrder(users[0], { ...payload, requestKey: randomUUID() }),
+        { status: 403 },
+      );
       const guest = await submitOrder(users[3], {
         ...payload,
         phone: "0500000999",

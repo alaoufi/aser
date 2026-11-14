@@ -807,9 +807,9 @@ export function AdminSummary({ onOpen }: { onOpen: (tab: string) => void }) {
   const cards: [string, string, string, boolean?][] = v
     ? [
         [
-          "أسر تحت المراجعة",
+          "أسر تنتظر الاعتماد",
           String(v.familiesPending),
-          "producers",
+          "approvals",
           v.familiesPending > 0,
         ],
         ["أسر بانتظار الاستكمال", String(v.familiesIncomplete), "producers"],
@@ -983,6 +983,16 @@ export function TemplateAdmin() {
     </section>
   );
 }
+/** يوحّد الهمزات والتاء المربوطة والياء والتشكيل حتى يجد البحث «اعتماد» و«إعتماد». */
+function normalizeSearch(v: string) {
+  return v
+    .toLowerCase()
+    .replace(/[\u064B-\u0652\u0640]/g, "")
+    .replace(/[أإآ]/g, "ا")
+    .replace(/ة/g, "ه")
+    .replace(/ى/g, "ي")
+    .trim();
+}
 type AdminText = {
   key: string;
   value: string;
@@ -993,8 +1003,35 @@ type AdminText = {
 /** نصوص الموقع: تعديل أي نص ظاهر، أو حذفه، أو إعادته للأصل. */
 export function TextsAdmin() {
   const r = useResource<{ texts: AdminText[] }>("/api/admin/texts");
+  const [query, setQuery] = useState("");
+  const q = normalizeSearch(query);
+  const all = r.data?.texts ?? [];
+  // البحث في اسم القسم ووصف النص ونصه الحالي والأصلي؛ والفقرة تظهر كاملة إن طابق عنوانها أو نصها.
+  const matches = (t: AdminText) => {
+    const [group, label] = siteTextLabels[t.key as SiteTextKey] ?? [
+      "أخرى",
+      t.key,
+    ];
+    return [group, label, t.value, t.original].some((v) =>
+      normalizeSearch(v).includes(q),
+    );
+  };
+  const shown = new Set(
+    all
+      .filter((t) => {
+        if (!q || matches(t)) return true;
+        const key = t.key as SiteTextKey;
+        const pair =
+          siteTextParagraphs.get(key) ??
+          [...siteTextParagraphs].find(([, text]) => text === key)?.[0];
+        const other = pair && all.find((x) => x.key === pair);
+        return Boolean(other && matches(other));
+      })
+      .map((t) => t.key),
+  );
   const groups = new Map<string, AdminText[]>();
-  for (const t of r.data?.texts ?? []) {
+  for (const t of all) {
+    if (!shown.has(t.key)) continue;
     const [group] = siteTextLabels[t.key as SiteTextKey] ?? ["أخرى", t.key];
     groups.set(group, [...(groups.get(group) ?? []), t]);
   }
@@ -1005,6 +1042,20 @@ export function TextsAdmin() {
         عدّل النص واحفظه، أو أخفِ العنوان أو النص مؤقتًا دون أن يُمسح، أو احذفه،
         أو أعده لأصله. الأزرار الأساسية تعود لنصها الأصلي إذا حُذفت أو أُخفيت.
       </p>
+      <label className={s.field}>
+        بحث في النصوص
+        <input
+          type="search"
+          value={query}
+          placeholder="اكتب كلمة من النص أو اسم مكانه، مثل: البحث، الاعتماد، التقييم"
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      </label>
+      {q && r.data && (
+        <p className={s.muted} role="status">
+          {shown.size ? `${shown.size} نتيجة` : "لا توجد نصوص مطابقة."}
+        </p>
+      )}
       <Message error={r.error} success={r.success} />
       {!r.data && !r.error && <p role="status">جارٍ تحميل النصوص…</p>}
       {[...groups].map(([group, items]) => (
@@ -1141,6 +1192,8 @@ type AppLinksData = {
   androidPackage: string;
   androidFingerprints: string[];
   iosAppIds: string[];
+  showAppStore: boolean;
+  showPlayStore: boolean;
 };
 /** ربط تطبيقي قوقل بلاي وآبل بالموقع: يُعبَّأ مرة بعد إنشاء التطبيق في المتجر. */
 export function AppLinksAdmin() {
@@ -1174,6 +1227,8 @@ export function AppLinksAdmin() {
               androidPackage: String(f.get("androidPackage") ?? "").trim(),
               androidFingerprints: lines(f.get("androidFingerprints")),
               iosAppIds: lines(f.get("iosAppIds")),
+              showAppStore: f.get("showAppStore") === "on",
+              showPlayStore: f.get("showPlayStore") === "on",
             });
           }}
         >
@@ -1214,6 +1269,29 @@ export function AppLinksAdmin() {
               defaultValue={links.iosAppIds.join("\n")}
             />
           </div>
+          <fieldset className={s.field}>
+            <legend>أزرار تحميل التطبيق أسفل الموقع</legend>
+            <p className={s.muted}>
+              فعّل كل زر بعد موافقة المتجر ونشر التطبيق فيه؛ قبل ذلك يفتح الرابط
+              صفحة «غير موجود». لا تظهر الأزرار داخل التطبيقين نفسيهما.
+            </p>
+            <label className={s.checks}>
+              <input
+                type="checkbox"
+                name="showAppStore"
+                defaultChecked={links.showAppStore}
+              />
+              زر «حمّل من App Store» (آيفون)
+            </label>
+            <label className={s.checks}>
+              <input
+                type="checkbox"
+                name="showPlayStore"
+                defaultChecked={links.showPlayStore}
+              />
+              زر «احصل عليه من Google Play» (أندرويد)
+            </label>
+          </fieldset>
           <button className={s.button} disabled={r.busy}>
             {r.busy ? "جارٍ الحفظ…" : "حفظ بيانات التطبيق"}
           </button>

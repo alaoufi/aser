@@ -15,11 +15,7 @@ import {
 function Keep({ name, value }: { name: string; value: unknown }) {
   return <input type="hidden" name={name} value={String(value ?? "")} />;
 }
-const statusLabels = {
-  available: "متوفر",
-  unavailable: "غير متوفر",
-  preorder: "حسب الطلب",
-};
+import { productStatusLabels } from "@/lib/site-texts";
 export function Products() {
   const session = useSession();
   const [products, setProducts] = useState<Product[]>([]);
@@ -37,12 +33,18 @@ export function Products() {
   const [contactPrice, setContactPrice] = useState(false);
   const [libraryPhoto, setLibraryPhoto] = useState("");
   const [fields, setFields] = useState<ProductFields | null>(null);
+  // أسماء حالة المنتج من «نصوص الموقع» (جاهز، غير جاهز، حسب الطلب).
+  const [statusLabels, setStatusLabels] = useState<Record<string, string>>(
+    productStatusLabels(),
+  );
   const show = (k: ProductFieldKey) => fieldShown(fields, k);
   async function load() {
     const [p, c] = await Promise.all([
-      api<{ products: Product[]; fields?: ProductFields }>(
-        "/api/producer/products",
-      ),
+      api<{
+        products: Product[];
+        fields?: ProductFields;
+        statusLabels?: Record<string, string>;
+      }>("/api/producer/products"),
       api<{
         categories: Category[];
         profile: {
@@ -53,6 +55,7 @@ export function Products() {
       }>("/api/producer/profile"),
     ]);
     setProducts(p.products);
+    if (p.statusLabels) setStatusLabels(p.statusLabels);
     setFields(p.fields ?? null);
     setCategories(c.categories);
     setMine(c.profile?.categoryIds ?? []);

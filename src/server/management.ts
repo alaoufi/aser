@@ -11,6 +11,7 @@ import {
 } from "./security";
 import { profileSchema, productSchema, reviewSchema } from "./validation";
 import { getProductFields } from "./settings";
+import { siteTextDefaults } from "../lib/site-texts";
 import { fieldShown } from "../lib/product-fields";
 import { productSelect, mapProduct } from "./catalog";
 import { can } from "../lib/permissions";
@@ -137,7 +138,33 @@ export async function saveProducerCategories(
     return { categoryIds: [...new Set(categoryIds)] };
   });
 }
+/** تنبيه المشرفين (المدير ومن له صلاحية الأسر) بأسرة تنتظر الاعتماد. لا يُفشل الحفظ إن تعذر. */
+async function notifyApprovers(familyName: string) {
+  try {
+    const { notifyUser } = await import("./push");
+    const approvers = (
+      await db().query(
+        "SELECT id FROM jdatna.users WHERE role='admin' OR 'producers'=ANY(permissions)",
+      )
+    ).rows as { id: string }[];
+    await Promise.all(
+      approvers.map((a) =>
+        notifyUser(a.id, {
+          title: "أسرة تنتظر الاعتماد",
+          body: `«${familyName}» سجّلت وتنتظر الاعتماد.`,
+          url: "/admin?tab=approvals",
+          tag: "family-approval",
+        }),
+      ),
+    );
+  } catch {}
+}
 export async function saveProfile(user: SessionUser, input: unknown) {
+  const saved = await saveProfileRecord(user, input);
+  if (saved.newlyPending) void notifyApprovers(saved.name);
+  return { id: saved.id, status: saved.status };
+}
+async function saveProfileRecord(user: SessionUser, input: unknown) {
   const value = profileSchema.parse(input);
   const phone = normalizePhone(value.phone);
   if (phone !== user.phone)
@@ -316,8 +343,93 @@ export async function saveProfile(user: SessionUser, input: unknown) {
       "UPDATE jdatna.users SET role='producer' WHERE id=$1 AND role='customer'",
       [user.id],
     );
-    return { id, status: "pending" };
+    return {
+      id,
+      status: "pending" as const,
+      name: (value.tradeName || value.name) as string,
+      // ينبّه المشرفين حين يدخل الملف قائمة الانتظار، لا مع كل تعديل وهو فيها.
+      newlyPending: !existing || existing.status !== "pending",
+    };
   });
+}
+const fulfillmentSchema = z
+  .object({
+    pickup: z.boolean(),
+    delivery: z.boolean(),
+    pickupLocation: z.string().trim().max(1000).nullable().optional(),
+  })
+  .strict()
+  .refine((v) => v.pickup || v.delivery, {
+    message: "اختر التسليم المباشر أو التوصيل، أو كليهما",
+  })
+  .refine((v) => !v.pickup || (v.pickupLocation ?? "").length >= 5, {
+    message: "حدد موقع التسليم المباشر: العنوان أو رابط الخرائط",
+  });
+/** طرق التسليم في لوحة الأسرة. تعديلها لا يعيد الملف للمراجعة. */
+export async function ownFulfillment(user: SessionUser) {
+  const row = (
+    await db().query(
+      `SELECT pickup,delivery,pickup_location AS "pickupLocation" FROM jdatna.producer_profiles WHERE user_id=$1`,
+      [user.id],
+    )
+  ).rows[0];
+  if (!row) throw new HttpError(404, "سجّل ملف الأسرة المنتجة أولًا");
+  return row as {
+    pickup: boolean;
+    delivery: boolean;
+    pickupLocation: string | null;
+  };
+}
+export async function saveFulfillment(user: SessionUser, input: unknown) {
+  const v = fulfillmentSchema.parse(input);
+  const row = (
+    await db().query(
+      `UPDATE jdatna.producer_profiles SET pickup=$2,delivery=$3,pickup_location=$4,updated_at=now() WHERE user_id=$1
+       RETURNING pickup,delivery,pickup_location AS "pickupLocation"`,
+      [user.id, v.pickup, v.delivery, v.pickup ? v.pickupLocation : null],
+    )
+  ).rows[0];
+  if (!row) throw new HttpError(404, "سجّل ملف الأسرة المنتجة أولًا");
+  return row;
+}
+const contactSchema = z
+  .object({ showPhone: z.boolean(), showWhatsapp: z.boolean() })
+  .strict();
+/** ظهور بيانات التواصل للعملاء (جوال، واتساب). تعديله لا يعيد الملف للمراجعة. */
+export async function ownContactVisibility(user: SessionUser) {
+  const row = (
+    await db().query(
+      `SELECT show_phone AS "showPhone",show_whatsapp AS "showWhatsapp",phone,NULLIF(whatsapp,'') AS whatsapp FROM jdatna.producer_profiles WHERE user_id=$1`,
+      [user.id],
+    )
+  ).rows[0];
+  if (!row) throw new HttpError(404, "سجّل ملف الأسرة المنتجة أولًا");
+  return row as {
+    showPhone: boolean;
+    showWhatsapp: boolean;
+    phone: string;
+    whatsapp: string | null;
+  };
+}
+export async function saveContactVisibility(user: SessionUser, input: unknown) {
+  const v = contactSchema.parse(input);
+  const r = await db().query(
+    "UPDATE jdatna.producer_profiles SET show_phone=$2,show_whatsapp=$3,updated_at=now() WHERE user_id=$1",
+    [user.id, v.showPhone, v.showWhatsapp],
+  );
+  if (!r.rowCount) throw new HttpError(404, "سجّل ملف الأسرة المنتجة أولًا");
+  return ownContactVisibility(user);
+}
+/** عدد الأسر التي تنتظر الاعتماد: لتبويب «اعتماد الأسر المنتجة» وتنبيه المشرفين. */
+export async function pendingApprovals(user: SessionUser) {
+  if (!can(user, "producers"))
+    throw new HttpError(403, "لا تملك صلاحية المراجعة");
+  const row = (
+    await db().query(
+      "SELECT count(*)::int AS count FROM jdatna.producer_profiles WHERE status='pending'",
+    )
+  ).rows[0];
+  return { count: row.count as number };
 }
 export async function ownProducts(user: SessionUser) {
   return (
@@ -485,10 +597,10 @@ export async function reviewProducer(
   if (!can(user, "producers"))
     throw new HttpError(403, "لا تملك صلاحية المراجعة");
   const value = reviewSchema.parse(input);
-  return transaction(async (client) => {
+  const result = await transaction(async (client) => {
     const producer = (
       await client.query(
-        "SELECT id,user_id FROM jdatna.producer_profiles WHERE id=$1 FOR UPDATE",
+        "SELECT id,user_id,status FROM jdatna.producer_profiles WHERE id=$1 FOR UPDATE",
         [id],
       )
     ).rows[0];
@@ -503,19 +615,8 @@ export async function reviewProducer(
     ).rows[0];
     if (value.decision === "approved" && verification?.expired === true)
       throw new HttpError(400, "المستند منتهي الصلاحية ويجب تحديثه");
-    if (
-      value.decision === "approved" &&
-      !verification?.document_id &&
-      !(
-        verification?.document_type === "exception" &&
-        value.exceptionApproved === true &&
-        value.reason.length >= 10
-      )
-    )
-      throw new HttpError(
-        400,
-        "يلزم مستند أهلية أو اعتماد استثناء إداري صريح بسبب موثق",
-      );
+    // تفعيل الإدارة لا يشترط مستندًا (قرار المالك 2026-11-14)؛ الحساب دون مستند «نشط» لا «موثوق»،
+    // وملاحظة القرار تظهر للأسرة بالنواقص.
     await client.query(
       "UPDATE jdatna.producer_profiles SET status=$2,verified=$3,updated_at=now() WHERE id=$1",
       [id, value.decision, value.decision === "approved"],
@@ -539,14 +640,33 @@ export async function reviewProducer(
       "INSERT INTO jdatna.admin_audit_logs(id,actor_id,action,target_id,details) VALUES($1,$2,$3,$4,$5)",
       [randomUUID(), user.id, "producer.review", id, JSON.stringify(value)],
     );
-    return { status: value.decision };
+    return {
+      status: value.decision,
+      congratulate:
+        value.decision === "approved" && producer.status !== "approved"
+          ? (producer.user_id as string)
+          : null,
+    };
   });
+  // مباركة الاعتماد للأسرة (نصها من «نصوص الموقع»)، وتظهر كذلك أعلى لوحتها.
+  if (result.congratulate) {
+    const { getSiteTexts } = await import("./settings");
+    const { notifyUser } = await import("./push");
+    const texts = await getSiteTexts().catch(() => null);
+    void notifyUser(result.congratulate, {
+      title: texts?.["approval.title"] || siteTextDefaults["approval.title"],
+      body: texts?.["approval.message"] || siteTextDefaults["approval.message"],
+      url: "/dashboard",
+      tag: "family-approved",
+    });
+  }
+  return { status: result.status };
 }
 // حالة حساب الأسرة المنتجة للشريط أعلى الصفحة: بيانات المالك فقط، دون بيانات خاصة.
 export async function familyStatus(user: SessionUser) {
   const row = (
     await db().query(
-      `SELECT p.status,p.verified,p.slug,v.document_id AS "documentId",v.document_type AS "documentType",v.document_expires_at::text AS "documentExpiresAt",v.reason AS "reviewReason"
+      `SELECT p.status,p.verified,p.slug,(SELECT max(created_at) FROM jdatna.producer_verifications WHERE producer_id=p.id AND decision='approved')::text AS "approvedAt",v.document_id AS "documentId",v.document_type AS "documentType",v.document_expires_at::text AS "documentExpiresAt",v.reason AS "reviewReason"
        FROM jdatna.producer_profiles p
        LEFT JOIN LATERAL(SELECT document_id,document_type,document_expires_at,reason FROM jdatna.producer_verifications WHERE producer_id=p.id ORDER BY created_at DESC LIMIT 1)v ON true
        WHERE p.user_id=$1`,

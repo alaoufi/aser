@@ -2,6 +2,7 @@ import { MobileNavigation } from "@/components/public/mobile-navigation";
 import { AboutTicker } from "@/components/public/about-ticker";
 import { AccountLink } from "@/components/public/account-link";
 import { OrderAlert } from "@/components/public/order-alert";
+import { ApprovalAlert } from "@/components/public/approval-alert";
 import { PushSetup } from "@/components/public/push-setup";
 import { SaveToast } from "@/components/public/save-toast";
 import { MessageAlert, MessagesLink } from "@/components/public/message-alert";
@@ -16,7 +17,14 @@ import Image from "next/image";
 import "./globals.css";
 import "./heritage.css";
 import "./najdi.css";
-import { getSiteTexts, visitorTemplate } from "@/server/settings";
+import {
+  APP_STORE_URL,
+  PLAY_STORE_URL,
+  getAppLinks,
+  getSiteTexts,
+  visitorTemplate,
+} from "@/server/settings";
+import { StoreBadges } from "@/components/public/store-badges";
 import { TemplateSwitcher } from "@/components/public/template-switcher";
 // القالب يُقرأ عند كل طلب حتى يسري اختيار الإدارة فورًا على كل الصفحات.
 export const dynamic = "force-dynamic";
@@ -43,15 +51,20 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
   },
 };
-export const viewport: Viewport = { themeColor: "#2e1d12" };
+// viewportFit=cover: داخل تطبيق الآيفون تمتد الصفحة تحت شريط الساعة، فنحجز له مسافته (safe-area) في CSS.
+export const viewport: Viewport = {
+  themeColor: "#2e1d12",
+  viewportFit: "cover",
+};
 export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [template, texts] = await Promise.all([
+  const [template, texts, appLinks] = await Promise.all([
     visitorTemplate(),
     getSiteTexts(),
+    getAppLinks(),
   ]);
   return (
     <html
@@ -115,6 +128,7 @@ export default async function RootLayout({
         <main id="main">{children}</main>
         <FamilyWelcome texts={texts} />
         <OrderAlert />
+        <ApprovalAlert />
         <MessageAlert />
         <SaveToast />
         <footer className="site-footer">
@@ -148,6 +162,16 @@ export default async function RootLayout({
               <Link href="/support">الدعم والتواصل</Link>
             </div>
           </div>
+          <StoreBadges
+            appStore={appLinks.showAppStore ? APP_STORE_URL : null}
+            playStore={appLinks.showPlayStore ? PLAY_STORE_URL : null}
+            texts={{
+              title: texts["store.title"] || "حمّل تطبيق أكلات جدتنا",
+              appStore: texts["store.appStore"] || "حمّل من App Store",
+              googlePlay:
+                texts["store.googlePlay"] || "احصل عليه من Google Play",
+            }}
+          />
           <div className="footer-bottom">
             <span>
               © {new Date().getFullYear()} أكلات جدتنا

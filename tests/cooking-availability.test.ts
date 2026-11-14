@@ -160,14 +160,15 @@ test(
       )
         .toISOString()
         .slice(0, 10);
-      const receipt = await submitOrder(users[0], {
+      // الطلب من حساب آخر: الأسرة لا تطلب منتجها من حسابها.
+      const receipt = await submitOrder(users[1], {
         ...payload,
         requestKey: randomUUID(),
         startDate: tomorrow,
       });
       assert.equal(receipt.status, "pending");
       assert.equal(
-        (await reorderDraft(users[0], receipt.id)).notCookingToday,
+        (await reorderDraft(users[1], receipt.id)).notCookingToday,
         true,
       );
       await pool.query(

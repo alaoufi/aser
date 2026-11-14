@@ -127,6 +127,16 @@ test(
       )
     ).rows[0];
     assert.deepEqual(counts, { products: 1, orders: 1, messages: 2 });
+    // طلب المراجعة مُسلَّم، ليجرّب المراجع التقييم (التقييم بعد التسليم فقط).
+    assert.equal(
+      (
+        await pool.query(
+          "SELECT status FROM jdatna.order_requests WHERE producer_id=$1",
+          [family.id],
+        )
+      ).rows[0].status,
+      "completed",
+    );
 
     // الأسرة التجريبية لا تظهر في البحث ومائدة اليوم.
     const families = await searchProducers({});
@@ -179,5 +189,10 @@ test(
     await setupReview(admin, { days: 0 });
     assert.equal((await reviewStatus(admin)).until, null);
     await assert.rejects(reviewOtpCode(REVIEW.signupPhone), /مغلق/);
+    // الأسرة الحقيقية المؤقتة لا تبقى في قاعدة الاختبار فتظهر في «مائدة اليوم» لاختبارات المتصفح.
+    await pool.query("DELETE FROM jdatna.products WHERE id=$1", [realProduct]);
+    await pool.query("DELETE FROM jdatna.producer_profiles WHERE id=$1", [
+      realFamily,
+    ]);
   },
 );

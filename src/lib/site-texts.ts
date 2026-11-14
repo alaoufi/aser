@@ -13,11 +13,17 @@ export const siteTextDefaults = {
   "table.emptyRegion": "في منطقتك",
   "table.more": "افتح المائدة كاملة",
   "avail.now": "متوفر الآن",
+  "status.available": "جاهز",
+  "status.unavailable": "غير جاهز",
+  "status.preorder": "حسب الطلب",
   "avail.order": "اطلب الآن",
   "browse.title": "طبخات اليوم",
   "browse.subtitle": "اختر طريقة البحث، ونعرض لك المتاح أولًا.",
   "footer.made": "صُنع ليقرّب أهل الدار",
   "footer.affiliation": "أحد فروع مواقع تربح",
+  "store.title": "حمّل تطبيق أكلات جدتنا",
+  "store.appStore": "حمّل من App Store",
+  "store.googlePlay": "احصل عليه من Google Play",
   "table.prev": "الأطباق السابقة",
   "table.next": "الأطباق التالية",
   "region.auto": "حسب موقعك",
@@ -49,6 +55,8 @@ export const siteTextDefaults = {
   "certificate.announceLink": "عرض الشهادة",
   "certificate.how":
     "تصدر شهادة «أسرة مميزة» تلقائيًا عند حصول أسرتك على 10 تقييمات كلها 5 نجوم.",
+  "approval.title": "مبارك اعتماد أسرتك",
+  "approval.message": "مبارك، تم اعتماد تسجيلك. نسأل الله لنا ولكم التوفيق",
   "welcome.title": "مرحبا بك جيت ومعك الخير",
   "welcome.subtitle": "وش جبت معك اليوم؟",
   "welcome.products": "إضافة منتجاتك",
@@ -85,11 +93,17 @@ export const siteTextLabels: Record<
   "table.emptyRegion": ["الرئيسية", "تحت «بانتظار العروض»"],
   "table.more": ["الرئيسية", "رابط المائدة كاملة"],
   "avail.now": ["الرئيسية", "بطاقة «متوفر الآن»"],
+  "status.available": ["حالة المنتج", "المنتج جاهز"],
+  "status.unavailable": ["حالة المنتج", "المنتج غير جاهز"],
+  "status.preorder": ["حالة المنتج", "المنتج حسب الطلب"],
   "avail.order": ["الرئيسية", "بطاقة «اطلب الآن»"],
   "browse.title": ["صفحة البحث", "العنوان"],
   "browse.subtitle": ["صفحة البحث", "السطر تحت العنوان"],
   "footer.made": ["أسفل الموقع", "العبارة الختامية"],
   "footer.affiliation": ["أسفل الموقع", "سطر الانتماء"],
+  "store.title": ["أسفل الموقع", "عنوان أزرار تحميل التطبيق"],
+  "store.appStore": ["أسفل الموقع", "زر App Store"],
+  "store.googlePlay": ["أسفل الموقع", "زر Google Play"],
   "table.prev": ["الرئيسية", "سهم الأطباق السابقة"],
   "table.next": ["الرئيسية", "سهم الأطباق التالية"],
   "region.auto": ["الرئيسية", "تنبيه المنطقة التلقائية"],
@@ -119,6 +133,11 @@ export const siteTextLabels: Record<
   ],
   "certificate.announceLink": ["شهادة الأسرة المميزة", "رابط الإعلان"],
   "certificate.how": ["شهادة الأسرة المميزة", "شرح الشهادة في لوحة الأسرة"],
+  "approval.title": ["اعتماد الأسر المنتجة", "عنوان إشعار الاعتماد"],
+  "approval.message": [
+    "اعتماد الأسر المنتجة",
+    "رسالة المباركة بعد الاعتماد (إشعار وأعلى لوحة الأسرة)",
+  ],
   "welcome.title": ["ترحيب الأسرة المنتجة", "السطر الأول"],
   "welcome.subtitle": ["ترحيب الأسرة المنتجة", "السطر الثاني"],
   "welcome.products": ["ترحيب الأسرة المنتجة", "زر إضافة المنتجات"],
@@ -164,4 +183,16 @@ export const siteTextParagraphs: ReadonlyMap<SiteTextKey, SiteTextKey> =
 
 export function isSiteTextKey(key: string): key is SiteTextKey {
   return Object.hasOwn(siteTextDefaults, key);
+}
+
+/** أسماء حالة المنتج (جاهز، غير جاهز، حسب الطلب) من «نصوص الموقع»، والنص الأصلي إن حُذف أو أُخفي. */
+export function productStatusLabels(
+  texts?: Partial<Record<SiteTextKey, string>> | null,
+): Record<"available" | "unavailable" | "preorder", string> {
+  const pick = (k: SiteTextKey) => texts?.[k] || siteTextDefaults[k];
+  return {
+    available: pick("status.available"),
+    unavailable: pick("status.unavailable"),
+    preorder: pick("status.preorder"),
+  };
 }

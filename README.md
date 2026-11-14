@@ -1,7 +1,7 @@
 # أكلات جدتنا — jdatna.com
 
 مستودع المشروع: [alaoufi/aser](https://github.com/alaoufi/aser).
-الموقع: [أكلات جدتنا](https://jdatna.com). الفرع المحفوظ: `codex/jdatna-platform`.
+الموقع: [أكلات جدتنا](https://jdatna.com). الفرع الأساسي (ينشر تلقائيًا): `codex/jdatna-platform`.
 
 منصة عربية RTL للأكلات والمنتجات الغذائية من الأسر المنتجة، مبنية بـ Next.js وTypeScript وPostgreSQL. التطبيق يعمل في Coolify على Contabo، بقاعدة وملفات وتخزين ونسخ احتياطية مستقلة عن موقع أي خدمة على الخادم نفسه.
 
@@ -22,7 +22,7 @@
 - منتجات الألبان والمشروبات وفروع قابلة للإدارة، وحالة «لا يوجد طبخ اليوم».
 - الهوية المعتمدة وصور الأطباق الخمسة المعدلة بخلفية شفافة. أصول التشغيل في `public/` ومصادر التصميم الأصلية في `design/source/`.
 
-آخر مصدر تطبيق منشور ومتحقق: `30b97ec116e4835161e2c0a3b145679627104449`، والترحيلات حتى `016`. حفظ التوثيق ورفع Git لا يعيدان نشر الموقع تلقائيًا. تطبيقات Android وiOS ليست منشورة ضمن هذا التسليم.
+الإصدار المنشور وحالة المتاجر في [`docs/RELEASE.json`](docs/RELEASE.json)، والجرد الكامل وقاعدة البيانات والنسخ الاحتياطية في [`docs/HANDOFF_INVENTORY.md`](docs/HANDOFF_INVENTORY.md). **الدمج في `codex/jdatna-platform` ينشر تلقائيًا** بعد نجاح CI (`.github/workflows/deploy-production.yml`)؛ الدفع إلى أي فرع آخر لا ينشر. تطبيق أندرويد (Google Play، `store/android`) وتطبيق الآيفون (App Store، `mobile/ios`) غلافان يعرضان jdatna.com.
 
 ## التطوير والتحقق
 

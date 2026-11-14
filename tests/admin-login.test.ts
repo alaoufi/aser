@@ -17,7 +17,7 @@ import { db } from "../src/server/db";
 
 test("public OTP endpoints never accept the admin purpose", () => {
   assert.equal(otpPurposeSchema.safeParse("admin").success, false);
-  assert.equal(ADMIN_PASSWORD_MIN >= 10, true);
+  assert.equal(ADMIN_PASSWORD_MIN, 4);
 });
 
 test(
@@ -107,24 +107,31 @@ test(
       const step1 = await passwordLogin({ identifier: admin.phone, password });
       assert.ok(step1.otp?.challengeId);
       assert.equal(step1.token, null);
+      // رقم التحدي من القاعدة لا من نتيجة الدخول، فلا تمر نتيجة كلمة المرور إلى دوال التجزئة.
+      const challengeId = (
+        await db().query(
+          "SELECT id FROM jdatna.otp_challenges WHERE phone=$1 AND purpose='admin' AND consumed_at IS NULL ORDER BY expires_at DESC LIMIT 1",
+          [admin.phone],
+        )
+      ).rows[0].id as string;
       assert.equal(await sessions(admin.id), 0, "no admin session before code");
       const code = /(\d{4})$/.exec(sent.at(-1) ?? "")?.[1];
       assert.ok(code, "admin code sent by SMS");
       assert.match(sent.at(-1)!, /دخول إدارة/);
 
       assert.equal(
-        await verifyOtp(step1.otp!.challengeId, code!),
+        await verifyOtp(challengeId, code!),
         null,
         "signup/reset verifier never consumes an admin challenge",
       );
       const wrong = code === "1111" ? "2222" : "1111";
-      assert.equal(await verifyAdminLogin(step1.otp!.challengeId, wrong), null);
-      const done = await verifyAdminLogin(step1.otp!.challengeId, code!);
+      assert.equal(await verifyAdminLogin(challengeId, wrong), null);
+      const done = await verifyAdminLogin(challengeId, code!);
       assert.ok(done);
       assert.equal(done.user.role, "admin");
       assert.equal(await sessions(admin.id), 1);
       assert.equal(
-        await verifyAdminLogin(step1.otp!.challengeId, code!),
+        await verifyAdminLogin(challengeId, code!),
         null,
         "codes are single use",
       );
@@ -144,7 +151,7 @@ test(
       assert.ok(off.token, "switching it off restores one-step admin login");
       delete process.env.ADMIN_LOGIN_OTP;
 
-      // تعيين كلمة مرور جديدة للمدير يتطلب 10 خانات على الأقل.
+      // كلمة مرور المدير أربع خانات على الأقل كغيره (قرار المالك 2026-11-14).
       const setupToken = randomBytes(32).toString("hex");
       await db().query(
         "INSERT INTO jdatna.sessions(token_hash,user_id,expires_at,setup_until,setup_only) VALUES($1,$2,now()+interval '10 minutes',now()+interval '10 minutes',true)",
@@ -153,12 +160,11 @@ test(
       const request = new Request("http://localhost/", {
         headers: { cookie: "jdatna_session=" + setupToken },
       });
-      await assert.rejects(setCredentials(request, { password: "abcd1234" }), {
-        status: 400,
-      });
-      const strong = await setCredentials(request, {
-        password: "strong-admin-pass-" + tag,
-      });
+      await assert.rejects(
+        setCredentials(request, { password: "123" }),
+        /أربع خانات/,
+      );
+      const strong = await setCredentials(request, { password: "1234" });
       assert.equal(strong.user.role, "admin");
     } finally {
       globalThis.fetch = realFetch;

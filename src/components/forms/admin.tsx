@@ -21,6 +21,7 @@ import { AccountShell, Guard, Message, api, s, useSession } from "./shared";
 import { can, isManager, type AdminPermission } from "@/lib/permissions";
 import { MembersAdmin } from "./members";
 import { SectionIcon as AdminIcon } from "./section-icon";
+import { APPROVALS_CHANGED } from "@/components/public/approval-alert";
 
 /** بيانات كل قسم، تُحمَّل مسبقًا عند المرور على زره أو التركيز عليه. */
 const tabData: Record<string, string[]> = {
@@ -41,7 +42,8 @@ const adminTabs: [
   label: string,
   permission: AdminPermission | "owner",
 ][] = [
-  ["producers", "مراجعة الأسر", "producers"],
+  ["approvals", "اعتماد الأسر المنتجة", "producers"],
+  ["producers", "الأسر المنتجة", "producers"],
   ["orders", "الطلبات", "orders"],
   ["products", "المنتجات", "products"],
   ["categories", "إدارة الأقسام", "categories"],
@@ -55,7 +57,10 @@ const adminTabs: [
 ];
 /** تجميع الأقسام في شاشة الإدارة (الأسماء للقارئ الآلي فقط). */
 const adminGroups: [group: string, ids: string[]][] = [
-  ["الأسر والطلبات", ["producers", "orders", "products", "reports"]],
+  [
+    "الأسر والطلبات",
+    ["approvals", "producers", "orders", "products", "reports"],
+  ],
   ["الأقسام والمواقع", ["categories", "locations"]],
   ["الموقع والأعضاء", ["template", "texts", "app", "review", "members"]],
 ];
@@ -100,6 +105,14 @@ function stateOf(p: Application): FamilyState {
     today(),
   );
 }
+const documentLabels: Record<string, string> = {
+  producer_certificate: "شهادة أسرة منتجة",
+  national_id: "صورة الهوية الوطنية",
+  freelance: "وثيقة عمل حر",
+  commercial_registration: "سجل تجاري",
+  other_document: "شهادة أو مستند آخر",
+  exception: "طلب استثناء إداري",
+};
 function Review({
   producer,
   onSaved,
@@ -124,7 +137,6 @@ function Review({
             decision: f.get("decision"),
             reason: f.get("reason"),
             eligibilityConfirmed: f.has("eligibilityConfirmed"),
-            exceptionApproved: f.has("exceptionApproved"),
           }),
         },
       );
@@ -158,7 +170,14 @@ function Review({
           موقع العمل (خاص): {producer.workLocation}
         </p>
       )}
-      <p>نوع الإثبات: {producer.documentType || "راجع المستند المرفق"}</p>
+      {producer.documentId ? (
+        <p>
+          نوع المرفق:{" "}
+          {documentLabels[producer.documentType ?? ""] ?? producer.documentType}
+        </p>
+      ) : (
+        <p className={s.tag}>لم ترفق مستندات بعد</p>
+      )}
       {producer.documentType === "exception" && (
         <p>تفاصيل طلب الاستثناء: {producer.reviewReason || "دون تفاصيل"}</p>
       )}
@@ -194,17 +213,28 @@ function Review({
             <option value="" disabled>
               اختر القرار
             </option>
-            <option value="approved">اعتماد</option>
+            <option value="approved">
+              تفعيل الحساب (ولو دون مستندات، مع ذكر النواقص في الملاحظة)
+            </option>
             <option value="rejected">
-              طلب استكمال (يعود للأسرة المنتجة لتعديل المطلوب)
+              طلب استكمال النواقص قبل التفعيل (الحساب لا يظهر للعملاء)
             </option>
             <option value="suspended">إيقاف الحساب</option>
           </select>
         </label>
         <label className={s.field}>
-          سبب القرار (يُحفظ في سجل المراجعة ويظهر للأسرة المنتجة عند طلب
-          الاستكمال)
-          <textarea name="reason" required minLength={5} maxLength={2000} />
+          ملاحظة للأسرة المنتجة (تظهر لها أعلى صفحتها، اذكر فيها النواقص)
+          <textarea
+            name="reason"
+            required
+            minLength={5}
+            maxLength={2000}
+            placeholder={
+              producer.documentId
+                ? "مثال: تم التفعيل، أهلًا بكم."
+                : "مثال: تم التفعيل. نرجو إرفاق شهادة الأسرة المنتجة أو صورة الهوية الوطنية من صفحة بيانات الأسرة."
+            }
+          />
         </label>
         <label className={s.checks}>
           <input
@@ -212,19 +242,8 @@ function Review({
             type="checkbox"
             required={decision === "approved"}
           />
-          تحققت من أهلية النشاط واستيفاء التراخيص الإلزامية قبل الاعتماد.
+          راجعت بيانات الأسرة المنتجة وأوافق على تفعيل حسابها.
         </label>
-        {producer.documentType === "exception" && !producer.documentId && (
-          <label className={s.checks}>
-            <input
-              type="checkbox"
-              name="exceptionApproved"
-              required={decision === "approved"}
-            />
-            أمنح استثناءً إداريًا بعد مراجعة الأهلية، والسبب الموثق أعلاه لا يقل
-            عن عشرة أحرف.
-          </label>
-        )}
         <button disabled={busy} className={s.button}>
           {busy ? "جارٍ حفظ القرار…" : "حفظ قرار المراجعة"}
         </button>
@@ -234,12 +253,12 @@ function Review({
 }
 export function Admin() {
   const session = useSession();
-  const [tab, setTab] = useState("producers");
+  const [tab, setTab] = useState("approvals");
   const [producers, setProducers] = useState<Application[]>([]);
   const [error, setError] = useState("");
   const [loaded, setLoaded] = useState(false);
   const [success, setSuccess] = useState("");
-  const [filter, setFilter] = useState("review");
+  const [filter, setFilter] = useState("all");
   const [query, setQuery] = useState("");
   const allowed = adminTabs.filter(([, , permission]) =>
     permission === "owner"
@@ -252,6 +271,12 @@ export function Admin() {
     const d = await api<{ producers: Application[] }>("/api/admin/producers");
     setProducers(d.producers);
   }
+  // رابط التنبيه «أسرة تنتظر الاعتماد» يفتح التبويب مباشرة: /admin?tab=approvals
+  useEffect(() => {
+    const wanted = new URLSearchParams(window.location.search).get("tab");
+    if (wanted && adminTabs.some(([id]) => id === wanted)) setTab(wanted);
+  }, []);
+  const waiting = producers.filter((p) => p.status === "pending");
   useEffect(() => {
     if (can(session.user, "producers"))
       load()
@@ -290,6 +315,12 @@ export function Admin() {
                     >
                       <AdminIcon name={id} />
                       <span>{label}</span>
+                      {id === "approvals" && waiting.length > 0 && (
+                        <span className={s.navBadge}>
+                          {waiting.length}
+                          <span className="sr-only"> تنتظر الاعتماد</span>
+                        </span>
+                      )}
                     </button>
                   ))}
                   {coverage && (
@@ -331,6 +362,33 @@ export function Admin() {
             <AppLinksAdmin />
           ) : active === "review" ? (
             <StoreReviewAdmin />
+          ) : active === "approvals" ? (
+            <section aria-label="اعتماد الأسر المنتجة">
+              <h2>اعتماد الأسر المنتجة</h2>
+              <p className={s.muted}>
+                كل أسرة سجّلت أو عدّلت بياناتها وتنتظر قرارك. فعّلها ولو دون
+                مستندات واكتب النواقص في الملاحظة، أو اطلب الاستكمال قبل
+                التفعيل. يصلك تنبيه عند كل تسجيل جديد.
+              </p>
+              <Message error={error} success={success} />
+              {!loaded ? (
+                <p role="status">جارٍ تحميل الطلبات…</p>
+              ) : waiting.length ? (
+                waiting.map((p) => (
+                  <Review
+                    key={p.id}
+                    producer={p}
+                    onSaved={async () => {
+                      await load();
+                      window.dispatchEvent(new Event(APPROVALS_CHANGED));
+                      setSuccess("تم حفظ قرار المراجعة.");
+                    }}
+                  />
+                ))
+              ) : (
+                <p className={s.notice}>لا توجد أسر تنتظر الاعتماد الآن.</p>
+              )}
+            </section>
           ) : active !== "producers" ? (
             <p className={s.notice}>
               لا توجد أقسام مسموحة لحسابك بعد؛ تواصل مع مدير المنصة.
@@ -397,6 +455,7 @@ export function Admin() {
                         producer={p}
                         onSaved={async () => {
                           await load();
+                          window.dispatchEvent(new Event(APPROVALS_CHANGED));
                           setSuccess("تم حفظ قرار المراجعة.");
                         }}
                       />
