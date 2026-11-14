@@ -1,0 +1,90 @@
+# جرد وتسليم «أكلات جدتنا»: 2026-11-14
+
+هذا الملف يجمع خط الأساس، وملكية الملفات، وقاعدة البيانات الفعلية، والنسخ الاحتياطية، وطريقة الاستعادة. لا يحتوي أسرارًا ولا بيانات عملاء.
+
+## 1. المستودع والنشر
+
+| البند | القيمة |
+| --- | --- |
+| المستودع | https://github.com/alaoufi/aser |
+| الفرع الأساسي | `codex/jdatna-platform`. الدمج فيه **ينشر تلقائيًا** بعد نجاح CI عبر `.github/workflows/deploy-production.yml` (deploy-migrate). |
+| فرع العمل | `ccr-c1dbfcd7-lymdrx`، ومعه طلب الدمج #51 (مسودة) |
+| الإصدار المنشور (خط الأساس) | **5.7.0.1**، المصدر `e984e7cfcfb0c7e9aecb089e795613e73531c0f9` (من `/api/health`) |
+| رأس الفرع الأساسي | `076d3454…` (5.7.0.2): مدموج، ولم يُنشر لأن فحص الخادم أوقفه (انظر §6) |
+| نقطة التراجع قبل التنظيف | الفرع `backup/jdatna-pre-cleanup-20261114` على `273ebe871fad38c615b0dac478d23118d1e2ce1a` |
+| نقطة تراجع الإنتاج | الفرع `backup/jdatna-production-5.7.0.1-20261114` على `e984e7c…` |
+| الاستضافة | خادم Contabo مشترك مع «أي خدمة». Docker + Caddy، والتطبيق في Coolify. التفاصيل في `docs/COOLIFY.md` و`docs/OPERATIONS.md`. |
+| CI | `ci.yml`: الأنواع والتنسيق والفحص والاختبارات والبناء، والمتصفح، وLighthouse، وTrivy. يضاف إليه `codeql.yml` أسبوعيًا، و`uptime.yml` كل 15 دقيقة. |
+| بناء الآيفون | `ios.yml` على GitHub macOS (يحتاج دقائق Actions)، ويرفع إلى TestFlight. |
+
+**ملاحظة:** لا LFS ولا مستودعات فرعية. `.gitattributes` يضبط نهايات الأسطر فقط.
+
+## 2. خط الأساس قبل التنظيف (فحص خارجي)
+
+- **الصفحات:** كلها تردّ 200: `/`، `/browse`، `/producers`، `/offers`، `/about`، `/privacy`، `/terms`، `/support`، `/login`، `/register`، `/orders`، `/messages`، `/admin`، `/account/delete`، `sitemap.xml`، `robots.txt`، `manifest.webmanifest`، `assetlinks.json`، `apple-app-site-association`.
+- **الـ API:** `/api/health` جاهز (database وregistrationOpen وsmsConfigured وprivateStorageConfigured كلها true). `/api/live` يرد 401 بلا جلسة، وهذا متوقع.
+- **أندرويد** `com.jdatna.app` 1.0.0: قيد مراجعة Google (رُفض في 13 نوفمبر بسبب ERR_CONNECTION_RESET وقت إعادة تشغيل الخادم، ثم أُعيد إرساله في 14 نوفمبر). يعرض `https://jdatna.com/?source=app`.
+- **الآيفون** `com.jdatna.app` 1.0.0 (1)، رقم App Store 6833382132: بانتظار مراجعة Apple (أُعيد إرساله في 14 نوفمبر). يعرض `https://jdatna.com/?source=ios`.
+- **الأعطال المعروفة قبل التنظيف:**
+  - فحص الأمان `verify.py` يوقف نشر جدتنا بعد كل نشر لأي خدمة (§6).
+  - إشعارات الآيفون والتطبيق مغلق غير مفعّلة (APNs مؤجل).
+
+## 3. جرد المكونات
+
+| المكوّن | المكان |
+| --- | --- |
+| الكود (Next.js 16) | `src/` (الصفحات في `app`، والخادم في `server`، والواجهة في `components`، والمشترك في `lib`) |
+| مخطط قاعدة البيانات | `migrations/001…032` تطبّق بـ `scripts/migrate.ts`، ويُتحقق من الترحيلات القديمة بـ `legacy-checksums.json` |
+| الاختبارات | `tests/*.test.ts` (node:test، وبعضها على قاعدة معزولة) و`tests/e2e/*.spec.ts` (Playwright) |
+| التصميم | `design/source/` (المصادر وحزمة الشعار 25MB) و`public/` (نسخ التشغيل) |
+| الجوال | `mobile/ios` (Capacitor 8) و`store/android` (TWA/Bubblewrap) و`store/assets` (صور المتجرين) و`store/LISTING.md` |
+| البنية والتشغيل | `infra/`: compose القاعدة والتطبيق والتخزين، والنسخ الاحتياطي، والصيانة، والنشر، و`verify.py`، و`provision.py` (للتهيئة الأولى فقط) |
+| المهام المجدولة | على الخادم: `jdatna-backup.timer` (يوميًا 04:30 بتوقيت الرياض) و`jdatna-maintenance.timer` (تنظيف الجلسات كل 15 دقيقة). في GitHub: uptime كل 15 دقيقة، وCodeQL أسبوعيًا |
+| التكاملات | تقنيات للـ SMS، وتخزين S3 على SeaweedFS خاص، وWeb Push (مفاتيح VAPID تُولَّد في القاعدة)، وخرائط OpenStreetMap |
+| التوثيق والتعليمات | `AGENTS.md` و`CLAUDE.md` و`docs/` (القرارات في `DECISIONS.md`، والتسليم في `PROJECT_HANDOFF.md`، والمراجعة في `APP_REVIEW_NOTES.md`) |
+
+## 4. سجل الملكية والفصل عن «أي خدمة»
+
+| المسار | المالك | الدليل | القرار |
+| --- | --- | --- | --- |
+| `infra/aykdmh-front.compose.yaml` | أي خدمة | واجهة aykdmh في Coolify (صورة Caddy، بوابة 8093) | **نُقل** إلى alaoufi/aykdmah `deploy/coolify/` (commit `756579e`) **وحُذف** هنا (`273ebe8`). الأصل محفوظ في فرع التراجع |
+| صفوف موارد أي خدمة في `docs/COOLIFY.md` | أي خدمة | جدول الموارد | **نُقلت** إلى `deploy/coolify/README.md` في مستودع أي خدمة |
+| `infra/verify.py` و`infra/provision.py` و`infra/jdatna-proxy.caddy` | جدتنا | ضمانات عزل: جدتنا لا تمس أي خدمة | **تبقى** |
+| ذكر أي خدمة في `docs/*` القديمة | جدتنا (سجل تاريخي) | قرارات سابقة | **تبقى** |
+| تعديل نص «دليلي» | أي خدمة | في مستودعها، فرع `ccr-c1dbfcd7-lymdrx` (`c4e12de`) | لم يدخل جدتنا أصلًا |
+| `deploy/caddy/Caddyfile` في مستودع أي خدمة يذكر jdatna | أي خدمة | مدخل TLS مشترك يحوّل jdatna.com | **يبقى هناك**. هو إعداد أي خدمة، ولا يُنقل |
+| مستودع `alaoufi/apple-apps` | التطبيقان معًا | مستودع مستقل لتطبيقات Apple | خارج هذا التنظيف. فرع `jdatna-review-record` فيه سكربت فيديو جدتنا |
+
+لم يُنقل أي شيء على الخادم. التغيير في Git فقط.
+
+## 5. قاعدة البيانات الفعلية
+
+| البند | الإنتاج | الاختبار |
+| --- | --- | --- |
+| المحرك | PostgreSQL 16 في الحاوية `jdatna-db` (`infra/compose.yaml`) | PostgreSQL محلي أو في CI |
+| القاعدة والمخطط | `jdatna` / المخطط `jdatna` | أي قاعدة يبدأ اسمها بـ `jdatna_test_`، مع `JDATNA_TEST_DB=true` |
+| البيانات | `/srv/jdatna/data/postgres` على الخادم | مؤقتة |
+| اتصال التطبيق | `DATABASE_URL` في `/etc/jdatna/runtime.env` (`env_file` في `infra/application.compose.yaml`)، عبر شبكة `database` الداخلية فقط | — |
+| الترحيلات | حساب migrator منفصل وقت النشر (deploy-migrate) | `npx tsx scripts/migrate.ts` |
+| الوسائط | SeaweedFS (S3 داخلي، `infra/storage.compose.yaml`)، والمستندات الخاصة مشفّرة بـ `DOCUMENT_ENCRYPTION_KEY` | وهمي في الاختبار |
+
+**مكوّن واحد بقاعدة واحدة:** الموقع والإدارة والـ API والمهام المجدولة كلها في نفس تطبيق Next.js، فتتصل بنفس `DATABASE_URL`. التطبيقان لا يتصلان بقاعدة، لأنهما يعرضان jdatna.com فقط.
+
+**قواعد سابقة:** لا تُستخدم Neon ولا غيرها (منذ 2026-11-09، `docs/START_HERE.md`).
+
+**دليل التشغيل:** ينتظر نتيجة أمر الفحص على الخادم، وتُضاف في §7.
+
+## 6. ما بقي معلقًا
+
+1. **فحص `verify.py`** يقارن حاويات أي خدمة بسجل ثابت (`/opt/jdatna/audit/before.json`)، فيرفض نشر جدتنا بعد كل نشر لأي خدمة. يحتاج حلًّا دائمًا: يتحقق أنها تعمل وتردّ، لا أن تاريخ تشغيلها لم يتغير. وهذا تعديل على الخادم يحتاج موافقة المالك.
+2. **5.7.0.2 و5.7.1.0 غير منشورين.** ننتظر انتهاء مراجعة Google، لأن النشر يعيد تشغيل الخادم.
+3. **نسخة خارج الخادم:** كانت معلقة منذ 2026-11-09، والنسخ الاحتياطية على قرص منفصل في نفس الخادم فقط.
+4. **إشعارات الآيفون الأصلية (APNs):** مؤجلة.
+5. **تصدير محادثات ChatGPT وClaude وCodex:** لا يمكن من هنا، ويصدّرها المالك من إعدادات كل حساب. القرارات المعتمدة ملخصة في `docs/DECISIONS.md`.
+
+## 7. النسخ الاحتياطية والاستعادة
+
+- **التلقائي:** `jdatna-backup.service` يوميًا 04:30 بتوقيت الرياض. ينتج أرشيف tar مشفّرًا بـ GPG في `/var/backups/jdatna/` على قرص منفصل (6 GiB). يحتوي `database.dump` و`roles.sql` و`compose.yaml` ومجلدات الرفع. التفاصيل في `docs/OPERATIONS.md`.
+- **اختبار الاستعادة:** `python3 /opt/jdatna/infra/verify.py` يستعيد آخر نسخة في قاعدة باسم فريد داخل `jdatna-db`، ويفحص الملكية والصلاحيات وCRUD، ثم يحذفها.
+- **الاستعادة الكاملة:** في `docs/OPERATIONS.md`، قسم الاستعادة.
+- **نسخة ما قبل التنظيف (2026-11-14):** تُدوَّن هنا بعد تنفيذ أمر الفحص، وتشمل اسم الملف وSHA-256 ونتيجة الاستعادة.
