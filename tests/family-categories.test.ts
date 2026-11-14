@@ -65,6 +65,7 @@ test(
         .rows[0].id;
       const data = {
         name: "أسرة أقسام " + tag,
+        tradeName: "أقسام معلنة " + tag,
         phone: user.phone,
         cityId: city,
         documentId: doc,

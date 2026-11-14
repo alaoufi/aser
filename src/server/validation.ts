@@ -79,7 +79,13 @@ export function normalizeNationalId(value: string) {
 export const profileSchema = z
   .object({
     name: z.string().trim().min(2).max(120),
-    tradeName: z.string().trim().max(120).nullable().optional(),
+    /** الاسم المعلن (الاسم التجاري): الظاهر في الموقع وللعملاء، ولا يتكرر بين الأسر. */
+    tradeName: z
+      .string()
+      .trim()
+      .min(2, "اكتب الاسم المعلن (الاسم التجاري) حرفين على الأقل")
+      .max(120)
+      .optional(),
     description: z.string().trim().max(2000).optional(),
     cityId: z.string().min(1).max(50),
     neighborhood: optionalText(120),

@@ -87,11 +87,12 @@ test("family saves only basic fields in one form and retries without reuploading
   await expect(page.getByLabel("الاسم", { exact: true })).toHaveValue(
     user.name,
   );
+  // الاسم المعلن (الظاهر للعملاء) مطلوب، والاسم للإدارة فقط.
   await expect(
-    page.getByLabel("الاسم التجاري (اختياري)", { exact: true }),
-  ).not.toHaveAttribute("required", "");
+    page.getByLabel("الاسم المعلن (الاسم التجاري)", { exact: true }),
+  ).toHaveAttribute("required", "");
   await page
-    .getByLabel("الاسم التجاري (اختياري)", { exact: true })
+    .getByLabel("الاسم المعلن (الاسم التجاري)", { exact: true })
     .fill("مذاق الأسرة المنتجة التجريبي");
   await page.getByLabel("رقم الهوية", { exact: true }).fill("١٢٣٤٥٦٧٨٩٠");
   await expect(page.locator("input[name=phone]")).toHaveAttribute(

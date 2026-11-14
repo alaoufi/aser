@@ -150,14 +150,17 @@ function Review({
   return (
     <article className={s.card}>
       <span className={s.tag}>{stateOf(producer).label}</span>
-      <h2>{producer.name}</h2>
+      <h2>{producer.tradeName || producer.name}</h2>
       {(producer.ownerName || producer.phone) && (
         <p>
           صاحب الحساب: {producer.ownerName}{" "}
           {producer.phone && <bdi dir="ltr">{producer.phone}</bdi>}
         </p>
       )}
-      {producer.tradeName && <p>الاسم التجاري: {producer.tradeName}</p>}
+      <p>
+        الاسم المعلن: {producer.tradeName || "لم يُحدد بعد"} · الاسم (للإدارة):{" "}
+        {producer.name}
+      </p>
       <p>{producer.cityName}</p>
       <p>{producer.description}</p>
       {producer.nationalId && (

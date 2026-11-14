@@ -108,8 +108,8 @@ function conditions(f: Filters, products: boolean) {
   const anyWords: string[] = [];
   for (const word of searchWords(f.q)) {
     const fields = products
-      ? ["x.name", "x.description", "p.name", "coalesce(p.trade_name,'')"]
-      : ["p.name", "coalesce(p.trade_name,'')", "p.description"];
+      ? ["x.name", "x.description", "coalesce(p.trade_name,p.name)"]
+      : ["coalesce(p.trade_name,p.name)", "p.description"];
     const categoryMatch = products
       ? "EXISTS(SELECT 1 FROM jdatna.product_categories sc JOIN jdatna.categories cc ON cc.id=sc.category_id WHERE sc.product_id=x.id AND " +
         normalized("cc.name") +

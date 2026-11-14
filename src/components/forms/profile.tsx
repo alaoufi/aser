@@ -165,7 +165,7 @@ export function ProfileForm({
           ...(!profile ? { categoryIds } : {}),
           ...readDeliveryScope(f),
           name: f.get("name"),
-          tradeName: f.get("tradeName") || null,
+          tradeName: String(f.get("tradeName") ?? "").trim(),
           phone: user.phone,
           cityId: f.get("cityId"),
           nationalId: f.get("nationalId"),
@@ -230,6 +230,20 @@ export function ProfileForm({
         >
           <div className={s.grid}>
             <label className={s.field}>
+              الاسم المعلن (الاسم التجاري)
+              <input
+                name="tradeName"
+                required
+                minLength={2}
+                maxLength={120}
+                defaultValue={profile?.tradeName || ""}
+                aria-describedby="trade-name-hint"
+              />
+              <small id="trade-name-hint">
+                يظهر في الموقع وللعملاء، ولا يتكرر لأسرتين.
+              </small>
+            </label>
+            <label className={s.field}>
               الاسم
               <input
                 name="name"
@@ -237,15 +251,9 @@ export function ProfileForm({
                 minLength={2}
                 maxLength={120}
                 defaultValue={profile?.name || user.name}
+                aria-describedby="name-hint"
               />
-            </label>
-            <label className={s.field}>
-              الاسم التجاري (اختياري)
-              <input
-                name="tradeName"
-                maxLength={120}
-                defaultValue={profile?.tradeName || ""}
-              />
+              <small id="name-hint">للإدارة فقط، ولا يظهر للعملاء.</small>
             </label>
             <label className={s.field}>
               رقم الهوية

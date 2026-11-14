@@ -66,6 +66,7 @@ test(
       pid = (
         await saveProfile(user, {
           name: "أسرة الشحن",
+          tradeName: "شحن معلن " + user.id,
           phone: user.phone,
           cityId: city.id,
           documentId: doc,
