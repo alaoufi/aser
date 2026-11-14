@@ -37,7 +37,7 @@ export default async function ProducerDetail({
     getSiteTexts(),
   ]);
   const coverage = p.delivery ? await getPublicCoverage(p.id) : [];
-  const phone = phoneNumber(p.phone);
+  const phone = p.phone ? phoneNumber(p.phone) : null;
   const whatsapp = p.whatsapp ? phoneNumber(p.whatsapp) : null;
   return (
     <div className="wrap page-space">

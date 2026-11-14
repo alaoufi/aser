@@ -11,6 +11,7 @@ import {
 } from "./profile-advanced";
 import { CookingAvailability } from "./cooking-availability";
 import { FulfillmentCard } from "./fulfillment";
+import { ContactVisibilityCard } from "./contact-visibility";
 import { SectionIcon } from "./section-icon";
 import { DeleteAccountSection } from "./delete-account";
 import { CertificateCard } from "./certificate-card";
@@ -199,6 +200,7 @@ export function ProfileForm({
       <FamilyStatusBanner />
       {profile && <CookingAvailability />}
       {profile && <FulfillmentCard />}
+      {profile && <ContactVisibilityCard />}
       {profile && (
         <Link className={s.button} href="/dashboard/coverage">
           تحديد نطاق التغطية: المدن والمراكز والأحياء

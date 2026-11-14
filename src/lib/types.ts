@@ -26,7 +26,8 @@ export type Producer = {
   regionName: string;
   neighborhood: string | null;
   verified: boolean;
-  phone: string;
+  /** يظهر للعملاء إن اختارت الأسرة إظهاره. */
+  phone: string | null;
   whatsapp: string | null;
   delivery: boolean;
   pickup: boolean;

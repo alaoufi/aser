@@ -33,7 +33,7 @@ export default async function ProductDetail({
   const offer = (await searchParams).offer;
   // وسائل تواصل الأسرة المنتجة المنشورة في صفحتها العامة فقط، لعرضها بعد إرسال الطلب.
   const family = await getProducer(p.producerSlug);
-  const familyPhone = family ? phoneNumber(family.phone) : null;
+  const familyPhone = family?.phone ? phoneNumber(family.phone) : null;
   const familyWhatsapp = family?.whatsapp ? phoneNumber(family.whatsapp) : null;
   return (
     <div className="wrap page-space">

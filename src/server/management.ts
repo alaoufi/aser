@@ -392,6 +392,34 @@ export async function saveFulfillment(user: SessionUser, input: unknown) {
   if (!row) throw new HttpError(404, "سجّل ملف الأسرة المنتجة أولًا");
   return row;
 }
+const contactSchema = z
+  .object({ showPhone: z.boolean(), showWhatsapp: z.boolean() })
+  .strict();
+/** ظهور بيانات التواصل للعملاء (جوال، واتساب). تعديله لا يعيد الملف للمراجعة. */
+export async function ownContactVisibility(user: SessionUser) {
+  const row = (
+    await db().query(
+      `SELECT show_phone AS "showPhone",show_whatsapp AS "showWhatsapp",phone,NULLIF(whatsapp,'') AS whatsapp FROM jdatna.producer_profiles WHERE user_id=$1`,
+      [user.id],
+    )
+  ).rows[0];
+  if (!row) throw new HttpError(404, "سجّل ملف الأسرة المنتجة أولًا");
+  return row as {
+    showPhone: boolean;
+    showWhatsapp: boolean;
+    phone: string;
+    whatsapp: string | null;
+  };
+}
+export async function saveContactVisibility(user: SessionUser, input: unknown) {
+  const v = contactSchema.parse(input);
+  const r = await db().query(
+    "UPDATE jdatna.producer_profiles SET show_phone=$2,show_whatsapp=$3,updated_at=now() WHERE user_id=$1",
+    [user.id, v.showPhone, v.showWhatsapp],
+  );
+  if (!r.rowCount) throw new HttpError(404, "سجّل ملف الأسرة المنتجة أولًا");
+  return ownContactVisibility(user);
+}
 /** عدد الأسر التي تنتظر الاعتماد: لتبويب «اعتماد الأسر المنتجة» وتنبيه المشرفين. */
 export async function pendingApprovals(user: SessionUser) {
   if (!can(user, "producers"))
