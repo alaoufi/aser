@@ -270,10 +270,16 @@ export async function setupReview(user: SessionUser, input: unknown) {
         [clientId, familyId],
       )
     ).rowCount;
-    if (!hasOrder)
+    // الطلب مُسلَّم ليجرّب المراجع التقييم (التقييم بعد التسليم فقط).
+    if (hasOrder)
+      await client.query(
+        "UPDATE jdatna.order_requests SET status='completed',updated_at=now() WHERE user_id=$1 AND producer_id=$2 AND status<>'completed'",
+        [clientId, familyId],
+      );
+    else
       await client.query(
         `INSERT INTO jdatna.order_requests(id,request_key,request_hash,user_id,producer_id,product_id,snapshot,customer_name,phone,quantity,meal,start_date,end_date,notes,status)
-         VALUES($1,$2,'store-review',$3,$4,$5,$6,$7,$8,2,'lunch',current_date+1,current_date+1,$9,'accepted')`,
+         VALUES($1,$2,'store-review',$3,$4,$5,$6,$7,$8,2,'lunch',current_date,current_date,$9,'completed')`,
         [
           randomUUID(),
           randomUUID(),

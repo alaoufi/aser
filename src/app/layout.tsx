@@ -50,7 +50,11 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
   },
 };
-export const viewport: Viewport = { themeColor: "#2e1d12" };
+// viewportFit=cover: داخل تطبيق الآيفون تمتد الصفحة تحت شريط الساعة، فنحجز له مسافته (safe-area) في CSS.
+export const viewport: Viewport = {
+  themeColor: "#2e1d12",
+  viewportFit: "cover",
+};
 export default async function RootLayout({
   children,
 }: {

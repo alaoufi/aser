@@ -5,7 +5,7 @@ import { db } from "../src/server/db";
 import { rate, ratingView, ratingSummary } from "../src/server/ratings";
 
 test(
-  "isolated ratings: only real dealings rate, admin rates families, member ratings stay private, one editable rating each",
+  "isolated ratings: only delivered orders rate, admin rates families, member ratings stay private, one editable rating each",
   { skip: process.env.JDATNA_TEST_DB !== "true" },
   async () => {
     const pool = db();
@@ -59,6 +59,33 @@ test(
       await assert.rejects(
         rate(buyer, { kind: "family", target: familyId, stars: 5, oath: true }),
         { status: 403 },
+      );
+      // طلب لم يُسلَّم بعد (مقبول أو قيد التحضير) لا يكفي للتقييم، والأسرة ترى تقييم العميل لتقرر.
+      await order("accepted");
+      await assert.rejects(
+        rate(buyer, { kind: "family", target: familyId, stars: 5, oath: true }),
+        { status: 403 },
+      );
+      await assert.rejects(
+        rate(buyer, {
+          kind: "product",
+          target: productId,
+          stars: 5,
+          oath: true,
+        }),
+        { status: 403 },
+      );
+      await assert.rejects(
+        rate(owner, { kind: "member", target: buyer.id, stars: 5, oath: true }),
+        { status: 403 },
+      );
+      assert.equal(
+        (await ratingView(owner, { kind: "member", target: buyer.id })).canRate,
+        false,
+      );
+      assert.equal(
+        (await ratingView(buyer, { kind: "family", target: familyId })).canRate,
+        false,
       );
       await order("completed");
       // لا يُقبل التقييم دون الموافقة على القسم، ويصل نص القسم لمن يحق له التقييم.

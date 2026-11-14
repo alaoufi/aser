@@ -127,6 +127,16 @@ test(
       )
     ).rows[0];
     assert.deepEqual(counts, { products: 1, orders: 1, messages: 2 });
+    // طلب المراجعة مُسلَّم، ليجرّب المراجع التقييم (التقييم بعد التسليم فقط).
+    assert.equal(
+      (
+        await pool.query(
+          "SELECT status FROM jdatna.order_requests WHERE producer_id=$1",
+          [family.id],
+        )
+      ).rows[0].status,
+      "completed",
+    );
 
     // الأسرة التجريبية لا تظهر في البحث ومائدة اليوم.
     const families = await searchProducers({});

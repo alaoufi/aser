@@ -27,8 +27,8 @@ async function oathText(k: RatingKind) {
 }
 
 const kind = z.enum(["family", "product", "member"]);
-/** تعامل فعلي: طلب لم يُرفض ولم يُلغَ. */
-const dealt = "o.status NOT IN ('declined','cancelled')";
+/** تعامل فعلي: طلب سلّمته الأسرة («تم التسليم»). قبل التسليم لا تقييم، فالقسم «تعاملت» لا يصح بعد. */
+const dealt = "o.status='completed'";
 
 export async function ratingSummary(
   k: RatingKind,
@@ -92,7 +92,19 @@ async function eligibility(
 /** تقييم العضو خاص: يراه من تعامل معه من الأسر، والإدارة. */
 async function assertCanViewMember(user: SessionUser | null, targetId: string) {
   if (user && (can(user, "orders") || can(user, "producers"))) return;
-  if (user && (await eligibility(user, "member", targetId))) return;
+  // الأسرة ترى تقييم العميل من أول طلب لم تُرفضه، لتقرر قبوله؛ أما التقييم نفسه فبعد التسليم.
+  if (
+    user &&
+    targetId !== user.id &&
+    (
+      await db().query(
+        `SELECT 1 FROM jdatna.order_requests o JOIN jdatna.producer_profiles p ON p.id=o.producer_id
+         WHERE o.user_id=$1 AND p.user_id=$2 AND o.status NOT IN ('declined','cancelled') LIMIT 1`,
+        [targetId, user.id],
+      )
+    ).rowCount
+  )
+    return;
   throw new HttpError(403, "تقييم العضو للأسر المتعاملة معه فقط");
 }
 
@@ -134,11 +146,7 @@ export async function rate(user: SessionUser, input: unknown) {
     .strict()
     .parse(input);
   const role = await eligibility(user, value.kind, value.target);
-  if (!role)
-    throw new HttpError(
-      403,
-      "التقييم متاح بعد التعامل الفعلي عبر طلب في الموقع",
-    );
+  if (!role) throw new HttpError(403, "التقييم متاح بعد تسليم طلبك من الموقع");
   await db().query(
     `INSERT INTO jdatna.ratings(id,kind,target_id,rater_id,rater_role,stars,comment) VALUES($1,$2,$3,$4,$5,$6,$7)
      ON CONFLICT(kind,target_id,rater_id) DO UPDATE SET stars=EXCLUDED.stars,comment=EXCLUDED.comment,rater_role=EXCLUDED.rater_role,updated_at=now()`,

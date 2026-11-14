@@ -159,6 +159,11 @@ export async function submitOrder(user: SessionUser | null, input: unknown) {
       )
     ).rows[0];
     assertOrderProduct(product);
+    // الأسرة لا تطلب من نفسها: طلب كهذا يفتح باب تقييم النفس ويضخم «الأكثر طلبًا».
+    if (
+      (product as unknown as { producerUser: string }).producerUser === user.id
+    )
+      throw new HttpError(403, "لا يمكن طلب منتجات أسرتك من حسابك");
     const { assertReviewPair } = await import("./store-review");
     await assertReviewPair(client, user.id, product.producerId);
     const cooking = (
