@@ -316,11 +316,9 @@ export function Admin() {
                       <AdminIcon name={id} />
                       <span>{label}</span>
                       {id === "approvals" && waiting.length > 0 && (
-                        <span
-                          className={s.navBadge}
-                          aria-label={`${waiting.length} تنتظر الاعتماد`}
-                        >
+                        <span className={s.navBadge}>
                           {waiting.length}
+                          <span className="sr-only"> تنتظر الاعتماد</span>
                         </span>
                       )}
                     </button>
