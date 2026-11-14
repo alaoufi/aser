@@ -12,23 +12,31 @@ const profile = {
   phone: "0500000017",
   pickup: true,
   categoryIds: ["1"],
-  documentType: "exception",
+  documentType: "producer_certificate",
   documentId: null,
-  exceptionReason: "طلب مراجعة أهلية النشاط بواسطة الإدارة",
 };
-test("only exception applications can omit a document and must explain why", () => {
+test("registration accepts no attachment; an old-style exception still needs its reason", () => {
   assert.equal(profileSchema.safeParse(profile).success, true);
   assert.equal(
-    profileSchema.safeParse({ ...profile, exceptionReason: "" }).success,
+    profileSchema.safeParse({ ...profile, documentType: "national_id" })
+      .success,
+    true,
+  );
+  assert.equal(
+    profileSchema.safeParse({ ...profile, documentType: "exception" }).success,
     false,
   );
   assert.equal(
-    profileSchema.safeParse({ ...profile, documentType: "freelance" }).success,
-    false,
+    profileSchema.safeParse({
+      ...profile,
+      documentType: "exception",
+      exceptionReason: "طلب مراجعة أهلية النشاط بواسطة الإدارة",
+    }).success,
+    true,
   );
 });
 test(
-  "admin exception requires explicit confirmation and keeps pending application private",
+  "admin activates a family without documents after explicit confirmation, never its own",
   { skip: process.env.JDATNA_TEST_DB !== "true" },
   async () => {
     const database = (await db().query("SELECT current_database() AS n"))
@@ -63,9 +71,8 @@ test(
         () =>
           reviewProducer({ ...user, role: "admin" }, p.id, {
             decision: "approved",
-            reason: "استثناء موثق بعد مراجعة أهلية الأسرة المنتجة",
+            reason: "تم التفعيل، نرجو إرفاق الشهادة",
             eligibilityConfirmed: true,
-            exceptionApproved: true,
           }),
         /بنفسك/,
       );
@@ -74,21 +81,20 @@ test(
           decision: "approved",
           reason: "سبب مراجعة الاختبار",
           eligibilityConfirmed: true,
-          exceptionApproved: true,
         }),
       );
+      // التفعيل يحتاج تأكيدًا صريحًا من المراجع.
       await assert.rejects(() =>
         reviewProducer(admin, p.id, {
           decision: "approved",
           reason: "سبب مراجعة الاختبار",
-          eligibilityConfirmed: true,
         }),
       );
+      // دون أي مستند: تفعّل الإدارة الحساب وتذكر النواقص في الملاحظة.
       await reviewProducer(admin, p.id, {
         decision: "approved",
-        reason: "استثناء موثق بعد مراجعة أهلية الأسرة المنتجة",
+        reason: "تم التفعيل. نرجو إرفاق شهادة الأسرة المنتجة",
         eligibilityConfirmed: true,
-        exceptionApproved: true,
       });
       assert.equal(
         (
@@ -105,7 +111,10 @@ test(
           [p.id],
         )
       ).rows[0];
-      assert.equal(audit.details.exceptionApproved, true);
+      assert.equal(
+        audit.details.reason,
+        "تم التفعيل. نرجو إرفاق شهادة الأسرة المنتجة",
+      );
     } finally {
       if (pid) {
         await db().query(

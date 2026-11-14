@@ -100,6 +100,14 @@ function stateOf(p: Application): FamilyState {
     today(),
   );
 }
+const documentLabels: Record<string, string> = {
+  producer_certificate: "شهادة أسرة منتجة",
+  national_id: "صورة الهوية الوطنية",
+  freelance: "وثيقة عمل حر",
+  commercial_registration: "سجل تجاري",
+  other_document: "شهادة أو مستند آخر",
+  exception: "طلب استثناء إداري",
+};
 function Review({
   producer,
   onSaved,
@@ -124,7 +132,6 @@ function Review({
             decision: f.get("decision"),
             reason: f.get("reason"),
             eligibilityConfirmed: f.has("eligibilityConfirmed"),
-            exceptionApproved: f.has("exceptionApproved"),
           }),
         },
       );
@@ -158,7 +165,14 @@ function Review({
           موقع العمل (خاص): {producer.workLocation}
         </p>
       )}
-      <p>نوع الإثبات: {producer.documentType || "راجع المستند المرفق"}</p>
+      {producer.documentId ? (
+        <p>
+          نوع المرفق:{" "}
+          {documentLabels[producer.documentType ?? ""] ?? producer.documentType}
+        </p>
+      ) : (
+        <p className={s.tag}>لم ترفق مستندات بعد</p>
+      )}
       {producer.documentType === "exception" && (
         <p>تفاصيل طلب الاستثناء: {producer.reviewReason || "دون تفاصيل"}</p>
       )}
@@ -194,17 +208,28 @@ function Review({
             <option value="" disabled>
               اختر القرار
             </option>
-            <option value="approved">اعتماد</option>
+            <option value="approved">
+              تفعيل الحساب (ولو دون مستندات، مع ذكر النواقص في الملاحظة)
+            </option>
             <option value="rejected">
-              طلب استكمال (يعود للأسرة المنتجة لتعديل المطلوب)
+              طلب استكمال النواقص قبل التفعيل (الحساب لا يظهر للعملاء)
             </option>
             <option value="suspended">إيقاف الحساب</option>
           </select>
         </label>
         <label className={s.field}>
-          سبب القرار (يُحفظ في سجل المراجعة ويظهر للأسرة المنتجة عند طلب
-          الاستكمال)
-          <textarea name="reason" required minLength={5} maxLength={2000} />
+          ملاحظة للأسرة المنتجة (تظهر لها أعلى صفحتها، اذكر فيها النواقص)
+          <textarea
+            name="reason"
+            required
+            minLength={5}
+            maxLength={2000}
+            placeholder={
+              producer.documentId
+                ? "مثال: تم التفعيل، أهلًا بكم."
+                : "مثال: تم التفعيل. نرجو إرفاق شهادة الأسرة المنتجة أو صورة الهوية الوطنية من صفحة بيانات الأسرة."
+            }
+          />
         </label>
         <label className={s.checks}>
           <input
@@ -212,19 +237,8 @@ function Review({
             type="checkbox"
             required={decision === "approved"}
           />
-          تحققت من أهلية النشاط واستيفاء التراخيص الإلزامية قبل الاعتماد.
+          راجعت بيانات الأسرة المنتجة وأوافق على تفعيل حسابها.
         </label>
-        {producer.documentType === "exception" && !producer.documentId && (
-          <label className={s.checks}>
-            <input
-              type="checkbox"
-              name="exceptionApproved"
-              required={decision === "approved"}
-            />
-            أمنح استثناءً إداريًا بعد مراجعة الأهلية، والسبب الموثق أعلاه لا يقل
-            عن عشرة أحرف.
-          </label>
-        )}
         <button disabled={busy} className={s.button}>
           {busy ? "جارٍ حفظ القرار…" : "حفظ قرار المراجعة"}
         </button>

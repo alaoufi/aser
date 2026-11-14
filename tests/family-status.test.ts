@@ -15,10 +15,10 @@ const base = {
 test("family account state covers review, active, incomplete and trusted", () => {
   assert.equal(familyAccountState(base, today).label, "تحت المراجعة");
   assert.match(familyAccountState(base, today).detail, /تم التسجيل/);
-  assert.equal(
-    familyAccountState({ ...base, documentId: null }, today).label,
-    "بانتظار إكمال المطلوب",
-  );
+  // التسجيل دون مرفق تحت المراجعة مباشرة، مع تذكير بأن الإرفاق يسرّع الاعتماد.
+  const noDocument = familyAccountState({ ...base, documentId: null }, today);
+  assert.equal(noDocument.label, "تحت المراجعة");
+  assert.match(noDocument.detail, /صورة الهوية الوطنية يسرّع الاعتماد/);
   assert.equal(
     familyAccountState(
       { ...base, documentId: null, documentType: "exception" },
@@ -68,6 +68,19 @@ test("family account state covers review, active, incomplete and trusted", () =>
     ).label,
     "نشط",
   );
+  // تفعيل الإدارة دون مستند: «نشط» لا «موثوق»، وملاحظتها بالنواقص تظهر للأسرة.
+  const activeNoDocument = familyAccountState(
+    {
+      ...base,
+      status: "approved",
+      verified: true,
+      documentId: null,
+      reviewReason: "نرجو إرفاق الشهادة",
+    },
+    today,
+  );
+  assert.equal(activeNoDocument.key, "active");
+  assert.equal(activeNoDocument.reason, "نرجو إرفاق الشهادة");
   assert.equal(
     familyAccountState({ ...base, status: "suspended" }, today).label,
     "موقوف",

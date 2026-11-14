@@ -503,19 +503,8 @@ export async function reviewProducer(
     ).rows[0];
     if (value.decision === "approved" && verification?.expired === true)
       throw new HttpError(400, "المستند منتهي الصلاحية ويجب تحديثه");
-    if (
-      value.decision === "approved" &&
-      !verification?.document_id &&
-      !(
-        verification?.document_type === "exception" &&
-        value.exceptionApproved === true &&
-        value.reason.length >= 10
-      )
-    )
-      throw new HttpError(
-        400,
-        "يلزم مستند أهلية أو اعتماد استثناء إداري صريح بسبب موثق",
-      );
+    // تفعيل الإدارة لا يشترط مستندًا (قرار المالك 2026-11-14)؛ الحساب دون مستند «نشط» لا «موثوق»،
+    // وملاحظة القرار تظهر للأسرة بالنواقص.
     await client.query(
       "UPDATE jdatna.producer_profiles SET status=$2,verified=$3,updated_at=now() WHERE id=$1",
       [id, value.decision, value.decision === "approved"],

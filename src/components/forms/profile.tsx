@@ -48,14 +48,16 @@ type Profile = AdvancedProfile & {
   nationalId?: string | null;
   workLocation?: string | null;
 };
+// المرفق اختياري: التسجيل يُقبل دونه، والإدارة تفعّل الحساب وتطلب النواقص في ملاحظتها.
 const documentTypes = [
-  ["other_document", "رخصة النشاط أو إثبات الأهلية"],
-  ["commercial_registration", "سجل تجاري"],
-  ["freelance", "وثيقة عمل حر"],
   ["producer_certificate", "شهادة أسرة منتجة"],
-  ["national_id", "هوية وطنية للمراجعة فقط"],
-  ["exception", "طلب استثناء إداري"],
+  ["national_id", "صورة الهوية الوطنية"],
+  ["freelance", "وثيقة عمل حر"],
+  ["commercial_registration", "سجل تجاري"],
+  ["other_document", "شهادة أو مستند آخر"],
 ];
+const pickType = (type?: string) =>
+  documentTypes.some(([id]) => id === type) ? type! : "producer_certificate";
 export function ProfileForm({
   registration = false,
 }: {
@@ -70,7 +72,7 @@ export function ProfileForm({
   const [loaded, setLoaded] = useState(false),
     [extrasOpen, setExtrasOpen] = useState(false),
     [documentId, setDocumentId] = useState(""),
-    [documentType, setDocumentType] = useState("other_document");
+    [documentType, setDocumentType] = useState("producer_certificate");
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [success, setSuccess] = useState("");
@@ -87,7 +89,7 @@ export function ProfileForm({
     setCategories(d.categories);
     setCities(d.cities);
     setDocumentId(d.profile?.documentId || "");
-    setDocumentType(d.profile?.documentType || "other_document");
+    setDocumentType(pickType(d.profile?.documentType));
   }
   useEffect(() => {
     if (!user) return;
@@ -131,13 +133,12 @@ export function ProfileForm({
     try {
       let savedDocument = documentId;
       const file = f.get("file");
-      if (documentType === "exception") savedDocument = "";
-      else if (file instanceof File && file.size) {
+      if (file instanceof File && file.size) {
         if (
           file.size > 10 * 1024 * 1024 ||
           !["application/pdf", "image/jpeg", "image/png"].includes(file.type)
         )
-          throw Error("رخصة النشاط PDF أو JPEG أو PNG وبحد أقصى10ميجابايت.");
+          throw Error("المرفق PDF أو JPEG أو PNG وبحد أقصى 10 ميجابايت.");
         if (
           uploaded.current?.file === file &&
           uploaded.current.type === documentType
@@ -159,8 +160,6 @@ export function ProfileForm({
           if (input) input.value = "";
         }
       }
-      if (!savedDocument && documentType !== "exception")
-        throw Error("أرفق رخصة النشاط.");
       await api("/api/producer/profile", {
         method: "POST",
         body: JSON.stringify({
@@ -175,9 +174,6 @@ export function ProfileForm({
           workLocation: f.get("workLocation"),
           documentType,
           documentId: savedDocument || null,
-          ...(documentType === "exception"
-            ? { exceptionReason: f.get("exceptionReason") }
-            : {}),
         }),
       });
       await load();
@@ -278,24 +274,49 @@ export function ProfileForm({
               <small id="verified-phone">تم التحقق من هذا الجوال.</small>
             </label>
           </div>
-          <label className={s.field}>
-            رخصة النشاط
-            <input
-              name="file"
-              type="file"
-              accept=".pdf,.jpg,.jpeg,.png"
-              disabled={busy}
-              required={!documentId && documentType !== "exception"}
-            />
-            <small>مستند خاص للمراجعة، حتى10ميجابايت.</small>
-          </label>
+          <fieldset>
+            <legend>المرفقات (اختيارية)</legend>
+            <p className={s.muted}>
+              أرفق شهادة الأسرة المنتجة أو صورة الهوية الوطنية إن وُجدت، فذلك
+              يسرّع الاعتماد. يُقبل التسجيل دون مرفق، وتراسلك الإدارة بالنواقص.
+            </p>
+            <div className={s.grid}>
+              <label className={s.field}>
+                نوع المرفق
+                <select
+                  value={documentType}
+                  onChange={(e) => {
+                    setDocumentType(e.target.value);
+                    setDocumentId("");
+                    uploaded.current = null;
+                  }}
+                >
+                  {documentTypes.map(([id, label]) => (
+                    <option key={id} value={id}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className={s.field}>
+                الملف
+                <input
+                  name="file"
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  disabled={busy}
+                />
+                <small>صورة أو PDF، حتى 10 ميجابايت. تراه الإدارة فقط.</small>
+              </label>
+            </div>
+          </fieldset>
           {documentId && (
             <a
               href={`/api/documents/${encodeURIComponent(documentId)}`}
               target="_blank"
               rel="noopener noreferrer"
             >
-              عرض رخصة النشاط المحفوظة
+              عرض المرفق المحفوظ
             </a>
           )}
           <fieldset>
@@ -345,19 +366,6 @@ export function ProfileForm({
             defaultScope={profile?.deliveryScope ?? "coverage"}
             defaultFee={profile?.shippingFee ?? null}
           />
-          {documentType === "exception" && (
-            <label className={s.field}>
-              سبب طلب الاستثناء الإداري
-              <textarea
-                name="exceptionReason"
-                required
-                minLength={10}
-                maxLength={2000}
-                defaultValue={profile?.reviewReason || ""}
-              />
-              <small>يبقى الطلب قيد المراجعة حتى موافقة الإدارة.</small>
-            </label>
-          )}
           <details
             open={extrasOpen}
             onToggle={(e) => setExtrasOpen(e.currentTarget.open)}
@@ -365,26 +373,6 @@ export function ProfileForm({
             <summary>تفاصيل إضافية (اختيارية)</summary>
             {extrasOpen && (
               <div className={s.form} style={{ marginTop: 16 }}>
-                <label className={s.field}>
-                  <span className="sr-only">نوع إثبات النشاط</span>
-                  <select
-                    value={documentType}
-                    onChange={(e) => {
-                      setDocumentType(e.target.value);
-                      setDocumentId("");
-                      uploaded.current = null;
-                    }}
-                  >
-                    <option value="" disabled>
-                      نوع إثبات النشاط
-                    </option>
-                    {documentTypes.map(([id, label]) => (
-                      <option key={id} value={id}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
                 <div className={s.grid}>
                   <label className={s.field}>
                     رقم المستند (إن وجد)

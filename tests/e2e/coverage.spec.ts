@@ -142,7 +142,7 @@ test("family chooses multiple hierarchical areas with fees and dependent resets"
     ).toBe(true);
   }
 });
-test("admin must explicitly confirm exception when reviewing a document-free application", async ({
+test("admin activates a document-free application with a note listing what is missing", async ({
   page,
 }) => {
   await page.route("**/api/session", (r) =>
@@ -156,12 +156,12 @@ test("admin must explicitly confirm exception when reviewing a document-free app
         producers: [
           {
             id: "00000000-0000-4000-8000-000000000002",
-            name: "أسرة الاستثناء",
+            name: "أسرة دون مرفقات",
             cityName: "القصيم",
             status: "pending",
-            documentType: "exception",
+            documentType: "producer_certificate",
             documentId: null,
-            reviewReason: "طلب أهلية للمراجعة الإدارية",
+            reviewReason: null,
           },
         ],
       },
@@ -173,23 +173,25 @@ test("admin must explicitly confirm exception when reviewing a document-free app
     await r.fulfill({ json: { status: "approved" } });
   });
   await page.goto("/admin");
+  await expect(page.getByText("لم ترفق مستندات بعد")).toBeVisible();
   await page
     .getByRole("combobox", { name: "القرار", exact: true })
     .selectOption("approved");
   await page
-    .getByLabel(/سبب القرار/)
-    .fill("استثناء موثق بعد مراجعة أهلية الأسرة المنتجة");
-  await page
-    .getByLabel(
-      "تحققت من أهلية النشاط واستيفاء التراخيص الإلزامية قبل الاعتماد.",
-    )
-    .check();
-  const confirm = page.getByRole("checkbox", { name: /أمنح استثناءً إداريًا/ });
+    .getByLabel(/ملاحظة للأسرة المنتجة/)
+    .fill("تم التفعيل. نرجو إرفاق شهادة الأسرة المنتجة");
+  const confirm = page.getByLabel(
+    "راجعت بيانات الأسرة المنتجة وأوافق على تفعيل حسابها.",
+  );
   await expect(confirm).toHaveAttribute("required", "");
   await confirm.check();
   await page.getByRole("button", { name: "حفظ قرار المراجعة" }).click();
   await expect(page.getByRole("status")).toHaveText("تم حفظ قرار المراجعة.");
-  expect(body.exceptionApproved).toBe(true);
+  expect(body).toEqual({
+    decision: "approved",
+    reason: "تم التفعيل. نرجو إرفاق شهادة الأسرة المنتجة",
+    eligibilityConfirmed: true,
+  });
 });
 
 test("family adds several named neighborhoods and centers under legacy cities, persists and removes own picks", async ({
