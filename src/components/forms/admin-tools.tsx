@@ -35,7 +35,23 @@ function useResource<T>(url: string) {
     setError("");
     setSuccess("");
     try {
-      await api(url, { method, body: JSON.stringify(body) });
+      try {
+        await api(url, { method, body: JSON.stringify(body) });
+      } catch (err) {
+        // الخادم يطلب تأكيدًا لإجراء له أثر (مثل حذف منتجات القسم معه): نسأل ثم نعيد بالتأكيد.
+        const e = err as Error & {
+          data?: { confirm?: boolean; confirmWith?: string };
+        };
+        if (!e.data?.confirm || !e.data.confirmWith) throw err;
+        if (!window.confirm(e.message)) return false;
+        await api(url, {
+          method,
+          body: JSON.stringify({
+            ...(body as object),
+            [e.data.confirmWith]: true,
+          }),
+        });
+      }
       await refresh();
       setSuccess("تم حفظ التغييرات.");
       return true;
@@ -127,7 +143,7 @@ export function CategoriesAdmin() {
                   onClick={() => {
                     if (
                       window.confirm(
-                        `حذف قسم «${c.name}»؟ لا يُحذف إلا إذا لم تبقَ فيه منتجات ولا أقسام فرعية؛ أو أخفِه بدلًا من ذلك.`,
+                        `حذف قسم «${c.name}»؟ إن كانت عليه منتجات ننبهك بعددها قبل حذفها؛ أو أخفِه بدلًا من ذلك.`,
                       )
                     )
                       r.write("DELETE", { id: c.id });
@@ -184,7 +200,8 @@ function CategoryEditor({
   }
   const products = editing?.productCount ?? 0;
   const children = editing?.childCount ?? 0;
-  const blocked = products > 0 || children > 0;
+  // الأقسام الفرعية تمنع الحذف؛ أما المنتجات فننبه بها ونطلب تأكيدًا ثم تُحذف معه.
+  const blocked = children > 0;
   return (
     <form onSubmit={save} className={s.form}>
       <div className={s.grid}>
@@ -272,11 +289,14 @@ function CategoryEditor({
       </div>
       {editing && blocked && (
         <p className={s.notice}>
-          لا يمكن حذف هذا القسم الآن:{" "}
-          {products > 0 &&
-            `احذف منتجاته أو انقلها لقسم آخر أولًا (${products} منتج). `}
-          {children > 0 &&
-            `احذف أقسامه الفرعية أو انقلها أولًا (${children} قسم).`}
+          لا يمكن حذف هذا القسم الآن: احذف أقسامه الفرعية أو انقلها أولًا (
+          {children} قسم).
+        </p>
+      )}
+      {editing && !blocked && products > 0 && (
+        <p className={s.notice}>
+          تنبيه: على هذا القسم {products} منتج. حذفه يحذف منتجاته التي ليس لها
+          قسم آخر، وتُفصل الباقية عنه، بعد تأكيد ثانٍ يبيّن عمرها.
         </p>
       )}
       {editing && confirming && (editing.familyCount ?? 0) > 0 && (

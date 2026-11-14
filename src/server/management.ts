@@ -77,11 +77,16 @@ export async function ownProfile(user: SessionUser) {
   };
 }
 type Query = { query: PoolClient["query"] };
-/** يستبدل أقسام الأسرة، ويرفض إزالة قسم ما زالت عليه منتجاتها. */
+/**
+ * يستبدل أقسام الأسرة. إزالة قسم عليه منتجات قائمة تحتاج تأكيدًا (removeProducts)،
+ * فيُفصل المنتج عن القسم إن بقي له قسم آخر، ويُحذف (أرشفة) إن لم يبق له قسم.
+ * المنتجات المحذوفة سابقًا لا تمنع الإزالة. منتجات الأسرة في الغالب وقتية لأيام.
+ */
 async function replaceProducerCategories(
   client: Query,
   producerId: string,
   categoryIds: string[],
+  removeProducts = false,
 ) {
   const ids = [...new Set(categoryIds)];
   const known = (
@@ -93,18 +98,43 @@ async function replaceProducerCategories(
   if (known !== ids.length) throw new HttpError(400, "قسم غير موجود");
   const stranded = (
     await client.query(
-      `SELECT DISTINCT c.name FROM jdatna.product_categories pc
-       JOIN jdatna.products x ON x.id=pc.product_id AND x.producer_id=$1
+      `SELECT x.id,x.name,c.name AS category,
+         EXISTS(SELECT 1 FROM jdatna.product_categories o WHERE o.product_id=x.id AND o.category_id=ANY($2::text[])) AS kept
+       FROM jdatna.product_categories pc
+       JOIN jdatna.products x ON x.id=pc.product_id AND x.producer_id=$1 AND x.deleted_at IS NULL
        JOIN jdatna.categories c ON c.id=pc.category_id
        WHERE NOT pc.category_id=ANY($2::text[])`,
       [producerId, ids],
     )
-  ).rows.map((r) => r.name as string);
-  if (stranded.length)
+  ).rows as { id: string; name: string; category: string; kept: boolean }[];
+  const removed = stranded.filter((r) => !r.kept);
+  if (removed.length && !removeProducts) {
+    const categories = [...new Set(removed.map((r) => r.category))];
+    const products = [...new Set(removed.map((r) => r.name))];
     throw new HttpError(
       409,
-      `لا يمكن إزالة «${stranded.join("، ")}» وعليه منتجات لك؛ انقلها أو احذفها أولًا`,
+      `إزالة «${categories.join("، ")}» تحذف منتجاتك فيه: ${products.join("، ")}. هل تريد المتابعة؟`,
+      { confirm: true, products: products.length },
     );
+  }
+  if (removed.length) {
+    const gone = [...new Set(removed.map((r) => r.id))];
+    await client.query(
+      "UPDATE jdatna.products SET deleted_at=now(),visible=false,featured=false,updated_at=now() WHERE id=ANY($1::uuid[])",
+      [gone],
+    );
+    await client.query(
+      "UPDATE jdatna.offers SET enabled=false,updated_at=now() WHERE product_id=ANY($1::uuid[])",
+      [gone],
+    );
+  }
+  // روابط الأقسام المُزالة تُفك عن منتجات الأسرة (القائمة والمحذوفة)، فلا تبقى معلقة.
+  await client.query(
+    `DELETE FROM jdatna.product_categories pc USING jdatna.products x
+     WHERE x.id=pc.product_id AND x.producer_id=$1 AND NOT pc.category_id=ANY($2::text[])
+       AND (x.deleted_at IS NOT NULL OR EXISTS(SELECT 1 FROM jdatna.product_categories o WHERE o.product_id=x.id AND o.category_id=ANY($2::text[])))`,
+    [producerId, ids],
+  );
   await client.query(
     "DELETE FROM jdatna.producer_categories WHERE producer_id=$1",
     [producerId],
@@ -120,9 +150,11 @@ export async function saveProducerCategories(
   user: SessionUser,
   input: unknown,
 ) {
-  const { categoryIds } = z
+  const { categoryIds, removeProducts } = z
     .object({
       categoryIds: z.array(z.string().min(1).max(30)).min(1).max(100),
+      /** تأكيد الأسرة حذف منتجاتها في الأقسام التي تزيلها. */
+      removeProducts: z.boolean().optional(),
     })
     .strict()
     .parse(input);
@@ -134,7 +166,12 @@ export async function saveProducerCategories(
       )
     ).rows[0];
     if (!producer) throw new HttpError(404, "سجّل ملف الأسرة المنتجة أولًا");
-    await replaceProducerCategories(client, producer.id, categoryIds);
+    await replaceProducerCategories(
+      client,
+      producer.id,
+      categoryIds,
+      removeProducts === true,
+    );
     return { categoryIds: [...new Set(categoryIds)] };
   });
 }

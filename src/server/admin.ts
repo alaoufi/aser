@@ -150,7 +150,7 @@ export async function adminCategories(
     (
       await db().query(
         `SELECT c.id,
-          (SELECT count(*)::int FROM jdatna.product_categories x WHERE x.category_id=c.id) AS "productCount",
+          (SELECT count(*)::int FROM jdatna.product_categories x JOIN jdatna.products p ON p.id=x.product_id AND p.deleted_at IS NULL WHERE x.category_id=c.id) AS "productCount",
           (SELECT count(*)::int FROM jdatna.categories k WHERE k.parent_id=c.id) AS "childCount",
           (SELECT count(*)::int FROM jdatna.producer_categories f WHERE f.category_id=c.id) AS "familyCount"
         FROM jdatna.categories c`,
@@ -167,7 +167,13 @@ export async function adminCategories(
 /** يحذف قسمًا فقط إذا لم يبقَ له منتجات ولا أقسام فرعية؛ واختيارات الأسر له تُزال معه. */
 export async function deleteCategory(user: SessionUser, input: unknown) {
   assertAdmin(user, "categories");
-  const { id } = z.object({ id: z.string().min(1).max(30) }).parse(input);
+  const { id, deleteProducts } = z
+    .object({
+      id: z.string().min(1).max(30),
+      /** تأكيد المشرف حذف منتجات القسم معه (أغلب المنتجات وقتية لأيام). */
+      deleteProducts: z.boolean().optional(),
+    })
+    .parse(input);
   return transaction(async (client) => {
     await client.query(
       "SELECT pg_advisory_xact_lock(hashtext('jdatna.category.ids'))",
@@ -179,19 +185,6 @@ export async function deleteCategory(user: SessionUser, input: unknown) {
       )
     ).rows[0];
     if (!row) throw new HttpError(404, "القسم غير موجود");
-    const products = Number(
-      (
-        await client.query(
-          "SELECT count(*) AS n FROM jdatna.product_categories WHERE category_id=$1",
-          [id],
-        )
-      ).rows[0].n,
-    );
-    if (products)
-      throw new HttpError(
-        409,
-        `لا يمكن حذف «${row.name}» قبل حذف منتجاته أو نقلها لقسم آخر (${products} منتج).`,
-      );
     const children = Number(
       (
         await client.query(
@@ -205,6 +198,46 @@ export async function deleteCategory(user: SessionUser, input: unknown) {
         409,
         `لا يمكن حذف «${row.name}» وتحته ${children} قسم فرعي؛ احذفها أو انقلها أولًا.`,
       );
+    // المنتجات القائمة فقط (المحذوفة سابقًا لا تمنع). القسم الذي عليه منتجات يحتاج تأكيدًا،
+    // فيُحذف المنتج إن لم يبق له قسم آخر، ويُفصل عن القسم إن بقي له قسم.
+    const active = (
+      await client.query(
+        `SELECT x.id,
+           EXISTS(SELECT 1 FROM jdatna.product_categories o WHERE o.product_id=x.id AND o.category_id<>$1) AS kept,
+           (CURRENT_DATE - x.created_at::date) AS age
+         FROM jdatna.product_categories pc JOIN jdatna.products x ON x.id=pc.product_id AND x.deleted_at IS NULL
+         WHERE pc.category_id=$1`,
+        [id],
+      )
+    ).rows as { id: string; kept: boolean; age: number }[];
+    const gone = active.filter((p) => !p.kept).map((p) => p.id);
+    if (active.length && !deleteProducts) {
+      const newest = Math.min(...active.map((p) => Number(p.age)));
+      throw new HttpError(
+        409,
+        `على «${row.name}» ${active.length} منتج، أحدثها أُضيف ${newest === 0 ? "اليوم" : `قبل ${newest} يوم`}. حذف القسم يحذف ${gone.length} منها، ويفصل الباقي عنه لأن له أقسامًا أخرى. هل تريد المتابعة؟`,
+        {
+          confirm: true,
+          confirmWith: "deleteProducts",
+          products: active.length,
+          newestDays: newest,
+        },
+      );
+    }
+    if (gone.length) {
+      await client.query(
+        "UPDATE jdatna.products SET deleted_at=now(),visible=false,featured=false,updated_at=now() WHERE id=ANY($1::uuid[])",
+        [gone],
+      );
+      await client.query(
+        "UPDATE jdatna.offers SET enabled=false,updated_at=now() WHERE product_id=ANY($1::uuid[])",
+        [gone],
+      );
+    }
+    await client.query(
+      "DELETE FROM jdatna.product_categories WHERE category_id=$1",
+      [id],
+    );
     const families = (
       await client.query(
         "DELETE FROM jdatna.producer_categories WHERE category_id=$1",
@@ -216,6 +249,8 @@ export async function deleteCategory(user: SessionUser, input: unknown) {
       id,
       name: row.name,
       familyLinksRemoved: families,
+      productsDeleted: gone.length,
+      productsUnlinked: active.length - gone.length,
     });
     return { ok: true, familyLinksRemoved: families };
   });

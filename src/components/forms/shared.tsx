@@ -15,7 +15,11 @@ export async function api<T>(url: string, options?: RequestInit): Promise<T> {
   });
   const data = await r.json().catch(() => ({}));
   if (!r.ok)
-    throw new Error(data.error || "تعذر إتمام الطلب. يرجى المحاولة مجددًا.");
+    // البيانات مع الخطأ: الخادم قد يطلب تأكيدًا (confirm) قبل إجراء له أثر.
+    throw Object.assign(
+      new Error(data.error || "تعذر إتمام الطلب. يرجى المحاولة مجددًا."),
+      { status: r.status, data },
+    );
   announceSaved(url, options?.method);
   return data as T;
 }

@@ -456,11 +456,28 @@ function FamilyCategories({
       return;
     }
     setBusy(true);
+    const put = (removeProducts?: boolean) =>
+      api<{ categoryIds: string[] }>("/api/producer/categories", {
+        method: "PUT",
+        body: JSON.stringify({
+          categoryIds: ids,
+          ...(removeProducts ? { removeProducts } : {}),
+        }),
+      });
     try {
-      const d = await api<{ categoryIds: string[] }>(
-        "/api/producer/categories",
-        { method: "PUT", body: JSON.stringify({ categoryIds: ids }) },
-      );
+      let d: { categoryIds: string[] };
+      try {
+        d = await put();
+      } catch (err) {
+        // إزالة قسم عليه منتجات: تأكيد صريح، ثم تُحذف منتجاته (أغلبها وقتية لأيام).
+        const e = err as Error & { data?: { confirm?: boolean } };
+        if (!e.data?.confirm) throw err;
+        if (!window.confirm(e.message)) {
+          setError("لم تُحفظ الأقسام؛ منتجاتك كما هي.");
+          return;
+        }
+        d = await put(true);
+      }
       onSaved(d.categoryIds);
       setSuccess("تم حفظ أقسام منتجاتك.");
     } catch (e) {

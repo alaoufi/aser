@@ -3,6 +3,8 @@ export class HttpError extends Error {
   constructor(
     public status: number,
     message: string,
+    /** بيانات إضافية للواجهة، مثل confirm: طلب تأكيد قبل إجراء له أثر. */
+    public details?: Record<string, unknown>,
   ) {
     super(message);
   }

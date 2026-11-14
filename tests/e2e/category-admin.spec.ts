@@ -65,14 +65,12 @@ test("tapping a category opens it right below for editing, and it is deleted onl
     page.getByRole("button", { name: new RegExp(name) }).first();
   await expect(page.getByRole("button", { name: "حذف القسم" })).toHaveCount(0);
 
-  // قسم له منتجات: يفتح تحته مباشرة، يُعدَّل ولا يُحذف.
+  // قسم له منتجات: يفتح تحته مباشرة، ويُعدَّل، وحذفه متاح مع تنبيه بعدد منتجاته.
   await row("الحلويات").click();
   await expect(row("الحلويات")).toHaveAttribute("aria-expanded", "true");
   await expect(page.getByLabel("اسم القسم")).toHaveValue("الحلويات");
-  await expect(page.getByRole("button", { name: "حذف القسم" })).toBeDisabled();
-  await expect(
-    page.getByText("احذف منتجاته أو انقلها لقسم آخر أولًا (3 منتج)"),
-  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "حذف القسم" })).toBeEnabled();
+  await expect(page.getByText(/على هذا القسم 3 منتج/)).toBeVisible();
   await page.getByLabel("اسم القسم").fill("الحلويات الشعبية");
   await page.getByRole("button", { name: "حفظ التعديل" }).click();
   await expect.poll(() => sent.length).toBe(1);

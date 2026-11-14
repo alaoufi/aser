@@ -675,9 +675,11 @@ test(
               ?.productCount,
             1,
           );
+          // قسم عليه منتج: يطلب تأكيدًا بعدد المنتجات وعمر أحدثها، ولا يُحذف دونه.
           await assert.rejects(
             deleteCategory(users[2], { id: category.id }),
-            /قبل حذف منتجاته/,
+            (e: { status: number; details?: { confirm?: boolean } }) =>
+              e.status === 409 && e.details?.confirm === true,
           );
           await assert.rejects(
             deleteCategory(users[0], { id: category.id }),
