@@ -10,6 +10,10 @@ const family = {
 test("family chooses pickup and delivery from its dashboard and must give a pickup location", async ({
   page,
 }) => {
+  // ترحيب الأسرة يُختبر في family-welcome.spec؛ هنا نعدّه ظاهرًا في هذه الزيارة.
+  await page.addInitScript(() =>
+    sessionStorage.setItem("jdatna:family-welcome", "1"),
+  );
   await page.route("**/api/session", (r) =>
     r.fulfill({ json: { user: family, registrationOpen: true } }),
   );
