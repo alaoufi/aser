@@ -15,7 +15,11 @@ export async function api<T>(url: string, options?: RequestInit): Promise<T> {
   });
   const data = await r.json().catch(() => ({}));
   if (!r.ok)
-    throw new Error(data.error || "تعذر إتمام الطلب. يرجى المحاولة مجددًا.");
+    // البيانات مع الخطأ: الخادم قد يطلب تأكيدًا (confirm) قبل إجراء له أثر.
+    throw Object.assign(
+      new Error(data.error || "تعذر إتمام الطلب. يرجى المحاولة مجددًا."),
+      { status: r.status, data },
+    );
   announceSaved(url, options?.method);
   return data as T;
 }
@@ -109,10 +113,16 @@ function AccountNavigation() {
       <Link href="/">الرئيسية</Link>
       <Link href="/orders">طلباتي</Link>
       <Link href="/messages">المحادثات</Link>
-      {user.role === "customer" ? (
+      <Link href="/me">معلوماتي</Link>
+      {user.role !== "producer" ? (
         <>
           <Link href="/offers">العروض الخاصة</Link>
-          <Link href="/register">طلب انضمام كأسرة</Link>
+          {/* المدير الكامل حسابه الخاص يكون طالب خدمة أو أسرة: «لوحتي» تسجّل أسرته أو تعرضها. */}
+          {user.role === "admin" ? (
+            <Link href="/dashboard">لوحتي كأسرة</Link>
+          ) : (
+            <Link href="/register">طلب انضمام كأسرة</Link>
+          )}
         </>
       ) : (
         // أقسام الأسرة في «لوحتي» بمربعات؛ «حساب الإدارة» في قائمة «حسابي» أعلى الموقع.

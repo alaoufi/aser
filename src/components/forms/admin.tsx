@@ -284,8 +284,14 @@ export function Admin() {
         .finally(() => setLoaded(true));
   }, [session.user]);
   return (
-    <AccountShell>
-      <h1>إدارة المنصة</h1>
+    // حساب الإدارة منفصل عن الحساب الخاص: لا روابط «طلباتي» و«معلوماتي» هنا.
+    <AccountShell navigation={false}>
+      <div className={s.actions}>
+        <h1>حساب الإدارة</h1>
+        <Link href="/orders" className={s.buttonSecondary}>
+          حسابي الخاص
+        </Link>
+      </div>
       <Guard {...session} admin />
       {isManager(session.user) && (
         <>

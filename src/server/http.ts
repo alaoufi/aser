@@ -16,7 +16,7 @@ export function api(
     } catch (error) {
       if (error instanceof HttpError)
         return Response.json(
-          { error: error.message },
+          { error: error.message, ...error.details },
           { status: error.status, headers: { "Cache-Control": "no-store" } },
         );
       if (error instanceof ZodError)

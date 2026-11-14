@@ -217,3 +217,62 @@ export async function setCredentials(request: Request, input: unknown) {
     throw error;
   }
 }
+
+/**
+ * «معلوماتي»: تعديل الاسم، وتغيير كلمة المرور بالكلمة الحالية. تغيير كلمة المرور يُخرج
+ * الأجهزة الأخرى ويُبقي الجهاز الحالي.
+ */
+export async function updateMyAccount(
+  user: SessionUser,
+  request: Request,
+  input: unknown,
+) {
+  const value = z
+    .object({
+      name: z
+        .string()
+        .trim()
+        .min(2, "الاسم حرفان على الأقل")
+        .max(120)
+        .optional(),
+      currentPassword: z.string().max(128).optional(),
+      newPassword: passwordSchema.optional(),
+    })
+    .strict()
+    .parse(input);
+  await rateLimit("my-account:" + user.id, 20, 3600);
+  return transaction(async (client) => {
+    if (value.newPassword !== undefined) {
+      const row = (
+        await client.query(
+          "SELECT password_hash FROM jdatna.users WHERE id=$1 FOR UPDATE",
+          [user.id],
+        )
+      ).rows[0];
+      if (
+        !(await verifyPassword(value.currentPassword ?? "", row?.password_hash))
+      )
+        throw new HttpError(400, "كلمة المرور الحالية غير صحيحة");
+      await client.query(
+        "UPDATE jdatna.users SET password_hash=$2 WHERE id=$1",
+        [user.id, await hashPassword(value.newPassword)],
+      );
+      const token = sessionToken(request);
+      await client.query(
+        "DELETE FROM jdatna.sessions WHERE user_id=$1 AND token_hash<>$2",
+        [user.id, token ? hash(token) : ""],
+      );
+    }
+    if (value.name !== undefined)
+      await client.query("UPDATE jdatna.users SET name=$2 WHERE id=$1", [
+        user.id,
+        value.name,
+      ]);
+    return (
+      await client.query(
+        "SELECT id,name,phone,role,username FROM jdatna.users WHERE id=$1",
+        [user.id],
+      )
+    ).rows[0] as SessionUser;
+  });
+}
