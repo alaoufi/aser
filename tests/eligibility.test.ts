@@ -155,6 +155,25 @@ test(
       );
       assert.equal(congrats?.body, siteTextDefaults["approval.message"]);
       assert.equal(congrats?.url, "/dashboard");
+      // إعادة الاعتماد بعد تعديل البيانات لا تكرر المباركة.
+      await db().query(
+        "UPDATE jdatna.producer_profiles SET status='pending' WHERE id=$1",
+        [p.id],
+      );
+      const before = sent.length;
+      await reviewProducer(admin, p.id, {
+        decision: "approved",
+        reason: "إعادة اعتماد بعد تعديل البيانات",
+        eligibilityConfirmed: true,
+      });
+      await new Promise((r) => setTimeout(r, 200));
+      assert.equal(
+        sent
+          .slice(before)
+          .filter((x) => x.payload.title === siteTextDefaults["approval.title"])
+          .length,
+        0,
+      );
       assert.equal(
         audit.details.reason,
         "تم التفعيل. نرجو إرفاق شهادة الأسرة المنتجة",

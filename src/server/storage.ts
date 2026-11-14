@@ -74,13 +74,22 @@ export async function uploadDocument(
   }
   return { id };
 }
-export async function downloadDocument(id: string, actorId: string) {
+/**
+ * تنزيل مستند خاص: لمن يراجع الأسر، أو لصاحب المستند نفسه (الأسرة ترى ما رفعته).
+ * غيرهما يرى «غير موجود» حتى لا يُعرف وجوده.
+ */
+export async function downloadDocument(
+  id: string,
+  actorId: string,
+  reviewer = false,
+) {
   const doc = (
     await db().query("SELECT * FROM jdatna.producer_documents WHERE id=$1", [
       id,
     ])
   ).rows[0];
-  if (!doc) throw new HttpError(404, "المستند غير موجود");
+  if (!doc || (!reviewer && doc.user_id !== actorId))
+    throw new HttpError(404, "المستند غير موجود");
   const client = storage();
   const result = await client.send(
     new GetObjectCommand({

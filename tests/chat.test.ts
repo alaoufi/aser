@@ -7,7 +7,6 @@ import {
   listConversations,
   conversationMessages,
   sendMessage,
-  unreadTotal,
   unreadConversations,
   moderateConversation,
   markDelivered,
@@ -100,11 +99,19 @@ test(
       assert.equal(row.title, customer.name);
       assert.equal(row.unread, 1);
       assert.equal(row.preview, "السلام عليكم، متى الجريش؟");
-      assert.equal(await unreadTotal(family), 1);
+      assert.equal((await unreadConversations(family)).total, 1);
+      // الصفحة مخفية (read=false): تُجلب الرسالة ولا تُعلَّم مقروءة.
+      const hidden = await conversationMessages(family, id, undefined, false);
+      assert.equal(hidden.messages.length, 1);
+      assert.equal((await unreadConversations(family)).total, 1);
       const opened = await conversationMessages(family, id);
       assert.equal(opened.messages.length, 1);
       assert.equal(opened.messages[0].mine, false);
-      assert.equal(await unreadTotal(family), 0, "opening marks read");
+      assert.equal(
+        (await unreadConversations(family)).total,
+        0,
+        "opening marks read",
+      );
 
       const reply = await sendMessage(family, id, {
         body: "جاهز بكرة إن شاء الله",
@@ -114,7 +121,7 @@ test(
         customerList.find((c) => c.id === id)?.title,
         "أسرة approved",
       );
-      assert.equal(await unreadTotal(customer), 1);
+      assert.equal((await unreadConversations(customer)).total, 1);
       const later = await conversationMessages(
         customer,
         id,

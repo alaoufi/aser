@@ -324,13 +324,14 @@ test(
             { params: Promise.resolve({ id: producerIds[0] }) },
           );
           assert.equal(denied.status, 403);
+          // مستند أسرة أخرى: «غير موجود» لغير المراجع (صاحب المستند وحده يراه).
           const privateDenied = await documentRoute(
-            new Request("https://test.invalid/api/documents/" + docIds[0], {
+            new Request("https://test.invalid/api/documents/" + docIds[1], {
               headers: { cookie: "jdatna_session=" + sessionTokens[0] },
             }),
-            { params: Promise.resolve({ id: docIds[0] }) },
+            { params: Promise.resolve({ id: docIds[1] }) },
           );
-          assert.equal(privateDenied.status, 403);
+          assert.equal(privateDenied.status, 404);
         },
       );
       await t.test("database rate limits persist across calls", async () => {
@@ -573,7 +574,20 @@ test(
               "producer_certificate",
             );
             assert.ok(stored && !stored.includes(plaintext));
-            const downloaded = await downloadDocument(uploaded.id, users[2].id);
+            // غير المراجع وغير صاحب المستند: «غير موجود».
+            await assert.rejects(downloadDocument(uploaded.id, users[2].id), {
+              status: 404,
+            });
+            // صاحب المستند يراه، والمراجع يراه.
+            assert.deepEqual(
+              (await downloadDocument(uploaded.id, users[0].id)).data,
+              plaintext,
+            );
+            const downloaded = await downloadDocument(
+              uploaded.id,
+              users[2].id,
+              true,
+            );
             assert.deepEqual(downloaded.data, plaintext);
             const audited = (
               await db().query(

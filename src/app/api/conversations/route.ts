@@ -7,8 +7,11 @@ import {
 } from "@/server/chat";
 export const GET = api(async (request) => {
   const user = await requireUser(request);
-  await markDelivered(user);
-  return json({ conversations: await listConversations(user) });
+  const [, conversations] = await Promise.all([
+    markDelivered(user),
+    listConversations(user),
+  ]);
+  return json({ conversations });
 });
 export const POST = api(async (request) => {
   const user = await requireUser(request);

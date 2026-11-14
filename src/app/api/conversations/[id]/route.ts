@@ -8,9 +8,14 @@ import {
 type Context = { params: Promise<{ id: string }> };
 export const GET = api(async (request, context: Context) => {
   const user = await requireUser(request);
-  const after = new URL(request.url).searchParams.get("after") ?? undefined;
+  const query = new URL(request.url).searchParams;
   return json(
-    await conversationMessages(user, (await context.params).id, after),
+    await conversationMessages(
+      user,
+      (await context.params).id,
+      query.get("after") ?? undefined,
+      query.get("read") !== "0",
+    ),
   );
 });
 export const POST = api(async (request, context: Context) => {

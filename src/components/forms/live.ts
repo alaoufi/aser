@@ -1,6 +1,6 @@
 "use client";
 /** حدث لحظي من الخادم: رسالة جديدة أو قراءة في محادثة. */
-export type LiveEvent = { type: "message" | "read"; c: string };
+export type LiveEvent = { type: "message" | "read" | "sync"; c: string };
 type Listener = (event: LiveEvent) => void;
 
 // اتصال واحد مشترك لكل مكوّنات الصفحة، يُفتح مع أول مستمع ويُغلق مع آخر واحد.
@@ -10,6 +10,16 @@ let source: EventSource | null = null;
 function open() {
   if (source || typeof EventSource === "undefined") return;
   source = new EventSource("/api/live");
+  // بعد انقطاع وعودة الاتصال: «sync» يجعل كل مستمع يجلب ما فاته فورًا.
+  let dropped = false;
+  source.onerror = () => {
+    dropped = true;
+  };
+  source.onopen = () => {
+    if (!dropped) return;
+    dropped = false;
+    for (const fn of listeners) fn({ type: "sync", c: "" });
+  };
   source.onmessage = (e) => {
     try {
       const event = JSON.parse(e.data) as LiveEvent;

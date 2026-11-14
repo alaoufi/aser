@@ -58,13 +58,17 @@ export function Messages() {
   const openId = params.get("c") ?? "";
   const [list, setList] = useState<Summary[] | null>(null);
   const [error, setError] = useState("");
+  // تحميل القائمة يبدأ فورًا مع فحص الجلسة لا بعده، فلا ينتظر المستخدم طلبين متتاليين.
+  const signedOut = session.ready && !session.user;
   useEffect(() => {
-    if (!session.user) return;
+    if (signedOut) return;
     let active = true;
     const load = () =>
       api<{ conversations: Summary[] }>("/api/conversations")
         .then((d) => active && setList(d.conversations))
-        .catch((e) => active && setError((e as Error).message));
+        .catch((e) => {
+          if (active && session.ready) setError((e as Error).message);
+        });
     load();
     const timer = setInterval(load, 30000);
     const off = onLive(() => load());
@@ -73,14 +77,14 @@ export function Messages() {
       clearInterval(timer);
       off();
     };
-  }, [session.user?.id, openId]);
+  }, [signedOut, session.user?.id, openId]);
   const open = (id: string) =>
     router.push(id ? `/messages?c=${encodeURIComponent(id)}` : "/messages");
   return (
     // صفحة المحادثات بلا سطر روابط الحساب ولا فراغ علوي: الرسائل والقائمة في الرأس أصلًا.
     <AccountShell navigation={false} compact>
-      <Guard {...session} />
-      {session.user && (
+      {session.ready && <Guard {...session} />}
+      {!signedOut && !session.error && (
         <div className={c.app} data-open={openId ? "true" : "false"}>
           <aside className={c.list} aria-label="المحادثات">
             <div className={c.listHead}>
@@ -196,12 +200,17 @@ function Conversation({ id, onBack }: { id: string; onBack: () => void }) {
       setError((e as Error).message);
     }
   }
+  // دمج بلا تكرار ومرتب بالوقت: رسالة وصلت متأخرة تأخذ مكانها الصحيح.
   const merge = (incoming: Message[]) =>
     setThread((t) => {
       if (!t) return t;
       const seen = new Set(t.messages.map((m) => m.id));
       const fresh = incoming.filter((m) => !seen.has(m.id));
-      return fresh.length ? { ...t, messages: [...t.messages, ...fresh] } : t;
+      if (!fresh.length) return t;
+      const messages = [...t.messages, ...fresh].sort(
+        (a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt),
+      );
+      return { ...t, messages };
     });
   useEffect(() => {
     let active = true;
@@ -225,8 +234,14 @@ function Conversation({ id, onBack }: { id: string; onBack: () => void }) {
   useEffect(() => {
     if (!thread) return;
     const refresh = () => {
-      const after = last ? `?after=${encodeURIComponent(last)}` : "";
-      api<Thread>(`/api/conversations/${encodeURIComponent(id)}${after}`)
+      // نافذة تداخل دقيقة قبل آخر رسالة: لا تضيع رسالة الطرف الآخر إن سبقت رسالتي بلحظة.
+      const params = new URLSearchParams();
+      if (last)
+        params.set("after", new Date(Date.parse(last) - 60_000).toISOString());
+      // لا تُعلَّم مقروءة والصفحة مخفية؛ تُقرأ عند العودة إليها.
+      if (document.visibilityState !== "visible") params.set("read", "0");
+      const q = params.size ? `?${params}` : "";
+      api<Thread>(`/api/conversations/${encodeURIComponent(id)}${q}`)
         .then((d) => {
           merge(d.messages);
           // تحديث علامات الوصول والقراءة لرسائلي السابقة.
@@ -248,11 +263,16 @@ function Conversation({ id, onBack }: { id: string; onBack: () => void }) {
     // الرسائل والقراءة تصل لحظيًا، والتحديث كل 20 ثانية احتياط عند انقطاع البث.
     const timer = setInterval(refresh, 20000);
     const off = onLive((e) => {
-      if (e.c === id) refresh();
+      if (e.c === id || e.type === "sync") refresh();
     });
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
       clearInterval(timer);
       off();
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, [id, Boolean(thread), last]);
   useEffect(() => {
