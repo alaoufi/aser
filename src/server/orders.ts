@@ -233,7 +233,7 @@ export async function submitOrder(user: SessionUser | null, input: unknown) {
     }
     const id = randomUUID();
     await client.query(
-      `INSERT INTO jdatna.order_requests(id,request_key,request_hash,user_id,producer_id,product_id,offer_id,snapshot,customer_name,phone,quantity,meal,start_date,end_date,notes,fulfillment,delivery_location) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)`,
+      `INSERT INTO jdatna.order_requests(id,request_key,request_hash,user_id,producer_id,product_id,offer_id,snapshot,customer_name,phone,quantity,meal,start_date,end_date,notes) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
       [
         id,
         value.requestKey,
@@ -250,9 +250,12 @@ export async function submitOrder(user: SessionUser | null, input: unknown) {
         value.startDate,
         value.endDate,
         value.notes,
-        fulfillment.method,
-        fulfillment.location,
       ],
+    );
+    // طريقة الاستلام في جدول مستقل مرتبط بالطلب.
+    await client.query(
+      "INSERT INTO jdatna.order_fulfillment(order_id,method,location) VALUES($1,$2,$3)",
+      [id, fulfillment.method, fulfillment.location],
     );
     return {
       id,
@@ -276,14 +279,17 @@ export async function submitOrder(user: SessionUser | null, input: unknown) {
   }
   return { id: result.id, status: result.status };
 }
-const fields = `o.id,o.product_id AS "productId",o.snapshot,o.customer_name AS name,o.phone,o.quantity,o.meal,o.start_date::text AS "startDate",o.end_date::text AS "endDate",(o.end_date-o.start_date+1) AS days,o.notes,o.status,o.created_at AS "createdAt",o.fulfillment,o.delivery_location AS "deliveryLocation"`;
+const fields = `o.id,o.product_id AS "productId",o.snapshot,o.customer_name AS name,o.phone,o.quantity,o.meal,o.start_date::text AS "startDate",o.end_date::text AS "endDate",(o.end_date-o.start_date+1) AS days,o.notes,o.status,o.created_at AS "createdAt",f.method AS fulfillment,f.location AS "deliveryLocation"`;
+/** طريقة الاستلام وموقع التوصيل من جدولهما المستقل. */
+const withFulfillment =
+  "LEFT JOIN jdatna.order_fulfillment f ON f.order_id=o.id";
 export async function memberOrders(user: SessionUser) {
   // Ownership never comes from a phone, body, or query string.
   return (
     await db().query(
       // موقع التسليم المباشر يظهر للعميل بعد قبول الأسرة طلبه، لا قبل ذلك.
-      `SELECT ${fields},CASE WHEN o.fulfillment='pickup' AND o.status IN ('accepted','preparing','ready','completed') THEN p.pickup_location END AS "pickupLocation"
-       FROM jdatna.order_requests o JOIN jdatna.producer_profiles p ON p.id=o.producer_id WHERE o.user_id=$1 ORDER BY o.created_at DESC LIMIT 200`,
+      `SELECT ${fields},CASE WHEN f.method='pickup' AND o.status IN ('accepted','preparing','ready','completed') THEN p.pickup_location END AS "pickupLocation"
+       FROM jdatna.order_requests o JOIN jdatna.producer_profiles p ON p.id=o.producer_id ${withFulfillment} WHERE o.user_id=$1 ORDER BY o.created_at DESC LIMIT 200`,
       [user.id],
     )
   ).rows;
@@ -292,7 +298,7 @@ export async function reorderDraft(user: SessionUser, id: string) {
   z.uuid().parse(id);
   const previous = (
     await db().query(
-      `SELECT product_id AS "productId",quantity,meal,(end_date-start_date+1) AS days,notes,fulfillment,delivery_location AS "deliveryLocation" FROM jdatna.order_requests WHERE id=$1 AND user_id=$2`,
+      `SELECT o.product_id AS "productId",o.quantity,o.meal,(o.end_date-o.start_date+1) AS days,o.notes,f.method AS fulfillment,f.location AS "deliveryLocation" FROM jdatna.order_requests o ${withFulfillment} WHERE o.id=$1 AND o.user_id=$2`,
       [id, user.id],
     )
   ).rows[0];
@@ -318,7 +324,7 @@ export async function reorderDraft(user: SessionUser, id: string) {
 export async function producerOrders(user: SessionUser) {
   return (
     await db().query(
-      `SELECT ${fields},o.producer_seen_at IS NULL AS "isNew",o.user_id AS "customerId" FROM jdatna.order_requests o JOIN jdatna.producer_profiles p ON p.id=o.producer_id WHERE p.user_id=$1 ORDER BY o.created_at DESC LIMIT 200`,
+      `SELECT ${fields},o.producer_seen_at IS NULL AS "isNew",o.user_id AS "customerId" FROM jdatna.order_requests o JOIN jdatna.producer_profiles p ON p.id=o.producer_id ${withFulfillment} WHERE p.user_id=$1 ORDER BY o.created_at DESC LIMIT 200`,
       [user.id],
     )
   ).rows;
