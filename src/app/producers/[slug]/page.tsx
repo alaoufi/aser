@@ -1,3 +1,4 @@
+import { productStatusLabels } from "@/lib/site-texts";
 import { ReportButton } from "@/components/public/report-button";
 import { getPublicCoverage } from "@/server/coverage";
 import { ShareButton } from "@/components/public/share-button";
@@ -79,7 +80,11 @@ export default async function ProducerDetail({
           {products.length ? (
             <div className="product-grid two">
               {products.map((item) => (
-                <ProductCard key={item.id} product={item} />
+                <ProductCard
+                  key={item.id}
+                  product={item}
+                  labels={productStatusLabels(texts)}
+                />
               ))}
             </div>
           ) : (

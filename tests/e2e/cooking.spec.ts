@@ -173,7 +173,7 @@ test.describe("public cooking-day availability on an isolated catalog", () => {
       "min",
       tomorrow,
     );
-    await expect(page.locator(".badge.inline")).toHaveText("متوفر");
+    await expect(page.locator(".badge.inline")).toHaveText("جاهز");
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,

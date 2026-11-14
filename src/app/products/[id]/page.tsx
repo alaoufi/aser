@@ -1,3 +1,4 @@
+import { productStatusLabels } from "@/lib/site-texts";
 import { ReportButton } from "@/components/public/report-button";
 import { OrderRequestForm } from "@/components/forms/orders";
 import { ChatButton } from "@/components/forms/chat";
@@ -7,12 +8,7 @@ import { RatingBox } from "@/components/forms/rating-box";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getProducer, getProduct } from "@/server/catalog";
-import {
-  availability,
-  phoneNumber,
-  priceLabel,
-  safeMediaUrl,
-} from "@/components/public/ui";
+import { phoneNumber, priceLabel, safeMediaUrl } from "@/components/public/ui";
 export const dynamic = "force-dynamic";
 export async function generateMetadata({
   params,
@@ -57,7 +53,9 @@ export default async function ProductDetail({
         </div>
         <section>
           <p className="eyebrow">{p.cityName}</p>
-          <span className="badge inline">{availability[p.status]}</span>
+          <span className="badge inline">
+            {productStatusLabels(texts)[p.status]}
+          </span>
           <h1>{p.name}</h1>
           {p.notCookingToday && (
             <p role="status" className="muted">

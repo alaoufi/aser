@@ -13,6 +13,9 @@ export const siteTextDefaults = {
   "table.emptyRegion": "في منطقتك",
   "table.more": "افتح المائدة كاملة",
   "avail.now": "متوفر الآن",
+  "status.available": "جاهز",
+  "status.unavailable": "غير جاهز",
+  "status.preorder": "حسب الطلب",
   "avail.order": "اطلب الآن",
   "browse.title": "طبخات اليوم",
   "browse.subtitle": "اختر طريقة البحث، ونعرض لك المتاح أولًا.",
@@ -90,6 +93,9 @@ export const siteTextLabels: Record<
   "table.emptyRegion": ["الرئيسية", "تحت «بانتظار العروض»"],
   "table.more": ["الرئيسية", "رابط المائدة كاملة"],
   "avail.now": ["الرئيسية", "بطاقة «متوفر الآن»"],
+  "status.available": ["حالة المنتج", "المنتج جاهز"],
+  "status.unavailable": ["حالة المنتج", "المنتج غير جاهز"],
+  "status.preorder": ["حالة المنتج", "المنتج حسب الطلب"],
   "avail.order": ["الرئيسية", "بطاقة «اطلب الآن»"],
   "browse.title": ["صفحة البحث", "العنوان"],
   "browse.subtitle": ["صفحة البحث", "السطر تحت العنوان"],
@@ -177,4 +183,16 @@ export const siteTextParagraphs: ReadonlyMap<SiteTextKey, SiteTextKey> =
 
 export function isSiteTextKey(key: string): key is SiteTextKey {
   return Object.hasOwn(siteTextDefaults, key);
+}
+
+/** أسماء حالة المنتج (جاهز، غير جاهز، حسب الطلب) من «نصوص الموقع»، والنص الأصلي إن حُذف أو أُخفي. */
+export function productStatusLabels(
+  texts?: Partial<Record<SiteTextKey, string>> | null,
+): Record<"available" | "unavailable" | "preorder", string> {
+  const pick = (k: SiteTextKey) => texts?.[k] || siteTextDefaults[k];
+  return {
+    available: pick("status.available"),
+    unavailable: pick("status.unavailable"),
+    preorder: pick("status.preorder"),
+  };
 }

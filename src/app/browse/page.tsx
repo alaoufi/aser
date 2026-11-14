@@ -1,3 +1,4 @@
+import { productStatusLabels } from "@/lib/site-texts";
 import { categoryLabel } from "@/lib/category-label";
 import { LocationFields } from "@/components/public/location-fields";
 import type { Metadata } from "next";
@@ -299,8 +300,12 @@ export default async function Browse({
               {by !== "available" && (
                 <option value="available">متوفر الآن</option>
               )}
-              <option value="preorder">حسب الطلب</option>
-              <option value="all">يشمل غير المتوفر</option>
+              <option value="preorder">
+                {productStatusLabels(texts).preorder}
+              </option>
+              <option value="all">
+                يشمل «{productStatusLabels(texts).unavailable}»
+              </option>
             </select>
           </label>
           <label>
@@ -473,7 +478,11 @@ export default async function Browse({
           {products.length || widened.length ? (
             <div className="product-grid">
               {(products.length ? products : widened).map((p) => (
-                <ProductCard key={p.id} product={p} />
+                <ProductCard
+                  key={p.id}
+                  product={p}
+                  labels={productStatusLabels(texts)}
+                />
               ))}
             </div>
           ) : (
