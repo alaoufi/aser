@@ -54,14 +54,14 @@ test("admin's personal account is separate from the admin account and edits name
   expect(sent[0]).toEqual({ name: "أبو محمد" });
 
   const pwd = page.getByRole("form", { name: "تغيير كلمة المرور" });
-  await pwd.getByLabel("كلمة المرور الحالية").fill("9999");
-  await pwd.getByLabel("كلمة المرور الجديدة").fill("2468");
+  await pwd.getByLabel("كلمة المرور الحالية", { exact: true }).fill("9999");
+  await pwd.getByLabel("كلمة المرور الجديدة", { exact: true }).fill("2468");
   await pwd.getByLabel("تأكيد كلمة المرور الجديدة").fill("2468");
   await pwd.getByRole("button", { name: "تغيير كلمة المرور" }).click();
-  await expect(page.getByRole("alert")).toContainText(
+  await expect(page.locator("main").getByRole("alert")).toContainText(
     "كلمة المرور الحالية غير صحيحة",
   );
-  await pwd.getByLabel("كلمة المرور الحالية").fill("1111");
+  await pwd.getByLabel("كلمة المرور الحالية", { exact: true }).fill("1111");
   await pwd.getByRole("button", { name: "تغيير كلمة المرور" }).click();
   await expect(page.getByText(/تم تغيير كلمة المرور/)).toBeVisible();
   expect(sent.at(-1)).toEqual({ currentPassword: "1111", newPassword: "2468" });
