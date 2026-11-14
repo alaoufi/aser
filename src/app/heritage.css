@@ -1964,3 +1964,58 @@ button.food-dish:focus-visible .food-dish-visual {
     width: 76px;
   }
 }
+/* كثرة الأطباق: تصغر الصحون وتتراص صفوفًا، ويُختصر الاسم في سطر واحد،
+   والأسرة والسعر يبقيان لقارئ الشاشة فقط (يظهران كاملة في صفحة الطبق). */
+.today-table.is-full .table-dishes.is-some,
+.today-table.is-full .table-dishes.is-many {
+  gap: 14px 8px;
+}
+.today-table.is-full .table-dishes.is-some > li {
+  width: 92px;
+}
+.today-table.is-full .table-3d .table-dishes.is-some .plate {
+  width: 70px;
+}
+.today-table.is-full .table-dishes.is-many > li {
+  width: 74px;
+}
+.today-table.is-full .table-3d .table-dishes.is-many .plate {
+  width: 56px;
+}
+.today-table.is-full .table-dishes:is(.is-some, .is-many) .table-dish {
+  gap: 4px;
+}
+.today-table.is-full .table-dishes:is(.is-some, .is-many) strong {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+.today-table.is-full .table-dishes.is-many strong {
+  font-size: 12px;
+}
+.today-table.is-full
+  .table-dishes:is(.is-some, .is-many)
+  :is(small, .dish-shipping) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+@media (max-width: 600px) {
+  .today-table.is-full .table-dishes.is-some > li {
+    width: 80px;
+  }
+  .today-table.is-full .table-3d .table-dishes.is-some .plate {
+    width: 60px;
+  }
+  .today-table.is-full .table-dishes.is-many > li {
+    width: 64px;
+  }
+  .today-table.is-full .table-3d .table-dishes.is-many .plate {
+    width: 48px;
+  }
+}

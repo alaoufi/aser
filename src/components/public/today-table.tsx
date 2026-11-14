@@ -428,7 +428,11 @@ export function TodayTable({
               </ul>
             </TableCarousel>
           ) : (
-            <ul className={`table-dishes${capacity ? " is-row" : ""}`}>
+            // الحجم حسب العدد: قليلة كبيرة بالاسم والسعر، ومتوسطة أصغر بالاسم فقط،
+            // وكثيرة أصغر صفوفًا متراصة. التفاصيل الكاملة في صفحة الطبق عند فتحه.
+            <ul
+              className={`table-dishes is-${shown.length <= 4 ? "few" : shown.length <= 12 ? "some" : "many"}`}
+            >
               {shown.map((p) => (
                 <li key={p.id}>
                   <Link href={`/products/${p.id}`} className="table-dish">
