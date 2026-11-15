@@ -1,4 +1,5 @@
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
+import { toAsciiDigits } from "../lib/digits";
 export class HttpError extends Error {
   constructor(
     public status: number,
@@ -10,8 +11,8 @@ export class HttpError extends Error {
   }
 }
 export function normalizePhone(value: string) {
-  const phone = value
-    .replace(/[\s-]/g, "")
+  const phone = toAsciiDigits(value)
+    .replace(/[\s\u200e\u200f-]/g, "")
     .replace(/^00966/, "+966")
     .replace(/^0(?=5\d{8}$)/, "+966");
   if (!/^\+9665\d{8}$/.test(phone))

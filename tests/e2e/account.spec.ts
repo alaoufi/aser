@@ -79,7 +79,8 @@ test("phone verification moves to code entry and reports server failure", async 
   );
   await expect(page.getByLabel("رمز التحقق", { exact: true })).toHaveAttribute(
     "pattern",
-    "[0-9]{4}",
+    // الأرقام العربية (١٢٣٤) مقبولة كاللاتينية.
+    "[0-9٠-٩۰-۹]{4}",
   );
   await page.getByLabel("رمز التحقق", { exact: true }).fill("1234");
   await page.getByRole("button", { name: "تحقق ومتابعة" }).click();
