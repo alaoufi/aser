@@ -2496,22 +2496,37 @@ main {
   }
 }
 /* ===== 5.9.0.0: مكتبة الهويات =====
-   هوية الأسرة: خلفية + زخرفة + تأثير خفيف ثلاثي الأبعاد.
-   هوية القسم: الإطار (frame-*). المنتج يجمعهما. */
+   هوية الأسرة: خلفية (لون/تدرج) + زخرفة خفيفة + تأثير.
+   هوية القسم: البرواز (frame-*) بسماكة --fw. المنتج يجمعهما. */
 .branded {
   --frame-color: var(--brand-accent, #8a967b);
   background-color: var(--brand-bg, #fbf6ec);
-  background-image: var(--fx-layer, none), var(--brand-pattern, none);
+  background-image:
+    var(--fx-layer, none), var(--brand-pattern, none),
+    linear-gradient(135deg, var(--brand-bg), var(--brand-bg2, var(--brand-bg)));
   background-size:
     100% 100%,
-    var(--brand-size, 44px) var(--brand-size, 44px);
+    var(--brand-size, 46px) var(--brand-size, 46px),
+    100% 100%;
   border: 1px solid color-mix(in srgb, var(--frame-color) 35%, transparent);
   color: var(--brand-ink, inherit);
   position: relative;
 }
+/* الكتابة واضحة فوق الزخرفة: لون الهوية الداكن مع هالة من لون الخلفية */
+.branded h1,
 .branded h3,
-.branded h1 {
+.branded .producer-location,
+.branded .card-body small,
+.branded .card-body p {
   color: var(--brand-ink, inherit);
+  text-shadow:
+    0 0 2px var(--brand-bg),
+    0 0 6px var(--brand-bg),
+    0 0 10px var(--brand-bg);
+}
+.branded h1,
+.branded h3 {
+  font-weight: 800;
 }
 .branded:hover,
 .branded:focus-visible {
@@ -2568,44 +2583,53 @@ main {
     inset 0 -1px 0 rgba(255, 255, 255, 0.8),
     0 1px 0 rgba(255, 255, 255, 0.8);
 }
-/* إطارات الأقسام (البرواز والحدود) بلون الأسرة */
-.frame-simple {
-  border: 1.5px solid color-mix(in srgb, var(--frame-color) 55%, transparent);
+/* ===== براويز الأقسام بلون الأسرة وبسماكة --fw ===== */
+.frame-line {
+  border: var(--fw) solid var(--frame-color);
 }
 .frame-double {
-  border: 4px double var(--frame-color);
-}
-.frame-stitched {
-  outline: 1.5px dashed color-mix(in srgb, var(--frame-color) 70%, transparent);
-  outline-offset: -7px;
-}
-.frame-arch {
-  border: 1.5px solid var(--frame-color);
-  border-radius: 46% 46% 12px 12px / 16% 16% 12px 12px !important;
-}
-.frame-bevel {
-  border: 3px outset color-mix(in srgb, var(--frame-color) 60%, #fff);
+  border: var(--fw) double var(--frame-color);
 }
 .frame-groove {
-  border: 4px groove color-mix(in srgb, var(--frame-color) 60%, #fff);
+  border: var(--fw) groove color-mix(in srgb, var(--frame-color) 60%, #fff);
 }
 .frame-ridge {
-  border: 4px ridge color-mix(in srgb, var(--frame-color) 60%, #fff);
+  border: var(--fw) ridge color-mix(in srgb, var(--frame-color) 60%, #fff);
 }
-.frame-gold {
-  border: 1px solid #d6a35c;
-  outline: 1px solid rgba(214, 163, 92, 0.75);
-  outline-offset: -6px;
+.frame-bevel {
+  border: var(--fw) outset color-mix(in srgb, var(--frame-color) 60%, #fff);
+}
+.frame-dashed {
+  border: var(--fw) dashed var(--frame-color);
 }
 .frame-dotted {
-  border: 2.5px dotted var(--frame-color);
+  border: var(--fw) dotted var(--frame-color);
 }
-.frame-ribbon {
-  border-top: 7px solid var(--frame-color);
+.frame-arch {
+  border: var(--fw) solid var(--frame-color);
+  border-radius: 46% 46% 12px 12px / 16% 16% 12px 12px !important;
 }
 .frame-notched {
-  border: 1.5px solid var(--frame-color);
+  border: var(--fw) solid var(--frame-color);
   border-radius: 24px 4px 24px 4px !important;
+}
+.frame-rounded {
+  border: var(--fw) solid var(--frame-color);
+  border-radius: 26px !important;
+}
+.frame-gold {
+  border: var(--fw) solid #d6a35c;
+  outline: var(--fw) solid rgba(214, 163, 92, 0.7);
+  outline-offset: -7px;
+}
+.frame-inset {
+  border: 1px solid color-mix(in srgb, var(--frame-color) 30%, transparent);
+  outline: var(--fw) solid var(--frame-color);
+  outline-offset: -7px;
+}
+.frame-ribbon {
+  border: 1px solid color-mix(in srgb, var(--frame-color) 30%, transparent);
+  border-top: var(--fw) solid var(--frame-color);
 }
 .frame-corners {
   border: 1px solid color-mix(in srgb, var(--frame-color) 30%, transparent);
@@ -2617,15 +2641,41 @@ main {
   pointer-events: none;
   z-index: 1;
   --c: var(--frame-color);
+  --l: calc(var(--fw) * 6 + 6px);
   background:
-    linear-gradient(var(--c), var(--c)) top left / 16px 2px no-repeat,
-    linear-gradient(var(--c), var(--c)) top left / 2px 16px no-repeat,
-    linear-gradient(var(--c), var(--c)) top right / 16px 2px no-repeat,
-    linear-gradient(var(--c), var(--c)) top right / 2px 16px no-repeat,
-    linear-gradient(var(--c), var(--c)) bottom left / 16px 2px no-repeat,
-    linear-gradient(var(--c), var(--c)) bottom left / 2px 16px no-repeat,
-    linear-gradient(var(--c), var(--c)) bottom right / 16px 2px no-repeat,
-    linear-gradient(var(--c), var(--c)) bottom right / 2px 16px no-repeat;
+    linear-gradient(var(--c), var(--c)) top left / var(--l) var(--fw) no-repeat,
+    linear-gradient(var(--c), var(--c)) top left / var(--fw) var(--l) no-repeat,
+    linear-gradient(var(--c), var(--c)) top right / var(--l) var(--fw) no-repeat,
+    linear-gradient(var(--c), var(--c)) top right / var(--fw) var(--l) no-repeat,
+    linear-gradient(var(--c), var(--c)) bottom left / var(--l) var(--fw)
+      no-repeat,
+    linear-gradient(var(--c), var(--c)) bottom left / var(--fw) var(--l)
+      no-repeat,
+    linear-gradient(var(--c), var(--c)) bottom right / var(--l) var(--fw)
+      no-repeat,
+    linear-gradient(var(--c), var(--c)) bottom right / var(--fw) var(--l)
+      no-repeat;
+}
+/* براويز مزخرفة: شريط حول البطاقة (متعرج، مسنن، مقوّس، خرز، مجدول، شرفات...) */
+.frame-band {
+  border: 0;
+}
+.frame-band::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  padding: var(--fw);
+  border-radius: inherit;
+  background: var(--frame-band) 0 0 / var(--fw) var(--fw) repeat;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+  pointer-events: none;
+  z-index: 1;
 }
 /* بطاقة الأسرة */
 .producer-card.branded {
@@ -2642,21 +2692,23 @@ main {
   color: var(--brand-accent);
 }
 .producer-card.branded .producer-tags > span:not(.stars) {
-  background: color-mix(in srgb, var(--brand-accent) 12%, #fff);
+  background: color-mix(in srgb, var(--brand-bg) 88%, #fff);
+  border: 1px solid color-mix(in srgb, var(--brand-accent) 25%, transparent);
   color: var(--brand-ink);
 }
-/* بطاقة المنتج: خلفية الأسرة وزخرفتها، وإطار القسم */
+/* بطاقة المنتج: الزخرفة في أعلاها، والكتابة على أرضية صافية من لون الأسرة */
 .product-card.branded .card-image {
-  background: color-mix(in srgb, var(--brand-accent) 10%, transparent);
+  background: color-mix(in srgb, var(--brand-accent) 8%, transparent);
 }
 .product-card.branded .card-image > span[aria-hidden] {
   color: var(--brand-accent);
 }
-.product-card.branded .card-body small {
-  color: color-mix(in srgb, var(--brand-ink) 80%, transparent);
+.product-card.branded .card-body {
+  background: color-mix(in srgb, var(--brand-bg) 90%, transparent);
 }
 .product-card.branded .card-body > p {
-  color: var(--brand-accent);
+  color: color-mix(in srgb, var(--brand-accent) 55%, var(--brand-ink));
+  font-weight: 800;
 }
 /* رأس صفحة الأسرة */
 .profile-header.branded {
@@ -2697,13 +2749,54 @@ main {
     display: none;
   }
 }
-@media (prefers-reduced-transparency: reduce) {
-  .branded {
-    --fx-layer: none;
+/* الرئيسية: الأسر صغيرة وأكثر من أسرة في الصف */
+.producer-grid.compact {
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+}
+.producer-grid.compact .producer-card {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 10px 8px;
+  gap: 4px;
+}
+.producer-grid.compact .producer-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  font-size: 15px;
+}
+.producer-grid.compact h3 {
+  font-size: 14px;
+  margin: 0;
+}
+.producer-grid.compact .producer-location {
+  font-size: 11px;
+}
+.producer-grid.compact .producer-description,
+.producer-grid.compact .producer-card-arrow,
+.producer-grid.compact .producer-tags > span:not(.stars) {
+  display: none;
+}
+.producer-grid.compact .producer-tags {
+  justify-content: center;
+}
+.producer-grid.compact .stars-count {
+  display: none;
+}
+@media (max-width: 600px) {
+  .producer-grid.compact {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
   }
 }
-/* بطاقة القسم في الرئيسية تحمل إطاره (هويته) */
-.category-card[class*="frame-"] {
-  --frame-color: var(--olive, #4f5d36);
+@media (prefers-reduced-transparency: reduce) {
+  .branded {
+    background-image: none;
+  }
+}
+/* بطاقة القسم في الرئيسية تحمل برواز القسم (هويته) */
+.category-card.branded {
   position: relative;
 }

@@ -1,5 +1,5 @@
 import { productStatusLabels } from "@/lib/site-texts";
-import { frameFor } from "@/lib/brand";
+import { identityProps } from "@/lib/brand";
 import { FoodPhotos } from "@/components/public/food-photos";
 import { NajdiDoor } from "@/components/public/najdi-door";
 import { getSiteTexts, visitorTemplate } from "@/server/settings";
@@ -121,7 +121,7 @@ export default async function Home({
                 <Link
                   href={`/browse?category=${encodeURIComponent(c.id)}`}
                   key={c.id}
-                  className={`category-card frame-${frameFor(c.id, c.frame).id}`}
+                  {...categoryIdentity(c.id, c.frame)}
                 >
                   <span
                     className={`category-icon tone-${i % 4}`}
@@ -175,7 +175,7 @@ export default async function Home({
       </section>
       {producers.length > 0 && (
         <section className="section wrap" aria-label="الأسر المنتجة">
-          <div className="producer-grid">
+          <div className="producer-grid compact">
             {producers.slice(0, 4).map((p) => (
               <ProducerCard key={p.id} producer={p} />
             ))}
@@ -197,4 +197,14 @@ export default async function Home({
       )}
     </>
   );
+}
+
+/** بطاقة القسم بهويته (البرواز) على أرضية الموقع الهادئة. */
+function categoryIdentity(id: string, frame?: string | null) {
+  const p = identityProps(
+    "site",
+    { palette: "c8-4", pattern: "plain", effect: "soft", scale: 2 },
+    { categoryId: id, chosen: frame },
+  );
+  return { className: `category-card ${p.className}`, style: p.style };
 }

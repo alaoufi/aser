@@ -57,12 +57,14 @@ test("a family picks its brand colour from the dashboard", async ({ page }) => {
   let sent: unknown;
   const brand = {
     producerId: "00000000-0000-4000-8000-000000000081",
-    palette: "saffron",
-    pattern: "dots",
+    palette: "c4-7",
+    pattern: "dots-g-2-0",
     effect: "soft",
     scale: 2,
     chosen: false,
     tier: "free",
+    // أسرة في نفس المدينة تستخدم «رمان زاهٍ معتدل» مع «سدو».
+    taken: [{ palette: "c0-10", motif: "sadu" }],
   };
   await page.route("**/api/producer/brand", (r) => {
     if (r.request().method() === "PUT") {
@@ -73,43 +75,45 @@ test("a family picks its brand colour from the dashboard", async ({ page }) => {
   });
   await page.goto("/dashboard");
   const card = page.getByRole("region", { name: "هوية الأسرة" });
-  const group = (name: string) => card.getByRole("group", { name });
+  const group = (name: string) =>
+    card.getByRole("group", { name, exact: true });
+  // مئات التدرجات: 24 عائلة لون، ولكل عائلة 12 درجة.
   await expect(
-    group("اللون").getByRole("radio", { name: "زعفران" }),
-  ).toBeChecked();
-  await expect(group("اللون").getByRole("radio")).toHaveCount(16);
-  await expect(group("الزخرفة (الشكل)").getByRole("radio")).toHaveCount(16);
-  // المكتبة المميزة مقفلة للهوية المجانية.
+    card.getByRole("radiogroup", { name: "عائلة اللون" }).getByRole("radio"),
+  ).toHaveCount(24);
+  await expect(group("اللون").locator("input[type=radio]:checked")).toHaveCount(
+    1,
+  );
+  await card.getByRole("radio", { name: "رمان", exact: true }).click();
+  await expect(group("اللون").locator("input[type=radio]")).toHaveCount(12);
+  await group("اللون").getByRole("radio", { name: "رمان زاهٍ معتدل" }).check();
+  // الزخرفة المستخدمة بنفس اللون في المدينة معطلة، والمميز مقفل.
+  const motifs = group("الزخرفة (شكل الخلفية)");
+  await expect(motifs.getByRole("radio", { name: /سدو/ })).toBeDisabled();
+  await expect(motifs.getByText("مستخدمة في مدينتك")).toBeVisible();
+  await expect(motifs.getByRole("radio", { name: /مشربية/ })).toBeDisabled();
   await expect(
-    group("الزخرفة (الشكل)").getByRole("radio", { name: /مشربية/ }),
+    group("ألوان متدرجة (المكتبة المميزة)").getByRole("radio").first(),
   ).toBeDisabled();
-  await expect(
-    group("التأثير").getByRole("radio", { name: /رقائق ذهب/ }),
-  ).toBeDisabled();
-  await group("اللون").getByRole("radio", { name: "رمان" }).check();
-  await group("الزخرفة (الشكل)")
-    .getByRole("radio", { name: "نجمة إسلامية" })
-    .check();
+  await motifs.getByRole("radio", { name: /نجمة ثمانية/ }).check();
+  await group("الترتيب").getByRole("radio", { name: "متداخل" }).check();
+  await group("سماكة الخط").getByRole("radio", { name: "رفيع" }).check();
+  await group("الاتجاه").getByRole("radio", { name: "مائل" }).check();
   await group("التأثير").getByRole("radio", { name: "بارز" }).check();
   await group("حجم الزخرفة").getByRole("radio", { name: "كبيرة" }).check();
-  // المعاينة تتغير قبل الحفظ: لون الرمان وزخرفة وتأثير بارز، لا أبيض.
   const preview = card.getByRole("img", { name: "معاينة بطاقة الأسرة" });
   const look = await preview.evaluate((el) => {
     const c = getComputedStyle(el);
-    return {
-      bg: c.backgroundColor,
-      image: c.backgroundImage,
-      shadow: c.boxShadow,
-    };
+    return { image: c.backgroundImage, shadow: c.boxShadow };
   });
-  expect(look.bg).toBe("rgb(249, 230, 226)");
   expect(look.image).toContain("data:image/svg+xml");
   expect(look.shadow).not.toBe("none");
   await card.getByRole("button", { name: "حفظ الهوية" }).click();
   await expect(card.getByText(/تم حفظ هويتك ✓/)).toBeVisible();
-  expect(sent).toEqual({
-    palette: "pomegranate",
-    pattern: "najmah",
+  const chosen = sent as { palette: string; pattern: string };
+  expect(chosen.palette).toBe("c0-10");
+  expect(sent).toMatchObject({
+    pattern: "najmah-s-1-45",
     effect: "raised",
     scale: 3,
   });

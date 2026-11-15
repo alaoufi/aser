@@ -2,7 +2,13 @@
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { Category, City } from "@/lib/types";
 import { categoryLabel, categoryParentOptions } from "@/lib/category-label";
-import { categoryFrames, frameFor } from "@/lib/brand";
+import {
+  categoryFrames,
+  frameFor,
+  frameThickness,
+  frameTypes,
+  identityProps,
+} from "@/lib/brand";
 import {
   siteTextLabels,
   siteTextParagraphs,
@@ -1622,43 +1628,78 @@ export function SuggestionsAdmin() {
   );
 }
 
-/** هوية القسم: إطار (برواز) يظهر حول بطاقات منتجاته، بلون كل أسرة. */
+/** هوية القسم: برواز يظهر حول بطاقات منتجاته، بلون كل أسرة. */
 function CategoryFrame({ category }: { category: AdminCategory }) {
-  const [frame, setFrame] = useState(frameFor(category.id, category.frame).id);
+  const current = frameFor(category.id, category.frame);
+  const [type, setType] = useState(current.type);
+  const [thick, setThick] = useState(String(current.thick));
   const [state, setState] = useState("");
-  async function choose(next: string) {
-    const before = frame;
-    setFrame(next);
+  const look = (id: string) =>
+    identityProps(
+      "site",
+      { palette: "c8-4", pattern: "plain", effect: "soft", scale: 2 },
+      { chosen: id },
+    );
+  async function choose(nextType: string, nextThick: string) {
+    const before = [type, thick];
+    setType(nextType);
+    setThick(nextThick);
     setState("");
     try {
       await api("/api/admin/categories/frame", {
         method: "PUT",
-        body: JSON.stringify({ id: category.id, frame: next }),
+        body: JSON.stringify({
+          id: category.id,
+          frame: `${nextType}-${nextThick}`,
+        }),
       });
-      setState("تم حفظ إطار القسم ✓");
+      setState("تم حفظ برواز القسم ✓");
     } catch (e) {
-      setFrame(before);
+      setType(before[0]);
+      setThick(before[1]);
       setState((e as Error).message);
     }
   }
   return (
     <fieldset className={s.frameChoices}>
-      <legend>هوية القسم (الإطار حول بطاقات منتجاته)</legend>
-      {categoryFrames.map((f) => (
-        <label
-          key={f.id}
-          className={`${s.frameSwatch} branded frame-${f.id}`}
-          style={{ "--brand-accent": "#4f5d36" } as React.CSSProperties}
-        >
-          <input
-            type="radio"
-            name={"frame-" + category.id}
-            checked={frame === f.id}
-            onChange={() => choose(f.id)}
-          />{" "}
-          {f.name}
-        </label>
-      ))}
+      <legend>
+        هوية القسم: البرواز حول بطاقات منتجاته ({categoryFrames.length} برواز)
+      </legend>
+      {frameTypes.map((f) => {
+        const p = look(`${f.id}-${thick}`);
+        return (
+          <label
+            key={f.id}
+            className={`${s.frameSwatch} ${p.className}`}
+            style={p.style}
+          >
+            <input
+              type="radio"
+              name={"frame-" + category.id}
+              checked={type === f.id}
+              onChange={() => choose(f.id, thick)}
+            />{" "}
+            {f.name}
+          </label>
+        );
+      })}
+      <div
+        className={s.frameThickness}
+        role="radiogroup"
+        aria-label="سماكة البرواز"
+      >
+        {frameThickness.map((k) => (
+          <label key={k.id} className={s.optionChip}>
+            <input
+              type="radio"
+              name={"thick-" + category.id}
+              checked={thick === k.id}
+              onChange={() => choose(type, k.id)}
+            />{" "}
+            {k.name}
+          </label>
+        ))}
+      </div>
       <p role="status" className={s.muted}>
         {state}
       </p>

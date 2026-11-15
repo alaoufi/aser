@@ -16,8 +16,11 @@ import {
 import type { SessionUser } from "../src/lib/types";
 
 test("identity library: thousands of combinations, stable defaults from the free library", () => {
-  assert.ok(identityCount.family >= 4000);
-  assert.ok(identityCount.product >= 50000);
+  assert.ok(identityCount.palettes >= 300);
+  assert.ok(identityCount.patterns >= 300);
+  assert.ok(identityCount.frames >= 70);
+  assert.ok(identityCount.family >= 1_000_000);
+  assert.ok(identityCount.product >= 100_000_000);
   const seed = "00000000-0000-4000-8000-000000000001";
   const a = resolveBrand(seed);
   assert.deepEqual(resolveBrand(seed), a);
@@ -37,14 +40,25 @@ test("identity library: thousands of combinations, stable defaults from the free
   // المنتج يدمج الهويتين: صنف تأثير الأسرة وصنف إطار القسم معًا.
   const id = identityProps(
     seed,
-    { palette: "sea", effect: "raised" },
-    { chosen: "arch" },
+    { palette: "c13-4", effect: "raised" },
+    { chosen: "zigzag-3" },
   );
   assert.match(id.className, /\bfx-raised\b/);
-  assert.match(id.className, /\bframe-arch\b/);
+  assert.match(id.className, /\bframe-band\b/);
+  assert.match(
+    String((id.style as Record<string, string>)["--frame-band"]),
+    /^url\(/,
+  );
+  assert.equal((id.style as Record<string, string>)["--fw"], "12px");
+  const line = identityProps(seed, null, { chosen: "line-1" });
+  assert.match(line.className, /\bframe-line\b/);
   assert.equal(frameFor("5").id, frameFor("5").id);
   assert.equal(patternUrl("plain", "#000"), "none");
-  assert.match(patternUrl("najmah", "#2f5f7a"), /^url\("data:image\/svg\+xml,/);
+  assert.match(
+    patternUrl("najmah-s-3-45", "#2f5f7a"),
+    /^url\("data:image\/svg\+xml,/,
+  );
+  assert.equal(patternUrl("unknown-g-2-0", "#000"), "none");
 });
 
 test(
@@ -77,7 +91,9 @@ test(
       role: "admin",
     };
     const familyId = randomUUID(),
-      productId = randomUUID();
+      productId = randomUUID(),
+      neighbour = randomUUID(),
+      neighbourUser = randomUUID();
     const slug = "brand-" + familyId;
     let categoryId = "";
     let priorFrame: string | null = null;
@@ -116,37 +132,72 @@ test(
       assert.equal(before.chosen, false);
       assert.equal(before.tier, "free");
       const choice = {
-        palette: "pomegranate",
-        pattern: "najmah",
+        palette: "c0-4",
+        pattern: "najmah-g-2-0",
         effect: "raised",
         scale: 2,
       };
       // غير موجود مرفوض، والمميز مقفل للمجاني، ومن لا ملف له لا يختار.
-      await assert.rejects(saveBrand(user, { ...choice, pattern: "neon" }));
-      await assert.rejects(saveBrand(user, { ...choice, pattern: "girih" }), {
-        status: 402,
-      });
+      await assert.rejects(
+        saveBrand(user, { ...choice, pattern: "neon-g-2-0" }),
+      );
+      await assert.rejects(
+        saveBrand(user, { ...choice, pattern: "girih-g-2-0" }),
+        {
+          status: 402,
+        },
+      );
       await assert.rejects(saveBrand(user, { ...choice, effect: "gold" }), {
         status: 402,
       });
       await assert.rejects(saveBrand(stranger, choice), { status: 404 });
+      // التميّز: أسرة أخرى في نفس المدينة لها نفس اللون ونفس شكل الزخرفة.
+      await pool.query(
+        "INSERT INTO jdatna.users(id,name,phone,role,phone_verified_at) VALUES($1,'جارة',$2,'producer',now())",
+        [neighbourUser, phone()],
+      );
+      await pool.query(
+        "INSERT INTO jdatna.producer_profiles(id,user_id,slug,name,city_id,phone,status) VALUES($1,$2,$3,'أسرة جارة',$4,'+966500000000','approved')",
+        [neighbour, neighbourUser, "brand-n-" + neighbour, city],
+      );
+      await pool.query(
+        "INSERT INTO jdatna.producer_brand(producer_id,palette,pattern) VALUES($1,'c0-4','najmah-s-1-45')",
+        [neighbour],
+      );
+      assert.deepEqual((await ownBrand(user)).taken, [
+        { palette: "c0-4", motif: "najmah" },
+      ]);
+      // نفس اللون ونفس الشكل مرفوض ولو اختلف الترتيب والسماكة.
+      await assert.rejects(saveBrand(user, choice), { status: 409 });
+      // لون آخر مع نفس الشكل مقبول.
+      assert.equal(
+        (await saveBrand(user, { ...choice, palette: "c0-5" })).palette,
+        "c0-5",
+      );
+      await pool.query(
+        "DELETE FROM jdatna.producer_brand WHERE producer_id=$1",
+        [neighbour],
+      );
       const after = await saveBrand(user, choice);
-      assert.equal(after.pattern, "najmah");
+      assert.equal(after.pattern, "najmah-g-2-0");
       assert.equal(after.chosen, true);
       assert.deepEqual((await getProducer(slug))?.brand, choice);
       // المنتج يأخذ هوية أسرته، وإطار قسمه.
       await assert.rejects(
-        saveCategoryFrame(user, { id: categoryId, frame: "arch" }),
+        saveCategoryFrame(user, { id: categoryId, frame: "arch-2" }),
         { status: 403 },
       );
-      await saveCategoryFrame(admin, { id: categoryId, frame: "arch" });
+      await assert.rejects(
+        saveCategoryFrame(admin, { id: categoryId, frame: "arch-9" }),
+      );
+      await saveCategoryFrame(admin, { id: categoryId, frame: "arch-2" });
       const product = await getProduct(productId);
       assert.deepEqual(product?.brand, choice);
       assert.equal(product?.primaryCategory, categoryId);
-      assert.equal(product?.frame, "arch");
+      assert.equal(product?.frame, "arch-2");
       assert.equal(
         (await getCategories(true)).find((c) => c.id === categoryId)?.frame,
-        "arch",
+        "arch-2",
       );
       // الهوية المدفوعة تفتح المكتبة المميزة.
       await pool.query(
@@ -154,8 +205,8 @@ test(
         [familyId],
       );
       assert.equal(
-        (await saveBrand(user, { ...choice, pattern: "girih" })).pattern,
-        "girih",
+        (await saveBrand(user, { ...choice, pattern: "girih-g-2-0" })).pattern,
+        "girih-g-2-0",
       );
     } finally {
       if (categoryId) {
@@ -174,9 +225,11 @@ test(
         [productId],
       );
       await pool.query("DELETE FROM jdatna.products WHERE id=$1", [productId]);
-      await pool.query("DELETE FROM jdatna.producer_profiles WHERE id=$1", [
-        familyId,
-      ]);
+      await pool.query(
+        "DELETE FROM jdatna.producer_profiles WHERE id=ANY($1::uuid[])",
+        [[familyId, neighbour]],
+      );
+      await pool.query("DELETE FROM jdatna.users WHERE id=$1", [neighbourUser]);
       await pool.query("DELETE FROM jdatna.users WHERE id=ANY($1::uuid[])", [
         [user.id, stranger.id, admin.id],
       ]);
