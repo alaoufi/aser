@@ -6,6 +6,7 @@ import type { SessionUser } from "@/lib/types";
 import s from "./account.module.css";
 import { isManager } from "@/lib/permissions";
 import { LogoutButton } from "@/components/public/logout-button";
+import { PasswordField } from "./password-field";
 export { s };
 export async function api<T>(url: string, options?: RequestInit): Promise<T> {
   const r = await fetch(url, {
@@ -456,34 +457,21 @@ export function LoginForm({
                 </label>
               </div>
             )}
-            <label className={s.field}>
-              كلمة المرور الجديدة
-              <input
-                name="password"
-                aria-label="كلمة المرور الجديدة"
-                type="password"
-                dir="ltr"
-                autoComplete="new-password"
-                minLength={4}
-                maxLength={128}
-                required
-              />
-              <small>
-                أربع خانات على الأقل؛ أحرف أو أرقام أو رموز، دون اشتراط خلطها.
-              </small>
-            </label>
-            <label className={s.field}>
-              تأكيد كلمة المرور
-              <input
-                name="confirmPassword"
-                type="password"
-                dir="ltr"
-                autoComplete="new-password"
-                minLength={4}
-                maxLength={128}
-                required
-              />
-            </label>
+            <PasswordField
+              label="كلمة المرور الجديدة"
+              name="password"
+              autoComplete="new-password"
+              minLength={4}
+              required
+              hint="أربع خانات على الأقل؛ أحرف أو أرقام أو رموز، دون اشتراط خلطها."
+            />
+            <PasswordField
+              label="تأكيد كلمة المرور"
+              name="confirmPassword"
+              autoComplete="new-password"
+              minLength={4}
+              required
+            />
             <button className={s.button} disabled={busy}>
               حفظ بيانات الدخول
             </button>
@@ -525,21 +513,18 @@ export function LoginForm({
                 name="identifier"
                 dir="ltr"
                 autoComplete="username"
+                autoCapitalize="none"
+                spellCheck={false}
                 required
                 maxLength={100}
               />
             </label>
-            <label className={s.field}>
-              كلمة المرور
-              <input
-                name="password"
-                type="password"
-                dir="ltr"
-                autoComplete="current-password"
-                required
-                maxLength={128}
-              />
-            </label>
+            <PasswordField
+              label="كلمة المرور"
+              name="password"
+              autoComplete="current-password"
+              required
+            />
             <button className={s.button} disabled={busy || !session.ready}>
               {busy ? "جارٍ الدخول…" : "دخول"}
             </button>

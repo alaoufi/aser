@@ -650,26 +650,7 @@ export function AdminCouriers({
             )}
             {k.reviewReason && <p>آخر ملاحظة: {k.reviewReason}</p>}
             <form className={s.form} onSubmit={(e) => decide(k.id, e)}>
-              <label className={s.field}>
-                <span className="sr-only">قرار المندوب</span>
-                <select name="decision" required defaultValue="">
-                  <option value="" disabled>
-                    اختر القرار
-                  </option>
-                  <option value="approved">اعتماد المندوب</option>
-                  <option value="rejected">طلب استكمال النواقص</option>
-                  <option value="suspended">إيقاف</option>
-                </select>
-              </label>
-              <label className={s.field}>
-                ملاحظة للمندوب (تظهر له)
-                <textarea
-                  name="reason"
-                  required
-                  minLength={5}
-                  maxLength={2000}
-                />
-              </label>
+              <CourierDecisionFields />
               <button className={s.button}>حفظ قرار المندوب</button>
             </form>
           </article>
@@ -776,5 +757,42 @@ function CourierDeliveries() {
         ))
       )}
     </section>
+  );
+}
+
+/** القرار والملاحظة: الملاحظة اختيارية عند الاعتماد، ومطلوبة عند طلب الاستكمال أو الإيقاف. */
+function CourierDecisionFields() {
+  const [decision, setDecision] = useState("");
+  const approve = decision === "approved";
+  return (
+    <>
+      <label className={s.field}>
+        <span className="sr-only">قرار المندوب</span>
+        <select
+          name="decision"
+          required
+          value={decision}
+          onChange={(e) => setDecision(e.target.value)}
+        >
+          <option value="" disabled>
+            اختر القرار
+          </option>
+          <option value="approved">اعتماد المندوب</option>
+          <option value="rejected">طلب استكمال النواقص</option>
+          <option value="suspended">إيقاف</option>
+        </select>
+      </label>
+      <label className={s.field}>
+        {approve
+          ? "ملاحظة للمندوب (اختيارية عند الاعتماد؛ تظهر له)"
+          : "ملاحظة للمندوب (مطلوبة: اذكر النواقص أو سبب القرار؛ تظهر له)"}
+        <textarea
+          name="reason"
+          required={!approve}
+          minLength={approve ? undefined : 5}
+          maxLength={2000}
+        />
+      </label>
+    </>
   );
 }

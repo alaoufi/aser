@@ -35,7 +35,17 @@ const localTime = (value: string) => {
     .toISOString()
     .slice(0, 16);
 };
-export function Offers({ manage = false }: { manage?: boolean }) {
+export function Offers({
+  manage = false,
+  region = "",
+  scope,
+}: {
+  manage?: boolean;
+  /** نطاق الزائر: عروض منطقته وما يُشحن لكل المناطق. */
+  region?: string;
+  /** اختيار المنطقة (من الصفحة). */
+  scope?: React.ReactNode;
+}) {
   const session = useSession();
   const [offers, setOffers] = useState<Offer[]>([]);
   const [groups, setGroups] = useState<string[]>([]);
@@ -46,7 +56,9 @@ export function Offers({ manage = false }: { manage?: boolean }) {
   const [loaded, setLoaded] = useState(false);
   async function load() {
     const d = await api<{ offers: Offer[] }>(
-      manage ? "/api/producer/offers" : "/api/offers",
+      manage
+        ? "/api/producer/offers"
+        : `/api/offers${region ? `?region=${encodeURIComponent(region)}` : ""}`,
     );
     setOffers(d.offers);
     setLoaded(true);
@@ -65,7 +77,7 @@ export function Offers({ manage = false }: { manage?: boolean }) {
       api<{ groups: string[] }>("/api/offers/preferences")
         .then((d) => setGroups(d.groups))
         .catch((e) => setError(e.message));
-  }, [session.ready, session.user, manage]);
+  }, [session.ready, session.user, manage, region]);
   async function savePreferences(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
@@ -135,6 +147,7 @@ export function Offers({ manage = false }: { manage?: boolean }) {
   return (
     <AccountShell navigation={manage}>
       <h1>{manage ? "عروض أسرتي" : "عروض الأسر المنتجة"}</h1>
+      {!manage && scope}
       <p>
         الاتفاق والتحقق من شروط الاستحقاق والدفع مباشرة مع الأسرة المنتجة خارج
         الموقع.

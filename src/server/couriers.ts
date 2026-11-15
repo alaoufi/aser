@@ -407,9 +407,14 @@ export async function reviewCourier(
   const value = z
     .object({
       decision: z.enum(["approved", "rejected", "suspended"]),
-      reason: z.string().trim().min(5, "اكتب ملاحظة القرار").max(2000),
+      // الملاحظة اختيارية عند الاعتماد، ولازمة عند الرفض أو الإيقاف.
+      reason: z.string().trim().max(2000).default(""),
     })
     .strict()
+    .refine((x) => x.decision === "approved" || x.reason.length >= 5, {
+      message: "اكتب للمندوب سبب القرار (خمسة أحرف على الأقل)",
+      path: ["reason"],
+    })
     .parse(input);
   const result = await transaction(async (client) => {
     const courier = (
@@ -424,7 +429,7 @@ export async function reviewCourier(
     await client.query(
       `UPDATE jdatna.courier_profiles SET status=$2,review_reason=$3,reviewer_id=$4,updated_at=now(),
          approved_at=CASE WHEN $2='approved' THEN COALESCE(approved_at,now()) ELSE approved_at END WHERE id=$1`,
-      [courier.id, value.decision, value.reason, user.id],
+      [courier.id, value.decision, value.reason || null, user.id],
     );
     await client.query(
       "INSERT INTO jdatna.admin_audit_logs(id,actor_id,action,target_id,details) VALUES($1,$2,$3,$4,$5)",

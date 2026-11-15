@@ -16,6 +16,7 @@ import {
   type SiteTextKey,
 } from "@/lib/site-texts";
 import { api, Message, s } from "./shared";
+import { PasswordField } from "./password-field";
 import { adminCache, fetchAdmin } from "./admin-cache";
 export { prefetchAdmin } from "./admin-cache";
 import {
@@ -1418,29 +1419,20 @@ export function StoreReviewAdmin() {
                 form.reset();
             }}
           >
-            <div className={s.field}>
-              <label htmlFor="review-password">
-                كلمة مرور الحسابين (ثمانية أحرف على الأقل؛ اتركها فارغة للإبقاء
-                على الحالية)
-              </label>
-              <input
-                id="review-password"
-                name="password"
-                type="password"
-                autoComplete="new-password"
-                minLength={8}
-                required={!d.client || !d.family}
-              />
-            </div>
-            <div className={s.field}>
-              <label htmlFor="review-confirm">تأكيد كلمة المرور</label>
-              <input
-                id="review-confirm"
-                name="confirm"
-                type="password"
-                autoComplete="new-password"
-              />
-            </div>
+            <PasswordField
+              id="review-password"
+              label="كلمة مرور الحسابين (ثمانية أحرف على الأقل؛ اتركها فارغة للإبقاء على الحالية)"
+              name="password"
+              autoComplete="new-password"
+              minLength={8}
+              required={!d.client || !d.family}
+            />
+            <PasswordField
+              id="review-confirm"
+              label="تأكيد كلمة المرور"
+              name="confirm"
+              autoComplete="new-password"
+            />
             <div className={s.field}>
               <label htmlFor="review-days">مدة وضع المراجعة</label>
               <select id="review-days" name="days" defaultValue="14">

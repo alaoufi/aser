@@ -172,10 +172,15 @@ export const productSchema = z.object({
 export const reviewSchema = z
   .object({
     decision: z.enum(["approved", "rejected", "suspended"]),
-    reason: z.string().trim().min(5).max(2000),
+    /** الملاحظة اختيارية عند الاعتماد، ولازمة عند طلب الاستكمال أو الإيقاف (لتعرف الأسرة السبب). */
+    reason: z.string().trim().max(2000).default(""),
     eligibilityConfirmed: z.boolean().optional(),
     exceptionApproved: z.boolean().optional(),
   })
   .refine((x) => x.decision !== "approved" || x.eligibilityConfirmed === true, {
     message: "يجب تأكيد الأهلية النظامية للنشاط قبل الاعتماد",
+  })
+  .refine((x) => x.decision === "approved" || x.reason.length >= 5, {
+    message: "اكتب للأسرة النواقص أو سبب القرار (خمسة أحرف على الأقل)",
+    path: ["reason"],
   });

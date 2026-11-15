@@ -1,4 +1,5 @@
 "use client";
+import { PasswordField } from "./password-field";
 import { adminCache, fetchAdmin } from "./admin-cache";
 import { useEffect, useState } from "react";
 import { adminPermissions, type AdminPermission } from "@/lib/permissions";
@@ -397,7 +398,6 @@ function MemberPassword({
   onSave: (body: Record<string, unknown>, done: string) => Promise<boolean>;
 }) {
   const [password, setPassword] = useState("");
-  const [show, setShow] = useState(false);
   return (
     <form
       className={s.form}
@@ -412,31 +412,15 @@ function MemberPassword({
           setPassword("");
       }}
     >
-      <label className={s.field}>
-        تعيين كلمة مرور جديدة لـ{m.name}
-        <input
-          type={show ? "text" : "password"}
-          dir="ltr"
-          autoComplete="new-password"
-          minLength={8}
-          maxLength={128}
-          required
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <small>
-          ثماني خانات على الأقل. يدخل العضو بعدها برقم جواله وكلمة المرور دون
-          رمز، ويخرج من أجهزته الحالية.
-        </small>
-      </label>
-      <label>
-        <input
-          type="checkbox"
-          checked={show}
-          onChange={(e) => setShow(e.target.checked)}
-        />{" "}
-        إظهار كلمة المرور
-      </label>
+      <PasswordField
+        label={`تعيين كلمة مرور جديدة لـ${m.name}`}
+        autoComplete="new-password"
+        minLength={8}
+        required
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        hint="ثماني خانات على الأقل. يدخل العضو بعدها برقم جواله وكلمة المرور دون رمز، ويخرج من أجهزته الحالية."
+      />
       <button
         className={s.buttonSecondary}
         disabled={busy || password.length < 8}

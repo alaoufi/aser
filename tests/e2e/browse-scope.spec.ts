@@ -118,4 +118,39 @@ test.describe("today's dishes are scoped to the visitor's region", () => {
       main.getByRole("link", { name: new RegExp(dish.far) }),
     ).toBeVisible();
   });
+
+  test("the home page, families page and offers follow the chosen region", async ({
+    page,
+  }) => {
+    // الرئيسية: الأسر والمنتجات تتبع المنطقة.
+    await page.goto(`/?region=${encodeURIComponent(region)}`);
+    const families = page.getByRole("region", { name: "الأسر المنتجة" });
+    await expect(families).toContainText("أسرة 0 " + tag);
+    await expect(families).toContainText("أسرة 1 " + tag);
+    await expect(families).not.toContainText("أسرة 2 " + tag);
+    // صفحة الأسر بنفس النطاق، والبعيدة المحلية لا تظهر.
+    await page.goto(`/producers?region=${encodeURIComponent(region)}`);
+    await expect(page.locator("main")).toContainText("أسرة 0 " + tag);
+    await expect(
+      page.getByRole("region", { name: "أسر تشحن لكل المناطق" }),
+    ).toContainText("أسرة 1 " + tag);
+    await expect(page.locator("main")).not.toContainText("أسرة 2 " + tag);
+    // تغيير المنطقة في الرئيسية يغيّر العرض فعلًا.
+    await page.goto("/");
+    const other = await page
+      .getByLabel("منطقة المائدة")
+      .locator("option")
+      .evaluateAll(
+        (o, r) =>
+          (o as HTMLOptionElement[])
+            .map((x) => x.value)
+            .find((v) => v && v !== r),
+        region,
+      );
+    await page.getByLabel("منطقة المائدة").selectOption(other!);
+    await expect(page).toHaveURL(new RegExp(`region=${other}`));
+    await expect(
+      page.getByRole("region", { name: "الأسر المنتجة" }),
+    ).not.toContainText("أسرة 0 " + tag);
+  });
 });

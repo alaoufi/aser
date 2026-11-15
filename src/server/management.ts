@@ -733,7 +733,7 @@ export async function reviewProducer(
         verification?.document_id ?? null,
         verification?.document_type ?? "exception",
         value.decision,
-        value.reason,
+        value.reason || null,
         user.id,
         value.eligibilityConfirmed ?? false,
         verification?.document_number ?? null,

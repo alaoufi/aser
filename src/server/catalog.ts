@@ -21,18 +21,22 @@ export async function getCategories(
  * أقسام الواجهة العامة: لا يظهر القسم إلا إذا اختارته أسرة منتجة معتمدة
  * وعليه منتج منشور لأسرة معتمدة. الإدارة ونماذج الأسر تستخدم getCategories.
  */
-export async function publicCategories(): Promise<Category[]> {
+export async function publicCategories(region = ""): Promise<Category[]> {
   if (!databaseConfigured()) return [];
   const [all, used] = await Promise.all([
     getCategories(),
+    // قسم فيه منتج قابل للطلب (غير «غير متوفر»)، وفي نطاق العميل إن حُدد: منطقته أو يُشحن للمملكة.
     db().query(
       `SELECT DISTINCT pc.category_id AS id
        FROM jdatna.product_categories pc
-       JOIN jdatna.products x ON x.id=pc.product_id AND x.visible=true
+       JOIN jdatna.products x ON x.id=pc.product_id AND x.visible=true AND x.status<>'unavailable'
        JOIN jdatna.producer_profiles p ON p.id=x.producer_id AND p.status='approved' AND NOT p.review_only
        WHERE EXISTS(SELECT 1 FROM jdatna.producer_categories f
          JOIN jdatna.producer_profiles fp ON fp.id=f.producer_id AND fp.status='approved' AND NOT fp.review_only
-         WHERE f.category_id=pc.category_id)`,
+         WHERE f.category_id=pc.category_id)
+         AND ($1='' OR x.delivery_scope='kingdom'
+           OR EXISTS(SELECT 1 FROM jdatna.cities rc WHERE rc.id=p.city_id AND rc.region_id=$1))`,
+      [region],
     ),
   ]);
   return visibleCategoryTree(
@@ -144,6 +148,11 @@ function conditions(f: Filters, products: boolean) {
   if (f.city) add("p.city_id=?", f.city);
   if (products && f.scope === "kingdom")
     where.push("x.delivery_scope='kingdom'");
+  // الأسرة «تشحن لكل المناطق» إن كان نطاقها المملكة أو لها منتج منشور يُشحن للمملكة.
+  if (!products && f.scope === "kingdom")
+    where.push(
+      "(p.delivery_scope='kingdom' OR EXISTS(SELECT 1 FROM jdatna.products k WHERE k.producer_id=p.id AND k.visible AND k.delivery_scope='kingdom' AND k.status<>'unavailable'))",
+    );
   if (f.notRegion)
     add(
       "NOT EXISTS(SELECT 1 FROM jdatna.cities nr WHERE nr.id=p.city_id AND nr.region_id=?)",
@@ -262,22 +271,28 @@ export async function browseLists(f: { region?: string; city?: string } = {}) {
     args.push(f.city);
     place.push(`p.city_id=$${args.length}`);
   }
-  const extra = place.length ? " AND " + place.join(" AND ") : "";
+  // ما يصل للعميل: منتجات أسر نطاقه، وما يُشحن لكل المناطق من غيرها. العدادات تطابق القوائم.
+  const inPlace = place.length ? place.join(" AND ") : "true";
+  const reach = place.length
+    ? `(${inPlace} OR x.delivery_scope='kingdom')`
+    : "true";
   const [families, counts] = await Promise.all([
     db().query(
       `SELECT p.slug,COALESCE(p.trade_name,p.name) AS name,c.name AS "cityName",
-        count(x.id) FILTER (WHERE x.status<>'unavailable')::int AS available
+        count(x.id) FILTER (WHERE x.status<>'unavailable' AND ${reach})::int AS available
        FROM jdatna.producer_profiles p JOIN jdatna.cities c ON c.id=p.city_id
        LEFT JOIN jdatna.products x ON x.producer_id=p.id AND x.visible=true
-       WHERE p.status='approved' AND NOT p.review_only${extra}
-       GROUP BY p.id,c.name ORDER BY available DESC,name LIMIT 300`,
+       WHERE p.status='approved' AND NOT p.review_only
+         AND (${inPlace} OR p.delivery_scope='kingdom' OR EXISTS(SELECT 1 FROM jdatna.products k
+           WHERE k.producer_id=p.id AND k.visible AND k.delivery_scope='kingdom' AND k.status<>'unavailable'))
+       GROUP BY p.id,c.name ORDER BY ${place.length ? `(${inPlace}) DESC,` : ""}available DESC,name LIMIT 300`,
       args,
     ),
     db().query(
       `SELECT pc.category_id AS id,count(DISTINCT x.id)::int AS n
        FROM jdatna.products x JOIN jdatna.producer_profiles p ON p.id=x.producer_id
        JOIN jdatna.product_categories pc ON pc.product_id=x.id
-       WHERE p.status='approved' AND NOT p.review_only AND x.visible=true AND x.status<>'unavailable'${extra}
+       WHERE p.status='approved' AND NOT p.review_only AND x.visible=true AND x.status<>'unavailable' AND ${reach}
        GROUP BY pc.category_id`,
       args,
     ),
@@ -295,3 +310,48 @@ export type BrowseFamily = {
   cityName: string;
   available: number;
 };
+
+/**
+ * صدق النطاق: ما يصل للعميل فقط. أولًا ما في منطقته (أو مدينته)، ثم ما يُشحن لكل المناطق
+ * من خارجها، دون تكرار. بلا منطقة: الكل كما هو.
+ */
+export async function regionalProducts(
+  filters: Filters,
+  limit = 24,
+): Promise<{ local: Product[]; nationwide: Product[] }> {
+  if (!filters.region && !filters.city)
+    return { local: await searchProducts(filters), nationwide: [] };
+  const [local, nationwide] = await Promise.all([
+    searchProducts(filters),
+    searchProducts({
+      ...filters,
+      region: "",
+      city: "",
+      scope: "kingdom",
+      notRegion: filters.city ? "" : filters.region,
+      notCity: filters.city,
+    }),
+  ]);
+  return {
+    local: local.slice(0, limit),
+    nationwide: nationwide.slice(0, limit),
+  };
+}
+export async function regionalProducers(
+  filters: Filters,
+): Promise<{ local: Producer[]; nationwide: Producer[] }> {
+  if (!filters.region && !filters.city)
+    return { local: await searchProducers(filters), nationwide: [] };
+  const [local, nationwide] = await Promise.all([
+    searchProducers(filters),
+    searchProducers({
+      ...filters,
+      region: "",
+      city: "",
+      scope: "kingdom",
+      notRegion: filters.city ? "" : filters.region,
+      notCity: filters.city,
+    }),
+  ]);
+  return { local, nationwide };
+}

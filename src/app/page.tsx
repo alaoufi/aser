@@ -9,9 +9,9 @@ import { TodayTable, regionsOf } from "@/components/public/today-table";
 import {
   getCities,
   publicCategories,
-  searchProducts,
+  regionalProducts,
   todayProducts,
-  searchProducers,
+  regionalProducers,
 } from "@/server/catalog";
 import { ProductCard, ProducerCard } from "@/components/public/ui";
 import { recentCertificates } from "@/server/certificates";
@@ -22,34 +22,37 @@ export default async function Home({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const raw = await searchParams;
-  // كل ما لا يعتمد على المنطقة يُطلب معًا بالتوازي بدل التسلسل.
+  // المنطقة أولًا (المختارة في الرابط، وإلا المحفوظة في الجهاز)، ثم كل ما يُعرض يتبعها.
+  const [cities, jar] = await Promise.all([getCities(), cookies()]);
+  const regions = regionsOf(cities);
+  const asked = typeof raw.region === "string" ? raw.region : undefined;
+  const saved = jar.get("jdatna_region")?.value ?? "";
+  const region =
+    [asked ?? saved].find((r) => r && regions.some((x) => x.id === r)) ?? "";
   const [
-    cities,
-    jar,
     template,
     texts,
     categories,
     products,
     producers,
     certificates,
+    today,
   ] = await Promise.all([
-    getCities(),
-    cookies(),
     visitorTemplate(),
     getSiteTexts(),
-    // لا يظهر القسم للعامة إلا إذا اختارته أسرة معتمدة وعليه منتج منشور.
-    publicCategories(),
-    searchProducts({}),
-    searchProducers({}),
+    // لا يظهر القسم إلا إن كان فيه منتج قابل للطلب في نطاق الزائر.
+    publicCategories(region),
+    // منتجات المنطقة ثم ما يُشحن لكل المناطق، ثم الأسر بنفس الترتيب.
+    regionalProducts({ region }, 4),
+    regionalProducers({ region }),
     recentCertificates(),
+    todayProducts({ region }),
   ]);
-  const regions = regionsOf(cities);
-  // منطقة المائدة: المختارة في الرابط، وإلا المحفوظة في الجهاز.
-  const asked = typeof raw.region === "string" ? raw.region : undefined;
-  const saved = jar.get("jdatna_region")?.value ?? "";
-  const region =
-    [asked ?? saved].find((r) => r && regions.some((x) => x.id === r)) ?? "";
-  const today = await todayProducts({ region });
+  const homeProducts = [...products.local, ...products.nationwide].slice(0, 4);
+  const homeProducers = [...producers.local, ...producers.nationwide].slice(
+    0,
+    6,
+  );
   return (
     <>
       <section className="hero wrap">
@@ -173,19 +176,19 @@ export default async function Home({
           <h3>{texts["avail.order"] || "اطلب الآن"}</h3>
         </Link>
       </section>
-      {producers.length > 0 && (
+      {homeProducers.length > 0 && (
         <section className="section wrap" aria-label="الأسر المنتجة">
           <div className="producer-grid compact">
-            {producers.slice(0, 4).map((p) => (
+            {homeProducers.map((p) => (
               <ProducerCard key={p.id} producer={p} />
             ))}
           </div>
         </section>
       )}
-      {products.length > 0 && (
+      {homeProducts.length > 0 && (
         <section className="section wrap" aria-label="جديد المائدة">
           <div className="product-grid">
-            {products.slice(0, 4).map((p) => (
+            {homeProducts.map((p) => (
               <ProductCard
                 key={p.id}
                 product={p}

@@ -10,11 +10,22 @@ export class HttpError extends Error {
     super(message);
   }
 }
+/**
+ * رقم الجوال بأي صيغة يُلصق بها: بمسافات أو شرطات أو أقواس، أو بعلامات الاتجاه الخفية
+ * التي تضيفها جهات الاتصال، أو 966 بلا «+»، أو 00966، أو 05… أو 5…، وبالأرقام العربية.
+ * ما فيه حروف ليس رقم جوال (قد يكون اسم مستخدم).
+ */
 export function normalizePhone(value: string) {
-  const phone = toAsciiDigits(value)
-    .replace(/[\s\u200e\u200f-]/g, "")
-    .replace(/^00966/, "+966")
-    .replace(/^0(?=5\d{8}$)/, "+966");
+  const ascii = toAsciiDigits(value);
+  if (/\p{L}/u.test(ascii))
+    throw new HttpError(400, "رقم الجوال السعودي غير صحيح");
+  const digits = ascii.replace(/[^\d+]/g, "");
+  const phone = digits
+    .replace(/^\+?00966/, "+966")
+    .replace(/^\+?966/, "+966")
+    .replace(/^\+9660(?=5\d{8}$)/, "+966")
+    .replace(/^0(?=5\d{8}$)/, "+966")
+    .replace(/^(?=5\d{8}$)/, "+966");
   if (!/^\+9665\d{8}$/.test(phone))
     throw new HttpError(400, "رقم الجوال السعودي غير صحيح");
   return phone;
