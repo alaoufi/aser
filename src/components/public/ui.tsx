@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Product, Producer } from "@/lib/types";
 import { productStatusLabels } from "@/lib/site-texts";
 import { Stars } from "./stars";
+import { brandStyle } from "@/lib/brand";
 
 /** الأسماء الأصلية لحالة المنتج؛ الصفحات تمرر المعدّل من «نصوص الموقع». */
 export const availability = productStatusLabels();
@@ -57,7 +58,11 @@ export function ProductCard({
   labels?: Record<string, string>;
 }) {
   return (
-    <Link href={`/products/${p.id}`} className="product-card">
+    <Link
+      href={`/products/${p.id}`}
+      className="product-card branded"
+      style={brandStyle(p.producerId ?? p.id, p.palette)}
+    >
       <div className="card-image">
         {p.imageUrl && safeMediaUrl(p.imageUrl) ? (
           <img src={p.imageUrl} alt={p.name} loading="lazy" />
@@ -85,7 +90,11 @@ export function ProductCard({
 }
 export function ProducerCard({ producer: p }: { producer: Producer }) {
   return (
-    <Link href={`/producers/${p.slug}`} className="producer-card">
+    <Link
+      href={`/producers/${p.slug}`}
+      className="producer-card branded"
+      style={brandStyle(p.id ?? p.slug, p.palette)}
+    >
       <div className="producer-avatar" aria-hidden="true">
         {p.logoUrl && safeMediaUrl(p.logoUrl) ? (
           <img src={p.logoUrl} alt="" loading="lazy" />

@@ -53,6 +53,7 @@ export const producerSelect = `SELECT ${notCookingTodaySql()} AS "notCookingToda
 c.name AS "cityName",r.name AS "regionName",p.neighborhood,p.verified,
 (SELECT round(avg(g.stars)::numeric,1)::float8 FROM jdatna.ratings g WHERE g.kind='family' AND g.target_id=p.id) AS "ratingAverage",
 (SELECT count(*)::int FROM jdatna.ratings g WHERE g.kind='family' AND g.target_id=p.id) AS "ratingCount",
+(SELECT b.palette FROM jdatna.producer_brand b WHERE b.producer_id=p.id) AS palette,
 CASE WHEN p.show_phone THEN p.phone END AS phone,
 CASE WHEN p.show_whatsapp THEN COALESCE(NULLIF(p.whatsapp,''),p.phone) END AS whatsapp,
 p.delivery,p.pickup,(SELECT s.url FROM jdatna.producer_social_links s WHERE s.producer_id=p.id AND s.platform='website') AS website,
@@ -67,7 +68,7 @@ COALESCE((SELECT json_agg(json_build_object('cityId',a.city_id,'cityName',ac.nam
  FROM jdatna.business_hours b WHERE b.producer_id=p.id) AS "businessHours"
 FROM jdatna.producer_profiles p JOIN jdatna.cities c ON c.id=p.city_id
 JOIN jdatna.regions r ON r.id=c.region_id`;
-export const productSelect = `SELECT ${notCookingTodaySql()} AS "notCookingToday",x.id,x.producer_id AS "producerId",COALESCE(p.trade_name,p.name) AS "producerName",p.slug AS "producerSlug",c.name AS "cityName",x.name,x.description,x.price,x.unit,x.status,x.image_url AS "imageUrl",ARRAY(SELECT category_id FROM jdatna.product_categories WHERE product_id=x.id) AS "categoryIds",ARRAY(SELECT name FROM jdatna.product_allergens WHERE product_id=x.id) AS allergens,x.ingredients,x.storage,x.shelf_life AS "shelfLife",x.preparation_time AS "preparationTime",x.story,p.delivery,p.pickup,x.delivery_scope AS "deliveryScope",x.shipping_fee::float8 AS "shippingFee" FROM jdatna.products x JOIN jdatna.producer_profiles p ON p.id=x.producer_id JOIN jdatna.cities c ON c.id=p.city_id`;
+export const productSelect = `SELECT ${notCookingTodaySql()} AS "notCookingToday",x.id,x.producer_id AS "producerId",COALESCE(p.trade_name,p.name) AS "producerName",p.slug AS "producerSlug",c.name AS "cityName",x.name,x.description,x.price,x.unit,x.status,x.image_url AS "imageUrl",ARRAY(SELECT category_id FROM jdatna.product_categories WHERE product_id=x.id) AS "categoryIds",ARRAY(SELECT name FROM jdatna.product_allergens WHERE product_id=x.id) AS allergens,x.ingredients,x.storage,x.shelf_life AS "shelfLife",x.preparation_time AS "preparationTime",x.story,p.delivery,p.pickup,x.delivery_scope AS "deliveryScope",x.shipping_fee::float8 AS "shippingFee",(SELECT b.palette FROM jdatna.producer_brand b WHERE b.producer_id=x.producer_id) AS palette FROM jdatna.products x JOIN jdatna.producer_profiles p ON p.id=x.producer_id JOIN jdatna.cities c ON c.id=p.city_id`;
 export function mapProduct(row: Product): Product {
   return { ...row, price: row.price === null ? null : Number(row.price) };
 }

@@ -1006,3 +1006,58 @@
   margin-inline-start: 1rem;
   margin-top: 0.3rem;
 }
+/* هوية الأسرة */
+.brandChoices {
+  border: 0;
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  margin: 0.5rem 0;
+  padding: 0;
+}
+.brandSwatch {
+  align-items: center;
+  background: var(--brand-bg);
+  border: 2px solid color-mix(in srgb, var(--brand-accent) 30%, transparent);
+  border-radius: 12px;
+  color: var(--brand-ink);
+  cursor: pointer;
+  display: flex;
+  gap: 0.45rem;
+  min-height: 48px;
+  padding: 0.45rem 0.6rem;
+}
+.brandSwatch:has(input:checked) {
+  border-color: var(--brand-accent);
+  box-shadow: 0 0 0 2px var(--brand-accent);
+}
+.brandSwatch input {
+  accent-color: var(--brand-accent);
+}
+.brandDot {
+  background: var(--brand-accent);
+  border-radius: 50%;
+  height: 18px;
+  width: 18px;
+}
+.brandPreview {
+  align-items: center;
+  border-radius: 14px;
+  border-style: solid;
+  border-width: 1px;
+  display: flex;
+  gap: 0.75rem;
+  margin: 0.5rem 0;
+  padding: 0.75rem 1rem;
+}
+.brandPreviewMark {
+  align-items: center;
+  background: var(--brand-accent);
+  border-radius: 12px;
+  color: #fff;
+  display: inline-flex;
+  font-weight: 700;
+  height: 44px;
+  justify-content: center;
+  width: 44px;
+}

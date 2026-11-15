@@ -2495,3 +2495,58 @@ main {
     transition: none;
   }
 }
+/* 5.9.0.0: هوية الأسرة — بطاقة الأسرة وبطاقات منتجاتها بلون هويتها بدل الأبيض. */
+.branded {
+  background: var(--brand-bg, #fbf6ec);
+  border-color: color-mix(
+    in srgb,
+    var(--brand-accent, #8a967b) 35%,
+    transparent
+  );
+  border-top: 4px solid var(--brand-accent, #8a967b);
+  color: var(--brand-ink, inherit);
+}
+.branded h3 {
+  color: var(--brand-ink, inherit);
+}
+.branded:hover,
+.branded:focus-visible {
+  border-color: var(--brand-accent, #8a967b);
+}
+.producer-card.branded .producer-avatar {
+  background: var(--brand-accent, #e8e0d0);
+  color: #fff;
+}
+.producer-card.branded .producer-card-arrow {
+  color: var(--brand-accent, var(--olive));
+}
+.producer-card.branded .producer-tags > span:not(.stars) {
+  background: color-mix(in srgb, var(--brand-accent, #8a967b) 12%, #fff);
+  color: var(--brand-ink, var(--muted));
+}
+.product-card.branded .card-image {
+  background: color-mix(
+    in srgb,
+    var(--brand-accent, #8a967b) 14%,
+    var(--brand-bg, #f5f0e6)
+  );
+}
+.product-card.branded .card-image > span[aria-hidden] {
+  color: var(--brand-accent, inherit);
+}
+.product-card.branded .card-body small {
+  color: color-mix(in srgb, var(--brand-ink, #555) 80%, transparent);
+}
+.profile-header.branded {
+  border: 1px solid color-mix(in srgb, var(--brand-accent) 30%, transparent);
+  border-top: 6px solid var(--brand-accent);
+  border-radius: 18px;
+  padding-inline: 24px;
+}
+.profile-header.branded .profile-symbol {
+  background: var(--brand-accent);
+  color: #fff;
+}
+.product-card.branded .card-body > p {
+  color: var(--brand-accent);
+}

@@ -29,6 +29,8 @@ export type Producer = {
   /** متوسط تقييم الأسرة وعدد المقيّمين (يظهر في بطاقتها). */
   ratingAverage?: number | null;
   ratingCount?: number;
+  /** لون هوية الأسرة (يسري على بطاقتها وبطاقات منتجاتها). */
+  palette?: string | null;
   /** يظهر للعملاء إن اختارت الأسرة إظهاره. */
   phone: string | null;
   whatsapp: string | null;
@@ -48,6 +50,8 @@ export type Product = {
   notCookingToday?: boolean;
   id: string;
   producerId: string;
+  /** لون هوية الأسرة: منتجاتها تأخذ نفس هويتها. */
+  palette?: string | null;
   producerName: string;
   producerSlug: string;
   cityName: string;
