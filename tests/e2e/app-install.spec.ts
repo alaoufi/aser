@@ -78,15 +78,17 @@ test("when the connection drops the app shows a branded retry page, then recover
     .toBe(true);
   await context.setOffline(true);
   await page.goto("/browse").catch(() => {});
-  await expect(page.getByText("تعذّر الاتصال الآن")).toBeVisible();
+  // السبب واضح: الجهاز غير متصل بالإنترنت.
+  await expect(page.getByText("جهازك غير متصل بالإنترنت")).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "أعد المحاولة" }),
+    page.getByRole("button", { name: "أعد المحاولة الآن" }),
   ).toBeVisible();
   // عودة الشبكة: تعود الصفحة المطلوبة تلقائيًا (أو بزر «أعد المحاولة»).
   await context.setOffline(false);
   await expect(page).toHaveURL(/\/browse/);
   // يعيد المحاولة تلقائيًا كل أربع ثوانٍ حتى يعود الاتصال.
-  await expect(page.getByText("تعذّر الاتصال الآن")).toHaveCount(0, {
-    timeout: 20000,
+  // المحاولة كل أقل من ثانية: تعود الصفحة سريعًا.
+  await expect(page.getByText("جهازك غير متصل بالإنترنت")).toHaveCount(0, {
+    timeout: 8000,
   });
 });

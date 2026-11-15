@@ -2,7 +2,7 @@
  * عامل خدمة «أكلات جدتنا»: إشعارات الجوال، وصفحة «نعيد الاتصال» عند تعذّر الشبكة.
  * لا تُخزَّن صفحات الموقع (تظهر التعديلات فورًا)؛ المخزَّن صفحة الانقطاع وحدها.
  */
-const OFFLINE_CACHE = "jdatna-offline-v1";
+const OFFLINE_CACHE = "jdatna-offline-v2";
 const OFFLINE_URL = "/offline.html";
 self.addEventListener("install", (event) => {
   event.waitUntil(

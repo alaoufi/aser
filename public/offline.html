@@ -6,7 +6,6 @@
 <meta name="theme-color" content="#2E1D12">
 <title>أكلات جدتنا — نعيد الاتصال</title>
 <style>
-  :root { color-scheme: light; }
   * { box-sizing: border-box; }
   body {
     margin: 0; min-height: 100vh; display: grid; place-items: center;
@@ -14,42 +13,106 @@
     font-family: system-ui, -apple-system, "Segoe UI", Tahoma, sans-serif;
     padding: 24px; text-align: center;
   }
-  main { max-width: 420px; }
+  main { max-width: 440px; width: 100%; }
   .mark {
-    width: 84px; height: 84px; margin: 0 auto 18px; border-radius: 24px;
+    width: 84px; height: 84px; margin: 0 auto 16px; border-radius: 24px;
     background: #2e1d12; color: #d6a35c; display: grid; place-items: center;
     font-size: 40px; box-shadow: 0 6px 0 #a57f48, 0 14px 24px rgba(46,29,18,.25);
   }
-  h1 { font-size: 24px; margin: 0 0 10px; }
-  p { margin: 0 0 18px; line-height: 1.7; color: #5a4636; }
+  h1 { font-size: 22px; margin: 0 0 8px; }
+  .reason {
+    margin: 0 0 6px; font-weight: 700; font-size: 18px; color: #9c2f1e;
+  }
+  .tip { margin: 0 0 18px; line-height: 1.7; color: #5a4636; }
   button {
     min-height: 48px; padding: 0 28px; border: 0; border-radius: 12px;
     background: #4f5d36; color: #fff; font: inherit; font-weight: 700; font-size: 17px;
     cursor: pointer;
   }
-  small { display: block; margin-top: 14px; color: #7a6656; }
+  .state { display: block; margin-top: 14px; color: #7a6656; font-size: 14px; }
+  .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%;
+    background: #d6a35c; margin-inline-end: 6px; animation: pulse 1s infinite; }
+  @keyframes pulse { 50% { opacity: .25; } }
+  @media (prefers-reduced-motion: reduce) { .dot { animation: none; } }
 </style>
 </head>
 <body>
 <main>
   <div class="mark" aria-hidden="true">♨</div>
   <h1>أكلات جدتنا</h1>
-  <p>تعذّر الاتصال الآن. نعيد المحاولة تلقائيًا، وتفتح الصفحة فور عودة الاتصال.</p>
-  <button type="button" id="retry">أعد المحاولة</button>
-  <small id="state" role="status" aria-live="polite">جارٍ إعادة الاتصال…</small>
+  <p class="reason" id="reason">نتحقق من الاتصال…</p>
+  <p class="tip" id="tip">نعيد المحاولة تلقائيًا، وتفتح الصفحة فور عودة الاتصال.</p>
+  <button type="button" id="retry">أعد المحاولة الآن</button>
+  <span class="state" id="state" role="status" aria-live="polite"><span class="dot" aria-hidden="true"></span>جارٍ إعادة الاتصال…</span>
 </main>
 <script>
-  // يعيد المحاولة كل بضع ثوانٍ، ويفتح الصفحة المطلوبة فور عودة الاتصال.
-  var state = document.getElementById("state");
-  function tryAgain() {
-    state.textContent = "جارٍ إعادة الاتصال…";
-    fetch("/api/health", { cache: "no-store" })
-      .then(function (r) { if (r.ok) location.reload(); else throw 0; })
-      .catch(function () { state.textContent = "ما زال الاتصال متعذرًا، نحاول مجددًا…"; });
+  // يحدد سبب الانقطاع بوضوح، ويعيد المحاولة بلا توقف (أقل من ثانية بين المحاولات).
+  var reasonEl = document.getElementById("reason");
+  var tipEl = document.getElementById("tip");
+  var stateEl = document.getElementById("state");
+  var attempts = 0, started = Date.now(), busy = false, timer = 0;
+  var reasons = {
+    offline: [
+      "جهازك غير متصل بالإنترنت",
+      "تحقق من تشغيل الواي فاي أو بيانات الجوال، وسنفتح الصفحة فور عودة الاتصال.",
+    ],
+    weak: [
+      "إشارة الإنترنت ضعيفة",
+      "الاتصال بطيء جدًا الآن. اقترب من الواي فاي أو جرّب بيانات الجوال، ونحن نعيد المحاولة.",
+    ],
+    server: [
+      "الموقع يُحدَّث الآن (لحظات)",
+      "نجري تحديثًا سريعًا، وتعود الخدمة خلال ثوانٍ.",
+    ],
+    dropped: [
+      "انقطع الاتصال قبل الوصول للموقع",
+      "شبكتك متصلة لكن الاتصال انقطع في الطريق. نعيد المحاولة تلقائيًا.",
+    ],
+  };
+  function slowNetwork() {
+    var c = navigator.connection;
+    return Boolean(c && (/2g/.test(c.effectiveType || "") || (c.downlink && c.downlink < 0.3)));
   }
-  document.getElementById("retry").addEventListener("click", tryAgain);
-  addEventListener("online", tryAgain);
-  setInterval(tryAgain, 4000);
+  function show(kind) {
+    reasonEl.textContent = reasons[kind][0];
+    tipEl.textContent = reasons[kind][1];
+  }
+  function schedule(ms) {
+    clearTimeout(timer);
+    timer = setTimeout(attempt, ms);
+  }
+  function attempt() {
+    if (busy) return;
+    if (!navigator.onLine) {
+      show("offline");
+      stateEl.lastChild.textContent = "ننتظر عودة الإنترنت…";
+      return schedule(700);
+    }
+    busy = true;
+    attempts++;
+    var ctrl = "AbortController" in window ? new AbortController() : null;
+    var slow = setTimeout(function () { if (ctrl) ctrl.abort(); }, 4000);
+    fetch("/api/health?r=" + Date.now(), { cache: "no-store", signal: ctrl ? ctrl.signal : undefined })
+      .then(function (r) {
+        clearTimeout(slow);
+        if (r.ok) { stateEl.lastChild.textContent = "عاد الاتصال ✓"; location.reload(); return; }
+        show("server");
+        throw 0;
+      })
+      .catch(function (e) {
+        clearTimeout(slow);
+        if (e && e.name === "AbortError") show("weak");
+        else if (e !== 0) show(slowNetwork() ? "weak" : "dropped");
+        var secs = Math.round((Date.now() - started) / 1000);
+        stateEl.lastChild.textContent = "المحاولة " + attempts + " · منذ " + secs + " ثانية";
+      })
+      .then(function () { busy = false; schedule(700); });
+  }
+  document.getElementById("retry").addEventListener("click", function () { schedule(0); });
+  addEventListener("online", function () { schedule(0); });
+  addEventListener("offline", function () { show("offline"); });
+  if (!navigator.onLine) show("offline");
+  attempt();
 </script>
 </body>
 </html>
