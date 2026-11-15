@@ -2816,3 +2816,38 @@ main {
   padding-inline: 14px;
   width: 100%;
 }
+/* طبخات اليوم: النطاق في الأعلى، والبحث زر صغير يتمدد عند الحاجة. */
+.browse-scope {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.browse-scope > span {
+  font-weight: 700;
+}
+.browse-scope .table-region-wrap {
+  flex: 1;
+  min-width: 0;
+}
+.filter-wrap.browse-search > summary {
+  display: inline-flex;
+  gap: 6px;
+  list-style: none;
+  padding-inline: 18px;
+}
+.filter-wrap.browse-search > summary::-webkit-details-marker {
+  display: none;
+}
+.filter-wrap.browse-search[open] > summary {
+  background: var(--ink, #2e1d12);
+  border-color: var(--ink, #2e1d12);
+  color: #fff;
+}
+.filter-wrap.browse-search .search-modes {
+  margin-top: 12px;
+}
+.nationwide {
+  margin-top: 28px;
+}

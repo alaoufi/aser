@@ -2,6 +2,9 @@ import { productStatusLabels } from "@/lib/site-texts";
 import { categoryLabel } from "@/lib/category-label";
 import { LocationFields } from "@/components/public/location-fields";
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
+import { RegionPicker } from "@/components/public/region-picker";
+import { regionsOf } from "@/components/public/today-table";
 import Link from "next/link";
 import {
   browseLists,
@@ -60,10 +63,13 @@ export default async function Browse({
     : (legacy as Mode) ||
       (val("producer") ? "family" : val("category") ? "category" : "word");
   const statusParam = val("status") || (by === "available" ? "available" : "");
+  // النطاق: المنطقة المختارة في الرابط، وإلا المحفوظة في الجهاز (تُحدَّد تلقائيًا من الموقع).
+  const regionParam = typeof raw.region === "string" ? raw.region : undefined;
+  const savedRegion = (await cookies()).get("jdatna_region")?.value ?? "";
   const filters = {
     q: val("q").trim(),
     city: val("city"),
-    region: val("region"),
+    region: regionParam ?? savedRegion,
     category: val("category"),
     status: statusParam === "all" ? "" : statusParam,
     include: statusParam === "all" ? "all" : "",
@@ -74,24 +80,52 @@ export default async function Browse({
   const showFamilyDirectory = by === "family" && !filters.producer;
   const showCategoryDirectory = by === "category" && !filters.category;
   const listProducts = !showFamilyDirectory && !showCategoryDirectory;
-  const [allCategories, categories, cities, lists, products, families, family] =
-    await Promise.all([
-      getCategories(),
-      publicCategories(),
-      getCities(),
-      browseLists({ region: filters.region, city: filters.city }),
-      listProducts ? searchProducts(filters) : Promise.resolve([]),
-      by === "word" && filters.q && !filters.producer
-        ? searchProducers({
-            q: filters.q,
-            city: filters.city,
-            region: filters.region,
-            category: filters.category,
-            delivery: filters.delivery,
-          })
-        : Promise.resolve([]),
-      filters.producer ? getProducer(filters.producer) : Promise.resolve(null),
-    ]);
+  // منتجات المنطقة أولًا، ثم ما يُشحن لكل المناطق (دون تكرار). منتجات أسرة بعينها لا تُقيَّد بالمنطقة.
+  const scoped =
+    listProducts &&
+    !filters.producer &&
+    Boolean(filters.region || filters.city);
+  const [
+    allCategories,
+    categories,
+    cities,
+    lists,
+    products,
+    families,
+    family,
+    nationwide,
+  ] = await Promise.all([
+    getCategories(),
+    publicCategories(),
+    getCities(),
+    browseLists({ region: filters.region, city: filters.city }),
+    listProducts ? searchProducts(filters) : Promise.resolve([]),
+    by === "word" && filters.q && !filters.producer
+      ? searchProducers({
+          q: filters.q,
+          city: filters.city,
+          region: filters.region,
+          category: filters.category,
+          delivery: filters.delivery,
+        })
+      : Promise.resolve([]),
+    filters.producer ? getProducer(filters.producer) : Promise.resolve(null),
+    scoped
+      ? searchProducts({
+          ...filters,
+          region: "",
+          city: "",
+          scope: "kingdom",
+          notRegion: filters.city ? "" : filters.region,
+          notCity: filters.city,
+        })
+      : Promise.resolve([]),
+  ]);
+  const regions = regionsOf(cities);
+  const regionName =
+    cities.find((c) => c.id === filters.city)?.name ??
+    regions.find((r) => r.id === filters.region)?.name ??
+    "";
   // توسيع الدائرة: لا نتائج بكل الكلمات ← يكفي تطابق أي كلمة، ويشمل غير المتوفر.
   const widened =
     listProducts && filters.q && !products.length
@@ -202,50 +236,30 @@ export default async function Browse({
           {texts["browse.subtitle"] && <p>{texts["browse.subtitle"]}</p>}
         </div>
       )}
-      {!focus && (
-        <nav className="search-modes" aria-label="طريقة البحث">
-          {modes.map(([key, label]) => (
-            <Link
-              key={key}
-              href={href({
-                by: key,
-                ...(key === "family" ? { category: "" } : {}),
-                ...(key === "category" ? { producer: "" } : {}),
-                ...(key === "available" ? { status: "" } : {}),
-              })}
-              aria-current={by === key ? "page" : undefined}
-            >
-              {label}
-            </Link>
-          ))}
-        </nav>
+      {/* النطاق: يُحدَّد تلقائيًا من موقع الزائر، ويُغيَّر من القائمة. */}
+      {!filters.producer && (
+        <div className="browse-scope">
+          <span>نطاقك:</span>
+          <RegionPicker
+            regions={regions}
+            value={filters.region}
+            path="/browse"
+            query={{
+              by: by === "word" ? "" : by,
+              q: filters.q,
+              category: filters.category,
+              status: val("status"),
+              delivery: filters.delivery,
+            }}
+          />
+        </div>
       )}
-      {currentCategory && (branches.length > 0 || parentCategory) && (
-        <nav aria-label="فروع القسم" className="category-branches">
-          <div>
-            {parentCategory && (
-              <Link href={href({ category: parentCategory.id })}>
-                العودة إلى {parentCategory.name}
-              </Link>
-            )}
-            {branches.map((c) => (
-              <Link key={c.id} href={href({ category: c.id })}>
-                {c.name}
-                {countOf(c.id) > 0 ? ` (${countOf(c.id)})` : ""}
-              </Link>
-            ))}
-          </div>
-        </nav>
-      )}
-      <details className="filter-wrap" open={by === "word" && !focus}>
+      <details
+        className="filter-wrap browse-search"
+        open={Boolean(filters.q) || (by !== "word" && !focus)}
+      >
         <summary>
-          {focus === "category"
-            ? "ابحث داخل القسم: المنطقة، الأسرة المنتجة"
-            : focus === "family"
-              ? "ابحث داخل منتجات الأسرة المنتجة: القسم"
-              : by === "word"
-                ? "ابحث: الكلمة، المنطقة، الأسرة المنتجة، القسم"
-                : "ابحث: المنطقة، الأسرة المنتجة، القسم"}
+          <span aria-hidden="true">🔍</span> بحث
         </summary>
         <form className="filter-bar" action="/browse" autoComplete="off">
           {by !== "word" && <input type="hidden" name="by" value={by} />}
@@ -320,7 +334,42 @@ export default async function Browse({
             بحث
           </button>
         </form>
+        {!focus && (
+          <nav className="search-modes" aria-label="طريقة البحث">
+            {modes.map(([key, label]) => (
+              <Link
+                key={key}
+                href={href({
+                  by: key,
+                  ...(key === "family" ? { category: "" } : {}),
+                  ...(key === "category" ? { producer: "" } : {}),
+                  ...(key === "available" ? { status: "" } : {}),
+                })}
+                aria-current={by === key ? "page" : undefined}
+              >
+                {label}
+              </Link>
+            ))}
+          </nav>
+        )}
       </details>
+      {currentCategory && (branches.length > 0 || parentCategory) && (
+        <nav aria-label="فروع القسم" className="category-branches">
+          <div>
+            {parentCategory && (
+              <Link href={href({ category: parentCategory.id })}>
+                العودة إلى {parentCategory.name}
+              </Link>
+            )}
+            {branches.map((c) => (
+              <Link key={c.id} href={href({ category: c.id })}>
+                {c.name}
+                {countOf(c.id) > 0 ? ` (${countOf(c.id)})` : ""}
+              </Link>
+            ))}
+          </div>
+        </nav>
+      )}
 
       {!focus && matchedCategories.length > 0 && (
         <nav className="search-suggestions" aria-label="أقسام مقترحة">
@@ -455,10 +504,12 @@ export default async function Browse({
           <div className="results-heading">
             <h2>
               {products.length
-                ? `${products.length} ${filters.include ? "منتج مطابق" : "منتج متاح"}${focus === "category" && currentCategory ? ` في ${currentCategory.name}` : ""}`
+                ? `${products.length} ${filters.include ? "منتج مطابق" : "منتج متاح"}${focus === "category" && currentCategory ? ` في ${currentCategory.name}` : ""}${scoped && regionName ? ` في ${regionName}` : ""}`
                 : widened.length
                   ? "لا تطابق تام — نتائج قريبة"
-                  : "نتائج المنتجات"}
+                  : scoped && regionName
+                    ? `لا يوجد متاح في ${regionName} الآن`
+                    : "نتائج المنتجات"}
             </h2>
             <Link
               href={
@@ -487,9 +538,33 @@ export default async function Browse({
             </div>
           ) : (
             <EmptyState
-              title="لم نجد منتجات بهذه الخيارات"
-              text="جرّب «حسب القسم» أو «حسب الأسرة المنتجة»، أو كلمة أقصر، أو امسح فلتر البحث. تظهر المنتجات المعتمدة والمنشورة فقط."
+              title={
+                scoped && regionName
+                  ? `لا توجد منتجات متاحة في ${regionName} بهذه الخيارات`
+                  : "لم نجد منتجات بهذه الخيارات"
+              }
+              text={
+                scoped
+                  ? "جرّب منطقة أخرى من «نطاقك»، أو انظر ما يُشحن لكل المناطق أدناه."
+                  : "جرّب «حسب القسم» أو «حسب الأسرة المنتجة»، أو كلمة أقصر، أو امسح فلتر البحث. تظهر المنتجات المعتمدة والمنشورة فقط."
+              }
             />
+          )}
+          {nationwide.length > 0 && (
+            <section aria-label="يُشحن لكل المناطق" className="nationwide">
+              <div className="results-heading">
+                <h2>يُشحن لكل المناطق ({nationwide.length})</h2>
+              </div>
+              <div className="product-grid">
+                {nationwide.map((p) => (
+                  <ProductCard
+                    key={p.id}
+                    product={p}
+                    labels={productStatusLabels(texts)}
+                  />
+                ))}
+              </div>
+            </section>
           )}
         </>
       )}

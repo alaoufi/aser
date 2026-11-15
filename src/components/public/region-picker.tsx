@@ -28,21 +28,28 @@ export function RegionPicker({
   path,
   autoLabel = "حسب موقعك",
   detectingLabel = "نحدد منطقتك…",
+  query = {},
 }: {
   regions: { id: string; name: string }[];
   value: string;
   path: string;
   autoLabel?: string;
   detectingLabel?: string;
+  /** معاملات الرابط الأخرى (البحث والقسم…) تبقى عند تغيير المنطقة. */
+  query?: Record<string, string>;
 }) {
   const router = useRouter();
   const [state, setState] = useState<"idle" | "detecting" | "auto">("idle");
   const go = (region: string) => {
     document.cookie = `jdatna_region=${encodeURIComponent(region)}; path=/; max-age=${year}; samesite=lax`;
-    router.replace(
-      region ? `${path}?region=${encodeURIComponent(region)}` : path,
-      { scroll: false },
+    const params = new URLSearchParams(
+      Object.entries(query).filter(
+        ([key, v]) => v && key !== "region" && key !== "city",
+      ),
     );
+    if (region) params.set("region", region);
+    const qs = params.toString();
+    router.replace(qs ? `${path}?${qs}` : path, { scroll: false });
     router.refresh();
   };
   useEffect(() => {
