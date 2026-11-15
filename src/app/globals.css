@@ -2469,3 +2469,29 @@ main {
     transition: none;
   }
 }
+/* اسم «أكلات جدتنا» بارز ثلاثي الأبعاد: طبقات بلون الخشب تحت الحروف وظل عائم. */
+.site-header .brand > span {
+  color: #3a2414;
+  text-shadow:
+    0 1px 0 #f6e7c8,
+    0 2px 0 #c9a46a,
+    0 3px 0 #a57f48,
+    0 4px 0 #7d5d32,
+    0 8px 10px rgba(46, 29, 18, 0.35);
+  transition:
+    transform 0.25s ease,
+    text-shadow 0.25s ease;
+}
+.site-header .brand:hover > span,
+.site-header .brand:focus-visible > span {
+  transform: translateY(-2px);
+}
+/* السطر الصغير تحت الاسم يبقى خفيفًا ومقروءًا (بروز بسيط فقط). */
+.site-header .brand small {
+  text-shadow: 0 1px 0 #f6e7c8;
+}
+@media (prefers-reduced-motion: reduce) {
+  .site-header .brand > span {
+    transition: none;
+  }
+}
