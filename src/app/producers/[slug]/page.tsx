@@ -15,8 +15,11 @@ import {
   EmptyState,
   phoneNumber,
   safeUrl,
+  safeMediaUrl,
   priceLabel,
 } from "@/components/public/ui";
+import { JsonLd } from "@/components/public/json-ld";
+import { SITE_URL, absoluteUrl, excerpt, openGraph } from "@/lib/seo";
 export const dynamic = "force-dynamic";
 export async function generateMetadata({
   params,
@@ -24,7 +27,27 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }) {
   const p = await getProducer((await params).slug);
-  return { title: p?.name ?? "الأسرة المنتجة غير موجودة" };
+  if (!p)
+    return { title: "الأسرة المنتجة غير موجودة", robots: { index: false } };
+  const title = `${p.name} — أسرة منتجة في ${p.cityName}`;
+  const description = excerpt(
+    `${p.name} أسرة منتجة في ${p.cityName}${p.neighborhood ? " حي " + p.neighborhood : ""}، ${p.regionName}: أكل بيت وأكلات شعبية` +
+      (p.delivery ? " بالتوصيل" : "") +
+      (p.pickup ? " والاستلام" : "") +
+      `. ${p.description}`,
+  );
+  const image = p.logoUrl && safeMediaUrl(p.logoUrl);
+  return {
+    title,
+    description,
+    alternates: { canonical: `/producers/${p.slug}` },
+    openGraph: openGraph({
+      title,
+      description,
+      url: `/producers/${p.slug}`,
+      ...(image ? { images: [{ url: image, alt: p.name }] } : {}),
+    }),
+  };
 }
 export default async function ProducerDetail({
   params,
@@ -40,8 +63,63 @@ export default async function ProducerDetail({
   const coverage = p.delivery ? await getPublicCoverage(p.id) : [];
   const phone = p.phone ? phoneNumber(p.phone) : null;
   const whatsapp = p.whatsapp ? phoneNumber(p.whatsapp) : null;
+  const logo = p.logoUrl && safeMediaUrl(p.logoUrl);
   return (
     <div className="wrap page-space">
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "FoodEstablishment",
+          "@id": absoluteUrl(`/producers/${p.slug}#family`),
+          name: p.name,
+          description: excerpt(p.description, 500) || undefined,
+          url: absoluteUrl(`/producers/${p.slug}`),
+          ...(logo
+            ? { image: absoluteUrl(logo), logo: absoluteUrl(logo) }
+            : {}),
+          servesCuisine: ["أكلات شعبية سعودية", "طبخ بيت"],
+          address: {
+            "@type": "PostalAddress",
+            addressLocality: p.cityName,
+            addressRegion: p.regionName,
+            addressCountry: "SA",
+          },
+          ...(p.phone ? { telephone: p.phone } : {}),
+          ...(p.ratingAverage && p.ratingCount
+            ? {
+                aggregateRating: {
+                  "@type": "AggregateRating",
+                  ratingValue: p.ratingAverage,
+                  ratingCount: p.ratingCount,
+                  bestRating: 5,
+                  worstRating: 1,
+                },
+              }
+            : {}),
+          ...(products.length
+            ? {
+                hasMenu: {
+                  "@type": "Menu",
+                  hasMenuItem: products.slice(0, 30).map((x) => ({
+                    "@type": "MenuItem",
+                    name: x.name,
+                    url: absoluteUrl(`/products/${x.id}`),
+                    ...(x.price !== null
+                      ? {
+                          offers: {
+                            "@type": "Offer",
+                            price: x.price,
+                            priceCurrency: "SAR",
+                          },
+                        }
+                      : {}),
+                  })),
+                },
+              }
+            : {}),
+          isPartOf: { "@id": SITE_URL + "/#website" },
+        }}
+      />
       <Link href="/producers" className="text-link">
         الأسر المنتجة ←
       </Link>

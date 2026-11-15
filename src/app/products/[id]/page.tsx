@@ -9,6 +9,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getProducer, getProduct } from "@/server/catalog";
 import { phoneNumber, priceLabel, safeMediaUrl } from "@/components/public/ui";
+import { JsonLd } from "@/components/public/json-ld";
+import { SITE_URL, absoluteUrl, excerpt, openGraph } from "@/lib/seo";
 export const dynamic = "force-dynamic";
 export async function generateMetadata({
   params,
@@ -16,7 +18,31 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }) {
   const p = await getProduct((await params).id);
-  return { title: p?.name ?? "المنتج غير موجود" };
+  if (!p) return { title: "المنتج غير موجود", robots: { index: false } };
+  // العنوان والوصف بما يبحث به الناس: اسم الطبق + «أكل بيت» + الأسرة والمدينة.
+  const title = `${p.name} من ${p.producerName} في ${p.cityName}`;
+  const description = excerpt(
+    `${p.name} أكل بيت من الأسرة المنتجة ${p.producerName} في ${p.cityName}` +
+      (p.price !== null ? ` بسعر ${p.price} ريال لكل ${p.unit}` : "") +
+      `. ${p.description}`,
+  );
+  const image = p.imageUrl && safeMediaUrl(p.imageUrl);
+  return {
+    title,
+    description,
+    alternates: { canonical: `/products/${p.id}` },
+    openGraph: openGraph({
+      title,
+      description,
+      url: `/products/${p.id}`,
+      ...(image ? { images: [{ url: image, alt: p.name }] } : {}),
+    }),
+    twitter: {
+      card: image ? "summary_large_image" : "summary",
+      title,
+      description,
+    },
+  };
 }
 export default async function ProductDetail({
   params,
@@ -35,8 +61,69 @@ export default async function ProductDetail({
   const family = await getProducer(p.producerSlug);
   const familyPhone = family?.phone ? phoneNumber(family.phone) : null;
   const familyWhatsapp = family?.whatsapp ? phoneNumber(family.whatsapp) : null;
+  const image = p.imageUrl && safeMediaUrl(p.imageUrl);
   return (
     <div className="wrap page-space">
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "Product",
+          name: p.name,
+          description: excerpt(p.description, 500) || p.name,
+          url: absoluteUrl(`/products/${p.id}`),
+          ...(image ? { image: absoluteUrl(image) } : {}),
+          category: "أكلات شعبية سعودية",
+          brand: { "@type": "Brand", name: p.producerName },
+          ...(p.price !== null
+            ? {
+                offers: {
+                  "@type": "Offer",
+                  url: absoluteUrl(`/products/${p.id}`),
+                  priceCurrency: "SAR",
+                  price: p.price,
+                  availability:
+                    p.status === "available"
+                      ? "https://schema.org/InStock"
+                      : p.status === "preorder"
+                        ? "https://schema.org/PreOrder"
+                        : "https://schema.org/OutOfStock",
+                  seller: {
+                    "@type": "Organization",
+                    name: p.producerName,
+                    url: absoluteUrl(`/producers/${p.producerSlug}`),
+                  },
+                },
+              }
+            : {}),
+        }}
+      />
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          itemListElement: [
+            {
+              "@type": "ListItem",
+              position: 1,
+              name: "أكلات جدتنا",
+              item: SITE_URL,
+            },
+            {
+              "@type": "ListItem",
+              position: 2,
+              name: "طبخات اليوم",
+              item: absoluteUrl("/browse"),
+            },
+            {
+              "@type": "ListItem",
+              position: 3,
+              name: p.producerName,
+              item: absoluteUrl(`/producers/${p.producerSlug}`),
+            },
+            { "@type": "ListItem", position: 4, name: p.name },
+          ],
+        }}
+      />
       <Link href="/browse" className="text-link">
         طبخات اليوم ←
       </Link>

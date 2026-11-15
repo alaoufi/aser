@@ -26,6 +26,14 @@ import {
 } from "@/server/settings";
 import { StoreBadges } from "@/components/public/store-badges";
 import { TemplateSwitcher } from "@/components/public/template-switcher";
+import { JsonLd } from "@/components/public/json-ld";
+import {
+  POPULAR_SEARCHES,
+  SITE_DESCRIPTION,
+  SITE_KEYWORDS,
+  SITE_NAME,
+  SITE_URL,
+} from "@/lib/seo";
 // القالب يُقرأ عند كل طلب حتى يسري اختيار الإدارة فورًا على كل الصفحات.
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -34,9 +42,48 @@ export const metadata: Metadata = {
     default: "أكلات جدتنا | من بيوت أهلنا",
     template: "%s | أكلات جدتنا",
   },
-  description:
-    "طبخات تراثية ومنتجات غذائية من الأسر المنتجة السعودية، وتواصل مع الأسرة المنتجة مباشرة.",
-  applicationName: "أكلات جدتنا",
+  description: SITE_DESCRIPTION,
+  keywords: SITE_KEYWORDS,
+  applicationName: SITE_NAME,
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  openGraph: {
+    type: "website",
+    locale: "ar_SA",
+    siteName: SITE_NAME,
+    title: "أكلات جدتنا | أكلات شعبية وطبخ بيت من الأسر المنتجة",
+    description: SITE_DESCRIPTION,
+    images: [
+      {
+        url: "/brand/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "أكلات جدتنا — أكل شعبي سعودي من بيوت الأسر المنتجة",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "أكلات جدتنا | أكلات شعبية وطبخ بيت من الأسر المنتجة",
+    description: SITE_DESCRIPTION,
+    images: ["/brand/og-image.jpg"],
+  },
+  // رموز التحقق لـ Google Search Console وBing Webmaster من متغيرات الخادم (لا أسرار فيها).
+  verification: {
+    google: process.env.GOOGLE_SITE_VERIFICATION || undefined,
+    other: process.env.BING_SITE_VERIFICATION
+      ? { "msvalidate.01": process.env.BING_SITE_VERIFICATION }
+      : undefined,
+  },
+  category: "food",
   icons: {
     icon: {
       url: "/brand/jdatna-icon.png",
@@ -75,6 +122,41 @@ export default async function RootLayout({
     >
       <body>
         <StarDefs />
+        <JsonLd
+          data={{
+            "@context": "https://schema.org",
+            "@graph": [
+              {
+                "@type": "Organization",
+                "@id": SITE_URL + "/#organization",
+                name: SITE_NAME,
+                alternateName: ["Jdatna", "أكلات جدتنا"],
+                url: SITE_URL,
+                logo: SITE_URL + "/brand/app-icon-512.png",
+                areaServed: {
+                  "@type": "Country",
+                  name: "المملكة العربية السعودية",
+                },
+              },
+              {
+                "@type": "WebSite",
+                "@id": SITE_URL + "/#website",
+                name: SITE_NAME,
+                url: SITE_URL,
+                inLanguage: "ar-SA",
+                publisher: { "@id": SITE_URL + "/#organization" },
+                potentialAction: {
+                  "@type": "SearchAction",
+                  target: {
+                    "@type": "EntryPoint",
+                    urlTemplate: SITE_URL + "/browse?q={search_term_string}",
+                  },
+                  "query-input": "required name=search_term_string",
+                },
+              },
+            ],
+          }}
+        />
         <a href="#main" className="skip-link">
           انتقل إلى المحتوى
         </a>
@@ -163,6 +245,20 @@ export default async function RootLayout({
               <Link href="/suggestions">الاقتراحات</Link>
             </div>
           </div>
+          <nav className="footer-searches" aria-label="عمليات بحث شائعة">
+            <h3>يبحث الناس عن</h3>
+            <p>
+              {POPULAR_SEARCHES.map((q) => (
+                <Link
+                  key={q}
+                  href={`/browse?q=${encodeURIComponent(q)}`}
+                  prefetch={false}
+                >
+                  {q}
+                </Link>
+              ))}
+            </p>
+          </nav>
           <StoreBadges
             appStore={appLinks.showAppStore ? APP_STORE_URL : null}
             playStore={appLinks.showPlayStore ? PLAY_STORE_URL : null}
