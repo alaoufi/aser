@@ -1139,6 +1139,14 @@ function CourierAssign({ order }: { order: Order }) {
           {order.courierStatus === "delivered" ? " — تم التوصيل ✓" : ""}
         </p>
       )}
+      {order.courierStatus === "delivered" && order.courierUserId && (
+        <RatingBox
+          kind="courier"
+          target={order.courierUserId}
+          title="تقييم المندوب"
+          compact
+        />
+      )}
       {canAssign && !open && (
         <button type="button" className={s.buttonSecondary} onClick={show}>
           {assigned ? "تغيير المندوب" : "إسناد التوصيل لمندوب"}

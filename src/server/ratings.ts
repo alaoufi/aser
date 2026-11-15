@@ -6,7 +6,7 @@ import { HttpError } from "./security";
 import { can } from "../lib/permissions";
 import { siteTextDefaults } from "../lib/site-texts";
 
-export type RatingKind = "family" | "product" | "member";
+export type RatingKind = "family" | "product" | "member" | "courier";
 export type RatingSummary = { average: number | null; count: number };
 export type RatingView = RatingSummary & {
   mine: { stars: number; comment: string } | null;
@@ -17,7 +17,12 @@ export type RatingView = RatingSummary & {
 
 /** نص القسم: المعدّل في «نصوص الموقع»، وإن حُذف أو أُخفي فالنص الأصلي؛ فالقسم لا يسقط. */
 async function oathText(k: RatingKind) {
-  const key = k === "member" ? "rating.oathMember" : "rating.oath";
+  const key =
+    k === "member"
+      ? "rating.oathMember"
+      : k === "courier"
+        ? "rating.oathCourier"
+        : "rating.oath";
   try {
     const { getSiteTexts } = await import("./settings");
     return (await getSiteTexts())[key] || siteTextDefaults[key];
@@ -26,7 +31,7 @@ async function oathText(k: RatingKind) {
   }
 }
 
-const kind = z.enum(["family", "product", "member"]);
+const kind = z.enum(["family", "product", "member", "courier"]);
 /** تعامل فعلي: طلب سلّمته الأسرة («تم التسليم»). قبل التسليم لا تقييم، فالقسم «تعاملت» لا يصح بعد. */
 const dealt = "o.status='completed'";
 
@@ -76,6 +81,20 @@ async function eligibility(
       )
     ).rowCount;
     return ok ? "member" : null;
+  }
+  if (k === "courier") {
+    // المندوب تقيّمه الأسرة التي أوصل طلبها («تم التوصيل»)، والإدارة.
+    if (targetId === user.id) return null;
+    if (can(user, "producers")) return "admin";
+    const ok = (
+      await db().query(
+        `SELECT 1 FROM jdatna.order_couriers oc JOIN jdatna.order_requests o ON o.id=oc.order_id
+         JOIN jdatna.producer_profiles p ON p.id=o.producer_id
+         WHERE oc.courier_user_id=$1 AND oc.status='delivered' AND p.user_id=$2 LIMIT 1`,
+        [targetId, user.id],
+      )
+    ).rowCount;
+    return ok ? "family" : null;
   }
   // العضو تقيّمه الأسرة التي تعاملت معه.
   if (targetId === user.id) return null;

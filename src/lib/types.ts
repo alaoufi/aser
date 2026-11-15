@@ -26,6 +26,9 @@ export type Producer = {
   regionName: string;
   neighborhood: string | null;
   verified: boolean;
+  /** متوسط تقييم الأسرة وعدد المقيّمين (يظهر في بطاقتها). */
+  ratingAverage?: number | null;
+  ratingCount?: number;
   /** يظهر للعملاء إن اختارت الأسرة إظهاره. */
   phone: string | null;
   whatsapp: string | null;

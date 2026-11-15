@@ -21,4 +21,7 @@ CREATE TABLE IF NOT EXISTS jdatna.order_couriers (
   delivered_at timestamptz
 );
 CREATE INDEX IF NOT EXISTS order_couriers_courier ON jdatna.order_couriers(courier_user_id, assigned_at DESC);
+-- تقييم المندوب: تقيّمه الأسرة بعد أن يوصل طلبها.
+ALTER TABLE jdatna.ratings DROP CONSTRAINT IF EXISTS ratings_kind_check;
+ALTER TABLE jdatna.ratings ADD CONSTRAINT ratings_kind_check CHECK (kind IN ('family','product','member','courier'));
 COMMIT;

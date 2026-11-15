@@ -233,6 +233,8 @@ export type CourierCard = {
   /** داخل المدينة؛ null = حسب الاتفاق. */
   cityPrice: number | null;
   centers: { name: string; price: number | null }[];
+  ratingAverage: number | null;
+  ratingCount: number;
 };
 
 export async function listCouriers(
@@ -267,6 +269,8 @@ export async function listCouriers(
          CASE WHEN k.show_phone THEN u.phone END AS phone,
          CASE WHEN k.show_whatsapp THEN u.phone END AS whatsapp,
          k.city_price::float8 AS "cityPrice",
+         (SELECT round(avg(g.stars)::numeric,1)::float8 FROM jdatna.ratings g WHERE g.kind='courier' AND g.target_id=k.user_id) AS "ratingAverage",
+         (SELECT count(*)::int FROM jdatna.ratings g WHERE g.kind='courier' AND g.target_id=k.user_id) AS "ratingCount",
          COALESCE((SELECT json_agg(json_build_object('name',n.name,'price',x.price::float8) ORDER BY n.name)
            FROM jdatna.courier_centers x JOIN jdatna.coverage_nodes n ON n.id=x.center_node_id WHERE x.courier_id=k.id),'[]') AS centers
        FROM jdatna.courier_profiles k

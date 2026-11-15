@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Product, Producer } from "@/lib/types";
 import { productStatusLabels } from "@/lib/site-texts";
+import { Stars } from "./stars";
 
 /** الأسماء الأصلية لحالة المنتج؛ الصفحات تمرر المعدّل من «نصوص الموقع». */
 export const availability = productStatusLabels();
@@ -106,12 +107,12 @@ export function ProducerCard({ producer: p }: { producer: Producer }) {
           <p className="producer-description">{p.description}</p>
         )}
         <div className="producer-tags">
+          <Stars
+            value={p.ratingAverage ?? null}
+            count={p.ratingCount ?? 0}
+            size={14}
+          />
           {p.notCookingToday && <span>لا يوجد طبخ اليوم</span>}
-          {p.verified && (
-            <span className="producer-verified">
-              <span aria-hidden="true">✓</span> تمت مراجعتها
-            </span>
-          )}
           <span>{p.delivery ? "توصيل متاح" : "استلام بالتنسيق"}</span>
         </div>
       </div>

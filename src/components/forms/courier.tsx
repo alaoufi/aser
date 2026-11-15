@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { City } from "@/lib/types";
 import { LocationFields } from "@/components/public/location-fields";
 import { LocationLink } from "./location-share";
+import { Stars } from "@/components/public/stars";
 import {
   AccountShell,
   Guard,
@@ -396,6 +397,8 @@ type Card = {
   whatsapp: string | null;
   cityPrice: number | null;
   centers: { name: string; price: number | null }[];
+  ratingAverage?: number | null;
+  ratingCount?: number;
 };
 const priceText = (v: number | null) =>
   v === null ? "حسب الاتفاق" : `${v} ر.س`;
@@ -498,12 +501,18 @@ export function CouriersDirectory() {
           {list?.map((k) => (
             <li key={k.id} className={s.card}>
               <h2>{k.name}</h2>
+              <Stars
+                value={k.ratingAverage ?? null}
+                count={k.ratingCount ?? 0}
+                size={14}
+              />
               <p>
                 🚗 {k.carType} · {k.cityName}
               </p>
               <ul className={s.courierPrices} aria-label={"تسعيرة " + k.name}>
                 <li>
-                  داخل المدينة: <strong>{priceText(k.cityPrice ?? null)}</strong>
+                  داخل المدينة:{" "}
+                  <strong>{priceText(k.cityPrice ?? null)}</strong>
                 </li>
                 {(k.centers ?? []).map((x) => (
                   <li key={x.name}>

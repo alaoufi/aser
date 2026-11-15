@@ -12,6 +12,7 @@ import {
   setCourierActive,
 } from "../src/server/couriers";
 import { producerOrders } from "../src/server/orders";
+import { rate, ratingView } from "../src/server/ratings";
 import type { SessionUser } from "../src/lib/types";
 
 test(
@@ -228,7 +229,20 @@ test(
       await assert.rejects(markCourierDelivered(k2, { orderId }), {
         status: 404,
       });
+      // قبل التوصيل لا تقييم للمندوب.
+      const stars = { kind: "courier", target: k1.id, stars: 5, oath: true };
+      await assert.rejects(rate(fCity, stars), { status: 403 });
       await markCourierDelivered(k1User, { orderId });
+      // بعد التوصيل تقيّمه الأسرة التي أوصل طلبها، لا غيرها ولا هو نفسه.
+      assert.equal((await ratingView(fCity, stars)).canRate, true);
+      await rate(fCity, stars);
+      await assert.rejects(rate(fFar, stars), { status: 403 });
+      await assert.rejects(rate(k1User, stars), { status: 403 });
+      const rated = (await listCouriers(fCity, {})).find(
+        (k) => k.userId === k1.id,
+      );
+      assert.equal(rated?.ratingAverage, 5);
+      assert.equal(rated?.ratingCount, 1);
       assert.equal((await courierDeliveries(k1User))[0].status, "delivered");
       // بعد التوصيل لا يُعاد الإسناد.
       await assert.rejects(
@@ -241,6 +255,10 @@ test(
         [[orderId, pickupOrder]],
       );
       await pool.query("DELETE FROM jdatna.products WHERE id=$1", [productId]);
+      await pool.query(
+        "DELETE FROM jdatna.ratings WHERE kind='courier' AND target_id=$1",
+        [k1.id],
+      );
       await pool.query(
         "DELETE FROM jdatna.courier_profiles WHERE user_id=ANY($1::uuid[])",
         [[k1.id, k2.id]],
