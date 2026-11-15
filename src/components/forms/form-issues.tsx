@@ -26,6 +26,8 @@ function fieldLabel(el: HTMLElement) {
 
 function reasonOf(el: HTMLInputElement) {
   const v = el.validity;
+  // سبب مخصص للحقل (مثل خانة التعهد: «يلزم الإقرار»).
+  if (el.dataset.reason) return el.dataset.reason;
   if (v.valueMissing)
     return el.type === "checkbox" || el.type === "radio"
       ? "اختر واحدًا على الأقل"

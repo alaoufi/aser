@@ -379,7 +379,7 @@ export async function adminReports(user: SessionUser) {
   assertAdmin(user, "reports");
   return (
     await db().query(
-      `SELECT r.id,r.product_id AS "productId",r.producer_id AS "producerId",x.name AS "productName",p.name AS "producerName",r.reason,r.status,r.resolution_reason AS "reviewReason",r.created_at AS "createdAt" FROM jdatna.reports r LEFT JOIN jdatna.products x ON x.id=r.product_id LEFT JOIN jdatna.producer_profiles p ON p.id=COALESCE(r.producer_id,x.producer_id) ORDER BY r.created_at DESC LIMIT 200`,
+      `SELECT r.id,r.product_id AS "productId",r.producer_id AS "producerId",x.name AS "productName",p.name AS "producerName",r.reason,r.status,r.resolution_reason AS "reviewReason",r.created_at AS "createdAt",ru.name AS "reporterName",tu.name AS "reportedName",(tu.id=p.user_id) AS "reportedIsFamily" FROM jdatna.reports r LEFT JOIN jdatna.products x ON x.id=r.product_id LEFT JOIN jdatna.producer_profiles p ON p.id=COALESCE(r.producer_id,x.producer_id) LEFT JOIN jdatna.users ru ON ru.id=r.reporter_id LEFT JOIN jdatna.users tu ON tu.id=r.reported_user_id ORDER BY r.created_at DESC LIMIT 200`,
     )
   ).rows;
 }

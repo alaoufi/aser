@@ -31,6 +31,8 @@ type Courier = {
   active: boolean;
   cityPrice: number | null;
   centers: { nodeId: string; price: number | null }[];
+  /** المندوب الخاص: اسم الأسرة التي سجّلته؛ null للمندوب العام. */
+  familyName: string | null;
 };
 type CenterOption = { cityId: string; id: string; name: string };
 const toPrice = (v: FormDataEntryValue | null) => {
@@ -54,6 +56,11 @@ const statusText: Record<Courier["status"], [string, string]> = {
   ],
   suspended: ["موقوف", "الحساب موقوف مؤقتًا ولا يظهر للأسر. تواصل مع الإدارة."],
 };
+
+/** شارة المندوب الخاص بأسرة. */
+export function PrivateCourierBadge({ family }: { family: string }) {
+  return <span className={s.privateCourier}>مندوب خاص لـ {family}</span>;
+}
 
 /** لوحة المندوب: تسجيله وبياناته (الاسم الحقيقي، الهوية رقمًا وصورة، نوع السيارة، مدينة العمل). */
 export function CourierPanel() {
@@ -188,10 +195,19 @@ export function CourierPanel() {
           className={`${s.card} ${s.familyStatus}`}
           aria-label="حالة حساب المندوب"
         >
+          {courier.familyName && (
+            <PrivateCourierBadge family={courier.familyName} />
+          )}
           <p className={s.familyStatusHead}>
             حالة الحساب: <strong>{statusText[courier.status][0]}</strong>
           </p>
-          <p>{statusText[courier.status][1]}</p>
+          <p>
+            {courier.familyName
+              ? courier.status === "approved"
+                ? `سجّلتك «${courier.familyName}» مندوبًا خاصًا لها، وتصلك طلبات توصيلها هنا.`
+                : `أوقفت «${courier.familyName}» أو الإدارة حسابك مندوبًا خاصًا. تواصل مع الأسرة.`
+              : statusText[courier.status][1]}
+          </p>
           {courier.reviewReason && (
             <p className={s.familyStatusReason}>
               ملاحظة الإدارة: {courier.reviewReason}
@@ -201,8 +217,12 @@ export function CourierPanel() {
             الحالة الآن:{" "}
             <strong>
               {courier.active
-                ? "نشط — يظهر اسمك للأسر"
-                : "غير نشط — اسمك مخفي عن الأسر"}
+                ? courier.familyName
+                  ? "نشط — تستطيع الأسرة إسناد الطلبات إليك"
+                  : "نشط — يظهر اسمك للأسر"
+                : courier.familyName
+                  ? "غير نشط — لا تسند إليك الأسرة طلبات الآن"
+                  : "غير نشط — اسمك مخفي عن الأسر"}
             </strong>
           </p>
           <div className={s.actions}>
@@ -222,7 +242,7 @@ export function CourierPanel() {
       )}
       {courier?.status === "approved" && <CourierDeliveries />}
       <Message error={error} success={success} />
-      {session.user && loaded && (
+      {session.user && loaded && !courier?.familyName && (
         <form
           className={`${s.form} ${s.card}`}
           onSubmit={save}
@@ -407,10 +427,191 @@ type Card = {
   centers: { name: string; price: number | null }[];
   ratingAverage?: number | null;
   ratingCount?: number;
+  familyName?: string | null;
 };
 const priceText = (v: number | null) =>
   v === null ? "حسب الاتفاق" : `${v} ر.س`;
 const intl = (phone: string) => phone.replace(/^\+/, "");
+
+type FamilyCourier = {
+  id: string;
+  userId: string;
+  name: string;
+  phone: string;
+  carType: string;
+  status: Courier["status"];
+  active: boolean;
+  stoppedByAdmin: boolean;
+  joined: boolean;
+};
+
+/**
+ * «مندوبي الخاص»: الأسرة تسجّل مندوبها بالاسم والجوال ونوع السيارة، بتعهّدها بمعرفته
+ * ومسؤوليتها عنه، فيُعتمد فورًا ويظهر لها وحدها في إسناد التوصيل.
+ */
+function FamilyCouriers() {
+  const [data, setData] = useState<{
+    familyName: string;
+    pledge: string;
+    couriers: FamilyCourier[];
+  } | null>(null);
+  const [hidden, setHidden] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [issues, setIssues] = useState<FormIssue[]>([]);
+  const [busy, setBusy] = useState(false);
+  const load = () =>
+    api<{ familyName: string; pledge: string; couriers: FamilyCourier[] }>(
+      "/api/producer/couriers",
+    )
+      .then(setData)
+      // ليس أسرة معتمدة (مثل الإدارة): القسم لا يظهر.
+      .catch(() => setHidden(true));
+  useEffect(() => {
+    load();
+  }, []);
+  async function add(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+    const form = e.currentTarget;
+    const found = collectIssues(form);
+    setIssues(found);
+    if (found.length) return;
+    const f = new FormData(form);
+    setBusy(true);
+    try {
+      await api("/api/producer/couriers", {
+        method: "POST",
+        body: JSON.stringify({
+          name: f.get("name"),
+          phone: f.get("phone"),
+          carType: f.get("carType"),
+          pledge: f.has("pledge"),
+        }),
+      });
+      form.reset();
+      await load();
+      setSuccess(
+        "تم تسجيل المندوب ✓ يدخل بجواله من «دخول» ← «نسيت كلمة المرور» أول مرة، فتصله طلبات التوصيل التي تسندها إليه.",
+      );
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function stop(k: FamilyCourier) {
+    if (!window.confirm(`إيقاف المندوب ${k.name}؟`)) return;
+    setError("");
+    setSuccess("");
+    try {
+      await api("/api/producer/couriers", {
+        method: "PATCH",
+        body: JSON.stringify({ id: k.id }),
+      });
+      await load();
+      setSuccess("تم إيقاف المندوب. تعيده بتسجيل جواله مرة أخرى.");
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  }
+  if (hidden || !data) return null;
+  return (
+    <section className={s.card} aria-label="مندوبي الخاص">
+      <h2>مندوبي الخاص</h2>
+      <p className={s.muted}>
+        سجّل مندوبًا تعرفه شخصيًا ليوصل طلبات «{data.familyName}». يُعتمد فورًا
+        دون انتظار الإدارة، ويظهر لأسرتك فقط في إسناد التوصيل.
+      </p>
+      <Message error={error} success={success} />
+      {data.couriers.length > 0 && (
+        <ul className={s.courierList} aria-label="مندوبو الأسرة الخاصون">
+          {data.couriers.map((k) => (
+            <li key={k.id} className={s.card}>
+              <h3>{k.name}</h3>
+              <PrivateCourierBadge family={data.familyName} />
+              <p>
+                <bdi dir="ltr">{k.phone}</bdi> · 🚗 {k.carType}
+              </p>
+              <p>
+                {k.status === "approved"
+                  ? k.active
+                    ? "✅ نشط — تسند إليه طلبات التوصيل"
+                    : "⏸️ أوقف ظهوره مؤقتًا من حسابه"
+                  : k.stoppedByAdmin
+                    ? "⛔ أوقفته الإدارة"
+                    : "⛔ موقوف"}
+                {k.status === "approved" && !k.joined && (
+                  <small className={s.muted}>
+                    {" "}
+                    · لم يدخل بعد: يدخل بجواله من «نسيت كلمة المرور» أول مرة.
+                  </small>
+                )}
+              </p>
+              {k.status === "approved" && (
+                <button
+                  type="button"
+                  className={s.buttonSecondary}
+                  onClick={() => stop(k)}
+                >
+                  إيقاف المندوب
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      <form className={s.form} onSubmit={add} noValidate>
+        <h3>تسجيل مندوب خاص</h3>
+        <div className={s.grid}>
+          <label className={s.field}>
+            اسم المندوب
+            <input name="name" required minLength={2} maxLength={120} />
+          </label>
+          <label className={s.field}>
+            جوال المندوب
+            <input
+              name="phone"
+              required
+              inputMode="tel"
+              dir="ltr"
+              maxLength={40}
+              placeholder="05xxxxxxxx"
+              autoComplete="off"
+            />
+          </label>
+          <label className={s.field}>
+            نوع السيارة
+            <input
+              name="carType"
+              required
+              minLength={2}
+              maxLength={80}
+              placeholder="مثال: كامري 2020"
+            />
+          </label>
+        </div>
+        <label className={s.pledge}>
+          <input
+            type="checkbox"
+            name="pledge"
+            required
+            data-label="التعهد بمعرفة المندوب"
+            data-reason="يلزم الإقرار بالتعهد"
+          />
+          <span>
+            <strong>تعهّد:</strong> {data.pledge}
+          </span>
+        </label>
+        <FormIssues issues={issues} />
+        <button className={s.button} disabled={busy}>
+          {busy ? "جارٍ التسجيل…" : "تسجيل المندوب الخاص"}
+        </button>
+      </form>
+    </section>
+  );
+}
 
 /** «المندوبين» للأسر المنتجة: حسب المدينة، مع محادثة واتصال وواتساب. */
 export function CouriersDirectory() {
@@ -463,6 +664,7 @@ export function CouriersDirectory() {
     <AccountShell>
       <h1>المندوبون</h1>
       <Guard {...session} />
+      {session.user && <FamilyCouriers />}
       <p className={s.muted}>
         مندوبون معتمدون ونشطون الآن داخل تغطيتك (المدينة أو المراكز). الاتفاق
         والأجرة بينك وبين المندوب.
@@ -509,6 +711,7 @@ export function CouriersDirectory() {
           {list?.map((k) => (
             <li key={k.id} className={s.card}>
               <h2>{k.name}</h2>
+              {k.familyName && <PrivateCourierBadge family={k.familyName} />}
               <Stars
                 value={k.ratingAverage ?? null}
                 count={k.ratingCount ?? 0}
@@ -571,6 +774,7 @@ type AdminCourier = {
   nationalId: string;
   status: Courier["status"];
   reviewReason: string | null;
+  familyName: string | null;
 };
 
 /** الإدارة: اعتماد المندوبين (رقم الهوية وصورتها للمراجعة فقط). */
@@ -633,12 +837,17 @@ export function AdminCouriers({
         shown.map((k) => (
           <article key={k.id} className={s.card}>
             <h3>{k.name}</h3>
+            {k.familyName && <PrivateCourierBadge family={k.familyName} />}
             <p>
               <bdi dir="ltr">{k.phone}</bdi> · {k.cityName} · 🚗 {k.carType}
             </p>
-            <p>
-              رقم الهوية (خاص): <bdi>{k.nationalId}</bdi>
-            </p>
+            {k.familyName ? (
+              <p>سجّلته الأسرة بتعهّدها بمعرفته ومسؤوليتها عنه، دون هوية.</p>
+            ) : (
+              <p>
+                رقم الهوية (خاص): <bdi>{k.nationalId}</bdi>
+              </p>
+            )}
             {k.documentId && (
               <a
                 href={`/api/documents/${encodeURIComponent(k.documentId)}`}

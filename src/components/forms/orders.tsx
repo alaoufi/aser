@@ -1078,6 +1078,7 @@ type CourierOption = {
   userId: string;
   name: string;
   cityName: string;
+  familyName?: string | null;
   cityPrice: number | null;
   centers: { name: string; price: number | null }[];
 };
@@ -1175,8 +1176,11 @@ function CourierAssign({ order }: { order: Order }) {
                     required
                     defaultChecked={c.userId === order.courierUserId}
                   />{" "}
-                  {c.name} — {c.cityName}، داخل المدينة:{" "}
-                  {priceText(c.cityPrice)}
+                  {c.name}
+                  {c.familyName && (
+                    <span className={s.privateCourier}>مندوبك الخاص</span>
+                  )}{" "}
+                  — {c.cityName}، داخل المدينة: {priceText(c.cityPrice)}
                   {(c.centers ?? []).map((x) => (
                     <span key={x.name}>
                       ، {x.name}: {priceText(x.price)}

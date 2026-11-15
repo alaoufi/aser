@@ -761,6 +761,9 @@ type Report = {
   productName?: string;
   producerName?: string;
   createdAt?: string;
+  reporterName?: string | null;
+  reportedName?: string | null;
+  reportedIsFamily?: boolean | null;
 };
 export function ReportsAdmin() {
   const r = useResource<{ reports: Report[] }>("/api/admin/reports");
@@ -787,6 +790,13 @@ export function ReportsAdmin() {
           >
             <h3>بلاغ {report.id.slice(0, 8)}</h3>
             <p>{report.reason}</p>
+            {report.reportedName && (
+              <p>
+                المبلَّغ عنه: <strong>{report.reportedName}</strong>
+                {report.reportedIsFamily ? " (الأسرة)" : ""}
+              </p>
+            )}
+            {report.reporterName && <p>المبلِّغ: {report.reporterName}</p>}
             <p>
               {report.productName} {report.producerName}
             </p>

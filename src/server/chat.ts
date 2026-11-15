@@ -184,6 +184,8 @@ async function participant(
     row.customer_id === user.id ? "customer" : "producer";
   return { ...row, side } as {
     id: string;
+    customer_id: string;
+    producer_user: string;
     title: string;
     producerSlug: string;
     side: "customer" | "producer";
@@ -349,12 +351,14 @@ export async function moderateConversation(
     }
     if (value.action === "report") {
       await client.query(
-        "INSERT INTO jdatna.reports(id,reporter_id,producer_id,reason) VALUES($1,$2,$3,$4)",
+        // المبلَّغ عنه هو الطرف الآخر في المحادثة، لتراه الإدارة باسمه.
+        "INSERT INTO jdatna.reports(id,reporter_id,producer_id,reason,reported_user_id) VALUES($1,$2,$3,$4,$5)",
         [
           randomUUID(),
           user.id,
           c.producer_id,
           `بلاغ محادثة (${c.id}) من ${c.side === "customer" ? "العميل" : "الأسرة"}: ${value.reason}`,
+          c.side === "customer" ? c.producer_user : c.customer_id,
         ],
       );
       if (!value.block)

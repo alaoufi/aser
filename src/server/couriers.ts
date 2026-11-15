@@ -1,9 +1,15 @@
 import { randomUUID } from "node:crypto";
+import type { PoolClient } from "pg";
 import { z } from "zod";
 import type { SessionUser } from "../lib/types";
 import { can } from "../lib/permissions";
 import { db, transaction } from "./db";
-import { HttpError, decryptDocument, encryptDocument } from "./security";
+import {
+  HttpError,
+  decryptDocument,
+  encryptDocument,
+  normalizePhone,
+} from "./security";
 import { normalizeNationalId } from "./validation";
 import { notifyApprovers, privateKey } from "./management";
 
@@ -32,15 +38,18 @@ const courierSchema = z
   })
   .strict();
 
-const decryptId = (payload: Buffer) =>
-  decryptDocument(payload, privateKey()).toString("utf8");
+const decryptId = (payload: Buffer | null) =>
+  payload ? decryptDocument(payload, privateKey()).toString("utf8") : "";
+
+/** اسم الأسرة التي يتبعها المندوب الخاص (null للمندوب العام). */
+const familyNameSql = `(SELECT COALESCE(fp.trade_name,fp.name) FROM jdatna.producer_profiles fp WHERE fp.id=k.family_id)`;
 
 export async function ownCourier(user: SessionUser) {
   const row = (
     await db().query(
       `SELECT k.id,k.name,k.city_id AS "cityId",c.region_id AS "regionId",k.car_type AS "carType",k.document_id AS "documentId",
         k.show_phone AS "showPhone",k.show_whatsapp AS "showWhatsapp",k.status,k.review_reason AS "reviewReason",k.national_id_encrypted,
-        k.active,k.city_price::float8 AS "cityPrice",
+        k.active,k.city_price::float8 AS "cityPrice",${familyNameSql} AS "familyName",
         COALESCE((SELECT json_agg(json_build_object('nodeId',x.center_node_id,'price',x.price::float8)) FROM jdatna.courier_centers x WHERE x.courier_id=k.id),'[]') AS centers
        FROM jdatna.courier_profiles k JOIN jdatna.cities c ON c.id=k.city_id WHERE k.user_id=$1`,
       [user.id],
@@ -82,6 +91,18 @@ export async function saveCourier(user: SessionUser, input: unknown) {
       "هذا الحساب أسرة منتجة أو إدارة؛ سجّل المندوب بجوال آخر",
     );
   const saved = await transaction(async (client) => {
+    // المندوب الخاص: بياناته تعدّلها أسرته، لا نموذج المندوب العام.
+    const isPrivate = (
+      await client.query(
+        "SELECT 1 FROM jdatna.courier_profiles WHERE user_id=$1 AND family_id IS NOT NULL",
+        [user.id],
+      )
+    ).rowCount;
+    if (isPrivate)
+      throw new HttpError(
+        409,
+        "أنت مندوب خاص لأسرة منتجة؛ بياناتك تعدّلها الأسرة التي سجّلتك",
+      );
     const document = (
       await client.query(
         "SELECT type FROM jdatna.producer_documents WHERE id=$1 AND user_id=$2",
@@ -235,6 +256,8 @@ export type CourierCard = {
   centers: { name: string; price: number | null }[];
   ratingAverage: number | null;
   ratingCount: number;
+  /** المندوب الخاص: اسم أسرته؛ null للمندوب العام. */
+  familyName: string | null;
 };
 
 export async function listCouriers(
@@ -250,7 +273,11 @@ export async function listCouriers(
     "u.suspended_at IS NULL",
     "u.deleted_at IS NULL",
   ];
-  if (family) where.push(courierInFamilyArea);
+  // المندوب الخاص يظهر لأسرته فقط (دون شرط التغطية)، والعام حسب تغطية الأسرة.
+  if (family)
+    where.push(
+      `(k.family_id=$1::uuid OR (k.family_id IS NULL AND ${courierInFamilyArea}))`,
+    );
   if (filters.courierUserId) {
     args.push(filters.courierUserId);
     where.push(`k.user_id=$${args.length}`);
@@ -268,7 +295,7 @@ export async function listCouriers(
        SELECT k.id,k.user_id AS "userId",k.name,k.car_type AS "carType",c.name AS "cityName",r.name AS "regionName",
          CASE WHEN k.show_phone THEN u.phone END AS phone,
          CASE WHEN k.show_whatsapp THEN u.phone END AS whatsapp,
-         k.city_price::float8 AS "cityPrice",
+         k.city_price::float8 AS "cityPrice",${familyNameSql} AS "familyName",
          (SELECT round(avg(g.stars)::numeric,1)::float8 FROM jdatna.ratings g WHERE g.kind='courier' AND g.target_id=k.user_id) AS "ratingAverage",
          (SELECT count(*)::int FROM jdatna.ratings g WHERE g.kind='courier' AND g.target_id=k.user_id) AS "ratingCount",
          COALESCE((SELECT json_agg(json_build_object('name',n.name,'price',x.price::float8) ORDER BY n.name)
@@ -386,7 +413,8 @@ export async function adminCouriers(user: SessionUser) {
   const rows = (
     await db().query(
       `SELECT k.id,k.user_id AS "userId",k.name,u.phone,k.car_type AS "carType",c.name AS "cityName",
-         k.document_id AS "documentId",k.status,k.review_reason AS "reviewReason",k.created_at AS "createdAt",k.national_id_encrypted
+         k.document_id AS "documentId",k.status,k.review_reason AS "reviewReason",k.created_at AS "createdAt",k.national_id_encrypted,
+         ${familyNameSql} AS "familyName"
        FROM jdatna.courier_profiles k JOIN jdatna.users u ON u.id=k.user_id JOIN jdatna.cities c ON c.id=k.city_id
        ORDER BY (k.status='pending') DESC,k.created_at DESC LIMIT 200`,
     )
@@ -468,4 +496,165 @@ export async function pendingCouriers() {
       "SELECT count(*)::int AS n FROM jdatna.courier_profiles WHERE status='pending'",
     )
   ).rows[0].n as number;
+}
+
+/**
+ * المندوب الخاص بالأسرة: تسجّله الأسرة المعتمدة بالاسم والجوال ونوع السيارة، بتعهّدها بمعرفته
+ * ومسؤوليتها عنه، فيُعتمد فورًا دون الإدارة ويظهر لأسرتها فقط. يدخل المندوب بجواله
+ * («نسيت كلمة المرور» أول مرة برمز الجوال) فيرى طلبات التوصيل ويؤكد التوصيل.
+ */
+const familyCourierSchema = z
+  .object({
+    name: z.string().trim().min(2, "اكتب اسم المندوب").max(120),
+    phone: z.string().trim().min(1, "اكتب جوال المندوب").max(40),
+    carType: z.string().trim().min(2, "اكتب نوع السيارة").max(80),
+    pledge: z.literal(true, {
+      error: "أقرّ بالتعهد بمعرفة المندوب ومسؤوليتك عنه",
+    }),
+  })
+  .strict();
+
+export const familyCourierPledge =
+  "أتعهد بأنني أعرف هذا المندوب معرفة شخصية، وأتحمل مسؤولية توصيله وتعامله مع عملائي، وأن بياناته صحيحة.";
+
+async function approvedFamily(
+  client: Pick<PoolClient, "query">,
+  user: SessionUser,
+  lock = false,
+) {
+  const family = (
+    await client.query(
+      `SELECT id,COALESCE(trade_name,name) AS name,city_id FROM jdatna.producer_profiles
+       WHERE user_id=$1 AND status='approved'${lock ? " FOR UPDATE" : ""}`,
+      [user.id],
+    )
+  ).rows[0] as { id: string; name: string; city_id: string } | undefined;
+  if (!family)
+    throw new HttpError(403, "المندوب الخاص للأسر المنتجة المعتمدة فقط");
+  return family;
+}
+
+export async function familyCouriers(user: SessionUser) {
+  const family = await approvedFamily(db(), user);
+  const couriers = (
+    await db().query(
+      `SELECT k.id,k.user_id AS "userId",k.name,u.phone,k.car_type AS "carType",k.status,k.active,
+         k.review_reason AS "reviewReason",(k.status='suspended' AND k.reviewer_id IS NOT NULL AND k.reviewer_id<>$2) AS "stoppedByAdmin",
+         (u.password_hash IS NOT NULL) AS joined,k.pledged_at AS "pledgedAt"
+       FROM jdatna.courier_profiles k JOIN jdatna.users u ON u.id=k.user_id
+       WHERE k.family_id=$1 AND u.deleted_at IS NULL
+       ORDER BY (k.status='approved') DESC,k.created_at DESC`,
+      [family.id, user.id],
+    )
+  ).rows;
+  return { familyName: family.name, pledge: familyCourierPledge, couriers };
+}
+
+export async function saveFamilyCourier(user: SessionUser, input: unknown) {
+  const value = familyCourierSchema.parse(input);
+  const phone = normalizePhone(value.phone);
+  if (phone === user.phone)
+    throw new HttpError(409, "اكتب جوال المندوب، لا جوال الأسرة");
+  return transaction(async (client) => {
+    const family = await approvedFamily(client, user, true);
+    // نفس قفل التحقق من الجوال، فلا يتسابق مع تسجيل جديد بالرقم نفسه.
+    await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1,2))", [
+      phone,
+    ]);
+    let member = (
+      await client.query(
+        "SELECT id,role,permissions,deleted_at FROM jdatna.users WHERE phone=$1 FOR UPDATE",
+        [phone],
+      )
+    ).rows[0] as
+      | { id: string; role: string; permissions: string[]; deleted_at: Date }
+      | undefined;
+    if (member?.deleted_at)
+      throw new HttpError(409, "هذا الجوال لحساب محذوف؛ سجّل جوالًا آخر");
+    if (
+      member &&
+      (!["customer", "courier"].includes(member.role) ||
+        (member.permissions?.length ?? 0) > 0)
+    )
+      throw new HttpError(
+        409,
+        "هذا الجوال لأسرة منتجة أو للإدارة؛ سجّل جوالًا آخر للمندوب",
+      );
+    const existing = member
+      ? ((
+          await client.query(
+            "SELECT id,family_id,status,reviewer_id FROM jdatna.courier_profiles WHERE user_id=$1 FOR UPDATE",
+            [member.id],
+          )
+        ).rows[0] as
+          | {
+              id: string;
+              family_id: string | null;
+              status: string;
+              reviewer_id: string | null;
+            }
+          | undefined)
+      : undefined;
+    if (existing && !existing.family_id)
+      throw new HttpError(
+        409,
+        "هذا الجوال لمندوب عام معتمد في الموقع؛ تجده في «المندوبين» وتسند إليه مباشرة",
+      );
+    if (existing && existing.family_id !== family.id)
+      throw new HttpError(409, "هذا المندوب مسجّل مندوبًا خاصًا لأسرة أخرى");
+    if (
+      existing?.status === "suspended" &&
+      existing.reviewer_id &&
+      existing.reviewer_id !== user.id
+    )
+      throw new HttpError(
+        403,
+        "أوقفت الإدارة هذا المندوب؛ تواصل مع الإدارة لإعادته",
+      );
+    if (!member) {
+      // الجوال لم يسجل بعد: حساب مندوب بلا كلمة مرور؛ يدخل أول مرة بـ«نسيت كلمة المرور» برمز جواله.
+      member = (
+        await client.query(
+          "INSERT INTO jdatna.users(id,phone,name,role,phone_verified_at) VALUES($1,$2,$3,'courier',now()) RETURNING id,role,permissions,deleted_at",
+          [randomUUID(), phone, value.name],
+        )
+      ).rows[0];
+    } else {
+      await client.query(
+        "UPDATE jdatna.users SET role='courier' WHERE id=$1 AND role='customer'",
+        [member!.id],
+      );
+    }
+    const id = existing?.id ?? randomUUID();
+    await client.query(
+      `INSERT INTO jdatna.courier_profiles(id,user_id,name,city_id,car_type,status,family_id,pledged_by,pledged_at,approved_at)
+       VALUES($1,$2,$3,$4,$5,'approved',$6,$7,now(),now())
+       ON CONFLICT(user_id) DO UPDATE SET name=EXCLUDED.name,car_type=EXCLUDED.car_type,status='approved',
+         review_reason=NULL,reviewer_id=NULL,pledged_by=EXCLUDED.pledged_by,pledged_at=now(),
+         approved_at=COALESCE(jdatna.courier_profiles.approved_at,now()),updated_at=now()`,
+      [
+        id,
+        member!.id,
+        value.name,
+        family.city_id,
+        value.carType,
+        family.id,
+        user.id,
+      ],
+    );
+    return { id, userId: member!.id, status: "approved" as const };
+  });
+}
+
+/** الأسرة توقف مندوبها الخاص (يبقى سجل توصيلاته وتقييمه)، وتعيده بتسجيل جواله مرة أخرى. */
+export async function stopFamilyCourier(user: SessionUser, input: unknown) {
+  const { id } = z.object({ id: z.uuid() }).strict().parse(input);
+  const r = await db().query(
+    `UPDATE jdatna.courier_profiles k SET status='suspended',review_reason='أوقفته الأسرة',reviewer_id=$2,updated_at=now()
+     FROM jdatna.producer_profiles p
+     WHERE k.id=$1 AND k.family_id=p.id AND p.user_id=$2 AND k.status='approved' RETURNING k.id`,
+    [id, user.id],
+  );
+  if (!r.rowCount) throw new HttpError(404, "المندوب غير موجود أو موقوف");
+  return { id, status: "suspended" as const };
 }
