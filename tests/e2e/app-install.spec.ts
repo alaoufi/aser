@@ -92,3 +92,33 @@ test("when the connection drops the app shows a branded retry page, then recover
     timeout: 8000,
   });
 });
+
+// أثناء تحديث الموقع (البوابة ترد 502): تظهر صفحة جدتنا بسبب «يُحدَّث الآن» ثم تعود الصفحة وحدها.
+test("while the site restarts for an update the app explains it and returns by itself", async ({
+  page,
+  context,
+}) => {
+  await page.goto("/");
+  await expect
+    .poll(() =>
+      page.evaluate(async () => {
+        await navigator.serviceWorker.ready;
+        return Boolean(navigator.serviceWorker.controller);
+      }),
+    )
+    .toBe(true);
+  let down = true;
+  await context.route("**/api/health**", (r) =>
+    down ? r.fulfill({ status: 502, body: "Bad Gateway" }) : r.continue(),
+  );
+  await context.route("**/offers", (r) =>
+    down ? r.fulfill({ status: 502, body: "Bad Gateway" }) : r.continue(),
+  );
+  await page.goto("/offers");
+  await expect(page.getByText("الموقع يُحدَّث الآن (لحظات)")).toBeVisible();
+  down = false;
+  await expect(page.getByText("الموقع يُحدَّث الآن (لحظات)")).toHaveCount(0, {
+    timeout: 8000,
+  });
+  await expect(page).toHaveURL(/\/offers/);
+});

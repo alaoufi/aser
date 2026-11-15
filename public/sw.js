@@ -2,7 +2,7 @@
  * عامل خدمة «أكلات جدتنا»: إشعارات الجوال، وصفحة «نعيد الاتصال» عند تعذّر الشبكة.
  * لا تُخزَّن صفحات الموقع (تظهر التعديلات فورًا)؛ المخزَّن صفحة الانقطاع وحدها.
  */
-const OFFLINE_CACHE = "jdatna-offline-v2";
+const OFFLINE_CACHE = "jdatna-offline-v3";
 const OFFLINE_URL = "/offline.html";
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -29,22 +29,27 @@ self.addEventListener("activate", (event) =>
       .then(() => self.clients.claim()),
   ),
 );
-// فتح صفحة: من الشبكة دائمًا؛ وإن انقطع الاتصال تظهر صفحة «نعيد الاتصال» بدل صفحة خطأ المتصفح.
+// فتح صفحة: من الشبكة دائمًا. إن انقطع الاتصال، أو كان الموقع يُعاد تشغيله لتحديث (502/503/504)،
+// تظهر صفحة «نعيد الاتصال» من جدتنا بالسبب بدل صفحة خطأ المتصفح أو البوابة.
+const offlinePage = () =>
+  caches
+    .match(OFFLINE_URL)
+    .then(
+      (page) =>
+        page ||
+        new Response(
+          "<!doctype html><meta charset=utf-8><title>أكلات جدتنا</title><p dir=rtl>تعذّر الاتصال. أعد المحاولة بعد قليل.</p>",
+          { headers: { "Content-Type": "text/html; charset=utf-8" } },
+        ),
+    );
 self.addEventListener("fetch", (event) => {
   if (event.request.mode !== "navigate") return;
   event.respondWith(
-    fetch(event.request).catch(() =>
-      caches
-        .match(OFFLINE_URL)
-        .then(
-          (page) =>
-            page ||
-            new Response(
-              "<!doctype html><meta charset=utf-8><title>أكلات جدتنا</title><p dir=rtl>تعذّر الاتصال. أعد المحاولة بعد قليل.</p>",
-              { headers: { "Content-Type": "text/html; charset=utf-8" } },
-            ),
-        ),
-    ),
+    fetch(event.request)
+      .then((response) =>
+        [502, 503, 504].includes(response.status) ? offlinePage() : response,
+      )
+      .catch(offlinePage),
   );
 });
 
