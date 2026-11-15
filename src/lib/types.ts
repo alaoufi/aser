@@ -88,7 +88,7 @@ export type SessionUser = {
   id: string;
   name: string;
   phone: string;
-  role: "customer" | "producer" | "admin" | "staff";
+  role: "customer" | "producer" | "admin" | "staff" | "courier";
   username?: string | null;
   /** صلاحيات المشرف (staff) فقط. */
   permissions?: string[];
