@@ -1,5 +1,5 @@
 "use client";
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { Category, City } from "@/lib/types";
 import { categoryLabel, categoryParentOptions } from "@/lib/category-label";
 import {
@@ -1152,6 +1152,14 @@ function TextRow({
   const id = "text-" + item.key.replace(/\W/g, "-");
   const [draft, setDraft] = useState(item.value);
   useEffect(() => setDraft(item.value), [item.value]);
+  // الحقل يتمدد مع النص: سطر للقصير، ويطول كلما زادت الكتابة، فلا يأخذ القصير مساحة كبيرة.
+  const box = useRef<HTMLTextAreaElement>(null);
+  useLayoutEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight + 2}px`;
+  }, [draft]);
   const status = [
     item.hidden ? "مخفي" : "",
     !item.edited ? "" : item.value === "" ? "محذوف" : "معدّل",
@@ -1169,7 +1177,9 @@ function TextRow({
       </label>
       <textarea
         id={id}
-        rows={item.original.length > 60 ? 3 : 1}
+        ref={box}
+        rows={1}
+        className={s.autoGrow}
         maxLength={2000}
         value={draft}
         placeholder={item.value === "" ? "محذوف — لا يظهر في الموقع" : ""}
@@ -1525,6 +1535,87 @@ export function ProductFieldsAdmin() {
           )}
         </div>
       )}
+    </section>
+  );
+}
+
+type Suggestion = {
+  id: string;
+  name: string | null;
+  contact: string | null;
+  body: string;
+  readAt: string | null;
+  createdAt: string;
+};
+/** الاقتراحات: يرسلها الجميع، ويقرؤها مسؤول الإدارة فقط. */
+export function SuggestionsAdmin() {
+  const r = useResource<{ suggestions: Suggestion[] }>(
+    "/api/admin/suggestions",
+  );
+  const list = r.data?.suggestions ?? [];
+  const unread = list.filter((x) => !x.readAt).length;
+  return (
+    <section aria-label="الاقتراحات">
+      <h2>الاقتراحات</h2>
+      <p className={s.muted}>
+        يرسلها الزوار والأعضاء من صفحة «الاقتراحات»، ولا يراها غيرك.
+        {unread > 0 && ` جديدة: ${unread}.`}
+      </p>
+      <Message error={r.error} success={r.success} />
+      {!r.data && !r.error && <p role="status">جارٍ تحميل الاقتراحات…</p>}
+      {r.data && list.length === 0 && (
+        <p className={s.notice}>لا توجد اقتراحات بعد.</p>
+      )}
+      {list.map((x) => (
+        <article
+          key={x.id}
+          className={s.card}
+          style={x.readAt ? undefined : { borderColor: "#9c2f1e" }}
+        >
+          <p style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
+            {x.body}
+          </p>
+          <p className={s.muted}>
+            {x.name || "زائر"}
+            {x.contact && (
+              <>
+                {" "}
+                · <bdi dir="ltr">{x.contact}</bdi>
+              </>
+            )}{" "}
+            ·{" "}
+            {new Intl.DateTimeFormat("ar-SA", {
+              dateStyle: "medium",
+              timeStyle: "short",
+              timeZone: "Asia/Riyadh",
+            }).format(new Date(x.createdAt))}
+            {!x.readAt && " · جديد"}
+          </p>
+          <div className={s.actions}>
+            {!x.readAt && (
+              <button
+                type="button"
+                className={s.buttonSecondary}
+                disabled={r.busy}
+                onClick={() => r.write("PUT", { id: x.id, action: "read" })}
+              >
+                تعليمه مقروءًا
+              </button>
+            )}
+            <button
+              type="button"
+              className={s.danger}
+              disabled={r.busy}
+              onClick={() => {
+                if (window.confirm("حذف هذا الاقتراح؟"))
+                  r.write("PUT", { id: x.id, action: "delete" });
+              }}
+            >
+              حذف
+            </button>
+          </div>
+        </article>
+      ))}
     </section>
   );
 }

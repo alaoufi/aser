@@ -6,9 +6,52 @@
 }
 .nav {
   display: flex;
-  gap: 4px 16px;
+  gap: 8px;
   flex-wrap: wrap;
-  margin-bottom: 14px;
+  margin-bottom: 18px;
+}
+/* روابط التنقل أزرارًا واضحة: إطار وخلفية ومساحة لمس، والصفحة الحالية بلون الزيتون. */
+.navLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 8px 16px;
+  border: 1.5px solid #d6b98d;
+  border-radius: 999px;
+  background: #fffaf1;
+  color: var(--ink);
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 2px 0 #e7d6b8;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.1s ease;
+}
+.navLink:hover {
+  border-color: #9c2f1e;
+  background: #fff;
+}
+.navLink:active {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+.navLink:focus-visible {
+  outline: 3px solid #9c2f1e;
+  outline-offset: 2px;
+}
+.navLink[aria-current="page"] {
+  background: #4f5d36;
+  border-color: #4f5d36;
+  color: #fff;
+  box-shadow: 0 2px 0 #3b4628;
+}
+/* الروابط النصية داخل صفحات الحساب والإدارة: لون وخط تحتها لتُعرف أنها روابط. */
+.shell a:not([class]) {
+  color: #9c2f1e;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 4px;
 }
 .card {
   background: var(--surface);
@@ -900,4 +943,11 @@
 .courierList h2 {
   margin: 0 0 4px;
   font-size: 18px;
+}
+/* حقل يتمدد مع الكتابة (نصوص الموقع): بلا شريط تمرير ولا ارتفاع ثابت. */
+.field textarea.autoGrow {
+  min-height: 48px;
+  overflow: hidden;
+  resize: none;
+  line-height: 1.6;
 }

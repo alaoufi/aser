@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import type { SessionUser } from "@/lib/types";
 import s from "./account.module.css";
 import { isManager } from "@/lib/permissions";
@@ -107,29 +108,39 @@ export function Message({
 }
 function AccountNavigation() {
   const { user } = useSession();
+  const path = usePathname();
   if (!user) return null;
+  const links: [string, string][] = [
+    ["/", "الرئيسية"],
+    ["/orders", "طلباتي"],
+    ["/messages", "المحادثات"],
+    ["/me", "معلوماتي"],
+    ...((user.role === "courier"
+      ? [["/courier", "لوحتي كمندوب"]]
+      : user.role === "producer"
+        ? // أقسام الأسرة في «لوحتي» بمربعات؛ «حساب الإدارة» في قائمة «حسابي» أعلى الموقع.
+          [["/dashboard", "لوحتي"]]
+        : [
+            ["/offers", "العروض الخاصة"],
+            // المدير الكامل حسابه الخاص يكون طالب خدمة أو أسرة.
+            user.role === "admin"
+              ? ["/dashboard", "لوحتي كأسرة"]
+              : ["/register", "طلب انضمام كأسرة"],
+          ]) as [string, string][]),
+  ];
   return (
+    // روابط بارزة كأزرار، والصفحة الحالية مميزة بلونها.
     <nav aria-label="حسابي" className={s.nav}>
-      <Link href="/">الرئيسية</Link>
-      <Link href="/orders">طلباتي</Link>
-      <Link href="/messages">المحادثات</Link>
-      <Link href="/me">معلوماتي</Link>
-      {user.role === "courier" ? (
-        <Link href="/courier">لوحتي كمندوب</Link>
-      ) : user.role !== "producer" ? (
-        <>
-          <Link href="/offers">العروض الخاصة</Link>
-          {/* المدير الكامل حسابه الخاص يكون طالب خدمة أو أسرة: «لوحتي» تسجّل أسرته أو تعرضها. */}
-          {user.role === "admin" ? (
-            <Link href="/dashboard">لوحتي كأسرة</Link>
-          ) : (
-            <Link href="/register">طلب انضمام كأسرة</Link>
-          )}
-        </>
-      ) : (
-        // أقسام الأسرة في «لوحتي» بمربعات؛ «حساب الإدارة» في قائمة «حسابي» أعلى الموقع.
-        <Link href="/dashboard">لوحتي</Link>
-      )}
+      {links.map(([href, label]) => (
+        <Link
+          key={href}
+          href={href}
+          className={s.navLink}
+          aria-current={path === href ? "page" : undefined}
+        >
+          {label}
+        </Link>
+      ))}
     </nav>
   );
 }

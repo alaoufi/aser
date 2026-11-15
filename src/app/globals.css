@@ -1774,12 +1774,31 @@ hr {
 .mobile-nav[open] summary .menu-close-icon {
   display: block;
 }
+/* قائمة الجوال: كل رابط زر واضح بإطار، فيُعرف أنه يُضغط. */
 .mobile-nav nav a {
-  border-radius: 7px;
+  border-radius: 10px;
+  border: 1.5px solid #e3cfa9;
+  background: #fffaf1;
+  font-weight: 700;
+  margin-block: 4px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
 }
 .mobile-nav nav a:hover,
 .mobile-nav nav a:focus-visible {
   background: var(--cream);
+  border-color: var(--rust, #9c2f1e);
+}
+/* الروابط داخل النصوص في كل الموقع: لون مميز وخط تحتها لتُعرف أنها روابط. */
+main p a:not([class]),
+main li a:not([class]),
+main small a:not([class]),
+.prose a:not([class]) {
+  color: var(--rust, #9c2f1e);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 4px;
 }
 .hero-description {
   max-width: 34rem;
@@ -2358,4 +2377,32 @@ main {
     grid-column: 1 / -1;
     justify-self: start;
   }
+}
+.suggestion-form {
+  display: grid;
+  gap: 14px;
+  max-width: 560px;
+}
+.suggestion-form label {
+  display: grid;
+  gap: 6px;
+  font-weight: 700;
+}
+.suggestion-form textarea,
+.suggestion-form input {
+  width: 100%;
+  min-height: 46px;
+  padding: 10px 12px;
+  border: 1px solid var(--line, #ab9d88);
+  border-radius: 9px;
+  font: inherit;
+  background: #fff;
+}
+.suggestion-sent {
+  color: var(--olive, #4f5d36);
+  font-weight: 700;
+}
+.suggestion-error {
+  color: var(--rust, #9c2f1e);
+  font-weight: 700;
 }

@@ -154,14 +154,46 @@ function Picker({
             />
           )}
       </div>
-      <button
-        className={s.button}
-        type="button"
-        disabled={!city}
-        onClick={() => onPick(hood || center || city)}
-      >
-        {hood || center ? "أضف إلى التغطية" : "أضف المدينة كاملة"}
-      </button>
+      <div className={s.actions}>
+        <button
+          className={s.button}
+          type="button"
+          disabled={!city}
+          onClick={() => onPick(hood || center || city)}
+        >
+          {hood
+            ? "أضف الحي المختار"
+            : center
+              ? "أضف المركز المختار"
+              : "أضف جميع أحياء المدينة"}
+        </button>
+        {/* اختصاران: الأحياء كلها (المدينة)، والمراكز التابعة للمدينة كلها دفعة واحدة. */}
+        {city && (hood || center) && (
+          <button
+            className={s.buttonSecondary}
+            type="button"
+            onClick={() => onPick(city)}
+          >
+            أضف جميع أحياء المدينة
+          </button>
+        )}
+        {city && descendants(city).some((n) => n.kind === "center") && (
+          <button
+            className={s.buttonSecondary}
+            type="button"
+            onClick={() =>
+              descendants(city)
+                .filter((n) => n.kind === "center")
+                .forEach((n) => {
+                  onPick(n.id);
+                })
+            }
+          >
+            أضف جميع المراكز التابعة للمدينة (
+            {descendants(city).filter((n) => n.kind === "center").length})
+          </button>
+        )}
+      </div>
       {city && (
         <fieldset className={s.coverageArea}>
           <legend>
