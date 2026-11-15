@@ -379,6 +379,70 @@ function MemberEditor({
           </>
         )}
       </div>
+      {m.role !== "admin" && m.permissions.length === 0 && (
+        <MemberPassword member={m} busy={busy} onSave={onSave} />
+      )}
     </div>
+  );
+}
+
+/** تعيين كلمة مرور لعضو عادي (مثل حساب مراجع المتجر). حسابات الإدارة بالرمز فقط. */
+function MemberPassword({
+  member: m,
+  busy,
+  onSave,
+}: {
+  member: Member;
+  busy: boolean;
+  onSave: (body: Record<string, unknown>, done: string) => Promise<boolean>;
+}) {
+  const [password, setPassword] = useState("");
+  const [show, setShow] = useState(false);
+  return (
+    <form
+      className={s.form}
+      onSubmit={async (e) => {
+        e.preventDefault();
+        if (
+          await onSave(
+            { action: "password", id: m.id, password },
+            `تم تعيين كلمة مرور ${m.name}، وخرج من أجهزته.`,
+          )
+        )
+          setPassword("");
+      }}
+    >
+      <label className={s.field}>
+        تعيين كلمة مرور جديدة لـ{m.name}
+        <input
+          type={show ? "text" : "password"}
+          dir="ltr"
+          autoComplete="new-password"
+          minLength={8}
+          maxLength={128}
+          required
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        <small>
+          ثماني خانات على الأقل. يدخل العضو بعدها برقم جواله وكلمة المرور دون
+          رمز، ويخرج من أجهزته الحالية.
+        </small>
+      </label>
+      <label>
+        <input
+          type="checkbox"
+          checked={show}
+          onChange={(e) => setShow(e.target.checked)}
+        />{" "}
+        إظهار كلمة المرور
+      </label>
+      <button
+        className={s.buttonSecondary}
+        disabled={busy || password.length < 8}
+      >
+        حفظ كلمة المرور
+      </button>
+    </form>
   );
 }
