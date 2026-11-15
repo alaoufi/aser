@@ -1006,3 +1006,168 @@
   margin-inline-start: 1rem;
   margin-top: 0.3rem;
 }
+/* هوية الأسرة */
+.brandChoices {
+  border: 0;
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  margin: 0.5rem 0;
+  padding: 0;
+}
+.brandSwatch {
+  align-items: center;
+  background: var(--brand-bg);
+  border: 2px solid color-mix(in srgb, var(--brand-accent) 30%, transparent);
+  border-radius: 12px;
+  color: var(--brand-ink);
+  cursor: pointer;
+  display: flex;
+  gap: 0.45rem;
+  min-height: 48px;
+  padding: 0.45rem 0.6rem;
+}
+.brandSwatch:has(input:checked) {
+  border-color: var(--brand-accent);
+  box-shadow: 0 0 0 2px var(--brand-accent);
+}
+.brandSwatch input {
+  accent-color: var(--brand-accent);
+}
+.brandDot {
+  background: var(--brand-accent);
+  border-radius: 50%;
+  height: 18px;
+  width: 18px;
+}
+.brandPreview {
+  align-items: center;
+  border-radius: 14px;
+  display: flex;
+  gap: 0.75rem;
+  margin: 0.5rem 0;
+  padding: 0.75rem 1rem;
+}
+.brandPreviewMark {
+  align-items: center;
+  background: var(--brand-accent);
+  border-radius: 12px;
+  color: #fff;
+  display: inline-flex;
+  font-weight: 700;
+  height: 44px;
+  justify-content: center;
+  width: 44px;
+}
+.frameChoices {
+  border: 0;
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  margin: 0.5rem 0;
+  padding: 0;
+}
+.frameChoices legend {
+  margin-bottom: 0.4rem;
+}
+.frameSwatch {
+  align-items: center;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  gap: 0.35rem;
+  min-height: 52px;
+  padding: 0.5rem 0.65rem;
+}
+.brandChoices legend {
+  font-weight: 700;
+  grid-column: 1 / -1;
+  margin-bottom: 0.2rem;
+}
+.brandChoices label:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.patternSwatch,
+.optionChip {
+  align-items: center;
+  border: 1.5px solid rgba(46, 29, 18, 0.18);
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  min-height: 48px;
+  padding: 0.4rem 0.6rem;
+}
+.patternSwatch:has(input:checked),
+.optionChip:has(input:checked) {
+  border-color: #4f5d36;
+  box-shadow: 0 0 0 2px #4f5d36;
+}
+.patternTile {
+  background-color: #fbf6ec;
+  background-size: 22px 22px;
+  border: 1px solid rgba(46, 29, 18, 0.15);
+  border-radius: 8px;
+  height: 34px;
+  width: 34px;
+}
+.premiumTag {
+  background: #fbf0d6;
+  border-radius: 6px;
+  color: #6b4d0e;
+  font-size: 11px;
+  padding: 1px 6px;
+}
+.brandPreviewRow {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.brandPreviewProduct {
+  align-items: flex-start;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 110px;
+}
+.frameThickness {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  grid-column: 1 / -1;
+}
+.frameSwatch {
+  min-height: 60px;
+  padding: 0.6rem 0.75rem;
+}
+.hueRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  grid-column: 1 / -1;
+  margin-bottom: 0.4rem;
+}
+.hueDot {
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(46, 29, 18, 0.25);
+  cursor: pointer;
+  height: 32px;
+  padding: 0;
+  width: 32px;
+}
+.hueDot[aria-checked="true"] {
+  box-shadow: 0 0 0 3px #2e1d12;
+}
+.takenTag {
+  background: #f3e3dc;
+  border-radius: 6px;
+  color: #6b2414;
+  font-size: 11px;
+  padding: 1px 6px;
+}
+.brandOptions {
+  display: grid;
+  gap: 0.25rem;
+}

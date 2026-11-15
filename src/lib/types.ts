@@ -1,3 +1,4 @@
+import type { BrandChoice } from "./brand";
 export type Category = {
   id: string;
   name: string;
@@ -6,6 +7,8 @@ export type Category = {
   parentId?: string | null;
   /** مخفي من الإدارة: لا يظهر للزوار ولا في اختيار الأسر. */
   hidden?: boolean;
+  /** هوية القسم: إطار بطاقات منتجاته. */
+  frame?: string | null;
 };
 export type City = {
   id: string;
@@ -29,6 +32,8 @@ export type Producer = {
   /** متوسط تقييم الأسرة وعدد المقيّمين (يظهر في بطاقتها). */
   ratingAverage?: number | null;
   ratingCount?: number;
+  /** هوية الأسرة (يسري على بطاقتها وبطاقات منتجاتها). */
+  brand?: BrandChoice | null;
   /** يظهر للعملاء إن اختارت الأسرة إظهاره. */
   phone: string | null;
   whatsapp: string | null;
@@ -48,6 +53,10 @@ export type Product = {
   notCookingToday?: boolean;
   id: string;
   producerId: string;
+  /** هوية الأسرة: منتجاتها تأخذ نفس هويتها، داخل إطار قسمها. */
+  brand?: BrandChoice | null;
+  primaryCategory?: string | null;
+  frame?: string | null;
   producerName: string;
   producerSlug: string;
   cityName: string;

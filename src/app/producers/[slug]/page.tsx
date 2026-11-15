@@ -1,4 +1,5 @@
 import { productStatusLabels } from "@/lib/site-texts";
+import { identityProps } from "@/lib/brand";
 import { ReportButton } from "@/components/public/report-button";
 import { getPublicCoverage } from "@/server/coverage";
 import { ShareButton } from "@/components/public/share-button";
@@ -44,7 +45,10 @@ export default async function ProducerDetail({
       <Link href="/producers" className="text-link">
         الأسر المنتجة ←
       </Link>
-      <section className="profile-header">
+      <section
+        className={`profile-header ${identityProps(p.id, p.brand).className}`}
+        style={identityProps(p.id, p.brand).style}
+      >
         <div className="profile-symbol" aria-hidden="true">
           ⌂
         </div>
