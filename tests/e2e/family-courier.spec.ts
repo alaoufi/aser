@@ -1,0 +1,173 @@
+import { test, expect } from "@playwright/test";
+
+const familySession = {
+  user: {
+    id: "f",
+    name: "أسرة",
+    phone: "+966500000041",
+    role: "producer",
+  },
+  registrationOpen: true,
+};
+
+// الأسرة تسجّل مندوبها الخاص (الاسم والجوال والسيارة) بتعهّد، دون اعتماد الإدارة، ويظهر بشارة أسرتها.
+test("a family registers its own courier with a pledge and sees the private badge", async ({
+  page,
+}) => {
+  // ترحيب الأسرة يُختبر في family-welcome.spec؛ هنا نعدّه ظاهرًا في هذه الزيارة.
+  await page.addInitScript(() =>
+    sessionStorage.setItem("jdatna:family-welcome", "1"),
+  );
+  await page.route("**/api/session", (r) => r.fulfill({ json: familySession }));
+  await page.route("**/api/producer/profile", (r) =>
+    r.fulfill({ json: { cities: [], profile: null } }),
+  );
+  let couriers: Record<string, unknown>[] = [];
+  let posted: Record<string, unknown> | undefined;
+  let stopped: Record<string, unknown> | undefined;
+  await page.route("**/api/producer/couriers", async (r) => {
+    const method = r.request().method();
+    if (method === "POST") {
+      posted = r.request().postDataJSON();
+      couriers = [
+        {
+          id: "k1",
+          userId: "u1",
+          name: posted!.name,
+          phone: "+966511111111",
+          carType: posted!.carType,
+          status: "approved",
+          active: true,
+          stoppedByAdmin: false,
+          joined: false,
+        },
+      ];
+      return r.fulfill({ json: { id: "k1", status: "approved" } });
+    }
+    if (method === "PATCH") {
+      stopped = r.request().postDataJSON();
+      couriers = couriers.map((k) => ({ ...k, status: "suspended" }));
+      return r.fulfill({ json: { id: "k1", status: "suspended" } });
+    }
+    return r.fulfill({
+      json: {
+        familyName: "مطبخ أم سعد",
+        pledge: "أتعهد بأنني أعرف هذا المندوب معرفة شخصية.",
+        couriers,
+      },
+    });
+  });
+  await page.route("**/api/couriers?*", (r) =>
+    r.fulfill({
+      json: {
+        couriers: couriers.length
+          ? [
+              {
+                id: "k1",
+                userId: "u1",
+                name: "سالم",
+                carType: "سوناتا",
+                cityName: "الرياض",
+                regionName: "منطقة الرياض",
+                phone: null,
+                whatsapp: null,
+                cityPrice: null,
+                centers: [],
+                familyName: "مطبخ أم سعد",
+              },
+            ]
+          : [],
+      },
+    }),
+  );
+  await page.goto("/couriers");
+  const section = page.getByRole("region", { name: "مندوبي الخاص" });
+  await expect(section).toBeVisible();
+  // بدون تعبئة: رسالة نواقص واضحة تشمل التعهد.
+  await section.getByRole("button", { name: "تسجيل المندوب الخاص" }).click();
+  const issues = section.getByRole("alert");
+  await expect(issues).toContainText("اسم المندوب");
+  await expect(issues).toContainText("جوال المندوب");
+  await expect(issues).toContainText("التعهد بمعرفة المندوب");
+  await expect(issues).toContainText("يلزم الإقرار بالتعهد");
+  expect(posted).toBeUndefined();
+
+  await section.getByLabel("اسم المندوب").fill("سالم");
+  await section.getByLabel("جوال المندوب").fill("0511111111");
+  await section.getByLabel("نوع السيارة").fill("سوناتا");
+  // الضغط على نص التعهد يحدد الخانة.
+  await section.getByText("أتعهد بأنني أعرف هذا المندوب").click();
+  await section.getByRole("button", { name: "تسجيل المندوب الخاص" }).click();
+  await expect(section.getByText("تم تسجيل المندوب ✓")).toBeVisible();
+  expect(posted).toEqual({
+    name: "سالم",
+    phone: "0511111111",
+    carType: "سوناتا",
+    pledge: true,
+  });
+  const card = section.getByRole("listitem").filter({ hasText: "سالم" });
+  await expect(card.getByText("مندوب خاص لـ مطبخ أم سعد")).toBeVisible();
+  await expect(card).toContainText("لم يدخل بعد");
+
+  // الإيقاف بتأكيد.
+  page.once("dialog", (d) => d.accept());
+  await card.getByRole("button", { name: "إيقاف المندوب" }).click();
+  await expect(section.getByText("تم إيقاف المندوب")).toBeVisible();
+  expect(stopped).toEqual({ id: "k1" });
+});
+
+// المندوب الخاص يرى في لوحته شارة أسرته، ولا يظهر له نموذج الهوية الخاص بالمندوب العام.
+test("a private courier sees its family badge and no ID form", async ({
+  page,
+}) => {
+  await page.route("**/api/session", (r) =>
+    r.fulfill({
+      json: {
+        user: {
+          id: "k",
+          name: "سالم",
+          phone: "+966511111111",
+          role: "courier",
+        },
+        registrationOpen: true,
+      },
+    }),
+  );
+  await page.route("**/api/courier/profile", (r) =>
+    r.fulfill({
+      json: {
+        courier: {
+          id: "k1",
+          name: "سالم",
+          cityId: "riyadh-city",
+          regionId: "riyadh",
+          carType: "سوناتا",
+          documentId: null,
+          nationalId: "",
+          showPhone: true,
+          showWhatsapp: true,
+          status: "approved",
+          reviewReason: null,
+          active: true,
+          cityPrice: null,
+          centers: [],
+          familyName: "مطبخ أم سعد",
+        },
+        cities: [],
+        centers: [],
+      },
+    }),
+  );
+  await page.route("**/api/courier/deliveries", (r) =>
+    r.fulfill({ json: { deliveries: [] } }),
+  );
+  await page.goto("/courier");
+  await expect(page.getByText("مندوب خاص لـ مطبخ أم سعد")).toBeVisible();
+  await expect(
+    page.getByText(/سجّلتك «مطبخ أم سعد» مندوبًا خاصًا/),
+  ).toBeVisible();
+  await expect(page.getByLabel("رقم الهوية")).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", { name: "بيانات المندوب" }),
+  ).toHaveCount(0);
+});
