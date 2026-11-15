@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#2E1D12">
+<title>أكلات جدتنا — نعيد الاتصال</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; display: grid; place-items: center;
+    background: #f4ead9; color: #2e1d12;
+    font-family: system-ui, -apple-system, "Segoe UI", Tahoma, sans-serif;
+    padding: 24px; text-align: center;
+  }
+  main { max-width: 420px; }
+  .mark {
+    width: 84px; height: 84px; margin: 0 auto 18px; border-radius: 24px;
+    background: #2e1d12; color: #d6a35c; display: grid; place-items: center;
+    font-size: 40px; box-shadow: 0 6px 0 #a57f48, 0 14px 24px rgba(46,29,18,.25);
+  }
+  h1 { font-size: 24px; margin: 0 0 10px; }
+  p { margin: 0 0 18px; line-height: 1.7; color: #5a4636; }
+  button {
+    min-height: 48px; padding: 0 28px; border: 0; border-radius: 12px;
+    background: #4f5d36; color: #fff; font: inherit; font-weight: 700; font-size: 17px;
+    cursor: pointer;
+  }
+  small { display: block; margin-top: 14px; color: #7a6656; }
+</style>
+</head>
+<body>
+<main>
+  <div class="mark" aria-hidden="true">♨</div>
+  <h1>أكلات جدتنا</h1>
+  <p>تعذّر الاتصال الآن. نعيد المحاولة تلقائيًا، وتفتح الصفحة فور عودة الاتصال.</p>
+  <button type="button" id="retry">أعد المحاولة</button>
+  <small id="state" role="status" aria-live="polite">جارٍ إعادة الاتصال…</small>
+</main>
+<script>
+  // يعيد المحاولة كل بضع ثوانٍ، ويفتح الصفحة المطلوبة فور عودة الاتصال.
+  var state = document.getElementById("state");
+  function tryAgain() {
+    state.textContent = "جارٍ إعادة الاتصال…";
+    fetch("/api/health", { cache: "no-store" })
+      .then(function (r) { if (r.ok) location.reload(); else throw 0; })
+      .catch(function () { state.textContent = "ما زال الاتصال متعذرًا، نحاول مجددًا…"; });
+  }
+  document.getElementById("retry").addEventListener("click", tryAgain);
+  addEventListener("online", tryAgain);
+  setInterval(tryAgain, 4000);
+</script>
+</body>
+</html>

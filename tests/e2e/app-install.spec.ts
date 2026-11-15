@@ -61,3 +61,32 @@ test("a signed-in member is offered to enable notifications and can postpone it"
     page.getByRole("complementary", { name: "فعّل الإشعارات" }),
   ).toHaveCount(0);
 });
+
+// انقطاع الاتصال: يظهر «نعيد الاتصال» من جدتنا بدل صفحة خطأ المتصفح، ويعود الموقع فور عودة الشبكة.
+test("when the connection drops the app shows a branded retry page, then recovers", async ({
+  page,
+  context,
+}) => {
+  await page.goto("/");
+  await expect
+    .poll(() =>
+      page.evaluate(async () => {
+        await navigator.serviceWorker.ready;
+        return Boolean(navigator.serviceWorker.controller);
+      }),
+    )
+    .toBe(true);
+  await context.setOffline(true);
+  await page.goto("/browse").catch(() => {});
+  await expect(page.getByText("تعذّر الاتصال الآن")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "أعد المحاولة" }),
+  ).toBeVisible();
+  // عودة الشبكة: تعود الصفحة المطلوبة تلقائيًا (أو بزر «أعد المحاولة»).
+  await context.setOffline(false);
+  await expect(page).toHaveURL(/\/browse/);
+  // يعيد المحاولة تلقائيًا كل أربع ثوانٍ حتى يعود الاتصال.
+  await expect(page.getByText("تعذّر الاتصال الآن")).toHaveCount(0, {
+    timeout: 20000,
+  });
+});
