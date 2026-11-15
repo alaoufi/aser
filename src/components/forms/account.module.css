@@ -1202,3 +1202,9 @@
   border-color: #b5562a !important;
   box-shadow: 0 0 0 2px rgba(181, 86, 42, 0.25);
 }
+.navLogout {
+  border-color: rgba(156, 47, 30, 0.45) !important;
+  color: #9c2f1e !important;
+  cursor: pointer;
+  font: inherit;
+}

@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { AccountLink } from "./account-link";
+import { LogoutButton } from "./logout-button";
 import { FamilyStatusChip } from "@/components/forms/family-status";
 import { useEffect, useRef } from "react";
 export function MobileNavigation({ switcher }: { switcher?: React.ReactNode }) {
@@ -76,8 +77,10 @@ export function MobileNavigation({ switcher }: { switcher?: React.ReactNode }) {
         <Link href="/messages">المحادثات</Link>
         <Link href="/about">حكايتنا</Link>
         <Link href="/suggestions">الاقتراحات</Link>
-        <AccountLink />
         {switcher}
+        {/* آخر القائمة: «تسجيل الدخول» لغير المسجّل، و«حسابي» ثم «خروج» للمسجّل. */}
+        <AccountLink />
+        <LogoutButton />
       </nav>
     </details>
   );

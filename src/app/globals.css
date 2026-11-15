@@ -2800,3 +2800,19 @@ main {
 .category-card.branded {
   position: relative;
 }
+/* «خروج» آخر قائمة الجوال: بشكل روابط القائمة، وبلون مميز. */
+.mobile-nav nav .logout-link {
+  align-items: center;
+  background: #fff4f1;
+  border: 1.5px solid rgba(156, 47, 30, 0.45);
+  border-radius: 10px;
+  color: #9c2f1e;
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  font-weight: 700;
+  margin-block: 4px;
+  min-height: 44px;
+  padding-inline: 14px;
+  width: 100%;
+}
