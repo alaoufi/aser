@@ -39,6 +39,69 @@ function Select({
     </label>
   );
 }
+/** قائمة اختيار متعدد: يحدد ما يناسبه من الأحياء أو المراكز. */
+function AreaChecks({
+  title,
+  nodes,
+  chosen,
+  setChosen,
+  childrenOf,
+}: {
+  title: string;
+  nodes: CoverageNode[];
+  chosen: string[];
+  setChosen: (fn: (old: string[]) => string[]) => void;
+  childrenOf?: (id: string) => CoverageNode[];
+}) {
+  if (!nodes.length) return null;
+  const toggle = (id: string, on: boolean) =>
+    setChosen((old) =>
+      on ? [...new Set([...old, id])] : old.filter((x) => x !== id),
+    );
+  const all = nodes.every((n) => chosen.includes(n.id));
+  return (
+    <fieldset className={s.areaChecks}>
+      <legend>{title}</legend>
+      <button
+        type="button"
+        className={s.buttonSecondary}
+        onClick={() =>
+          setChosen((old) =>
+            all
+              ? old.filter((x) => !nodes.some((n) => n.id === x))
+              : [...new Set([...old, ...nodes.map((n) => n.id)])],
+          )
+        }
+      >
+        {all ? "إلغاء تحديد الكل" : "تحديد الكل"}
+      </button>
+      <div className={s.areaCheckList}>
+        {nodes.map((n) => (
+          <div key={n.id}>
+            <label>
+              <input
+                type="checkbox"
+                checked={chosen.includes(n.id)}
+                onChange={(e) => toggle(n.id, e.target.checked)}
+              />{" "}
+              {n.name}
+            </label>
+            {childrenOf?.(n.id).map((c) => (
+              <label key={c.id} className={s.areaCheckChild}>
+                <input
+                  type="checkbox"
+                  checked={chosen.includes(c.id)}
+                  onChange={(e) => toggle(c.id, e.target.checked)}
+                />{" "}
+                {c.name}
+              </label>
+            ))}
+          </div>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
 function Picker({
   nodes,
   onPick,
@@ -51,8 +114,8 @@ function Picker({
   const [region, setRegion] = useState(""),
     [gov, setGov] = useState(""),
     [city, setCity] = useState(""),
-    [center, setCenter] = useState(""),
-    [hood, setHood] = useState(""),
+    // الأحياء والمراكز المحددة: يختار منها ما يناسبه ثم «أضف المختارة».
+    [chosen, setChosen] = useState<string[]>([]),
     [centerName, setCenterName] = useState(""),
     [neighborhoodName, setNeighborhoodName] = useState(""),
     [customKind, setCustomKind] = useState<"neighborhood" | "center">(
@@ -74,8 +137,7 @@ function Picker({
             setRegion(v);
             setGov("");
             setCity("");
-            setCenter("");
-            setHood("");
+            setChosen([]);
             setCenterName("");
             setNeighborhoodName("");
           }}
@@ -88,8 +150,7 @@ function Picker({
             onChange={(e) => {
               setGov(e.target.value);
               setCity("");
-              setCenter("");
-              setHood("");
+              setChosen([]);
               setCenterName("");
               setNeighborhoodName("");
             }}
@@ -113,81 +174,61 @@ function Picker({
           value={city}
           onChange={(v) => {
             setCity(v);
-            setCenter("");
-            setHood("");
+            setChosen([]);
             setCenterName("");
             setNeighborhoodName("");
           }}
         />
-        {descendants(city).some((n) => n.kind === "neighborhood") && (
-          <Select
-            title="الحي — داخل المدينة (اختياري)"
-            nodes={descendants(city).filter((n) => n.kind === "neighborhood")}
-            value={center ? "" : hood}
-            onChange={(v) => {
-              setHood(v);
-              setCenter("");
-            }}
-          />
-        )}
-        {descendants(city).some((n) => n.kind === "center") && (
-          <Select
-            title="المركز — خارج المدينة (اختياري)"
-            nodes={descendants(city).filter((n) => n.kind === "center")}
-            value={center}
-            onChange={(v) => {
-              setCenter(v);
-              setHood("");
-            }}
-          />
-        )}
-        {/* أحياء قديمة سُجّلت تحت مركز تبقى قابلة للاختيار. */}
-        {center &&
-          descendants(center).some((n) => n.kind === "neighborhood") && (
-            <Select
-              title="حي تابع للمركز (اختياري)"
-              nodes={descendants(center).filter(
-                (n) => n.kind === "neighborhood",
-              )}
-              value={hood}
-              onChange={setHood}
-            />
-          )}
       </div>
+      {city && (
+        <AreaChecks
+          title="الأحياء — داخل المدينة"
+          nodes={descendants(city).filter((n) => n.kind === "neighborhood")}
+          chosen={chosen}
+          setChosen={setChosen}
+        />
+      )}
+      {city && (
+        <AreaChecks
+          title="المراكز — خارج المدينة"
+          nodes={descendants(city).filter((n) => n.kind === "center")}
+          chosen={chosen}
+          setChosen={setChosen}
+          // أحياء قديمة سُجّلت تحت مركز تبقى قابلة للاختيار.
+          childrenOf={(id) =>
+            descendants(id).filter((n) => n.kind === "neighborhood")
+          }
+        />
+      )}
       <div className={s.actions}>
         <button
           className={s.button}
           type="button"
-          disabled={!city}
-          onClick={() => onPick(hood || center || city)}
+          disabled={!chosen.length}
+          onClick={() => {
+            for (const id of chosen) onPick(id);
+            setChosen([]);
+          }}
         >
-          {hood
-            ? "أضف الحي المختار"
-            : center
-              ? "أضف المركز المختار"
-              : "أضف جميع أحياء المدينة"}
+          أضف المختارة ({chosen.length})
         </button>
         {/* اختصاران: الأحياء كلها (المدينة)، والمراكز التابعة للمدينة كلها دفعة واحدة. */}
-        {city && (hood || center) && (
-          <button
-            className={s.buttonSecondary}
-            type="button"
-            onClick={() => onPick(city)}
-          >
-            أضف جميع أحياء المدينة
-          </button>
-        )}
+        <button
+          className={s.buttonSecondary}
+          type="button"
+          disabled={!city}
+          onClick={() => onPick(city)}
+        >
+          أضف جميع أحياء المدينة
+        </button>
         {city && descendants(city).some((n) => n.kind === "center") && (
           <button
             className={s.buttonSecondary}
             type="button"
-            onClick={() =>
-              descendants(city)
-                .filter((n) => n.kind === "center")
-                .forEach((n) => {
-                  onPick(n.id);
-                })
-            }
+            onClick={() => {
+              for (const n of descendants(city))
+                if (n.kind === "center") onPick(n.id);
+            }}
           >
             أضف جميع المراكز التابعة للمدينة (
             {descendants(city).filter((n) => n.kind === "center").length})

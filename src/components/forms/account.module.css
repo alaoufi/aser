@@ -979,3 +979,30 @@
   margin: 0.25rem 0 0.5rem;
   padding: 0;
 }
+/* تغطية الأسرة: اختيار متعدد للأحياء والمراكز */
+.areaChecks {
+  border: 1px solid rgba(46, 29, 18, 0.18);
+  border-radius: 12px;
+  margin: 0.75rem 0;
+  padding: 0.75rem;
+}
+.areaCheckList {
+  display: grid;
+  gap: 0.4rem;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  margin-top: 0.6rem;
+}
+.areaCheckList label {
+  align-items: center;
+  border: 1px solid rgba(46, 29, 18, 0.15);
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  gap: 0.35rem;
+  min-height: 44px;
+  padding: 0.4rem 0.6rem;
+}
+.areaCheckChild {
+  margin-inline-start: 1rem;
+  margin-top: 0.3rem;
+}

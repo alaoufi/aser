@@ -101,22 +101,12 @@ test("family chooses multiple hierarchical areas with fees and dependent resets"
   await page.getByLabel("المنطقة", { exact: true }).selectOption("r");
   await page.getByLabel("المحافظة", { exact: true }).selectOption("g");
   await page.getByLabel("المدينة", { exact: true }).selectOption("c");
-  // المراكز خارج المدينة؛ الأحياء القديمة المسجلة تحت مركز تبقى قابلة للاختيار.
-  await page
-    .getByLabel("المركز — خارج المدينة (اختياري)", { exact: true })
-    .selectOption("a");
-  await page
-    .getByLabel("حي تابع للمركز (اختياري)", { exact: true })
-    .selectOption("h");
-  await page
-    .getByRole("button", { name: "أضف الحي المختار", exact: true })
-    .click();
-  await page
-    .getByLabel("المركز — خارج المدينة (اختياري)", { exact: true })
-    .selectOption("b");
-  await expect(
-    page.getByLabel("حي تابع للمركز (اختياري)", { exact: true }),
-  ).toHaveCount(0);
+  // اختيار متعدد: يحدد ما يناسبه من المراكز والأحياء ثم «أضف المختارة».
+  const centers = page.getByRole("group", { name: "المراكز — خارج المدينة" });
+  await expect(centers.getByRole("checkbox")).toHaveCount(3);
+  // الأحياء القديمة المسجلة تحت مركز تبقى قابلة للاختيار.
+  await centers.getByRole("checkbox", { name: "حي الاختبار" }).check();
+  await centers.getByRole("checkbox", { name: "مركز ثان" }).check();
   // اختصاران ظاهران: جميع أحياء المدينة، وجميع المراكز التابعة لها.
   await expect(
     page.getByRole("button", { name: "أضف جميع أحياء المدينة" }),
@@ -124,9 +114,16 @@ test("family chooses multiple hierarchical areas with fees and dependent resets"
   await expect(
     page.getByRole("button", { name: /أضف جميع المراكز التابعة للمدينة/ }),
   ).toBeVisible();
-  await page
-    .getByRole("button", { name: "أضف المركز المختار", exact: true })
-    .click();
+  await page.getByRole("button", { name: "أضف المختارة (2)" }).click();
+  await expect(
+    page.getByRole("button", { name: "أضف المختارة (0)" }),
+  ).toBeDisabled();
+  // «تحديد الكل» يحدد المراكز كلها دفعة.
+  await centers.getByRole("button", { name: "تحديد الكل" }).click();
+  await expect(
+    centers.getByRole("button", { name: "إلغاء تحديد الكل" }),
+  ).toBeVisible();
+  await centers.getByRole("button", { name: "إلغاء تحديد الكل" }).click();
   await page
     .getByLabel("رسوم التوصيل (ريال، اختيارية)", { exact: true })
     .first()
