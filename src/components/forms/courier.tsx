@@ -449,7 +449,10 @@ export function AdminCouriers({
   const load = () =>
     api<{ couriers: AdminCourier[] }>("/api/admin/couriers")
       .then((d) => setList(d.couriers))
-      .catch((e) => setError((e as Error).message));
+      .catch((e) => {
+        setList([]);
+        setError((e as Error).message);
+      });
   useEffect(() => {
     load();
   }, []);
