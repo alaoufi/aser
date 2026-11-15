@@ -5,6 +5,7 @@ import type { SessionUser } from "../lib/types";
 import { db, transaction } from "./db";
 import { HttpError, normalizePhone } from "./security";
 import { adminPermissions } from "../lib/permissions";
+import { hashPassword } from "./credentials";
 
 export type Member = {
   id: string;
@@ -59,6 +60,17 @@ const updateSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("suspend"), id: z.uuid() }).strict(),
   z.object({ action: z.literal("unsuspend"), id: z.uuid() }).strict(),
   z.object({ action: z.literal("access"), id: z.uuid(), ...access }).strict(),
+  /** المدير يعيّن كلمة مرور لعضو عادي (مثل حساب مراجع المتجر). */
+  z
+    .object({
+      action: z.literal("password"),
+      id: z.uuid(),
+      password: z
+        .string()
+        .min(8, "كلمة المرور ثماني خانات على الأقل")
+        .max(128, "كلمة المرور طويلة جدًا"),
+    })
+    .strict(),
   z
     .object({
       action: z.literal("create"),
@@ -137,6 +149,27 @@ export async function updateMember(user: SessionUser, input: unknown) {
         (value.action === "access" && !value.fullAdmin));
     if (losesAdmin && activeAdmins <= 1)
       throw new HttpError(409, "لا يمكن إيقاف أو إنزال آخر مدير نشط");
+    if (value.action === "password") {
+      // حسابات الإدارة (مدير أو صلاحيات محددة) تعيّن كلمة مرورها بنفسها برمز جوالها فقط.
+      if (target.role === "admin" || (target.permissions ?? []).length > 0)
+        throw new HttpError(
+          403,
+          "حساب إداري: يعيّن كلمة مروره بنفسه من «نسيت كلمة المرور» برمز جواله",
+        );
+      await client.query(
+        "UPDATE jdatna.users SET password_hash=$2 WHERE id=$1",
+        [value.id, await hashPassword(value.password)],
+      );
+      // كلمة المرور الجديدة تُخرج العضو من كل أجهزته.
+      await client.query("DELETE FROM jdatna.sessions WHERE user_id=$1", [
+        value.id,
+      ]);
+      // لا تُحفظ كلمة المرور في السجل.
+      await audit(client, user, "member.password", value.id, {
+        action: "password",
+      });
+      return { ok: true };
+    }
     if (value.action === "suspend") {
       await client.query(
         "UPDATE jdatna.users SET suspended_at=now() WHERE id=$1",
