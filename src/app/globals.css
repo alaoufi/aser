@@ -2800,3 +2800,146 @@ main {
 .category-card.branded {
   position: relative;
 }
+/* «خروج» آخر قائمة الجوال: بشكل روابط القائمة، وبلون مميز. */
+.mobile-nav nav .logout-link {
+  align-items: center;
+  background: #fff4f1;
+  border: 1.5px solid rgba(156, 47, 30, 0.45);
+  border-radius: 10px;
+  color: #9c2f1e;
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  font-weight: 700;
+  margin-block: 4px;
+  min-height: 44px;
+  padding-inline: 14px;
+  width: 100%;
+}
+/* طبخات اليوم: النطاق في الأعلى، والبحث زر صغير يتمدد عند الحاجة. */
+.browse-scope {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.browse-scope > span {
+  font-weight: 700;
+}
+.browse-scope .table-region-wrap {
+  flex: 1;
+  min-width: 0;
+}
+.filter-wrap.browse-search > summary {
+  display: inline-flex;
+  gap: 6px;
+  list-style: none;
+  padding-inline: 18px;
+}
+.filter-wrap.browse-search > summary::-webkit-details-marker {
+  display: none;
+}
+.filter-wrap.browse-search[open] > summary {
+  background: var(--ink, #2e1d12);
+  border-color: var(--ink, #2e1d12);
+  color: #fff;
+}
+.filter-wrap.browse-search .search-modes {
+  margin-top: 12px;
+}
+.nationwide {
+  margin-top: 28px;
+}
+/* 5.9.2.0: بطاقات المنتجات أصغر وأنيقة: أكثر في الصف، وخط أصغر. */
+.product-grid,
+.product-grid.two,
+.detail-grid .product-grid.two {
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+}
+.product-card {
+  border-radius: 14px;
+}
+.product-card .card-image {
+  aspect-ratio: 4 / 3;
+  height: auto;
+}
+.product-card .card-image > span:not(.badge) {
+  font-size: 40px;
+}
+.product-card .badge {
+  font-size: 10px;
+  padding: 2px 7px;
+  right: 6px;
+  bottom: 6px;
+  border-radius: 6px;
+}
+.product-card .card-body {
+  padding: 8px 10px 10px;
+}
+.product-card .card-body small {
+  font-size: 10px;
+  line-height: 1.5;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.product-card .card-body h3 {
+  font-size: 14px;
+  line-height: 1.4;
+  margin: 2px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.product-card .card-body p {
+  font-size: 12px;
+  margin: 0;
+}
+.product-card .shipping-badge {
+  font-size: 10px;
+}
+@media (max-width: 600px) {
+  .product-grid,
+  .product-grid.two,
+  .detail-grid .product-grid.two {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .product-card .card-body {
+    padding: 6px 7px 8px;
+  }
+  .product-card .card-body h3 {
+    font-size: 12.5px;
+  }
+  .product-card .card-body p {
+    font-size: 11px;
+  }
+  .product-card .card-image > span:not(.badge) {
+    font-size: 30px;
+  }
+  .product-card .badge {
+    font-size: 9px;
+    padding: 1px 5px;
+    right: 4px;
+    bottom: 4px;
+  }
+}
+@media (max-width: 340px) {
+  .product-grid,
+  .product-grid.two,
+  .detail-grid .product-grid.two {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.product-card .card-body p {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.product-card .card-body p small {
+  display: inline;
+  font-size: 0.85em;
+}

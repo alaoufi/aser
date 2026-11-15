@@ -142,6 +142,14 @@ function conditions(f: Filters, products: boolean) {
       f.region,
     );
   if (f.city) add("p.city_id=?", f.city);
+  if (products && f.scope === "kingdom")
+    where.push("x.delivery_scope='kingdom'");
+  if (f.notRegion)
+    add(
+      "NOT EXISTS(SELECT 1 FROM jdatna.cities nr WHERE nr.id=p.city_id AND nr.region_id=?)",
+      f.notRegion,
+    );
+  if (f.notCity) add("p.city_id<>?", f.notCity);
   if (f.category)
     add(
       products

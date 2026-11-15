@@ -4,6 +4,8 @@ test("browse offers four search methods: word, available, family and category", 
   page,
 }) => {
   await page.goto("/browse");
+  // البحث زر «بحث» مطوي في الأعلى، يتمدد عند الضغط ويعرض طرق البحث.
+  await page.locator("details.browse-search > summary").click();
   const modes = page.getByRole("navigation", { name: "طريقة البحث" });
   for (const name of [
     "بالكلمة",
@@ -51,7 +53,6 @@ test("browse offers four search methods: word, available, family and category", 
     .click();
   await expect(page).toHaveURL(/by=available/);
   // في «المتاح الآن»: لا حقل كلمة ولا «مسح المرشحات».
-  await page.getByText("ابحث: المنطقة", { exact: false }).click();
   await expect(page.getByLabel("وش تطلب اليوم")).toHaveCount(0);
   await expect(
     page.getByRole("link", { name: "مسح فلتر البحث" }),

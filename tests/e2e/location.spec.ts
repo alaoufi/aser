@@ -5,6 +5,9 @@ test("region precedes city, restricts cities and resets stale selection in all s
   // الرئيسية صار فيها حقل «وش تطلب اليوم» فقط بطلب المالك؛ المنطقة والمدينة في البحث وصفحة الأسر.
   for (const route of ["/browse", "/producers"]) {
     await page.goto(route);
+    // في «طبخات اليوم» الفلاتر داخل زر «بحث» المطوي.
+    if (route === "/browse")
+      await page.locator("details.browse-search > summary").click();
     const region = page.locator('select[name="region"]');
     const city = page.locator('select[name="city"]');
     await expect(region).toBeVisible();
@@ -34,6 +37,8 @@ test("region precedes city, restricts cities and resets stale selection in all s
     await region.locator("xpath=ancestor::form").getByRole("button").click();
     await expect(page).toHaveURL(/region=riyadh/);
     await expect(page).toHaveURL(/city=riyadh/);
+    if (route === "/browse")
+      await page.locator("details.browse-search > summary").click();
     await expect(page.locator('select[name="region"]')).toHaveValue("riyadh");
     await expect(page.locator('select[name="city"]')).toHaveValue("riyadh");
   }

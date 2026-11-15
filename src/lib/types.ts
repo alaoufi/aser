@@ -95,6 +95,11 @@ export type Filters = {
   /** "any" يوسّع البحث: يكفي تطابق كلمة واحدة */
   match?: string;
   page?: number;
+  /** "kingdom": ما يُشحن لكل المناطق فقط. */
+  scope?: string;
+  /** يستبعد منتجات أسر هذه المنطقة/المدينة (حتى لا تتكرر بين القسمين). */
+  notRegion?: string;
+  notCity?: string;
 };
 export type SessionUser = {
   id: string;

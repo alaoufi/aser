@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { City } from "@/lib/types";
 import { LocationFields } from "@/components/public/location-fields";
 import { LocationLink } from "./location-share";
+import { collectIssues, FormIssues, type FormIssue } from "./form-issues";
 import { Stars } from "@/components/public/stars";
 import {
   AccountShell,
@@ -65,6 +66,7 @@ export function CourierPanel() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [issues, setIssues] = useState<FormIssue[]>([]);
   const uploaded = useRef<{ file: File; id: string } | null>(null);
   async function load() {
     const d = await api<{
@@ -87,6 +89,10 @@ export function CourierPanel() {
     e.preventDefault();
     setError("");
     setSuccess("");
+    // النواقص كلها في رسالة واحدة واضحة قبل الإرسال.
+    const found = collectIssues(e.currentTarget);
+    setIssues(found);
+    if (found.length) return;
     const f = new FormData(e.currentTarget);
     setBusy(true);
     try {
@@ -220,6 +226,7 @@ export function CourierPanel() {
         <form
           className={`${s.form} ${s.card}`}
           onSubmit={save}
+          noValidate
           onChange={(e) => {
             const t = e.target as unknown as HTMLSelectElement;
             if (t.name === "cityId") setCity(t.value);
@@ -373,6 +380,7 @@ export function CourierPanel() {
             </div>
             <small>المحادثة داخل الموقع متاحة دائمًا.</small>
           </fieldset>
+          <FormIssues issues={issues} />
           <button className={s.button} disabled={busy}>
             {busy
               ? "جارٍ الحفظ…"

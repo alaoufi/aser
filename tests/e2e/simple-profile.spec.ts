@@ -92,6 +92,18 @@ test("family saves only basic fields in one form and retries without reuploading
     page.getByLabel("الاسم التجاري المعلن", { exact: true }),
   ).toHaveAttribute("required", "");
   await page
+    .getByRole("button", { name: "حفظ وإرسال للمراجعة", exact: true })
+    .click();
+  // النموذج الفارغ: قائمة بالنواقص كلها بأسمائها، والضغط على البند ينقل لحقله.
+  const missing = page.locator("main").getByRole("alert");
+  await expect(missing).toContainText("قبل الإرسال");
+  await expect(missing).toContainText("الاسم التجاري المعلن: مطلوب");
+  await expect(missing).toContainText("رقم الهوية: مطلوب");
+  await expect(missing).toContainText("المنطقة: لم يُختر بعد");
+  await expect(missing).toContainText("عنوان أو رابط موقع العمل: مطلوب");
+  await missing.getByRole("button", { name: "رقم الهوية" }).click();
+  await expect(page.getByLabel("رقم الهوية", { exact: true })).toBeFocused();
+  await page
     .getByLabel("الاسم التجاري المعلن", { exact: true })
     .fill("مذاق الأسرة المنتجة التجريبي");
   await page.getByLabel("رقم الهوية", { exact: true }).fill("١٢٣٤٥٦٧٨٩٠");
@@ -125,8 +137,11 @@ test("family saves only basic fields in one form and retries without reuploading
   await page
     .getByRole("button", { name: "حفظ وإرسال للمراجعة", exact: true })
     .click();
-  await expect(page.locator("main").getByRole("alert")).toHaveText(
-    "اختر قسمًا واحدًا على الأقل لمنتجاتك.",
+  // رسالة النواقص الواضحة: بند واحد باقٍ.
+  const issues = page.locator("main").getByRole("alert");
+  await expect(issues).toContainText("بقي شيء واحد قبل الإرسال");
+  await expect(issues).toContainText(
+    "أقسام منتجاتك: اختر قسمًا واحدًا على الأقل",
   );
   expect(uploads).toBe(0);
   await page.getByRole("checkbox", { name: "منتجات غذائية أخرى" }).check();
@@ -207,4 +222,33 @@ test("a taken public name shows «هذا الاسم مستخدم، اختر اس
   await expect(page.getByText("هذا الاسم مستخدم، اختر اسمًا آخر")).toHaveCount(
     0,
   );
+});
+
+// موقع العمل يُحدَّد تلقائيًا عند فتح التسجيل، ويبقى قابلًا للتعديل.
+test.describe("work location is detected automatically", () => {
+  test.use({
+    permissions: ["geolocation"],
+    geolocation: { latitude: 26.3592, longitude: 43.9818 },
+  });
+  test("the family's work location fills itself and can be edited", async ({
+    page,
+  }) => {
+    await page.route("**/api/session", (r) =>
+      r.fulfill({ json: { user, registrationOpen: true } }),
+    );
+    await page.route("**/api/producer/status", (r) =>
+      r.fulfill({ json: { state: null } }),
+    );
+    await page.route("**/api/producer/profile", (r) =>
+      r.fulfill({ json: { profile: null, categories: [], cities: [city] } }),
+    );
+    await page.goto("/register");
+    const field = page.getByLabel("عنوان أو رابط موقع العمل", { exact: true });
+    await expect(field).toHaveValue(
+      "https://maps.google.com/?q=26.359200,43.981800",
+    );
+    await expect(page.getByText(/حُدد موقعك الحالي تلقائيًا ✓/)).toBeVisible();
+    await field.fill("حي الريان، شارع الأسرة");
+    await expect(field).toHaveValue("حي الريان، شارع الأسرة");
+  });
 });

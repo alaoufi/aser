@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import type { SessionUser } from "@/lib/types";
 import s from "./account.module.css";
 import { isManager } from "@/lib/permissions";
+import { LogoutButton } from "@/components/public/logout-button";
 export { s };
 export async function api<T>(url: string, options?: RequestInit): Promise<T> {
   const r = await fetch(url, {
@@ -141,6 +142,7 @@ function AccountNavigation() {
           {label}
         </Link>
       ))}
+      <LogoutButton className={`${s.navLink} ${s.navLogout}`} />
     </nav>
   );
 }
