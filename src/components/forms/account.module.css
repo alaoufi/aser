@@ -1171,3 +1171,34 @@
   display: grid;
   gap: 0.25rem;
 }
+/* رسالة النواقص قبل الإرسال */
+.issues {
+  background: #fdf3e6;
+  border: 1px solid #e6b98a;
+  border-inline-start: 5px solid #b5562a;
+  border-radius: 12px;
+  color: #4a220e;
+  margin: 0.75rem 0;
+  padding: 0.85rem 1rem;
+}
+.issues ul {
+  margin: 0.4rem 0 0;
+  padding-inline-start: 1.2rem;
+}
+.issues li {
+  margin: 0.25rem 0;
+}
+.issues button {
+  background: none;
+  border: 0;
+  color: #9c2f1e;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  padding: 0;
+  text-decoration: underline;
+}
+.shell [aria-invalid="true"] {
+  border-color: #b5562a !important;
+  box-shadow: 0 0 0 2px rgba(181, 86, 42, 0.25);
+}

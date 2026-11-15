@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import s from "./account.module.css";
 
 /** رابط خرائط لنص الموقع: الرابط كما هو إن كان https، وإلا بحث بالعنوان. */
@@ -42,16 +42,25 @@ export function LocationInput({
   hint,
   defaultValue,
   required,
+  autoLocate = false,
 }: {
   name: string;
   label: string;
   hint: string;
   defaultValue?: string | null;
   required?: boolean;
+  /** يحدد الموقع تلقائيًا عند فتح النموذج إن كان الحقل فارغًا (ويبقى قابلًا للتعديل). */
+  autoLocate?: boolean;
 }) {
   const [value, setValue] = useState(defaultValue ?? "");
   const [state, setState] = useState("");
-  function locate() {
+  const tried = useRef(false);
+  useEffect(() => {
+    if (!autoLocate || tried.current || (defaultValue ?? "").trim()) return;
+    tried.current = true;
+    locate(true);
+  }, [autoLocate]);
+  function locate(auto = false) {
     if (!navigator.geolocation) {
       setState("المتصفح لا يدعم تحديد الموقع؛ اكتب العنوان أو الصق الرابط.");
       return;
@@ -61,8 +70,15 @@ export function LocationInput({
       (p) => {
         const lat = p.coords.latitude.toFixed(6),
           lng = p.coords.longitude.toFixed(6);
-        setValue(`https://maps.google.com/?q=${lat},${lng}`);
-        setState("تم إدخال موقعك الحالي ✓");
+        // لا يُستبدل ما كتبه المستخدم بنفسه أثناء التحديد التلقائي.
+        setValue((v) =>
+          auto && v.trim() ? v : `https://maps.google.com/?q=${lat},${lng}`,
+        );
+        setState(
+          auto
+            ? "حُدد موقعك الحالي تلقائيًا ✓ يمكنك تعديله أو كتابة العنوان بدلًا منه."
+            : "تم إدخال موقعك الحالي ✓",
+        );
       },
       () =>
         setState(
@@ -78,6 +94,7 @@ export function LocationInput({
         id={"loc-" + name}
         name={name}
         rows={2}
+        data-label={label}
         maxLength={1000}
         minLength={required ? 5 : undefined}
         required={required}
@@ -87,7 +104,11 @@ export function LocationInput({
       />
       <small id={"loc-hint-" + name}>{hint}</small>
       <div className={s.actions}>
-        <button type="button" className={s.buttonSecondary} onClick={locate}>
+        <button
+          type="button"
+          className={s.buttonSecondary}
+          onClick={() => locate()}
+        >
           استخدم موقعي الحالي
         </button>
         {value.trim().length >= 5 && (

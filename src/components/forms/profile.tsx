@@ -1,4 +1,6 @@
 "use client";
+import { collectIssues, FormIssues, type FormIssue } from "./form-issues";
+import { LocationInput } from "./location-share";
 import { categoryLabel } from "@/lib/category-label";
 import { LocationFields } from "@/components/public/location-fields";
 import { useEffect, useRef, useState } from "react";
@@ -80,6 +82,7 @@ export function ProfileForm({
     [error, setError] = useState(""),
     [success, setSuccess] = useState("");
   const [nameTaken, setNameTaken] = useState("");
+  const [issues, setIssues] = useState<FormIssue[]>([]);
   const nameTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const uploaded = useRef<{ file: File; type: string; id: string } | null>(
     null,
@@ -108,6 +111,28 @@ export function ProfileForm({
     setError("");
     setSuccess("");
     const form = e.currentTarget;
+    // النواقص كلها في رسالة واحدة واضحة قبل الإرسال.
+    const found = collectIssues(form);
+    const categoryChecks = form.querySelectorAll<HTMLInputElement>(
+      'input[name="categoryIds"]',
+    );
+    if (
+      categoryChecks.length &&
+      !Array.from(categoryChecks).some((c) => c.checked)
+    )
+      found.push({
+        label: "أقسام منتجاتك",
+        reason: "اختر قسمًا واحدًا على الأقل",
+        target: categoryChecks[0].id || undefined,
+      });
+    if (nameTaken)
+      found.push({
+        label: "الاسم التجاري المعلن",
+        reason: nameTaken,
+        target: "family-trade-name",
+      });
+    setIssues(found);
+    if (found.length) return;
     const f = new FormData(form);
     let optional: Record<string, unknown> = {};
     const categoryIds = f.getAll("categoryIds").map(String);
@@ -231,6 +256,7 @@ export function ProfileForm({
           key={profile?.id || "new"}
           className={`${s.form} ${s.card}`}
           onSubmit={save}
+          noValidate
         >
           <div className={s.grid}>
             <div className={s.field}>
@@ -369,16 +395,14 @@ export function ProfileForm({
                 className={s.field}
               />
             </div>
-            <label className={s.field}>
-              عنوان أو رابط موقع العمل
-              <textarea
-                name="workLocation"
-                required
-                minLength={5}
-                maxLength={1000}
-                defaultValue={profile?.workLocation || ""}
-              />
-            </label>
+            <LocationInput
+              name="workLocation"
+              label="عنوان أو رابط موقع العمل"
+              hint="يُحدَّد موقعك تلقائيًا، ويمكنك تعديله أو كتابة العنوان أو لصق رابط الخرائط."
+              defaultValue={profile?.workLocation || ""}
+              required
+              autoLocate={!profile?.workLocation}
+            />
             <p className={s.muted}>
               رقم الهوية والموقع الدقيق خاصان بالأسرة المنتجة والإدارة. يظهر
               للزوار اسم المدينة فقط.
@@ -390,7 +414,12 @@ export function ProfileForm({
               <div className={s.checks}>
                 {categories.map((c) => (
                   <label key={c.id}>
-                    <input name="categoryIds" type="checkbox" value={c.id} />
+                    <input
+                      name="categoryIds"
+                      type="checkbox"
+                      value={c.id}
+                      id={"cat-" + c.id}
+                    />
                     {categoryLabel(c, categories)}
                   </label>
                 ))}
@@ -458,6 +487,7 @@ export function ProfileForm({
               </div>
             )}
           </details>
+          <FormIssues issues={issues} />
           <button className={s.button} disabled={busy}>
             {busy ? "جارٍ الحفظ…" : "حفظ وإرسال للمراجعة"}
           </button>
