@@ -108,14 +108,25 @@ test("family chooses multiple hierarchical areas with fees and dependent resets"
   await page
     .getByLabel("حي تابع للمركز (اختياري)", { exact: true })
     .selectOption("h");
-  await page.getByRole("button", { name: "أضف إلى التغطية" }).click();
+  await page
+    .getByRole("button", { name: "أضف الحي المختار", exact: true })
+    .click();
   await page
     .getByLabel("المركز — خارج المدينة (اختياري)", { exact: true })
     .selectOption("b");
   await expect(
     page.getByLabel("حي تابع للمركز (اختياري)", { exact: true }),
   ).toHaveCount(0);
-  await page.getByRole("button", { name: "أضف إلى التغطية" }).click();
+  // اختصاران ظاهران: جميع أحياء المدينة، وجميع المراكز التابعة لها.
+  await expect(
+    page.getByRole("button", { name: "أضف جميع أحياء المدينة" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: /أضف جميع المراكز التابعة للمدينة/ }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "أضف المركز المختار", exact: true })
+    .click();
   await page
     .getByLabel("رسوم التوصيل (ريال، اختيارية)", { exact: true })
     .first()

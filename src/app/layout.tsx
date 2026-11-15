@@ -160,6 +160,7 @@ export default async function RootLayout({
               <Link href="/privacy">سياسة الخصوصية</Link>
               <Link href="/terms">شروط الاستخدام</Link>
               <Link href="/support">الدعم والتواصل</Link>
+              <Link href="/suggestions">الاقتراحات</Link>
             </div>
           </div>
           <StoreBadges

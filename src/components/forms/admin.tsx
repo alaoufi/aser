@@ -6,6 +6,7 @@ import {
   AdminSummary,
   AppLinksAdmin,
   StoreReviewAdmin,
+  SuggestionsAdmin,
   ProductFieldsAdmin,
   CategoriesAdmin,
   LocationsAdmin,
@@ -55,6 +56,7 @@ const adminTabs: [
   ["app", "تطبيق الجوال", "content"],
   ["review", "مراجعة المتاجر", "owner"],
   ["members", "الأعضاء والصلاحيات", "owner"],
+  ["suggestions", "الاقتراحات", "owner"],
 ];
 /** تجميع الأقسام في شاشة الإدارة (الأسماء للقارئ الآلي فقط). */
 const adminGroups: [group: string, ids: string[]][] = [
@@ -63,7 +65,10 @@ const adminGroups: [group: string, ids: string[]][] = [
     ["approvals", "producers", "orders", "products", "reports"],
   ],
   ["الأقسام والمواقع", ["categories", "locations"]],
-  ["الموقع والأعضاء", ["template", "texts", "app", "review", "members"]],
+  [
+    "الموقع والأعضاء",
+    ["template", "texts", "app", "review", "members", "suggestions"],
+  ],
 ];
 type Application = {
   id: string;
@@ -372,6 +377,8 @@ export function Admin() {
             <AppLinksAdmin />
           ) : active === "review" ? (
             <StoreReviewAdmin />
+          ) : active === "suggestions" ? (
+            <SuggestionsAdmin />
           ) : active === "approvals" ? (
             <section aria-label="اعتماد الأسر المنتجة">
               <h2>اعتماد الأسر المنتجة</h2>
