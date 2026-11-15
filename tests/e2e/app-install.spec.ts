@@ -108,8 +108,9 @@ test("while the site restarts for an update the app explains it and returns by i
     )
     .toBe(true);
   let down = true;
+  // فحص الصحة نفسه معطّل (كقاعدة بيانات متوقفة): العودة تعتمد على الصفحة المطلوبة لا عليه.
   await context.route("**/api/health**", (r) =>
-    down ? r.fulfill({ status: 502, body: "Bad Gateway" }) : r.continue(),
+    r.fulfill({ status: 503, body: "{}" }),
   );
   await context.route("**/offers", (r) =>
     down ? r.fulfill({ status: 502, body: "Bad Gateway" }) : r.continue(),

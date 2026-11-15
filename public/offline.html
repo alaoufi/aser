@@ -92,10 +92,11 @@
     attempts++;
     var ctrl = "AbortController" in window ? new AbortController() : null;
     var slow = setTimeout(function () { if (ctrl) ctrl.abort(); }, 4000);
-    fetch("/api/health?r=" + Date.now(), { cache: "no-store", signal: ctrl ? ctrl.signal : undefined })
+    // نتحقق من الصفحة المطلوبة نفسها: متى ردّت بلا خطأ خادم (أقل من 500) نفتحها.
+    fetch(location.href, { cache: "no-store", credentials: "same-origin", signal: ctrl ? ctrl.signal : undefined })
       .then(function (r) {
         clearTimeout(slow);
-        if (r.ok) { stateEl.lastChild.textContent = "عاد الاتصال ✓"; location.reload(); return; }
+        if (r.status < 500) { stateEl.lastChild.textContent = "عاد الاتصال ✓"; location.reload(); return; }
         show("server");
         throw 0;
       })
