@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Product, Producer } from "@/lib/types";
 import { productStatusLabels } from "@/lib/site-texts";
 import { Stars } from "./stars";
-import { brandStyle } from "@/lib/brand";
+import { identityProps } from "@/lib/brand";
 
 /** الأسماء الأصلية لحالة المنتج؛ الصفحات تمرر المعدّل من «نصوص الموقع». */
 export const availability = productStatusLabels();
@@ -49,6 +49,13 @@ export function EmptyState({
     </div>
   );
 }
+/** المنتج يدمج الهويتين: خلفية أسرته وزخرفتها وتأثيرها، داخل إطار قسمه. */
+export function productIdentity(p: Product) {
+  return identityProps(p.producerId ?? p.id, p.brand, {
+    categoryId: p.primaryCategory ?? p.categoryIds?.[0],
+    chosen: p.frame,
+  });
+}
 export function ProductCard({
   product: p,
   labels = availability,
@@ -57,11 +64,12 @@ export function ProductCard({
   /** أسماء حالة المنتج من «نصوص الموقع». */
   labels?: Record<string, string>;
 }) {
+  const id = productIdentity(p);
   return (
     <Link
       href={`/products/${p.id}`}
-      className="product-card branded"
-      style={brandStyle(p.producerId ?? p.id, p.palette)}
+      className={`product-card ${id.className}`}
+      style={id.style}
     >
       <div className="card-image">
         {p.imageUrl && safeMediaUrl(p.imageUrl) ? (
@@ -89,11 +97,12 @@ export function ProductCard({
   );
 }
 export function ProducerCard({ producer: p }: { producer: Producer }) {
+  const id = identityProps(p.id ?? p.slug, p.brand);
   return (
     <Link
       href={`/producers/${p.slug}`}
-      className="producer-card branded"
-      style={brandStyle(p.id ?? p.slug, p.palette)}
+      className={`producer-card ${id.className}`}
+      style={id.style}
     >
       <div className="producer-avatar" aria-hidden="true">
         {p.logoUrl && safeMediaUrl(p.logoUrl) ? (

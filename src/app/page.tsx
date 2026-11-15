@@ -1,4 +1,5 @@
 import { productStatusLabels } from "@/lib/site-texts";
+import { frameFor } from "@/lib/brand";
 import { FoodPhotos } from "@/components/public/food-photos";
 import { NajdiDoor } from "@/components/public/najdi-door";
 import { getSiteTexts, visitorTemplate } from "@/server/settings";
@@ -120,7 +121,7 @@ export default async function Home({
                 <Link
                   href={`/browse?category=${encodeURIComponent(c.id)}`}
                   key={c.id}
-                  className="category-card"
+                  className={`category-card frame-${frameFor(c.id, c.frame).id}`}
                 >
                   <span
                     className={`category-icon tone-${i % 4}`}

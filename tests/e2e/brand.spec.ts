@@ -58,6 +58,9 @@ test("a family picks its brand colour from the dashboard", async ({ page }) => {
   const brand = {
     producerId: "00000000-0000-4000-8000-000000000081",
     palette: "saffron",
+    pattern: "dots",
+    effect: "soft",
+    scale: 2,
     chosen: false,
     tier: "free",
   };
@@ -70,14 +73,44 @@ test("a family picks its brand colour from the dashboard", async ({ page }) => {
   });
   await page.goto("/dashboard");
   const card = page.getByRole("region", { name: "هوية الأسرة" });
-  await expect(card.getByRole("radio", { name: "زعفران" })).toBeChecked();
-  expect(await card.getByRole("radio").count()).toBe(8);
-  await card.getByRole("radio", { name: "رمان" }).check();
-  await expect(card.getByText(/تم الحفظ ✓/)).toBeVisible();
-  expect(sent).toEqual({ palette: "pomegranate" });
-  // المعاينة تأخذ لون الرمان، لا الأبيض.
-  const bg = await card
-    .getByRole("img", { name: "معاينة بطاقتك" })
-    .evaluate((el) => getComputedStyle(el).backgroundColor);
-  expect(bg).toBe("rgb(249, 230, 226)");
+  const group = (name: string) => card.getByRole("group", { name });
+  await expect(
+    group("اللون").getByRole("radio", { name: "زعفران" }),
+  ).toBeChecked();
+  await expect(group("اللون").getByRole("radio")).toHaveCount(16);
+  await expect(group("الزخرفة (الشكل)").getByRole("radio")).toHaveCount(16);
+  // المكتبة المميزة مقفلة للهوية المجانية.
+  await expect(
+    group("الزخرفة (الشكل)").getByRole("radio", { name: /مشربية/ }),
+  ).toBeDisabled();
+  await expect(
+    group("التأثير").getByRole("radio", { name: /رقائق ذهب/ }),
+  ).toBeDisabled();
+  await group("اللون").getByRole("radio", { name: "رمان" }).check();
+  await group("الزخرفة (الشكل)")
+    .getByRole("radio", { name: "نجمة إسلامية" })
+    .check();
+  await group("التأثير").getByRole("radio", { name: "بارز" }).check();
+  await group("حجم الزخرفة").getByRole("radio", { name: "كبيرة" }).check();
+  // المعاينة تتغير قبل الحفظ: لون الرمان وزخرفة وتأثير بارز، لا أبيض.
+  const preview = card.getByRole("img", { name: "معاينة بطاقة الأسرة" });
+  const look = await preview.evaluate((el) => {
+    const c = getComputedStyle(el);
+    return {
+      bg: c.backgroundColor,
+      image: c.backgroundImage,
+      shadow: c.boxShadow,
+    };
+  });
+  expect(look.bg).toBe("rgb(249, 230, 226)");
+  expect(look.image).toContain("data:image/svg+xml");
+  expect(look.shadow).not.toBe("none");
+  await card.getByRole("button", { name: "حفظ الهوية" }).click();
+  await expect(card.getByText(/تم حفظ هويتك ✓/)).toBeVisible();
+  expect(sent).toEqual({
+    palette: "pomegranate",
+    pattern: "najmah",
+    effect: "raised",
+    scale: 3,
+  });
 });

@@ -2495,50 +2495,171 @@ main {
     transition: none;
   }
 }
-/* 5.9.0.0: هوية الأسرة — بطاقة الأسرة وبطاقات منتجاتها بلون هويتها بدل الأبيض. */
+/* ===== 5.9.0.0: مكتبة الهويات =====
+   هوية الأسرة: خلفية + زخرفة + تأثير خفيف ثلاثي الأبعاد.
+   هوية القسم: الإطار (frame-*). المنتج يجمعهما. */
 .branded {
-  background: var(--brand-bg, #fbf6ec);
-  border-color: color-mix(
-    in srgb,
-    var(--brand-accent, #8a967b) 35%,
-    transparent
-  );
-  border-top: 4px solid var(--brand-accent, #8a967b);
+  --frame-color: var(--brand-accent, #8a967b);
+  background-color: var(--brand-bg, #fbf6ec);
+  background-image: var(--fx-layer, none), var(--brand-pattern, none);
+  background-size:
+    100% 100%,
+    var(--brand-size, 44px) var(--brand-size, 44px);
+  border: 1px solid color-mix(in srgb, var(--frame-color) 35%, transparent);
   color: var(--brand-ink, inherit);
+  position: relative;
 }
-.branded h3 {
+.branded h3,
+.branded h1 {
   color: var(--brand-ink, inherit);
 }
 .branded:hover,
 .branded:focus-visible {
-  border-color: var(--brand-accent, #8a967b);
+  border-color: var(--frame-color);
+}
+/* التأثيرات (خفيفة) */
+.fx-soft {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    0 2px 6px rgba(46, 29, 18, 0.06);
+}
+.fx-raised {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    inset 0 -2px 0 rgba(46, 29, 18, 0.06),
+    0 3px 0 color-mix(in srgb, var(--brand-accent) 22%, transparent),
+    0 10px 18px rgba(46, 29, 18, 0.1);
+}
+.fx-glow {
+  --fx-layer: radial-gradient(
+    120% 80% at 85% 0%,
+    rgba(255, 255, 255, 0.75),
+    transparent 60%
+  );
+  box-shadow: 0 6px 16px
+    color-mix(in srgb, var(--brand-accent) 14%, transparent);
+}
+.fx-glass {
+  --fx-layer: linear-gradient(
+    160deg,
+    rgba(255, 255, 255, 0.6) 0%,
+    rgba(255, 255, 255, 0.12) 38%,
+    transparent 40%
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 6px 14px rgba(46, 29, 18, 0.08);
+}
+.fx-gold {
+  --fx-layer: linear-gradient(
+    125deg,
+    rgba(255, 226, 150, 0.4),
+    transparent 30%,
+    rgba(255, 236, 180, 0.3) 62%,
+    transparent 80%
+  );
+  box-shadow:
+    inset 0 0 0 1px rgba(214, 163, 92, 0.55),
+    0 8px 18px rgba(168, 122, 26, 0.16);
+}
+.fx-carved {
+  box-shadow:
+    inset 0 3px 8px rgba(46, 29, 18, 0.12),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.8),
+    0 1px 0 rgba(255, 255, 255, 0.8);
+}
+/* إطارات الأقسام (البرواز والحدود) بلون الأسرة */
+.frame-simple {
+  border: 1.5px solid color-mix(in srgb, var(--frame-color) 55%, transparent);
+}
+.frame-double {
+  border: 4px double var(--frame-color);
+}
+.frame-stitched {
+  outline: 1.5px dashed color-mix(in srgb, var(--frame-color) 70%, transparent);
+  outline-offset: -7px;
+}
+.frame-arch {
+  border: 1.5px solid var(--frame-color);
+  border-radius: 46% 46% 12px 12px / 16% 16% 12px 12px !important;
+}
+.frame-bevel {
+  border: 3px outset color-mix(in srgb, var(--frame-color) 60%, #fff);
+}
+.frame-groove {
+  border: 4px groove color-mix(in srgb, var(--frame-color) 60%, #fff);
+}
+.frame-ridge {
+  border: 4px ridge color-mix(in srgb, var(--frame-color) 60%, #fff);
+}
+.frame-gold {
+  border: 1px solid #d6a35c;
+  outline: 1px solid rgba(214, 163, 92, 0.75);
+  outline-offset: -6px;
+}
+.frame-dotted {
+  border: 2.5px dotted var(--frame-color);
+}
+.frame-ribbon {
+  border-top: 7px solid var(--frame-color);
+}
+.frame-notched {
+  border: 1.5px solid var(--frame-color);
+  border-radius: 24px 4px 24px 4px !important;
+}
+.frame-corners {
+  border: 1px solid color-mix(in srgb, var(--frame-color) 30%, transparent);
+}
+.frame-corners::after {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  pointer-events: none;
+  z-index: 1;
+  --c: var(--frame-color);
+  background:
+    linear-gradient(var(--c), var(--c)) top left / 16px 2px no-repeat,
+    linear-gradient(var(--c), var(--c)) top left / 2px 16px no-repeat,
+    linear-gradient(var(--c), var(--c)) top right / 16px 2px no-repeat,
+    linear-gradient(var(--c), var(--c)) top right / 2px 16px no-repeat,
+    linear-gradient(var(--c), var(--c)) bottom left / 16px 2px no-repeat,
+    linear-gradient(var(--c), var(--c)) bottom left / 2px 16px no-repeat,
+    linear-gradient(var(--c), var(--c)) bottom right / 16px 2px no-repeat,
+    linear-gradient(var(--c), var(--c)) bottom right / 2px 16px no-repeat;
+}
+/* بطاقة الأسرة */
+.producer-card.branded {
+  border-top: 4px solid var(--brand-accent);
 }
 .producer-card.branded .producer-avatar {
-  background: var(--brand-accent, #e8e0d0);
+  background: var(--brand-accent);
   color: #fff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 3px 0 color-mix(in srgb, var(--brand-accent) 55%, #000);
 }
 .producer-card.branded .producer-card-arrow {
-  color: var(--brand-accent, var(--olive));
+  color: var(--brand-accent);
 }
 .producer-card.branded .producer-tags > span:not(.stars) {
-  background: color-mix(in srgb, var(--brand-accent, #8a967b) 12%, #fff);
-  color: var(--brand-ink, var(--muted));
+  background: color-mix(in srgb, var(--brand-accent) 12%, #fff);
+  color: var(--brand-ink);
 }
+/* بطاقة المنتج: خلفية الأسرة وزخرفتها، وإطار القسم */
 .product-card.branded .card-image {
-  background: color-mix(
-    in srgb,
-    var(--brand-accent, #8a967b) 14%,
-    var(--brand-bg, #f5f0e6)
-  );
+  background: color-mix(in srgb, var(--brand-accent) 10%, transparent);
 }
 .product-card.branded .card-image > span[aria-hidden] {
-  color: var(--brand-accent, inherit);
+  color: var(--brand-accent);
 }
 .product-card.branded .card-body small {
-  color: color-mix(in srgb, var(--brand-ink, #555) 80%, transparent);
+  color: color-mix(in srgb, var(--brand-ink) 80%, transparent);
 }
+.product-card.branded .card-body > p {
+  color: var(--brand-accent);
+}
+/* رأس صفحة الأسرة */
 .profile-header.branded {
-  border: 1px solid color-mix(in srgb, var(--brand-accent) 30%, transparent);
   border-top: 6px solid var(--brand-accent);
   border-radius: 18px;
   padding-inline: 24px;
@@ -2547,6 +2668,42 @@ main {
   background: var(--brand-accent);
   color: #fff;
 }
-.product-card.branded .card-body > p {
-  color: var(--brand-accent);
+/* أكثر من بطاقة أسرة في الصف على الجوال: بطاقة مربعة مرتبة */
+@media (max-width: 850px) {
+  .producer-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .producer-card {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 12px 10px;
+    gap: 6px;
+  }
+  .producer-card .producer-card-content {
+    width: 100%;
+  }
+  .producer-card h3 {
+    font-size: 15px;
+  }
+  .producer-card .producer-description {
+    display: none;
+  }
+  .producer-card .producer-tags {
+    justify-content: center;
+  }
+  .producer-card-arrow {
+    display: none;
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .branded {
+    --fx-layer: none;
+  }
+}
+/* بطاقة القسم في الرئيسية تحمل إطاره (هويته) */
+.category-card[class*="frame-"] {
+  --frame-color: var(--olive, #4f5d36);
+  position: relative;
 }
