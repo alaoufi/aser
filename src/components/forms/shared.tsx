@@ -114,7 +114,9 @@ function AccountNavigation() {
       <Link href="/orders">طلباتي</Link>
       <Link href="/messages">المحادثات</Link>
       <Link href="/me">معلوماتي</Link>
-      {user.role !== "producer" ? (
+      {user.role === "courier" ? (
+        <Link href="/courier">لوحتي كمندوب</Link>
+      ) : user.role !== "producer" ? (
         <>
           <Link href="/offers">العروض الخاصة</Link>
           {/* المدير الكامل حسابه الخاص يكون طالب خدمة أو أسرة: «لوحتي» تسجّل أسرته أو تعرضها. */}
@@ -242,9 +244,15 @@ export function LoginForm({
         ? "/admin"
         : user.role === "producer"
           ? "/dashboard"
-          : "/orders";
+          : user.role === "courier"
+            ? "/courier"
+            : "/orders";
     if (mode === "signup" && intent === "family" && user.role === "customer") {
       window.location.assign("/register");
+      return;
+    }
+    if (mode === "signup" && intent === "courier" && user.role === "customer") {
+      window.location.assign("/courier");
       return;
     }
     window.location.assign(next === destination ? next : destination);
@@ -348,7 +356,9 @@ export function LoginForm({
         ? "/admin"
         : session.user.role === "producer"
           ? "/dashboard"
-          : "/orders";
+          : session.user.role === "courier"
+            ? "/courier"
+            : "/orders";
     return (
       <section className={s.card}>
         <h1>أهلًا {session.user.name}</h1>
@@ -536,6 +546,7 @@ export function LoginForm({
                   </option>
                   <option value="customer">عميل</option>
                   <option value="family">أسرة منتجة — تقديم طلب أهلية</option>
+                  <option value="courier">مندوب توصيل للأسر المنتجة</option>
                 </select>
               </label>
             )}
@@ -543,7 +554,9 @@ export function LoginForm({
               <p className={s.muted} data-testid="account-type-hint">
                 {intent === "family"
                   ? "الأسرة المنتجة: بعد التحقق من الجوال ترفع التراخيص المطلوبة، ولا تظهر منتجاتها إلا بعد موافقة الإدارة."
-                  : "العميل: يتفعّل حسابه مباشرة بعد التحقق من الجوال."}{" "}
+                  : intent === "courier"
+                    ? "المندوب: بعد التحقق من الجوال يُكمل بياناته (رقم الهوية وصورتها ونوع السيارة)، ويظهر للأسر المنتجة بعد موافقة الإدارة."
+                    : "العميل: يتفعّل حسابه مباشرة بعد التحقق من الجوال."}{" "}
                 التصفح متاح للجميع، والطلب بعد التسجيل والتحقق من الجوال.
               </p>
             )}

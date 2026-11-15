@@ -37,7 +37,7 @@ export function mergeProducerPrivate(
     );
   return { nationalId, workLocation };
 }
-function privateKey() {
+export function privateKey() {
   const key = process.env.DOCUMENT_ENCRYPTION_KEY ?? "";
   if (!/^[a-f0-9]{64}$/i.test(key))
     throw new HttpError(503, "إعداد حفظ البيانات الخاصة غير مكتمل");
@@ -224,7 +224,11 @@ export async function saveProducerCategories(
   });
 }
 /** تنبيه المشرفين (المدير ومن له صلاحية الأسر) بأسرة تنتظر الاعتماد. لا يُفشل الحفظ إن تعذر. */
-async function notifyApprovers(familyName: string) {
+export async function notifyApprovers(
+  familyName: string,
+  body = `«${familyName}» سجّلت وتنتظر الاعتماد.`,
+  title = "أسرة تنتظر الاعتماد",
+) {
   try {
     const { notifyUser } = await import("./push");
     const approvers = (
@@ -235,8 +239,8 @@ async function notifyApprovers(familyName: string) {
     await Promise.all(
       approvers.map((a) =>
         notifyUser(a.id, {
-          title: "أسرة تنتظر الاعتماد",
-          body: `«${familyName}» سجّلت وتنتظر الاعتماد.`,
+          title,
+          body,
           url: "/admin?tab=approvals",
           tag: "family-approval",
         }),
@@ -515,10 +519,12 @@ export async function pendingApprovals(user: SessionUser) {
     throw new HttpError(403, "لا تملك صلاحية المراجعة");
   const row = (
     await db().query(
-      "SELECT count(*)::int AS count FROM jdatna.producer_profiles WHERE status='pending'",
+      // الأسر والمندوبون بانتظار الاعتماد معًا.
+      `SELECT (SELECT count(*) FROM jdatna.producer_profiles WHERE status='pending')
+         +(SELECT count(*) FROM jdatna.courier_profiles WHERE status='pending') AS count`,
     )
   ).rows[0];
-  return { count: row.count as number };
+  return { count: Number(row.count) };
 }
 export async function ownProducts(user: SessionUser) {
   return (

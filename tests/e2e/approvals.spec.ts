@@ -15,6 +15,9 @@ test("admin is alerted to families waiting for approval and opens the approvals 
   page,
 }) => {
   await asAdmin(page);
+  await page.route("**/api/admin/couriers", (r) =>
+    r.fulfill({ json: { couriers: [] } }),
+  );
   await page.route("**/api/admin/producers/pending", (r) =>
     r.fulfill({ json: { count: 1 } }),
   );
@@ -48,7 +51,7 @@ test("admin is alerted to families waiting for approval and opens the approvals 
   await expect(alert).toContainText("أسرة منتجة تنتظر الاعتماد");
   await alert.getByRole("link", { name: "فتح اعتماد الأسر" }).click();
   await expect(page).toHaveURL(/\/admin\?tab=approvals$/);
-  const tab = page.getByRole("button", { name: /اعتماد الأسر المنتجة/ });
+  const tab = page.getByRole("button", { name: /اعتماد الأسر والمندوبين/ });
   await expect(tab).toHaveAttribute("aria-pressed", "true");
   await expect(tab).toContainText("1");
   const panel = page.getByRole("region", { name: "اعتماد الأسر المنتجة" });

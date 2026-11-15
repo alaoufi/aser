@@ -31,10 +31,26 @@ export async function startConversation(user: SessionUser, input: unknown) {
     .union([
       z.object({ producer: z.string().min(1).max(200) }).strict(),
       z.object({ order: z.uuid() }).strict(),
+      // الأسرة تراسل مندوبًا معتمدًا لتتفق معه على التوصيل (المندوب في طرف «العميل»).
+      z.object({ courier: z.uuid() }).strict(),
     ])
     .parse(input);
   let customerId: string, producerId: string;
-  if ("order" in parsed) {
+  if ("courier" in parsed) {
+    const pair = (
+      await db().query(
+        `SELECT p.id AS producer_id,k.user_id AS courier_user
+         FROM jdatna.producer_profiles p, jdatna.courier_profiles k JOIN jdatna.users u ON u.id=k.user_id
+         WHERE p.user_id=$1 AND p.status='approved' AND k.user_id=$2 AND k.status='approved'
+           AND u.suspended_at IS NULL AND u.deleted_at IS NULL`,
+        [user.id, parsed.courier],
+      )
+    ).rows[0];
+    if (!pair)
+      throw new HttpError(404, "المندوب غير متاح، أو أسرتك غير معتمدة بعد");
+    customerId = pair.courier_user;
+    producerId = pair.producer_id;
+  } else if ("order" in parsed) {
     const order = (
       await db().query(
         `SELECT o.user_id,o.producer_id,p.user_id AS producer_user

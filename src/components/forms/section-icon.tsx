@@ -10,6 +10,8 @@ const icons: Record<string, string> = {
   locations:
     "M12 21s-7-6.5-7-12a7 7 0 0114 0c0 5.5-7 12-7 12zM12 11.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5",
   coverage: "M9 4L3 6v14l6-2 6 2 6-2V4l-6 2zM9 4v14M15 6v14",
+  couriers:
+    "M3 7h11v9H3zM14 10h4l3 3v3h-7M7 19a2 2 0 100-4 2 2 0 000 4zM17 19a2 2 0 100-4 2 2 0 000 4",
   template: "M3 4h18v16H3zM3 9h18M9 9v11",
   texts: "M5 6h14M12 6v13M8 19h8",
   app: "M7 2h10v20H7zM11 18h2",

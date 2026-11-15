@@ -562,6 +562,8 @@ const familySections: [href: string, label: string, icon: string][] = [
   ["/dashboard/offers", "العروض", "offers"],
   ["/dashboard/library", "مكتبة الصور", "library"],
   ["/dashboard/coverage", "التغطية", "coverage"],
+  // مندوبو التوصيل المعتمدون في مدينة الأسرة: محادثة واتصال وواتساب.
+  ["/couriers", "المندوبون", "couriers"],
 ];
 export function Dashboard() {
   const session = useSession();

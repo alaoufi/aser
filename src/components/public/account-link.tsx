@@ -8,7 +8,13 @@ import { isManager } from "@/lib/permissions";
  * (طلباته ومحادثاته ومعلوماته)، و«حساب الإدارة» منفصل عنه.
  */
 export function ownAccountHref(user: { role: string } | null | undefined) {
-  return user?.role === "producer" ? "/dashboard" : user ? "/orders" : "/login";
+  return user?.role === "producer"
+    ? "/dashboard"
+    : user?.role === "courier"
+      ? "/courier"
+      : user
+        ? "/orders"
+        : "/login";
 }
 
 export function AccountLink({ className }: { className?: string }) {

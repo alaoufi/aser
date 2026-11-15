@@ -167,6 +167,9 @@ test("admin activates a document-free application with a note listing what is mi
       },
     }),
   );
+  await page.route("**/api/admin/couriers", (r) =>
+    r.fulfill({ json: { couriers: [] } }),
+  );
   let body: any;
   await page.route("**/api/admin/producers/*/review", async (r) => {
     body = r.request().postDataJSON();

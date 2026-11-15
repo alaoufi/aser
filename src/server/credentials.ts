@@ -85,7 +85,9 @@ export function roleDestination(role: SessionUser["role"]) {
     ? "/admin"
     : role === "producer"
       ? "/dashboard"
-      : "/orders";
+      : role === "courier"
+        ? "/courier"
+        : "/orders";
 }
 export async function passwordLogin(input: unknown) {
   const value = z

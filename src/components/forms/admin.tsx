@@ -22,6 +22,7 @@ import { can, isManager, type AdminPermission } from "@/lib/permissions";
 import { MembersAdmin } from "./members";
 import { SectionIcon as AdminIcon } from "./section-icon";
 import { APPROVALS_CHANGED } from "@/components/public/approval-alert";
+import { AdminCouriers } from "./courier";
 
 /** بيانات كل قسم، تُحمَّل مسبقًا عند المرور على زره أو التركيز عليه. */
 const tabData: Record<string, string[]> = {
@@ -42,7 +43,7 @@ const adminTabs: [
   label: string,
   permission: AdminPermission | "owner",
 ][] = [
-  ["approvals", "اعتماد الأسر المنتجة", "producers"],
+  ["approvals", "اعتماد الأسر والمندوبين", "producers"],
   ["producers", "الأسر المنتجة", "producers"],
   ["orders", "الطلبات", "orders"],
   ["products", "المنتجات", "products"],
@@ -397,6 +398,11 @@ export function Admin() {
               ) : (
                 <p className={s.notice}>لا توجد أسر تنتظر الاعتماد الآن.</p>
               )}
+              <AdminCouriers
+                onChanged={() =>
+                  window.dispatchEvent(new Event(APPROVALS_CHANGED))
+                }
+              />
             </section>
           ) : active !== "producers" ? (
             <p className={s.notice}>
