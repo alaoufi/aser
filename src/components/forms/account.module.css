@@ -951,3 +951,31 @@
   resize: none;
   line-height: 1.6;
 }
+/* إسناد التوصيل لمندوب داخل بطاقة طلب الأسرة */
+.courierAssign {
+  border-top: 1px dashed rgba(46, 29, 18, 0.25);
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+}
+.courierChoices {
+  border: 0;
+  display: grid;
+  gap: 0.5rem;
+  margin: 0 0 0.75rem;
+  padding: 0;
+}
+.courierChoices label {
+  border: 1px solid rgba(46, 29, 18, 0.2);
+  border-radius: 10px;
+  cursor: pointer;
+  min-height: 44px;
+  padding: 0.6rem 0.75rem;
+}
+.courierPrices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1rem;
+  list-style: none;
+  margin: 0.25rem 0 0.5rem;
+  padding: 0;
+}

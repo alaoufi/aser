@@ -324,7 +324,12 @@ export async function reorderDraft(user: SessionUser, id: string) {
 export async function producerOrders(user: SessionUser) {
   return (
     await db().query(
-      `SELECT ${fields},o.producer_seen_at IS NULL AS "isNew",o.user_id AS "customerId" FROM jdatna.order_requests o JOIN jdatna.producer_profiles p ON p.id=o.producer_id ${withFulfillment} WHERE p.user_id=$1 ORDER BY o.created_at DESC LIMIT 200`,
+      `SELECT ${fields},o.producer_seen_at IS NULL AS "isNew",o.user_id AS "customerId",
+         oc.courier_user_id AS "courierUserId",kp.name AS "courierName",oc.status AS "courierStatus",oc.pickup_location AS "courierPickup",p.pickup_location AS "familyPickup"
+       FROM jdatna.order_requests o JOIN jdatna.producer_profiles p ON p.id=o.producer_id ${withFulfillment}
+       LEFT JOIN jdatna.order_couriers oc ON oc.order_id=o.id
+       LEFT JOIN jdatna.courier_profiles kp ON kp.user_id=oc.courier_user_id
+       WHERE p.user_id=$1 ORDER BY o.created_at DESC LIMIT 200`,
       [user.id],
     )
   ).rows;

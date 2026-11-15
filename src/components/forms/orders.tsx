@@ -140,6 +140,12 @@ type Order = {
   isNew?: boolean;
   /** للأسرة فقط: صاحب الطلب لتقييمه. */
   customerId?: string | null;
+  /** للأسرة فقط: المندوب المسند لتوصيل الطلب. */
+  courierUserId?: string | null;
+  courierName?: string | null;
+  courierStatus?: "assigned" | "delivered" | null;
+  courierPickup?: string | null;
+  familyPickup?: string | null;
 };
 const today = () =>
   new Intl.DateTimeFormat("en-CA", {
@@ -1035,6 +1041,7 @@ function ProducerOrder({
       {order.notes && (
         <p className={s.orderNotes}>ملاحظات العميل: {order.notes}</p>
       )}
+      {order.fulfillment === "delivery" && <CourierAssign order={order} />}
       <div className={s.actions}>
         <a className={s.contact} href={`tel:${order.phone}`}>
           اتصال <bdi dir="ltr">{order.phone}</bdi>
@@ -1064,5 +1071,139 @@ function ProducerOrder({
         </div>
       )}
     </article>
+  );
+}
+
+type CourierOption = {
+  userId: string;
+  name: string;
+  cityName: string;
+  cityPrice: number | null;
+  centers: { name: string; price: number | null }[];
+};
+/**
+ * إسناد التوصيل لمندوب: يظهر المندوبون النشطون في تغطية الأسرة،
+ * ويصل المندوب موقع الاستلام (موقع الأسرة) وموقع العميل للتوصيل.
+ */
+function CourierAssign({ order }: { order: Order }) {
+  const [open, setOpen] = useState(false),
+    [couriers, setCouriers] = useState<CourierOption[] | null>(null),
+    [error, setError] = useState(""),
+    [sending, setSending] = useState(false),
+    [assigned, setAssigned] = useState(order.courierName ?? "");
+  const canAssign =
+    ["accepted", "preparing", "ready"].includes(order.status) &&
+    order.courierStatus !== "delivered";
+  async function show() {
+    setOpen(true);
+    setError("");
+    try {
+      setCouriers(
+        (await api<{ couriers: CourierOption[] }>("/api/couriers")).couriers,
+      );
+    } catch (e) {
+      setCouriers([]);
+      setError((e as Error).message);
+    }
+  }
+  async function assign(form: FormData) {
+    setSending(true);
+    setError("");
+    try {
+      const result = await api<{ courierName: string }>(
+        "/api/producer/orders/courier",
+        {
+          method: "PUT",
+          body: JSON.stringify({
+            orderId: order.id,
+            courierUserId: String(form.get("courier") ?? ""),
+            pickupLocation: String(form.get("pickupLocation") ?? ""),
+          }),
+        },
+      );
+      setAssigned(result.courierName);
+      setOpen(false);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setSending(false);
+    }
+  }
+  const priceText = (v: number | null) =>
+    v === null ? "حسب الاتفاق" : `${v} ر.س`;
+  return (
+    <div className={s.courierAssign}>
+      {assigned && (
+        <p>
+          <strong>المندوب:</strong> {assigned}
+          {order.courierStatus === "delivered" ? " — تم التوصيل ✓" : ""}
+        </p>
+      )}
+      {canAssign && !open && (
+        <button type="button" className={s.buttonSecondary} onClick={show}>
+          {assigned ? "تغيير المندوب" : "إسناد التوصيل لمندوب"}
+        </button>
+      )}
+      {open && (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            void assign(new FormData(e.currentTarget));
+          }}
+        >
+          {couriers === null && <p className={s.muted}>جارٍ التحميل…</p>}
+          {couriers?.length === 0 && !error && (
+            <p className={s.muted}>لا يوجد مندوب متاح في تغطيتك الآن.</p>
+          )}
+          {!!couriers?.length && (
+            <fieldset className={s.courierChoices}>
+              <legend>اختر المندوب</legend>
+              {couriers.map((c) => (
+                <label key={c.userId}>
+                  <input
+                    type="radio"
+                    name="courier"
+                    value={c.userId}
+                    required
+                    defaultChecked={c.userId === order.courierUserId}
+                  />{" "}
+                  {c.name} — {c.cityName}، داخل المدينة:{" "}
+                  {priceText(c.cityPrice)}
+                  {(c.centers ?? []).map((x) => (
+                    <span key={x.name}>
+                      ، {x.name}: {priceText(x.price)}
+                    </span>
+                  ))}
+                </label>
+              ))}
+            </fieldset>
+          )}
+          {!!couriers?.length && (
+            <LocationInput
+              name="pickupLocation"
+              label="موقع الاستلام (موقع الأسرة)"
+              hint="يصل للمندوب مع موقع العميل للتوصيل."
+              defaultValue={order.courierPickup ?? order.familyPickup}
+              required
+            />
+          )}
+          <Message error={error} />
+          <div className={s.actions}>
+            {!!couriers?.length && (
+              <button type="submit" className={s.button} disabled={sending}>
+                {sending ? "جارٍ الإسناد…" : "أسند الطلب"}
+              </button>
+            )}
+            <button
+              type="button"
+              className={s.buttonSecondary}
+              onClick={() => setOpen(false)}
+            >
+              إلغاء
+            </button>
+          </div>
+        </form>
+      )}
+    </div>
   );
 }
