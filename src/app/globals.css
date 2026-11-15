@@ -2406,3 +2406,92 @@ main {
   color: var(--rust, #9c2f1e);
   font-weight: 700;
 }
+/* 5.8.2.0: بطاقة الأسرة أصغر، والتقييم مكان «تمت مراجعتها». */
+.producer-card {
+  padding: 12px 14px;
+  gap: 10px;
+  align-items: center;
+}
+.producer-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  font-size: 16px;
+}
+.producer-card h3 {
+  font-size: 16px;
+  margin: 2px 0 4px;
+}
+.producer-card .producer-description {
+  font-size: 13px;
+  margin-bottom: 6px;
+  -webkit-line-clamp: 1;
+}
+.producer-tags {
+  align-items: center;
+}
+.producer-tags > span {
+  padding: 2px 8px;
+}
+.producer-tags > .stars {
+  background: none;
+  padding: 0;
+}
+.producer-card-arrow {
+  font-size: 18px;
+}
+/* 5.8.2.0: الشعار بارز ثلاثي الأبعاد (ظلال متدرجة بلون الخشب)، والضغط عليه يحوّل للرئيسية. */
+.site-header .brand {
+  perspective: 600px;
+}
+.site-header .brand-logo {
+  filter: drop-shadow(0 1px 0 #f6e7c8) drop-shadow(0 2px 0 #c9a46a)
+    drop-shadow(0 3px 0 #a57f48) drop-shadow(0 4px 0 #7d5d32)
+    drop-shadow(0 9px 10px rgba(46, 29, 18, 0.35));
+  transform: rotateX(8deg) translateZ(0);
+  transform-origin: 50% 100%;
+  transition:
+    transform 0.25s ease,
+    filter 0.25s ease;
+}
+.site-header .brand:hover .brand-logo,
+.site-header .brand:focus-visible .brand-logo {
+  transform: rotateX(0deg) translateY(-3px) scale(1.04);
+  filter: drop-shadow(0 1px 0 #f6e7c8) drop-shadow(0 2px 0 #c9a46a)
+    drop-shadow(0 4px 0 #a57f48) drop-shadow(0 6px 0 #7d5d32)
+    drop-shadow(0 14px 14px rgba(46, 29, 18, 0.38));
+}
+.site-header .brand:active .brand-logo {
+  transform: rotateX(0deg) translateY(1px) scale(0.98);
+}
+@media (prefers-reduced-motion: reduce) {
+  .site-header .brand-logo {
+    transition: none;
+  }
+}
+/* اسم «أكلات جدتنا» بارز ثلاثي الأبعاد: طبقات بلون الخشب تحت الحروف وظل عائم. */
+.site-header .brand > span {
+  color: #3a2414;
+  text-shadow:
+    0 1px 0 #f6e7c8,
+    0 2px 0 #c9a46a,
+    0 3px 0 #a57f48,
+    0 4px 0 #7d5d32,
+    0 8px 10px rgba(46, 29, 18, 0.35);
+  transition:
+    transform 0.25s ease,
+    text-shadow 0.25s ease;
+}
+.site-header .brand:hover > span,
+.site-header .brand:focus-visible > span {
+  transform: translateY(-2px);
+}
+/* السطر الصغير تحت الاسم يبقى خفيفًا ومقروءًا (بروز بسيط فقط). */
+.site-header .brand small {
+  text-shadow: 0 1px 0 #f6e7c8;
+}
+@media (prefers-reduced-motion: reduce) {
+  .site-header .brand > span {
+    transition: none;
+  }
+}

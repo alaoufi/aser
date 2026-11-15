@@ -59,9 +59,6 @@ export default async function ProducerDetail({
               المنتجة.
             </p>
           )}
-          {p.verified && (
-            <span className="badge inline">تمت مراجعتها إداريًا</span>
-          )}
           {p.certificateId && (
             <Link
               className="badge inline distinguished-badge"

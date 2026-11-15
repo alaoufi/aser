@@ -3,6 +3,8 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { City } from "@/lib/types";
 import { LocationFields } from "@/components/public/location-fields";
+import { LocationLink } from "./location-share";
+import { Stars } from "@/components/public/stars";
 import {
   AccountShell,
   Guard,
@@ -25,6 +27,16 @@ type Courier = {
   showWhatsapp: boolean;
   status: "pending" | "approved" | "rejected" | "suspended";
   reviewReason: string | null;
+  active: boolean;
+  cityPrice: number | null;
+  centers: { nodeId: string; price: number | null }[];
+};
+type CenterOption = { cityId: string; id: string; name: string };
+const toPrice = (v: FormDataEntryValue | null) => {
+  const t = String(v ?? "")
+    .trim()
+    .replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
+  return t === "" ? null : Number(t);
 };
 const statusText: Record<Courier["status"], [string, string]> = {
   pending: [
@@ -47,17 +59,23 @@ export function CourierPanel() {
   const session = useSession();
   const [courier, setCourier] = useState<Courier | null>(null);
   const [cities, setCities] = useState<City[]>([]);
+  const [centers, setCenters] = useState<CenterOption[]>([]);
+  const [city, setCity] = useState("");
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const uploaded = useRef<{ file: File; id: string } | null>(null);
   async function load() {
-    const d = await api<{ courier: Courier | null; cities: City[] }>(
-      "/api/courier/profile",
-    );
+    const d = await api<{
+      courier: Courier | null;
+      cities: City[];
+      centers: CenterOption[];
+    }>("/api/courier/profile");
     setCourier(d.courier);
     setCities(d.cities);
+    setCenters(d.centers ?? []);
+    setCity(d.courier?.cityId ?? "");
   }
   useEffect(() => {
     if (!session.user) return;
@@ -106,6 +124,13 @@ export function CourierPanel() {
             cityId: f.get("cityId"),
             showPhone: f.has("showPhone"),
             showWhatsapp: f.has("showWhatsapp"),
+            cityPrice: toPrice(f.get("cityPrice")),
+            centers: cityCenters
+              .filter((c) => f.has("center:" + c.id))
+              .map((c) => ({
+                nodeId: c.id,
+                price: toPrice(f.get("centerPrice:" + c.id)),
+              })),
           }),
         },
       );
@@ -119,6 +144,22 @@ export function CourierPanel() {
       setError((err as Error).message);
     } finally {
       setBusy(false);
+    }
+  }
+  const cityCenters = centers.filter((c) => c.cityId === city);
+  const savedCenter = (id: string) =>
+    courier?.centers?.find((c) => c.nodeId === id);
+  async function toggleActive() {
+    if (!courier) return;
+    setError("");
+    try {
+      const r = await api<{ active: boolean }>("/api/courier/active", {
+        method: "PUT",
+        body: JSON.stringify({ active: !courier.active }),
+      });
+      setCourier({ ...courier, active: r.active });
+    } catch (err) {
+      setError((err as Error).message);
     }
   }
   if (session.ready && !session.user)
@@ -150,12 +191,40 @@ export function CourierPanel() {
               ملاحظة الإدارة: {courier.reviewReason}
             </p>
           )}
-          <Link href="/messages">المحادثات مع الأسر ←</Link>
+          <p>
+            الحالة الآن:{" "}
+            <strong>
+              {courier.active
+                ? "نشط — يظهر اسمك للأسر"
+                : "غير نشط — اسمك مخفي عن الأسر"}
+            </strong>
+          </p>
+          <div className={s.actions}>
+            <button
+              type="button"
+              className={courier.active ? s.buttonSecondary : s.button}
+              onClick={toggleActive}
+              aria-pressed={courier.active}
+            >
+              {courier.active
+                ? "إيقاف الظهور (غير نشط)"
+                : "أنا متاح الآن (نشط)"}
+            </button>
+            <Link href="/messages">المحادثات مع الأسر ←</Link>
+          </div>
         </section>
       )}
+      {courier?.status === "approved" && <CourierDeliveries />}
       <Message error={error} success={success} />
       {session.user && loaded && (
-        <form className={`${s.form} ${s.card}`} onSubmit={save}>
+        <form
+          className={`${s.form} ${s.card}`}
+          onSubmit={save}
+          onChange={(e) => {
+            const t = e.target as unknown as HTMLSelectElement;
+            if (t.name === "cityId") setCity(t.value);
+          }}
+        >
           <h2>بيانات المندوب</h2>
           <p className={s.muted}>
             رقم الهوية وصورتها للإدارة فقط. يظهر للأسر اسمك ونوع سيارتك ومدينتك
@@ -238,6 +307,51 @@ export function CourierPanel() {
             </div>
           </fieldset>
           <fieldset>
+            <legend>تسعيرة التوصيل</legend>
+            <label className={s.field}>
+              داخل المدينة (سعر واحد للمدينة كلها)
+              <input
+                name="cityPrice"
+                inputMode="decimal"
+                dir="ltr"
+                pattern="[0-9٠-٩]+(\.[0-9٠-٩]{1,2})?"
+                placeholder="فارغ = حسب الاتفاق مع الأسرة"
+                defaultValue={courier?.cityPrice ?? ""}
+              />
+              <small>بالريال. اتركه فارغًا ليظهر «حسب الاتفاق».</small>
+            </label>
+            {city && cityCenters.length > 0 && (
+              <div className={s.courierChoices}>
+                <p className={s.muted}>
+                  المراكز التابعة للمدينة التي تخدمها، ولكل مركز تسعيرته:
+                </p>
+                {cityCenters.map((c) => (
+                  <div key={c.id} className={s.grid}>
+                    <label>
+                      <input
+                        type="checkbox"
+                        name={"center:" + c.id}
+                        defaultChecked={!!savedCenter(c.id)}
+                      />{" "}
+                      {c.name}
+                    </label>
+                    <label className={s.field}>
+                      سعر {c.name}
+                      <input
+                        name={"centerPrice:" + c.id}
+                        inputMode="decimal"
+                        dir="ltr"
+                        pattern="[0-9٠-٩]+(\.[0-9٠-٩]{1,2})?"
+                        placeholder="فارغ = حسب الاتفاق"
+                        defaultValue={savedCenter(c.id)?.price ?? ""}
+                      />
+                    </label>
+                  </div>
+                ))}
+              </div>
+            )}
+          </fieldset>
+          <fieldset>
             <legend>التواصل الظاهر للأسر</legend>
             <div className={s.checks}>
               <label>
@@ -281,7 +395,13 @@ type Card = {
   regionName: string;
   phone: string | null;
   whatsapp: string | null;
+  cityPrice: number | null;
+  centers: { name: string; price: number | null }[];
+  ratingAverage?: number | null;
+  ratingCount?: number;
 };
+const priceText = (v: number | null) =>
+  v === null ? "حسب الاتفاق" : `${v} ر.س`;
 const intl = (phone: string) => phone.replace(/^\+/, "");
 
 /** «المندوبين» للأسر المنتجة: حسب المدينة، مع محادثة واتصال وواتساب. */
@@ -299,14 +419,8 @@ export function CouriersDirectory() {
       cities: City[];
       profile: { cityId?: string } | null;
     }>("/api/producer/profile")
-      .then((d) => {
-        setCities(d.cities);
-        const mine = d.cities.find((c) => c.id === d.profile?.cityId);
-        if (mine) {
-          setRegion(mine.regionId);
-          setCity(mine.id);
-        }
-      })
+      // القائمة محصورة أصلًا في تغطية الأسرة (المدينة ومراكزها)؛ التصفية اختيارية.
+      .then((d) => setCities(d.cities))
       .catch(() => {});
   }, [session.user?.id]);
   useEffect(() => {
@@ -342,8 +456,8 @@ export function CouriersDirectory() {
       <h1>المندوبون</h1>
       <Guard {...session} />
       <p className={s.muted}>
-        مندوبون معتمدون يتفقون معك على توصيل طلبات زبائنك. الاتفاق والأجرة بينك
-        وبين المندوب.
+        مندوبون معتمدون ونشطون الآن داخل تغطيتك (المدينة أو المراكز). الاتفاق
+        والأجرة بينك وبين المندوب.
       </p>
       <div className={s.grid}>
         <label className={s.field}>
@@ -381,15 +495,31 @@ export function CouriersDirectory() {
       {list === null && !error ? (
         <p role="status">جارٍ تحميل المندوبين…</p>
       ) : list && list.length === 0 ? (
-        <p className={s.notice}>لا يوجد مندوبون معتمدون في هذا النطاق بعد.</p>
+        <p className={s.notice}>لا يوجد مندوب نشط في تغطيتك الآن.</p>
       ) : (
         <ul className={s.courierList} aria-label="قائمة المندوبين">
           {list?.map((k) => (
             <li key={k.id} className={s.card}>
               <h2>{k.name}</h2>
+              <Stars
+                value={k.ratingAverage ?? null}
+                count={k.ratingCount ?? 0}
+                size={14}
+              />
               <p>
                 🚗 {k.carType} · {k.cityName}
               </p>
+              <ul className={s.courierPrices} aria-label={"تسعيرة " + k.name}>
+                <li>
+                  داخل المدينة:{" "}
+                  <strong>{priceText(k.cityPrice ?? null)}</strong>
+                </li>
+                {(k.centers ?? []).map((x) => (
+                  <li key={x.name}>
+                    {x.name}: <strong>{priceText(x.price)}</strong>
+                  </li>
+                ))}
+              </ul>
               <div className={s.actions}>
                 <button
                   type="button"
@@ -534,6 +664,106 @@ export function AdminCouriers({
               </label>
               <button className={s.button}>حفظ قرار المندوب</button>
             </form>
+          </article>
+        ))
+      )}
+    </section>
+  );
+}
+
+type Delivery = {
+  orderId: string;
+  status: "assigned" | "delivered";
+  product: string | null;
+  quantity: number;
+  startDate: string;
+  family: string;
+  familyPhone: string;
+  pickupLocation: string;
+  customerName: string;
+  customerPhone: string;
+  deliveryLocation: string | null;
+};
+/** «طلبات التوصيل»: موقع الأسرة لاستلام الطلب وموقع العميل لتوصيله. */
+function CourierDeliveries() {
+  const [list, setList] = useState<Delivery[] | null>(null),
+    [error, setError] = useState(""),
+    [busy, setBusy] = useState("");
+  const load = () =>
+    api<{ deliveries: Delivery[] }>("/api/courier/deliveries")
+      .then((d) => setList(d.deliveries))
+      .catch((e) => {
+        setList([]);
+        setError((e as Error).message);
+      });
+  useEffect(() => {
+    load();
+  }, []);
+  async function delivered(id: string) {
+    if (!window.confirm("تأكيد توصيل الطلب للعميل؟")) return;
+    setBusy(id);
+    setError("");
+    try {
+      await api("/api/courier/deliveries", {
+        method: "PUT",
+        body: JSON.stringify({ orderId: id }),
+      });
+      await load();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy("");
+    }
+  }
+  return (
+    <section className={s.card} aria-label="طلبات التوصيل">
+      <h2>طلبات التوصيل</h2>
+      <Message error={error} />
+      {list === null ? (
+        <p role="status">جارٍ التحميل…</p>
+      ) : list.length === 0 ? (
+        <p className={s.muted}>لا توجد طلبات توصيل مسندة إليك الآن.</p>
+      ) : (
+        list.map((d) => (
+          <article key={d.orderId} className={s.courierAssign}>
+            <h3>
+              {d.product ?? "طلب"} — {d.quantity}
+              {d.status === "delivered" ? " · تم التوصيل ✓" : ""}
+            </h3>
+            <p>
+              الأسرة: {d.family}{" "}
+              <a className={s.contact} href={`tel:${d.familyPhone}`}>
+                اتصال بالأسرة
+              </a>
+            </p>
+            <LocationLink
+              label="موقع الاستلام (الأسرة)"
+              location={d.pickupLocation}
+            />
+            <p>
+              العميل: {d.customerName}{" "}
+              <a className={s.contact} href={`tel:${d.customerPhone}`}>
+                اتصال بالعميل
+              </a>
+            </p>
+            {d.deliveryLocation ? (
+              <LocationLink
+                label="موقع التوصيل (العميل)"
+                location={d.deliveryLocation}
+              />
+            ) : (
+              <p className={s.muted}>لم يرسل العميل موقعه؛ تواصل معه.</p>
+            )}
+            {d.status === "assigned" && (
+              <button
+                type="button"
+                className={s.button}
+                disabled={busy === d.orderId}
+                onClick={() => delivered(d.orderId)}
+              >
+                تم التوصيل
+              </button>
+            )}
           </article>
         ))
       )}

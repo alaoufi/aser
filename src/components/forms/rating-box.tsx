@@ -19,7 +19,7 @@ export function RatingBox({
   prompt = "رأيك مهم؟",
   compact = false,
 }: {
-  kind: "family" | "product" | "member";
+  kind: "family" | "product" | "member" | "courier";
   target: string;
   title: string;
   prompt?: string;

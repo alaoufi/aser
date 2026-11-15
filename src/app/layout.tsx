@@ -80,7 +80,7 @@ export default async function RootLayout({
         </a>
         {texts["ticker.text"] && <AboutTicker text={texts["ticker.text"]} />}
         <header className="site-header">
-          <Link href="/" className="brand">
+          <Link href="/" className="brand" aria-label="أكلات جدتنا — الرئيسية">
             <Image
               className="brand-logo"
               src="/brand/jdatna-symbol.webp"

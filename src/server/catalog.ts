@@ -51,6 +51,8 @@ export async function getCities(): Promise<City[]> {
 }
 export const producerSelect = `SELECT ${notCookingTodaySql()} AS "notCookingToday",p.id,p.slug,COALESCE(p.trade_name,p.name) AS name,p.description,p.city_id AS "cityId",
 c.name AS "cityName",r.name AS "regionName",p.neighborhood,p.verified,
+(SELECT round(avg(g.stars)::numeric,1)::float8 FROM jdatna.ratings g WHERE g.kind='family' AND g.target_id=p.id) AS "ratingAverage",
+(SELECT count(*)::int FROM jdatna.ratings g WHERE g.kind='family' AND g.target_id=p.id) AS "ratingCount",
 CASE WHEN p.show_phone THEN p.phone END AS phone,
 CASE WHEN p.show_whatsapp THEN COALESCE(NULLIF(p.whatsapp,''),p.phone) END AS whatsapp,
 p.delivery,p.pickup,(SELECT s.url FROM jdatna.producer_social_links s WHERE s.producer_id=p.id AND s.platform='website') AS website,
