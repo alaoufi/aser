@@ -232,11 +232,13 @@ function Review({
           </select>
         </label>
         <label className={s.field}>
-          ملاحظة للأسرة المنتجة (تظهر لها أعلى صفحتها، اذكر فيها النواقص)
+          {decision === "approved"
+            ? "ملاحظة للأسرة المنتجة (اختيارية عند التفعيل؛ تظهر لها أعلى صفحتها)"
+            : "ملاحظة للأسرة المنتجة (مطلوبة: اذكر النواقص أو سبب القرار؛ تظهر لها أعلى صفحتها)"}
           <textarea
             name="reason"
-            required
-            minLength={5}
+            required={decision !== "approved"}
+            minLength={decision === "approved" ? undefined : 5}
             maxLength={2000}
             placeholder={
               producer.documentId

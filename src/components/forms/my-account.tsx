@@ -1,4 +1,5 @@
 "use client";
+import { PasswordField } from "./password-field";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { AccountShell, Guard, Message, api, s, useSession } from "./shared";
@@ -103,37 +104,26 @@ export function MyAccount() {
             }}
           >
             <h2>تغيير كلمة المرور</h2>
-            <label className={s.field}>
-              كلمة المرور الحالية
-              <input
-                name="currentPassword"
-                type="password"
-                autoComplete="current-password"
-                required
-              />
-            </label>
-            <label className={s.field}>
-              كلمة المرور الجديدة
-              <input
-                name="newPassword"
-                type="password"
-                autoComplete="new-password"
-                required
-                minLength={4}
-                maxLength={128}
-              />
-            </label>
-            <label className={s.field}>
-              تأكيد كلمة المرور الجديدة
-              <input
-                name="confirm"
-                type="password"
-                autoComplete="new-password"
-                required
-                minLength={4}
-                maxLength={128}
-              />
-            </label>
+            <PasswordField
+              label="كلمة المرور الحالية"
+              name="currentPassword"
+              autoComplete="current-password"
+              required
+            />
+            <PasswordField
+              label="كلمة المرور الجديدة"
+              name="newPassword"
+              autoComplete="new-password"
+              required
+              minLength={4}
+            />
+            <PasswordField
+              label="تأكيد كلمة المرور الجديدة"
+              name="confirm"
+              autoComplete="new-password"
+              required
+              minLength={4}
+            />
             <button className={s.button} disabled={busy}>
               تغيير كلمة المرور
             </button>

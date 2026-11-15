@@ -9,6 +9,20 @@ import {
 } from "../src/server/security";
 test("Saudi phone normalization and invalid rejection", () => {
   assert.equal(normalizePhone("0501234567"), "+966501234567");
+  // اللصق من جهات الاتصال: مسافات وأقواس وعلامات اتجاه خفية، و966 بلا «+»، وأرقام عربية.
+  for (const pasted of [
+    "\u202a+966 53 221 7166\u202c",
+    "+966 (53) 221-7166",
+    "966532217166",
+    "00966532217166",
+    "+9660532217166",
+    "532217166",
+    "٠٥٣٢٢١٧١٦٦",
+    "\u2066053 221 7166\u2069",
+  ])
+    assert.equal(normalizePhone(pasted), "+966532217166", pasted);
+  // ما فيه حروف ليس رقم جوال (اسم مستخدم).
+  assert.throws(() => normalizePhone("ali0532217166"));
   assert.throws(() => normalizePhone("123"));
 });
 test("CSRF rejects absent and foreign origins", () => {
