@@ -2,7 +2,11 @@ import { api, jsonBody } from "@/server/http";
 import { passwordLogin } from "@/server/credentials";
 import { rateLimit, sessionCookie } from "@/server/auth";
 import { HttpError } from "@/server/security";
-import { recordSecurityEvent, sourceKey } from "@/server/security-events";
+import {
+  identifierHint,
+  recordSecurityEvent,
+  sourceKey,
+} from "@/server/security-events";
 export const POST = api(async (request) => {
   // حد لكل عنوان زائر، فلا يستنفد مهاجم واحد الحد العام فيُقفل الدخول على الجميع.
   const source = sourceKey(request);
@@ -14,15 +18,28 @@ export const POST = api(async (request) => {
   try {
     result = await passwordLogin(body);
   } catch (error) {
-    if (
-      error instanceof HttpError &&
-      (error.status === 401 || error.status === 403)
-    )
-      await recordSecurityEvent("login.failed", {
-        request,
-        subject: identifier.toLowerCase() || null,
-        detail: error.status === 403 ? "حساب موقوف" : "كلمة مرور خاطئة",
-      });
+    if (error instanceof HttpError) {
+      const e = error as HttpError & { userId?: string; justLocked?: boolean };
+      const hint = identifierHint(identifier);
+      if (e.status === 401 || e.status === 403)
+        await recordSecurityEvent("login.failed", {
+          request,
+          userId: e.userId ?? null,
+          subject: identifier.toLowerCase() || null,
+          detail: `${e.status === 403 ? "حساب موقوف" : "كلمة مرور خاطئة"} · ${hint}`,
+        });
+      else if (e.status === 423)
+        // قفل الحساب عند المحاولة الخامسة، أو محاولة دخول لحساب مقفل.
+        await recordSecurityEvent(
+          e.justLocked ? "login.locked" : "login.while_locked",
+          {
+            request,
+            userId: e.userId ?? null,
+            subject: identifier.toLowerCase() || null,
+            detail: hint,
+          },
+        );
+    }
     throw error;
   }
   if (result.otp)

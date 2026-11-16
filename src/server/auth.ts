@@ -183,8 +183,8 @@ export async function verifyOtp(
         "UPDATE jdatna.otp_challenges SET attempts=attempts+1 WHERE id=$1",
         [id],
       );
-      // سقف يومي للمحاولات على الجوال الواحد عبر كل رموزه: 15 محاولة من 9000 احتمال يوميًا.
-      await rateLimit("verify-phone-day:" + hash(challenge.phone), 15, 86400);
+      // سقف يومي للمحاولات على الجوال الواحد عبر كل رموزه: 10 محاولات من 9000 احتمال يوميًا.
+      await rateLimit("verify-phone-day:" + hash(challenge.phone), 10, 86400);
       if (
         !timingSafeEqual(
           Buffer.from(challenge.code_hash, "hex"),
@@ -244,12 +244,18 @@ export function adminOtpRequired() {
 }
 /** الدخول يبقى سنة كاملة، ويتجدد مع كل زيارة فلا يُطلب مرة أخرى. */
 export const SESSION_SECONDS = 60 * 60 * 24 * 365;
+/**
+ * انتهاء الجلسة الجديدة ($2 = المستخدم): حساب المدير أو المشرف 12 ساعة ولا يتجدد
+ * (الحماية أولًا، قرار المالك 2026-11-17)، وغيره سنة تتجدد مع كل زيارة.
+ */
+export const SESSION_EXPIRY = `now()+CASE WHEN EXISTS(SELECT 1 FROM jdatna.users WHERE id=$2 AND (role='admin' OR cardinality(permissions)>0)) THEN interval '12 hours' ELSE interval '365 days' END`;
 /** يمدد الجلسة النشطة سنة من آخر زيارة (مرة كل يوم على الأكثر). */
 export async function renewSession(request: Request) {
   const token = sessionToken(request);
   if (!token || !databaseConfigured()) return false;
   const r = await db().query(
-    "UPDATE jdatna.sessions SET expires_at=now()+interval '365 days' WHERE token_hash=$1 AND expires_at>now() AND NOT setup_only AND expires_at<now()+interval '364 days'",
+    `UPDATE jdatna.sessions s SET expires_at=now()+interval '365 days' WHERE s.token_hash=$1 AND s.expires_at>now() AND NOT s.setup_only AND s.expires_at<now()+interval '364 days'
+       AND NOT EXISTS(SELECT 1 FROM jdatna.users u WHERE u.id=s.user_id AND (u.role='admin' OR cardinality(u.permissions)>0))`,
     [hash(token)],
   );
   return (r.rowCount ?? 0) > 0;
@@ -313,7 +319,7 @@ export async function verifyAdminLogin(id: string, code: string) {
       if (!user) return null;
       const token = randomBytes(32).toString("hex");
       await client.query(
-        "INSERT INTO jdatna.sessions(token_hash,user_id,expires_at) VALUES($1,$2,now()+interval '365 days')",
+        `INSERT INTO jdatna.sessions(token_hash,user_id,expires_at) VALUES($1,$2,${SESSION_EXPIRY})`,
         [hash(token), user.id],
       );
       return { user, token };

@@ -7,7 +7,8 @@ import {
   clientIp,
   mask,
   recordSecurityEvent,
-  securityOverview,
+  securityReport,
+  identifierHint,
   sourceKey,
 } from "../src/server/security-events";
 import type { SessionUser } from "../src/lib/types";
@@ -69,26 +70,38 @@ test(
         )
       ).rows;
       assert.equal(stored.length, 6);
-      // لا العنوان ولا الحساب نصًّا في السجل.
-      assert.ok(stored.every((r) => !JSON.stringify(r).includes(ip)));
+      // الحساب المستهدف لا يُحفظ نصًّا (العنوان يُحفظ للتقرير ويُحذف بعد 90 يومًا).
       assert.ok(stored.every((r) => !JSON.stringify(r).includes(tag)));
-      const view = await securityOverview(admin);
-      assert.ok(
-        view.suspicious.some(
-          (s) =>
-            s.by === "source" && s.key === mask(`ip:${ip}`) && s.count >= 6,
-        ),
+      // اسم الدخول المجرَّب مخفي أغلبه.
+      assert.equal(identifierHint("0551234567"), "05••••••67");
+      assert.equal(identifierHint("+966 55 123 4567"), "96••••••67");
+      assert.equal(identifierHint("ahmad"), "ah•••");
+      const report = await securityReport(admin, {});
+      assert.equal(report.range.days, 7);
+      assert.equal(report.daily.length, 7);
+      assert.ok(report.cards.loginFailed >= 6);
+      assert.ok(report.cards.attempts >= 6);
+      assert.ok(report.cards.sources >= 1);
+      const top = report.topIps.find((x) => x.ip === ip);
+      assert.equal(top?.count, 6);
+      // الأحداث مجمّعة: صف لعنوان وحدث وساعة بعدد المحاولات.
+      const row = report.events.find((e) => e.ip === ip);
+      assert.equal(row?.attempts, 6);
+      assert.equal(row?.status, "failed");
+      const today = report.daily.at(-1);
+      assert.ok((today?.failed ?? 0) >= 6);
+      // التصفية بالحالة: «نجح» لا يضم محاولات فاشلة.
+      const ok = await securityReport(admin, { status: "success" });
+      assert.equal(
+        ok.events.some((e) => e.ip === ip),
+        false,
       );
-      assert.ok(
-        view.suspicious.some(
-          (s) => s.by === "account" && s.key === mask(`subject:victim-${tag}`),
-        ),
-      );
-      assert.ok(
-        view.summary.some((s) => s.kind === "login.failed" && s.count >= 6),
+      await assert.rejects(
+        securityReport(admin, { from: "2026-01-01", to: "2026-12-31" }),
+        { status: 400 },
       );
       for (const role of ["customer", "producer", "courier"] as const)
-        await assert.rejects(securityOverview({ ...admin, role }), {
+        await assert.rejects(securityReport({ ...admin, role }, {}), {
           status: 403,
         });
       // تجاوز حد المحاولات يُسجَّل مرة واحدة في النافذة مهما تكرر.

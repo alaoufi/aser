@@ -6,10 +6,10 @@ import { db } from "../src/server/db";
 
 /**
  * رمز التحقق أربعة أرقام: سقف يومي لكل جوال يمنع التخمين المتواصل طوال اليوم
- * (8 رموز و15 محاولة إدخال في اليوم)، حتى لو جاء المهاجم من عناوين كثيرة.
+ * (8 رموز و10 محاولات إدخال في اليوم)، حتى لو جاء المهاجم من عناوين كثيرة.
  */
 test(
-  "a phone gets at most 8 codes and 15 code attempts a day, even with the right code",
+  "a phone gets at most 8 codes and 10 code attempts a day, even with the right code",
   { skip: process.env.JDATNA_TEST_DB !== "true" || !process.env.DATABASE_URL },
   async () => {
     const pool = db();
@@ -50,10 +50,10 @@ test(
         code = JSON.parse(String(init?.body)).message.slice(-4);
         return Response.json({ accepted: true });
       };
-      // اليوم استُنفد فيه 15 إدخالًا على هذا الجوال: حتى الرمز الصحيح يُرفض حتى الغد.
+      // اليوم استُنفدت فيه 10 إدخالات على هذا الجوال: حتى الرمز الصحيح يُرفض حتى الغد.
       const { challengeId } = await requestOtp(phone, "signup");
       await pool.query(
-        "INSERT INTO jdatna.rate_limits(key,count,reset_at) VALUES($1,15,now()+interval '1 day')",
+        "INSERT INTO jdatna.rate_limits(key,count,reset_at) VALUES($1,10,now()+interval '1 day')",
         [keys[2]],
       );
       await assert.rejects(verifyOtp(challengeId, code, "مختبر", "signup"), {
