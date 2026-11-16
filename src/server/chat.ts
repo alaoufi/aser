@@ -20,7 +20,14 @@ export type ChatMessage = {
   body: string;
   mine: boolean;
   createdAt: string;
+  /** مدة الرسالة الصوتية بالميلي ثانية، أو null للرسالة النصية. */
+  voiceMs: number | null;
 };
+
+/** حدود الرسالة الصوتية: دقيقتان، وحجم أقصى 2 ميجابايت. */
+export const VOICE_MAX_MS = 120_000;
+export const VOICE_MAX_BYTES = 2 * 1024 * 1024;
+const VOICE_COLUMNS = `m.id,m.body,m.sender_id=$2 AS mine,m.created_at AS "createdAt",v.duration_ms AS "voiceMs"`;
 
 /**
  * يبدأ محادثة العضو مع أسرة معتمدة، أو يعيد محادثتهما القائمة.
@@ -215,10 +222,10 @@ export async function conversationMessages(
     const rows = (
       await client.query(
         since
-          ? `SELECT id,body,sender_id=$2 AS mine,created_at AS "createdAt" FROM jdatna.messages
-             WHERE conversation_id=$1 AND created_at>$3 ORDER BY created_at LIMIT 200`
-          : `SELECT * FROM (SELECT id,body,sender_id=$2 AS mine,created_at AS "createdAt" FROM jdatna.messages
-             WHERE conversation_id=$1 ORDER BY created_at DESC LIMIT 200) m ORDER BY "createdAt"`,
+          ? `SELECT ${VOICE_COLUMNS} FROM jdatna.messages m LEFT JOIN jdatna.message_voice v ON v.message_id=m.id
+             WHERE m.conversation_id=$1 AND m.created_at>$3 ORDER BY m.created_at LIMIT 200`
+          : `SELECT * FROM (SELECT ${VOICE_COLUMNS} FROM jdatna.messages m LEFT JOIN jdatna.message_voice v ON v.message_id=m.id
+             WHERE m.conversation_id=$1 ORDER BY m.created_at DESC LIMIT 200) x ORDER BY "createdAt"`,
         since ? [c.id, user.id, since] : [c.id, user.id],
       )
     ).rows as ChatMessage[];
@@ -274,6 +281,61 @@ export async function sendMessage(
     .object({ body: z.string().trim().min(1).max(2000) })
     .strict()
     .parse(input);
+  return deliver(user, id, body, null);
+}
+
+/** نوع الملف من بايتاته الأولى، لا من اسمه أو مما يقوله المتصفح. */
+export function voiceMime(data: Uint8Array): string | null {
+  if (
+    data[0] === 0x1a &&
+    data[1] === 0x45 &&
+    data[2] === 0xdf &&
+    data[3] === 0xa3
+  )
+    return "audio/webm";
+  if (String.fromCharCode(...data.subarray(0, 4)) === "OggS")
+    return "audio/ogg";
+  if (String.fromCharCode(...data.subarray(4, 8)) === "ftyp")
+    return "audio/mp4";
+  return null;
+}
+
+const clock = (ms: number) => {
+  const total = Math.max(1, Math.round(ms / 1000));
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
+};
+
+/** رسالة صوتية: تسجيل من المتصفح حتى دقيقتين، يُحفظ في القاعدة ويصل لطرفي المحادثة فقط. */
+export async function sendVoice(
+  user: SessionUser,
+  id: string,
+  data: Uint8Array,
+  durationValue: unknown,
+) {
+  const durationMs = z.coerce
+    .number()
+    .int()
+    .min(500, "التسجيل قصير جدًا")
+    .max(VOICE_MAX_MS + 500, "الحد الأقصى للتسجيل دقيقتان")
+    .parse(durationValue);
+  if (data.byteLength < 100) throw new HttpError(400, "التسجيل فارغ");
+  if (data.byteLength > VOICE_MAX_BYTES)
+    throw new HttpError(413, "التسجيل أكبر من المسموح");
+  const mime = voiceMime(data);
+  if (!mime) throw new HttpError(400, "صيغة التسجيل غير مدعومة");
+  return deliver(user, id, `🎤 رسالة صوتية (${clock(durationMs)})`, {
+    mime,
+    durationMs,
+    data,
+  });
+}
+
+async function deliver(
+  user: SessionUser,
+  id: string,
+  body: string,
+  voice: { mime: string; durationMs: number; data: Uint8Array } | null,
+) {
   const sent = await transaction(async (client) => {
     const c = await participant(client, user, id, true);
     if (c.blocked_by)
@@ -290,6 +352,14 @@ export async function sendMessage(
         [randomUUID(), c.id, user.id, body],
       )
     ).rows[0] as ChatMessage;
+    message.voiceMs = null;
+    if (voice) {
+      await client.query(
+        "INSERT INTO jdatna.message_voice(message_id,mime,duration_ms,data) VALUES($1,$2,$3,$4)",
+        [message.id, voice.mime, voice.durationMs, Buffer.from(voice.data)],
+      );
+      message.voiceMs = voice.durationMs;
+    }
     await client.query(
       `UPDATE jdatna.conversations SET last_message_at=$2,${c.side === "customer" ? "customer_read_at" : "producer_read_at"}=$2 WHERE id=$1`,
       [c.id, message.createdAt],
@@ -314,6 +384,26 @@ export async function sendMessage(
     tag: `chat-${sent.conversation}`,
   });
   return sent.message;
+}
+
+/** صوت رسالة في محادثة: لطرفيها فقط؛ غيرهما يرى «غير موجودة». */
+export async function voiceOf(
+  user: SessionUser,
+  conversationId: string,
+  messageId: string,
+) {
+  const c = await participant(db(), user, conversationId);
+  if (!z.uuid().safeParse(messageId).success)
+    throw new HttpError(404, "الرسالة غير موجودة");
+  const row = (
+    await db().query(
+      `SELECT v.mime,v.data FROM jdatna.message_voice v JOIN jdatna.messages m ON m.id=v.message_id
+       WHERE v.message_id=$1 AND m.conversation_id=$2`,
+      [messageId, c.id],
+    )
+  ).rows[0];
+  if (!row) throw new HttpError(404, "الرسالة غير موجودة");
+  return { mime: row.mime as string, data: row.data as Buffer };
 }
 
 /**

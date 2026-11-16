@@ -78,6 +78,7 @@ export function MobileNavigation({ switcher }: { switcher?: React.ReactNode }) {
         <Link href="/orders">طلباتي</Link>
         <Link href="/messages">المحادثات</Link>
         <Link href="/about">حكايتنا</Link>
+        <Link href="/guide">دليل المستخدم</Link>
         <Link href="/suggestions">الاقتراحات</Link>
         {switcher}
         {/* آخر القائمة: «تسجيل الدخول» لغير المسجّل، و«حسابي» ثم «خروج» للمسجّل. */}

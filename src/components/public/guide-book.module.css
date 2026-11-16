@@ -1,0 +1,461 @@
+/* دليل المستخدم: كتاب ثلاثي الأبعاد يُقلَّب كالكتاب العربي (الكعب في المنتصف، والتقليب نحو اليمين). */
+.guide {
+  --leather: #3f4b33;
+  --leather-dark: #2c3523;
+  --gold: #d6a35c;
+  --page: #fffaf0;
+  --page-edge: #eadbc2;
+  --ink: #38291f;
+  --muted: #74634f;
+  --flip: 0.85s;
+  display: grid;
+  gap: 14px;
+}
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+.modeButton,
+.controls button,
+.openButton {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid #cdbb9e;
+  border-radius: 999px;
+  background: #fffdf8;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.modeButton:focus-visible,
+.controls button:focus-visible,
+.openButton:focus-visible,
+.toc a:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 2px;
+}
+.controls button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* الطاولة التي يوضع عليها الكتاب */
+.stage {
+  display: grid;
+  gap: 14px;
+  padding: 28px 12px 18px;
+  border-radius: 22px;
+  background:
+    radial-gradient(ellipse at 50% 35%, #f6e8cf 0%, transparent 70%),
+    repeating-linear-gradient(90deg, #e4cfae 0 3px, #dcc5a1 3px 7px);
+  overflow: hidden;
+  perspective: 2600px;
+  touch-action: pan-y;
+}
+.book {
+  position: relative;
+  margin: 0 auto;
+  transform-style: preserve-3d;
+  transition: transform var(--flip) cubic-bezier(0.3, 0.7, 0.2, 1);
+}
+.double {
+  width: min(1040px, 100%);
+  height: clamp(560px, 76vh, 760px);
+}
+.double[data-state="closed"] {
+  transform: translateX(25%) rotateX(4deg);
+}
+.double[data-state="end"] {
+  transform: translateX(-25%) rotateX(4deg);
+}
+.double[data-state="open"] {
+  transform: rotateX(4deg);
+}
+.single {
+  width: min(520px, 100%);
+  height: clamp(540px, calc(100dvh - 230px), 760px);
+}
+
+/* الورقة: وجهان، وتدور حول الكعب */
+.leaf {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  transform-style: preserve-3d;
+  transform-origin: right center;
+  transition:
+    transform var(--flip) cubic-bezier(0.45, 0.05, 0.25, 1),
+    visibility 0s;
+}
+.double .leaf {
+  width: 50%;
+}
+.single .leaf {
+  width: 100%;
+}
+.flipped {
+  transform: rotateY(180deg);
+}
+/* على الجوال: الورقة المقلوبة تخرج يمينًا ثم تختفي */
+.single .flipped {
+  visibility: hidden;
+  /* الورقة المقلوبة لا تلتقط اللمس أثناء خروجها، فتصل الضغطة للصفحة التي تحتها */
+  pointer-events: none;
+  transition:
+    transform var(--flip) cubic-bezier(0.45, 0.05, 0.25, 1),
+    visibility 0s var(--flip);
+}
+.face {
+  position: absolute;
+  inset: 0;
+  overflow: hidden auto;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  background: var(--page);
+  color: var(--ink);
+  scrollbar-width: thin;
+}
+.back {
+  transform: rotateY(180deg);
+}
+/* ظل الكعب وحواف الصفحات المتراكمة */
+.front {
+  border-radius: 14px 4px 4px 14px;
+  background:
+    linear-gradient(to left, rgb(60 40 20 / 0.18), transparent 7%), var(--page);
+  box-shadow:
+    -1px 0 0 var(--page-edge),
+    -3px 1px 0 #fff,
+    -4px 1px 0 var(--page-edge),
+    -6px 2px 0 #fff,
+    -7px 2px 0 var(--page-edge),
+    0 26px 40px -22px rgb(40 25 15 / 0.6);
+}
+.back {
+  border-radius: 4px 14px 14px 4px;
+  background:
+    linear-gradient(to right, rgb(60 40 20 / 0.18), transparent 7%), var(--page);
+  box-shadow:
+    1px 0 0 var(--page-edge),
+    3px 1px 0 #fff,
+    4px 1px 0 var(--page-edge),
+    6px 2px 0 #fff,
+    7px 2px 0 var(--page-edge),
+    0 26px 40px -22px rgb(40 25 15 / 0.6);
+}
+.single .front {
+  border-radius: 14px 4px 4px 14px;
+}
+.blankFace {
+  height: 100%;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0 31px,
+    #efe2cb 31px 32px
+  );
+}
+
+/* الغلاف الجلدي */
+.cover {
+  min-height: 100%;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 12px;
+  padding: 32px 28px;
+  text-align: center;
+  color: #f8ecd5;
+  background:
+    radial-gradient(circle at 30% 20%, rgb(255 255 255 / 0.1), transparent 45%),
+    linear-gradient(135deg, var(--leather), var(--leather-dark));
+  box-shadow:
+    inset 0 0 0 10px var(--leather-dark),
+    inset 0 0 0 12px var(--gold),
+    inset 0 0 0 16px var(--leather-dark),
+    inset 0 0 0 17px rgb(214 163 92 / 0.6);
+}
+.backCover {
+  background:
+    radial-gradient(
+      circle at 70% 80%,
+      rgb(255 255 255 / 0.08),
+      transparent 45%
+    ),
+    linear-gradient(225deg, var(--leather), var(--leather-dark));
+}
+.coverEyebrow {
+  margin: 0;
+  letter-spacing: 0.08em;
+  color: var(--gold);
+  font-weight: 700;
+}
+.coverLogo {
+  width: 132px;
+  height: auto;
+  border-radius: 14px;
+  background: #fcf8f0;
+  padding: 8px;
+  box-shadow: 0 10px 24px rgb(0 0 0 / 0.35);
+}
+.coverTitle {
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 2.8rem);
+  color: var(--gold);
+  text-shadow:
+    0 1px 0 #6e4c1f,
+    0 2px 6px rgb(0 0 0 / 0.45);
+}
+.coverLead {
+  margin: 0;
+  max-width: 30ch;
+  line-height: 1.7;
+}
+.coverVersion {
+  margin: 0;
+  font-size: 0.85rem;
+  opacity: 0.75;
+}
+.coverLink {
+  color: var(--gold);
+}
+.cover .openButton {
+  margin-top: 6px;
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--leather-dark);
+}
+
+/* الصفحة الداخلية */
+.paper {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  min-height: 100%;
+  padding: 26px 30px 44px;
+  position: relative;
+}
+.notes {
+  margin: auto;
+  color: var(--muted);
+}
+.tocTitle,
+.chapterTitle {
+  margin: 0;
+  color: var(--ink);
+  font-size: clamp(1.35rem, 3.2vw, 1.75rem);
+}
+.toc {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+.toc a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  color: var(--ink);
+  text-decoration: none;
+}
+.toc a:hover {
+  background: #f3e7d3;
+}
+.tocDot {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.tocName {
+  font-weight: 600;
+}
+.tocFill {
+  flex: 1;
+  border-bottom: 2px dotted #cdbb9e;
+  translate: 0 4px;
+}
+.tocPage {
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+.band {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin: -26px -30px 0;
+  padding: 10px 30px;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+.chapterNo {
+  letter-spacing: 0.02em;
+}
+.audience {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.85);
+  color: var(--ink);
+  font-size: 0.8rem;
+}
+.olive {
+  background: #526247;
+  color: #fff;
+}
+.rust {
+  background: #a75035;
+  color: #fff;
+}
+.gold {
+  background: #d6a35c;
+  color: #2c2015;
+}
+.sage {
+  background: #a8b597;
+  color: #22301a;
+}
+.art {
+  justify-self: center;
+  width: min(230px, 70%);
+  padding: 6px;
+  border-radius: 20px;
+  background: radial-gradient(circle, #f6ecda, transparent 72%);
+}
+.art svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.intro {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.75;
+  font-weight: 600;
+}
+.steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+  display: grid;
+  gap: 8px;
+}
+.steps li {
+  counter-increment: step;
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  gap: 10px;
+  line-height: 1.7;
+}
+.steps li::before {
+  content: counter(step);
+  width: 26px;
+  height: 26px;
+  margin-top: 2px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #f3e7d3;
+  color: #6b3a22;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+.tip {
+  margin: 0;
+  padding: 10px 14px;
+  border-inline-start: 4px solid var(--gold);
+  border-radius: 10px;
+  background: #fbf0dc;
+  line-height: 1.7;
+}
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin: 0;
+}
+.links a {
+  color: #8b3d26;
+  font-weight: 700;
+}
+.folio {
+  position: absolute;
+  bottom: 12px;
+  inset-inline: 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.controls {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.where {
+  margin: 0;
+  text-align: center;
+  color: #5a4632;
+  font-size: 0.9rem;
+}
+
+/* النص المتصل: كل الصفحات متتالية، للقراءة المريحة والطباعة وقارئ الشاشة */
+.flatPages {
+  display: grid;
+  gap: 18px;
+  max-width: 760px;
+  margin: 0 auto;
+  width: 100%;
+}
+.flatPage {
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--page);
+  border: 1px solid var(--page-edge);
+  box-shadow: 0 8px 24px -16px rgb(40 25 15 / 0.5);
+}
+.flatPage .cover {
+  min-height: 0;
+}
+
+@media (max-width: 760px) {
+  .stage {
+    padding: 16px 8px 12px;
+    border-radius: 16px;
+  }
+  .paper {
+    padding: 22px 20px 44px;
+  }
+  .band {
+    margin: -22px -20px 0;
+    padding: 10px 20px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .guide {
+    --flip: 0s;
+  }
+}
+@media print {
+  .toolbar {
+    display: none;
+  }
+  .flatPage {
+    break-inside: avoid;
+    box-shadow: none;
+  }
+}

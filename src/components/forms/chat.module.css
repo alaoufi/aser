@@ -358,3 +358,64 @@
   width: 36px;
   height: 36px;
 }
+
+/* الرسائل الصوتية */
+.voice {
+  display: grid;
+  gap: 2px;
+  min-width: min(260px, 62vw);
+}
+.voice audio {
+  width: 100%;
+  height: 40px;
+}
+.voice small {
+  color: #54656f;
+  font-size: 12px;
+}
+.recording {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 46px;
+  margin: 0;
+  padding: 0 16px;
+  border-radius: 22px;
+  background: #fff;
+  color: #111b21;
+  font-variant-numeric: tabular-nums;
+}
+.recDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #d92d20;
+  animation: rec-pulse 1s ease-in-out infinite;
+}
+@keyframes rec-pulse {
+  50% {
+    opacity: 0.3;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .recDot {
+    animation: none;
+  }
+}
+.recCancel {
+  flex: none;
+  min-height: 46px;
+  padding: 0 14px;
+  border: 1px solid #d1d7db;
+  border-radius: 22px;
+  background: #fff;
+  color: #8a1c13;
+  font: inherit;
+  cursor: pointer;
+}
+.reportActions .danger {
+  background: #b42318;
+  border-color: #b42318;
+  color: #fff;
+}

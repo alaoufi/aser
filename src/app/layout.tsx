@@ -244,6 +244,7 @@ export default async function RootLayout({
             <div>
               <h3>عن المنصة</h3>
               <Link href="/about">حكايتنا</Link>
+              <Link href="/guide">دليل المستخدم</Link>
               <Link href="/privacy">سياسة الخصوصية</Link>
               <Link href="/terms">شروط الاستخدام</Link>
               <Link href="/support">الدعم والتواصل</Link>
