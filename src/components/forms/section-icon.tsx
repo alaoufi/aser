@@ -6,6 +6,8 @@ const icons: Record<string, string> = {
   orders: "M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6",
   products: "M4 13a8 8 0 0016 0zM3 13h18M12 5v3M9 6v2M15 6v2",
   "deleted-chats": "M4 5h16v11H8l-4 4zM9 9l6 4M15 9l-6 4",
+  views:
+    "M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z",
   security: "M12 3l8 3v6c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V6zM9 12l2 2 4-4",
   contracts: "M7 3h7l4 4v14H7zM14 3v4h4M9.5 12h6M9.5 15.5h6M9.5 19h3.5",
   reports: "M5 21V4M5 4h11l-2 4 2 4H5",

@@ -28,6 +28,7 @@ import { AdminCouriers } from "./courier";
 import { ContractsAdmin } from "./subscriptions";
 import { SecurityLog } from "./security-log";
 import { DeletedChatsAdmin } from "./deleted-chats";
+import { ViewsAdmin } from "./views-admin";
 
 /** بيانات كل قسم، تُحمَّل مسبقًا عند المرور على زره أو التركيز عليه. */
 const tabData: Record<string, string[]> = {
@@ -44,6 +45,7 @@ const tabData: Record<string, string[]> = {
   members: ["/api/admin/members?q="],
   security: ["/api/admin/security"],
   "deleted-chats": ["/api/admin/conversations"],
+  views: ["/api/admin/views"],
 };
 /** أقسام الإدارة وصلاحية كل قسم؛ «الأعضاء» للمدير الكامل فقط. */
 const adminTabs: [
@@ -63,6 +65,7 @@ const adminTabs: [
   ["template", "قالب الموقع", "content"],
   ["texts", "نصوص الموقع", "content"],
   ["app", "تطبيق الجوال", "content"],
+  ["views", "المشاهدات والزوار", "content"],
   ["review", "مراجعة المتاجر", "owner"],
   ["members", "الأعضاء والصلاحيات", "owner"],
   ["suggestions", "الاقتراحات", "owner"],
@@ -79,7 +82,7 @@ const adminGroups: [group: string, ids: string[]][] = [
   ["الأقسام والمواقع", ["categories", "locations"]],
   [
     "الموقع والأعضاء",
-    ["template", "texts", "app", "review", "members", "suggestions"],
+    ["template", "texts", "app", "views", "review", "members", "suggestions"],
   ],
 ];
 type Application = {
@@ -434,6 +437,8 @@ export function Admin() {
             <SecurityLog />
           ) : active === "deleted-chats" ? (
             <DeletedChatsAdmin />
+          ) : active === "views" ? (
+            <ViewsAdmin />
           ) : active === "template" ? (
             <TemplateAdmin />
           ) : active === "texts" ? (
