@@ -129,6 +129,7 @@ function AccountNavigation() {
     ["/", "الرئيسية"],
     ["/orders", "طلباتي"],
     ["/messages", "المحادثات"],
+    ["/my-subscriptions", "اشتراكاتي"],
     ["/me", "معلوماتي"],
     ...((user.role === "courier"
       ? [["/courier", "لوحتي كمندوب"]]

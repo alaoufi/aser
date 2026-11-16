@@ -15,6 +15,7 @@ export default function robots(): MetadataRoute.Robots {
         "/me",
         "/messages",
         "/orders",
+        "/my-subscriptions",
         "/courier",
         "/couriers",
       ],

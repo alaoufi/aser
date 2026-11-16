@@ -50,6 +50,11 @@ export default async function Subscriptions({
           لمدة محددة، وتتفق معها في المحادثة.
         </p>
       </div>
+      <p>
+        <Link href="/my-subscriptions" className="text-link">
+          اشتراكاتي وأطباقي ←
+        </Link>
+      </p>
       <div className="browse-scope">
         <RegionPicker regions={regions} value={region} path="/subscriptions" />
       </div>
@@ -79,6 +84,19 @@ export default async function Subscriptions({
                 {f.delivery ? " · مع التوصيل" : " · استلام"}
               </p>
               {f.notes && <p className="muted">{f.notes}</p>}
+              {f.menu.length > 0 && (
+                <dl className="subscription-menu">
+                  {f.meals.map((m) => {
+                    const dishes = f.menu.filter((x) => x.meal === m);
+                    return dishes.length ? (
+                      <div key={m}>
+                        <dt>{mealLabels[m]}</dt>
+                        <dd>{dishes.map((x) => x.name).join("، ")}</dd>
+                      </div>
+                    ) : null;
+                  })}
+                </dl>
+              )}
               <SubscriptionRequest
                 family={f.slug}
                 familyName={f.name}

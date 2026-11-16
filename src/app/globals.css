@@ -3184,3 +3184,24 @@ main {
   flex-wrap: wrap;
   gap: 8px;
 }
+/* أطباق الاشتراك في بطاقة الأسرة */
+.subscription-menu {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+}
+.subscription-menu div {
+  display: flex;
+  gap: 6px;
+}
+.subscription-menu dt {
+  color: #4f5d36;
+  flex: none;
+  font-weight: 700;
+}
+.subscription-menu dt::after {
+  content: ":";
+}
+.subscription-menu dd {
+  margin: 0;
+}

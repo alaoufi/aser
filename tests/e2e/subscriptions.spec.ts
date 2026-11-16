@@ -177,6 +177,23 @@ test("the family sets which subscriptions it offers and sees incoming requests",
     },
     approved: true,
     familyDelivers: true,
+    menu: [
+      { id: "m1", meal: "breakfast", name: "فول، عدس، بيض مسلوق مع الخبز" },
+      { id: "m2", meal: "lunch", name: "كبسة رز مع لحم" },
+    ],
+    schedule: {
+      day: "2099-01-02",
+      rows: [
+        {
+          id: "r1",
+          customerName: "سالم",
+          delivery: true,
+          location: "حي",
+          meal: "lunch",
+          dish: "كبسة رز مع لحم",
+        },
+      ],
+    },
     requests: [
       {
         id: "r1",
@@ -227,4 +244,93 @@ test("the family sets which subscriptions it offers and sees incoming requests",
   await expect(
     requests.getByRole("link", { name: "المحادثة للاتفاق ←" }),
   ).toHaveAttribute("href", "/messages?c=conv-9");
+  // قائمة الأطباق لكل وجبة، وجدول الغد، و«تم الاتفاق».
+  const menu = page.getByRole("region", { name: "قائمة أطباق الاشتراك" });
+  await expect(menu).toContainText("فول، عدس، بيض مسلوق مع الخبز");
+  await expect(menu).toContainText("كبسة رز مع لحم");
+  let added: unknown;
+  await page.route("**/api/producer/subscriptions/menu", (r) => {
+    added = r.request().postDataJSON();
+    return r.fulfill({ json: [] });
+  });
+  await menu.getByLabel("طبق عشاء جديد").fill("مرقوق لحم");
+  await menu.getByRole("button", { name: "إضافة لـعشاء" }).click();
+  await expect.poll(() => added).toEqual({ meal: "dinner", name: "مرقوق لحم" });
+  await expect(page.getByRole("region", { name: "جدول الغد" })).toContainText(
+    "سالم · غداء: كبسة رز مع لحم · توصيل",
+  );
+  let decided: unknown;
+  await page.route("**/api/producer/subscriptions/decide", (r) => {
+    decided = r.request().postDataJSON();
+    return r.fulfill({ json: {} });
+  });
+  await requests.getByRole("button", { name: "تم الاتفاق" }).click();
+  await expect.poll(() => decided).toEqual({ id: "r1", status: "agreed" });
+});
+
+// «اشتراكاتي»: بعد الاتفاق يختار العميل طبقه الدائم لكل وجبة، ويغيّر طبق يوم قادم.
+test("the customer picks a default dish per meal and changes one coming day", async ({
+  page,
+}) => {
+  await page.route("**/api/session", (r) =>
+    r.fulfill({
+      json: {
+        user: {
+          id: "c",
+          name: "سالم",
+          phone: "+966500000055",
+          role: "customer",
+        },
+        registrationOpen: true,
+      },
+    }),
+  );
+  const view = {
+    today: "2099-01-01",
+    firstEditable: "2099-01-02",
+    subscriptions: [
+      {
+        id: "s1",
+        familyName: "أكلات نجدية",
+        slug: "najdi",
+        plan: "weekly",
+        startDate: "2099-01-01",
+        endDate: "2099-01-07",
+        days: null,
+        meals: ["lunch"],
+        delivery: true,
+        status: "agreed",
+        conversationId: "conv-1",
+        defaults: {},
+        overrides: [],
+        menu: [
+          { id: "k", meal: "lunch", name: "كبسة رز مع لحم" },
+          { id: "m", meal: "lunch", name: "مرقوق" },
+        ],
+        itemNames: {},
+        upcoming: ["2099-01-02", "2099-01-03"],
+      },
+    ],
+  };
+  const sent: unknown[] = [];
+  await page.route("**/api/subscriptions/mine", (r) => {
+    if (r.request().method() === "PUT") sent.push(r.request().postDataJSON());
+    return r.fulfill({ json: view });
+  });
+  await page.goto("/my-subscriptions");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "اشتراكاتي" }),
+  ).toBeVisible();
+  const card = page.getByRole("region", { name: "اشتراك أكلات نجدية" });
+  await card
+    .getByRole("combobox", { name: "غداء", exact: true })
+    .selectOption("k");
+  await expect(page.getByText("تم حفظ طبق غداء الدائم ✓")).toBeVisible();
+  const day = card.locator("select").nth(1);
+  await day.selectOption("m");
+  expect(sent).toEqual([
+    { kind: "default", id: "s1", meal: "lunch", itemId: "k" },
+    { kind: "day", id: "s1", day: "2099-01-02", meal: "lunch", itemId: "m" },
+  ]);
+  await expect(card).toContainText("لا يُعدَّل");
 });

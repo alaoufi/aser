@@ -35,6 +35,18 @@ type Plan = {
   delivery: boolean;
   notes: string;
 };
+type MenuItem = { id: string; meal: MealId; name: string };
+const statusLabel: Record<string, string> = {
+  new: "جديد بانتظار الاتفاق",
+  agreed: "متفق عليه ✓",
+  declined: "معتذر عنه",
+  cancelled: "ملغى",
+};
+const menuExamples: Record<MealId, string> = {
+  breakfast: "مثال: فول، عدس، بيض مسلوق مع الخبز",
+  lunch: "مثال: كبسة رز مع لحم",
+  dinner: "مثال: مرقوق لحم",
+};
 type IncomingRequest = {
   id: string;
   plan: PlanId;
@@ -57,7 +69,31 @@ export function FamilySubscriptions() {
     approved: boolean;
     familyDelivers: boolean;
     requests: IncomingRequest[];
+    menu: MenuItem[];
+    schedule: {
+      day: string;
+      rows: {
+        id: string;
+        customerName: string;
+        delivery: boolean;
+        location: string | null;
+        meal: MealId;
+        dish: string | null;
+      }[];
+    };
   } | null>(null);
+  async function call(url: string, body: unknown, method = "POST") {
+    setError("");
+    try {
+      return await api<unknown>(url, { method, body: JSON.stringify(body) });
+    } catch (err) {
+      setError((err as Error).message);
+      return null;
+    }
+  }
+  async function reload() {
+    setData(await api<NonNullable<typeof data>>("/api/producer/subscriptions"));
+  }
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [busy, setBusy] = useState(false);
@@ -186,6 +222,99 @@ export function FamilySubscriptions() {
               {busy ? "جارٍ الحفظ…" : "حفظ الاشتراكات"}
             </button>
           </form>
+          <section className={s.card} aria-label="قائمة أطباق الاشتراك">
+            <h2>قائمة أطباق الاشتراك</h2>
+            <p className={s.muted}>
+              أطباق كل وجبة يختار منها المشترك طبقه الدائم، ويغيّر طبق أي يوم
+              قبله بيوم.
+            </p>
+            {meals.map(([id, name]) => {
+              const items = data.menu.filter((m) => m.meal === id);
+              return (
+                <div key={id} className={s.menuMeal}>
+                  <h3>{name}</h3>
+                  {items.length === 0 ? (
+                    <p className={s.muted}>لا أطباق بعد.</p>
+                  ) : (
+                    <ul>
+                      {items.map((m) => (
+                        <li key={m.id}>
+                          {m.name}{" "}
+                          <button
+                            type="button"
+                            className={s.linkButton}
+                            aria-label={`حذف ${m.name}`}
+                            onClick={async () => {
+                              if (
+                                await call(
+                                  "/api/producer/subscriptions/menu",
+                                  { id: m.id },
+                                  "PATCH",
+                                )
+                              )
+                                await reload();
+                            }}
+                          >
+                            حذف
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <form
+                    className={s.menuAdd}
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      const form = e.currentTarget;
+                      const name = String(
+                        new FormData(form).get("name") ?? "",
+                      ).trim();
+                      if (!name) return;
+                      if (
+                        await call("/api/producer/subscriptions/menu", {
+                          meal: id,
+                          name,
+                        })
+                      ) {
+                        form.reset();
+                        await reload();
+                      }
+                    }}
+                  >
+                    <label className={s.field}>
+                      <span className="sr-only">طبق {name} جديد</span>
+                      <input
+                        name="name"
+                        maxLength={120}
+                        placeholder={menuExamples[id]}
+                      />
+                    </label>
+                    <button className={s.buttonSecondary}>
+                      إضافة لـ{name}
+                    </button>
+                  </form>
+                </div>
+              );
+            })}
+          </section>
+          <section className={s.card} aria-label="جدول الغد">
+            <h2>
+              جدول الغد <bdi>{data.schedule.day}</bdi>
+            </h2>
+            {data.schedule.rows.length === 0 ? (
+              <p className={s.muted}>لا اشتراكات متفق عليها للغد.</p>
+            ) : (
+              <ul className={s.scheduleList}>
+                {data.schedule.rows.map((r) => (
+                  <li key={`${r.id}-${r.meal}`}>
+                    <strong>{r.customerName}</strong> · {label(meals, r.meal)}:{" "}
+                    {r.dish ?? <em>لم يختر طبقًا بعد</em>}
+                    {r.delivery ? " · توصيل" : " · استلام"}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
           <section className={s.card} aria-label="طلبات الاشتراك">
             <h2>طلبات الاشتراك</h2>
             {data.requests.length === 0 ? (
@@ -205,6 +334,48 @@ export function FamilySubscriptions() {
                       {r.delivery ? "مع التوصيل" : "استلام"}
                     </p>
                     {r.notes && <p className={s.muted}>{r.notes}</p>}
+                    <p>
+                      الحالة:{" "}
+                      <strong>{statusLabel[r.status] ?? r.status}</strong>
+                    </p>
+                    {r.status !== "agreed" && (
+                      <button
+                        type="button"
+                        className={s.button}
+                        onClick={async () => {
+                          if (
+                            await call("/api/producer/subscriptions/decide", {
+                              id: r.id,
+                              status: "agreed",
+                            })
+                          ) {
+                            await reload();
+                            setSuccess(
+                              "تم الاتفاق ✓ وصلت رسالة للعميل ليختار أطباقه.",
+                            );
+                          }
+                        }}
+                      >
+                        تم الاتفاق
+                      </button>
+                    )}
+                    {r.status === "new" && (
+                      <button
+                        type="button"
+                        className={s.buttonSecondary}
+                        onClick={async () => {
+                          if (
+                            await call("/api/producer/subscriptions/decide", {
+                              id: r.id,
+                              status: "declined",
+                            })
+                          )
+                            await reload();
+                        }}
+                      >
+                        اعتذار
+                      </button>
+                    )}
                     {r.conversationId && (
                       <Link
                         href={`/messages?c=${encodeURIComponent(r.conversationId)}`}
@@ -391,5 +562,227 @@ export function SubscriptionRequest({
         </button>
       </div>
     </form>
+  );
+}
+
+type MySubscription = {
+  id: string;
+  familyName: string;
+  slug: string;
+  plan: PlanId;
+  startDate: string;
+  endDate: string | null;
+  days: number | null;
+  meals: MealId[];
+  delivery: boolean;
+  status: string;
+  conversationId: string | null;
+  defaults: Partial<Record<MealId, string>>;
+  overrides: { day: string; meal: MealId; itemId: string }[];
+  menu: MenuItem[];
+  itemNames: Record<string, string>;
+  /** الأيام القادمة القابلة للتعديل (من الغد). */
+  upcoming: string[];
+};
+
+const dayName = (day: string) =>
+  new Intl.DateTimeFormat("ar-SA-u-ca-gregory", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    timeZone: "UTC",
+  }).format(new Date(`${day}T12:00:00Z`));
+
+/**
+ * «اشتراكاتي»: بعد الاتفاق يختار العميل طبقًا دائمًا لكل وجبة من قائمة الأسرة،
+ * ويغيّر طبق أي يوم قادم قبله بيوم على الأقل (يوم اليوم مقفل).
+ */
+export function MySubscriptions() {
+  const session = useSession();
+  const [data, setData] = useState<{
+    today: string;
+    firstEditable: string;
+    subscriptions: MySubscription[];
+  } | null>(null);
+  const [error, setError] = useState("");
+  const [saved, setSaved] = useState("");
+  useEffect(() => {
+    if (!session.user) return;
+    api<NonNullable<typeof data>>("/api/subscriptions/mine")
+      .then(setData)
+      .catch((e) => setError((e as Error).message));
+  }, [session.user?.id]);
+  async function put(body: Record<string, unknown>, done: string) {
+    setError("");
+    setSaved("");
+    try {
+      setData(
+        await api<NonNullable<typeof data>>("/api/subscriptions/mine", {
+          method: "PUT",
+          body: JSON.stringify(body),
+        }),
+      );
+      setSaved(done);
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  }
+  return (
+    <AccountShell>
+      <h1>اشتراكاتي</h1>
+      <Guard {...session} />
+      <Message error={error} success={saved} />
+      {data && data.subscriptions.length === 0 && (
+        <p className={s.notice}>
+          لا اشتراكات لديك بعد.{" "}
+          <Link href="/subscriptions">تصفّح الأسر التي تقبل الاشتراكات ←</Link>
+        </p>
+      )}
+      {data?.subscriptions.map((sub) => {
+        const name = (id?: string) =>
+          (id && sub.itemNames[id]) ||
+          sub.menu.find((m) => m.id === id)?.name ||
+          "";
+        return (
+          <section
+            key={sub.id}
+            className={s.card}
+            aria-label={`اشتراك ${sub.familyName}`}
+          >
+            <h2>
+              <Link href={`/producers/${sub.slug}`}>{sub.familyName}</Link>
+            </h2>
+            <p>
+              {label(plans, sub.plan)} · من <bdi>{sub.startDate}</bdi>
+              {sub.endDate ? (
+                <>
+                  {" "}
+                  إلى <bdi>{sub.endDate}</bdi>
+                </>
+              ) : (
+                " (مستمر)"
+              )}{" "}
+              · {sub.meals.map((m) => label(meals, m)).join("، ")}
+            </p>
+            <p>
+              الحالة: <strong>{statusLabel[sub.status] ?? sub.status}</strong>
+              {sub.conversationId && (
+                <>
+                  {" · "}
+                  <Link
+                    href={`/messages?c=${encodeURIComponent(sub.conversationId)}`}
+                  >
+                    المحادثة
+                  </Link>
+                </>
+              )}
+            </p>
+            {sub.status !== "agreed" ? (
+              <p className={s.muted}>
+                تختار أطباقك بعد أن تؤكد الأسرة الاتفاق في المحادثة.
+              </p>
+            ) : (
+              <>
+                <h3>طبقي الدائم لكل وجبة</h3>
+                <div className={s.grid}>
+                  {sub.meals.map((meal) => {
+                    const options = sub.menu.filter((m) => m.meal === meal);
+                    return (
+                      <label key={meal} className={s.field}>
+                        {label(meals, meal)}
+                        <select
+                          value={sub.defaults[meal] ?? ""}
+                          onChange={(e) =>
+                            e.target.value &&
+                            put(
+                              {
+                                kind: "default",
+                                id: sub.id,
+                                meal,
+                                itemId: e.target.value,
+                              },
+                              `تم حفظ طبق ${label(meals, meal)} الدائم ✓`,
+                            )
+                          }
+                        >
+                          <option value="">
+                            {options.length
+                              ? "اختر الطبق"
+                              : "لم تضف الأسرة أطباقًا بعد"}
+                          </option>
+                          {sub.defaults[meal] &&
+                            !options.some(
+                              (o) => o.id === sub.defaults[meal],
+                            ) && (
+                              <option value={sub.defaults[meal]}>
+                                {name(sub.defaults[meal])} (لم يعد في القائمة)
+                              </option>
+                            )}
+                          {options.map((o) => (
+                            <option key={o.id} value={o.id}>
+                              {o.name}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    );
+                  })}
+                </div>
+                <h3>أيام قادمة</h3>
+                <p className={s.muted}>
+                  تغيّر طبق أي يوم قبله بيوم على الأقل. طلب اليوم (
+                  <bdi>{data.today}</bdi>) لا يُعدَّل.
+                </p>
+                <ul className={s.subDays}>
+                  {sub.upcoming.map((day) => (
+                    <li key={day}>
+                      <strong>{dayName(day)}</strong>
+                      {sub.meals.map((meal) => {
+                        const override = sub.overrides.find(
+                          (o) => o.day === day && o.meal === meal,
+                        );
+                        const options = sub.menu.filter((m) => m.meal === meal);
+                        return (
+                          <label key={meal}>
+                            <span>{label(meals, meal)}</span>
+                            <select
+                              aria-label={`${label(meals, meal)} ${dayName(day)}`}
+                              value={override?.itemId ?? ""}
+                              onChange={(e) =>
+                                put(
+                                  {
+                                    kind: "day",
+                                    id: sub.id,
+                                    day,
+                                    meal,
+                                    itemId: e.target.value || null,
+                                  },
+                                  `تم تعديل ${label(meals, meal)} يوم ${dayName(day)} ✓`,
+                                )
+                              }
+                            >
+                              <option value="">
+                                {sub.defaults[meal]
+                                  ? `الدائم: ${name(sub.defaults[meal])}`
+                                  : "الدائم (لم تختره بعد)"}
+                              </option>
+                              {options.map((o) => (
+                                <option key={o.id} value={o.id}>
+                                  {o.name}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        );
+                      })}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </section>
+        );
+      })}
+    </AccountShell>
   );
 }
