@@ -88,9 +88,19 @@ test(
       const pledge = {
         name: "مندوب الأسرة",
         phone: newPhoneLocal,
-        carType: "سوناتا 2019",
+        vehicle: "car" as const,
+        carModel: "سوناتا 2019",
+        carColor: "أبيض",
         pledge: true,
       };
+      // السيارة تحتاج نوعها ولونها؛ الدباب لا.
+      await assert.rejects(
+        saveFamilyCourier(famUser, { ...pledge, carColor: undefined }),
+        /لون السيارة/,
+      );
+      await assert.rejects(
+        saveFamilyCourier(famUser, { ...pledge, vehicle: "truck" }),
+      );
 
       // للأسر المعتمدة فقط، والتعهد إلزامي، وجوال الأسرة نفسها مرفوض.
       await assert.rejects(saveFamilyCourier(pendingFamUser, pledge), {
@@ -116,11 +126,35 @@ test(
       assert.equal(saved.status, "approved");
       const row = (
         await pool.query(
-          `SELECT u.phone,u.role,u.password_hash,k.status,k.family_id,k.pledged_by,k.national_id_encrypted
+          `SELECT u.phone,u.role,u.password_hash,k.status,k.family_id,k.pledged_by,k.national_id_encrypted,
+             k.vehicle,k.car_model,k.car_color,k.car_type
            FROM jdatna.courier_profiles k JOIN jdatna.users u ON u.id=k.user_id WHERE k.id=$1`,
           [saved.id],
         )
       ).rows[0];
+      assert.equal(row.vehicle, "car");
+      assert.equal(row.car_model, "سوناتا 2019");
+      assert.equal(row.car_color, "أبيض");
+      assert.equal(row.car_type, "سيارة سوناتا 2019 · أبيض");
+      // تعديل المركبة إلى دباب: لا نوع ولا لون للسيارة.
+      await saveFamilyCourier(famUser, {
+        name: pledge.name,
+        phone: newPhoneLocal,
+        vehicle: "motorcycle",
+        pledge: true,
+      });
+      const bike = (
+        await pool.query(
+          "SELECT vehicle,car_model,car_color,car_type FROM jdatna.courier_profiles WHERE id=$1",
+          [saved.id],
+        )
+      ).rows[0];
+      assert.deepEqual(bike, {
+        vehicle: "motorcycle",
+        car_model: null,
+        car_color: null,
+        car_type: "دباب",
+      });
       assert.equal(row.phone, newPhone);
       assert.equal(row.role, "courier");
       assert.equal(row.password_hash, null);

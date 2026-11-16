@@ -1753,3 +1753,36 @@
     animation: none;
   }
 }
+/* مندوبي الخاص: اختيار المركبة */
+.vehicleChoice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 12px 0;
+  padding: 0;
+  border: 0;
+}
+.vehicleChoice legend {
+  margin-bottom: 6px;
+  font-weight: 700;
+}
+.vehicleChoice label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 6px 16px;
+  border: 1.5px solid #d6b98d;
+  border-radius: 999px;
+  background: #fffaf1;
+  font-weight: 700;
+  cursor: pointer;
+}
+.vehicleChoice label:has(input:checked) {
+  border-color: #4f5d36;
+  background: #4f5d36;
+  color: #fff;
+}
+.vehicleChoice input {
+  accent-color: #4f5d36;
+}

@@ -439,6 +439,7 @@ type FamilyCourier = {
   name: string;
   phone: string;
   carType: string;
+  vehicle: "car" | "motorcycle" | null;
   status: Courier["status"];
   active: boolean;
   stoppedByAdmin: boolean;
@@ -455,7 +456,9 @@ function FamilyCouriers() {
     pledge: string;
     couriers: FamilyCourier[];
   } | null>(null);
-  const [hidden, setHidden] = useState(false);
+  // ليس أسرة معتمدة بعد: يُشرح السبب بدل إخفاء القسم.
+  const [unavailable, setUnavailable] = useState("");
+  const [vehicle, setVehicle] = useState<"car" | "motorcycle">("car");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [issues, setIssues] = useState<FormIssue[]>([]);
@@ -465,8 +468,7 @@ function FamilyCouriers() {
       "/api/producer/couriers",
     )
       .then(setData)
-      // ليس أسرة معتمدة (مثل الإدارة): القسم لا يظهر.
-      .catch(() => setHidden(true));
+      .catch((e) => setUnavailable((e as Error).message));
   useEffect(() => {
     load();
   }, []);
@@ -486,11 +488,15 @@ function FamilyCouriers() {
         body: JSON.stringify({
           name: f.get("name"),
           phone: f.get("phone"),
-          carType: f.get("carType"),
+          vehicle,
+          ...(vehicle === "car"
+            ? { carModel: f.get("carModel"), carColor: f.get("carColor") }
+            : {}),
           pledge: f.has("pledge"),
         }),
       });
       form.reset();
+      setVehicle("car");
       await load();
       setSuccess(
         "تم تسجيل المندوب ✓ يدخل بجواله من «دخول» ← «نسيت كلمة المرور» أول مرة، فتصله طلبات التوصيل التي تسندها إليه.",
@@ -516,7 +522,17 @@ function FamilyCouriers() {
       setError((err as Error).message);
     }
   }
-  if (hidden || !data) return null;
+  if (unavailable)
+    return (
+      <section className={s.card} aria-label="مندوبي الخاص">
+        <h2>مندوبي الخاص</h2>
+        <p className={s.notice}>
+          {unavailable}. تضيف مندوبك الخاص (الاسم والجوال والمركبة) بعد اعتماد
+          أسرتك.
+        </p>
+      </section>
+    );
+  if (!data) return null;
   return (
     <section className={s.card} aria-label="مندوبي الخاص">
       <h2>مندوبي الخاص</h2>
@@ -532,7 +548,8 @@ function FamilyCouriers() {
               <h3>{k.name}</h3>
               <PrivateCourierBadge family={data.familyName} />
               <p>
-                <bdi dir="ltr">{k.phone}</bdi> · 🚗 {k.carType}
+                <bdi dir="ltr">{k.phone}</bdi> ·{" "}
+                {k.vehicle === "motorcycle" ? "🛵" : "🚗"} {k.carType}
               </p>
               <p>
                 {k.status === "approved"
@@ -581,17 +598,51 @@ function FamilyCouriers() {
               autoComplete="off"
             />
           </label>
-          <label className={s.field}>
-            نوع السيارة
-            <input
-              name="carType"
-              required
-              minLength={2}
-              maxLength={80}
-              placeholder="مثال: كامري 2020"
-            />
-          </label>
         </div>
+        <fieldset className={s.vehicleChoice}>
+          <legend>المركبة</legend>
+          {(
+            [
+              ["car", "🚗 سيارة"],
+              ["motorcycle", "🛵 دباب"],
+            ] as const
+          ).map(([id, label]) => (
+            <label key={id}>
+              <input
+                type="radio"
+                name="vehicle"
+                value={id}
+                checked={vehicle === id}
+                onChange={() => setVehicle(id)}
+              />
+              {label}
+            </label>
+          ))}
+        </fieldset>
+        {vehicle === "car" && (
+          <div className={s.grid}>
+            <label className={s.field}>
+              نوع السيارة
+              <input
+                name="carModel"
+                required
+                minLength={2}
+                maxLength={60}
+                placeholder="مثال: كامري 2020"
+              />
+            </label>
+            <label className={s.field}>
+              لون السيارة
+              <input
+                name="carColor"
+                required
+                minLength={2}
+                maxLength={30}
+                placeholder="مثال: أبيض"
+              />
+            </label>
+          </div>
+        )}
         <label className={s.pledge}>
           <input
             type="checkbox"

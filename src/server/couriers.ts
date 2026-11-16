@@ -452,7 +452,8 @@ export async function reviewCourier(
       )
     ).rows[0];
     if (!courier) throw new HttpError(404, "المندوب غير موجود");
-    if (courier.user_id === user.id)
+    // المدير الكامل صلاحياته مطلقة؛ المشرف المحدود لا يراجع حسابه.
+    if (courier.user_id === user.id && user.role !== "admin")
       throw new HttpError(403, "لا يمكن مراجعة حسابك بنفسك");
     await client.query(
       `UPDATE jdatna.courier_profiles SET status=$2,review_reason=$3,reviewer_id=$4,updated_at=now(),
@@ -503,16 +504,50 @@ export async function pendingCouriers() {
  * ومسؤوليتها عنه، فيُعتمد فورًا دون الإدارة ويظهر لأسرتها فقط. يدخل المندوب بجواله
  * («نسيت كلمة المرور» أول مرة برمز الجوال) فيرى طلبات التوصيل ويؤكد التوصيل.
  */
+/**
+ * مندوب الأسرة الخاص: الاسم والجوال والمركبة (سيارة أو دباب)؛ السيارة بنوعها ولونها.
+ * carType (الوصف القديم الحر) مقبول للتوافق مع الواجهات السابقة.
+ */
 const familyCourierSchema = z
   .object({
     name: z.string().trim().min(2, "اكتب اسم المندوب").max(120),
     phone: z.string().trim().min(1, "اكتب جوال المندوب").max(40),
-    carType: z.string().trim().min(2, "اكتب نوع السيارة").max(80),
+    vehicle: z.enum(["car", "motorcycle"], {
+      error: "اختر نوع المركبة: سيارة أو دباب",
+    }),
+    carModel: z.string().trim().max(60).optional(),
+    carColor: z.string().trim().max(30).optional(),
     pledge: z.literal(true, {
       error: "أقرّ بالتعهد بمعرفة المندوب ومسؤوليتك عنه",
     }),
   })
-  .strict();
+  .strict()
+  .superRefine((v, ctx) => {
+    if (v.vehicle !== "car") return;
+    if (!v.carModel || v.carModel.length < 2)
+      ctx.addIssue({
+        code: "custom",
+        path: ["carModel"],
+        message: "اكتب نوع السيارة (مثال: كامري 2020)",
+      });
+    if (!v.carColor || v.carColor.length < 2)
+      ctx.addIssue({
+        code: "custom",
+        path: ["carColor"],
+        message: "اكتب لون السيارة",
+      });
+  });
+
+/** الوصف المعروض للمركبة في كل الشاشات: «سيارة كامري 2020 · أبيض» أو «دباب». */
+export function vehicleLabel(v: {
+  vehicle: "car" | "motorcycle";
+  carModel?: string;
+  carColor?: string;
+}) {
+  return v.vehicle === "motorcycle"
+    ? "دباب"
+    : `سيارة ${v.carModel} · ${v.carColor}`.slice(0, 80);
+}
 
 export const familyCourierPledge =
   "أتعهد بأنني أعرف هذا المندوب معرفة شخصية، وأتحمل مسؤولية توصيله وتعامله مع عملائي، وأن بياناته صحيحة.";
@@ -538,7 +573,7 @@ export async function familyCouriers(user: SessionUser) {
   const family = await approvedFamily(db(), user);
   const couriers = (
     await db().query(
-      `SELECT k.id,k.user_id AS "userId",k.name,u.phone,k.car_type AS "carType",k.status,k.active,
+      `SELECT k.id,k.user_id AS "userId",k.name,u.phone,k.car_type AS "carType",k.vehicle,k.status,k.active,
          k.review_reason AS "reviewReason",(k.status='suspended' AND k.reviewer_id IS NOT NULL AND k.reviewer_id<>$2) AS "stoppedByAdmin",
          (u.password_hash IS NOT NULL) AS joined,k.pledged_at AS "pledgedAt"
        FROM jdatna.courier_profiles k JOIN jdatna.users u ON u.id=k.user_id
@@ -627,9 +662,10 @@ export async function saveFamilyCourier(user: SessionUser, input: unknown) {
     }
     const id = existing?.id ?? randomUUID();
     await client.query(
-      `INSERT INTO jdatna.courier_profiles(id,user_id,name,city_id,car_type,status,family_id,pledged_by,pledged_at,approved_at)
-       VALUES($1,$2,$3,$4,$5,'approved',$6,$7,now(),now())
-       ON CONFLICT(user_id) DO UPDATE SET name=EXCLUDED.name,car_type=EXCLUDED.car_type,status='approved',
+      `INSERT INTO jdatna.courier_profiles(id,user_id,name,city_id,car_type,status,family_id,pledged_by,pledged_at,approved_at,vehicle,car_model,car_color)
+       VALUES($1,$2,$3,$4,$5,'approved',$6,$7,now(),now(),$8,$9,$10)
+       ON CONFLICT(user_id) DO UPDATE SET name=EXCLUDED.name,car_type=EXCLUDED.car_type,vehicle=EXCLUDED.vehicle,
+         car_model=EXCLUDED.car_model,car_color=EXCLUDED.car_color,status='approved',
          review_reason=NULL,reviewer_id=NULL,pledged_by=EXCLUDED.pledged_by,pledged_at=now(),
          approved_at=COALESCE(jdatna.courier_profiles.approved_at,now()),updated_at=now()`,
       [
@@ -637,9 +673,12 @@ export async function saveFamilyCourier(user: SessionUser, input: unknown) {
         member!.id,
         value.name,
         family.city_id,
-        value.carType,
+        vehicleLabel(value),
         family.id,
         user.id,
+        value.vehicle,
+        value.vehicle === "car" ? value.carModel : null,
+        value.vehicle === "car" ? value.carColor : null,
       ],
     );
     return { id, userId: member!.id, status: "approved" as const };
