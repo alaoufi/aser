@@ -2,7 +2,11 @@ import { api, jsonBody } from "@/server/http";
 import { passwordLogin } from "@/server/credentials";
 import { rateLimit, sessionCookie } from "@/server/auth";
 import { HttpError } from "@/server/security";
-import { recordSecurityEvent, sourceKey } from "@/server/security-events";
+import {
+  identifierHint,
+  recordSecurityEvent,
+  sourceKey,
+} from "@/server/security-events";
 export const POST = api(async (request) => {
   // حد لكل عنوان زائر، فلا يستنفد مهاجم واحد الحد العام فيُقفل الدخول على الجميع.
   const source = sourceKey(request);
@@ -21,7 +25,7 @@ export const POST = api(async (request) => {
       await recordSecurityEvent("login.failed", {
         request,
         subject: identifier.toLowerCase() || null,
-        detail: error.status === 403 ? "حساب موقوف" : "كلمة مرور خاطئة",
+        detail: `${error.status === 403 ? "حساب موقوف" : "كلمة مرور خاطئة"} · ${identifierHint(identifier)}`,
       });
     throw error;
   }

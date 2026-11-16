@@ -66,7 +66,7 @@ const adminTabs: [
   ["review", "مراجعة المتاجر", "owner"],
   ["members", "الأعضاء والصلاحيات", "owner"],
   ["suggestions", "الاقتراحات", "owner"],
-  ["security", "سجل الأمان", "owner"],
+  ["security", "التقرير الأمني", "owner"],
 ];
 /** تجميع الأقسام في شاشة الإدارة (الأسماء للقارئ الآلي فقط). */
 const adminGroups: [group: string, ids: string[]][] = [
