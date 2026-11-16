@@ -412,7 +412,9 @@ export async function decideSubscription(user: SessionUser, input: unknown) {
             `SELECT CASE WHEN m.sender_id=$2 THEN 'customer' ELSE 'family' END AS side,
                u.name AS sender,m.body,m.created_at AS at
              FROM jdatna.messages m JOIN jdatna.users u ON u.id=m.sender_id
-             WHERE m.conversation_id=$1 ORDER BY m.created_at`,
+             JOIN jdatna.conversations c ON c.id=m.conversation_id
+             WHERE m.conversation_id=$1 AND m.created_at>=COALESCE(c.visible_from,'-infinity')
+             ORDER BY m.created_at`,
             [row.conversation_id, row.user_id],
           )
         ).rows
@@ -472,7 +474,9 @@ export async function decideSubscription(user: SessionUser, input: unknown) {
     return { conversationId: row.conversation_id, contractId: id };
   });
   if (result.conversationId) {
-    const { sendMessage } = await import("./chat");
+    const { sendMessage, reopenConversation } = await import("./chat");
+    // محادثة حذفها أحدهما: تُستأنف فارغة لتصل رسالة القرار.
+    await reopenConversation(result.conversationId);
     await sendMessage(user, result.conversationId, {
       body: result.contractId
         ? "وافقت الأسرة على الاتفاق ✓ حُفظ عقد الاشتراك ويمكنكما الاطلاع عليه. اختر أطباقك لكل وجبة من «اشتراكاتي»، ويمكنك تغيير طبق أي يوم قبله بيوم."
@@ -495,7 +499,8 @@ export async function customerAgree(user: SessionUser, input: unknown) {
   if (!row)
     throw new HttpError(404, "طلب الاشتراك غير موجود أو ليس بانتظار الاتفاق");
   if (row.conversationId) {
-    const { sendMessage } = await import("./chat");
+    const { sendMessage, reopenConversation } = await import("./chat");
+    await reopenConversation(row.conversationId);
     await sendMessage(user, row.conversationId, {
       body: "تم الاتفاق مع الأسرة ✓ أرجو موافقتكم من «الاشتراكات» في لوحة الأسرة، فيُحفظ عقد الاشتراك.",
     }).catch(() => null);

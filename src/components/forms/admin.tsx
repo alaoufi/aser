@@ -27,6 +27,7 @@ import { APPROVALS_CHANGED } from "@/components/public/approval-alert";
 import { AdminCouriers } from "./courier";
 import { ContractsAdmin } from "./subscriptions";
 import { SecurityLog } from "./security-log";
+import { DeletedChatsAdmin } from "./deleted-chats";
 
 /** بيانات كل قسم، تُحمَّل مسبقًا عند المرور على زره أو التركيز عليه. */
 const tabData: Record<string, string[]> = {
@@ -42,6 +43,7 @@ const tabData: Record<string, string[]> = {
   review: ["/api/admin/store-review"],
   members: ["/api/admin/members?q="],
   security: ["/api/admin/security"],
+  "deleted-chats": ["/api/admin/conversations"],
 };
 /** أقسام الإدارة وصلاحية كل قسم؛ «الأعضاء» للمدير الكامل فقط. */
 const adminTabs: [
@@ -57,6 +59,7 @@ const adminTabs: [
   ["locations", "المواقع", "locations"],
   ["reports", "البلاغات", "reports"],
   ["contracts", "عقود الاشتراكات", "orders"],
+  ["deleted-chats", "المحادثات المحذوفة", "reports"],
   ["template", "قالب الموقع", "content"],
   ["texts", "نصوص الموقع", "content"],
   ["app", "تطبيق الجوال", "content"],
@@ -69,7 +72,15 @@ const adminTabs: [
 const adminGroups: [group: string, ids: string[]][] = [
   [
     "الأسر والطلبات",
-    ["approvals", "producers", "orders", "products", "reports", "contracts"],
+    [
+      "approvals",
+      "producers",
+      "orders",
+      "products",
+      "reports",
+      "contracts",
+      "deleted-chats",
+    ],
   ],
   ["الأقسام والمواقع", ["categories", "locations"]],
   [
@@ -435,6 +446,8 @@ export function Admin() {
             <ContractsAdmin />
           ) : active === "security" ? (
             <SecurityLog />
+          ) : active === "deleted-chats" ? (
+            <DeletedChatsAdmin />
           ) : active === "template" ? (
             <TemplateAdmin />
           ) : active === "texts" ? (

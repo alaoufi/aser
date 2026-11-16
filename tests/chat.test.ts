@@ -12,6 +12,10 @@ import {
   markDelivered,
   sendVoice,
   voiceOf,
+  deleteConversation,
+  adminDeletedConversations,
+  adminDeletedTranscript,
+  adminVoice,
 } from "../src/server/chat";
 
 test(
@@ -37,7 +41,7 @@ test(
       pending = mk("producer", "أسرة غير معتمدة");
     const familyId = randomUUID(),
       pendingId = randomUUID();
-    const ids: { product?: string } = {};
+    const ids: { product?: string; admin?: string } = {};
     try {
       for (const u of [customer, family, outsider, pending])
         await pool.query(
@@ -307,6 +311,74 @@ test(
       });
       await moderateConversation(customer, id, { action: "block" });
       await assert.rejects(sendVoice(family, id, webm, 3000), { status: 403 });
+
+      // حذف المحادثة: تختفي من الطرفين، وتبقى كاملة للإدارة.
+      const admin = { ...mk("customer", "مدير"), role: "admin" as const };
+      await pool.query(
+        "INSERT INTO jdatna.users(id,name,phone,role,phone_verified_at) VALUES($1,$2,$3,'admin',now())",
+        [admin.id, admin.name, admin.phone],
+      );
+      ids.admin = admin.id;
+      const before = (await conversationMessages(customer, id)).messages.length;
+      await assert.rejects(deleteConversation(outsider, id), { status: 404 });
+      assert.deepEqual(await deleteConversation(customer, id), {
+        deleted: true,
+      });
+      for (const who of [customer, family]) {
+        assert.equal(
+          (await listConversations(who)).some((x) => x.id === id),
+          false,
+        );
+        await assert.rejects(conversationMessages(who, id), { status: 404 });
+        await assert.rejects(sendMessage(who, id, { body: "هل وصلت؟" }), {
+          status: 404,
+        });
+        await assert.rejects(voiceOf(who, id, voice.id), { status: 404 });
+      }
+      await assert.rejects(deleteConversation(family, id), { status: 404 });
+      for (const who of [customer, family])
+        await assert.rejects(adminDeletedConversations(who), { status: 403 });
+      const deletion = (await adminDeletedConversations(admin)).find(
+        (d) => d.conversationId === id,
+      );
+      assert.ok(deletion);
+      assert.equal(deletion.deletedBy, customer.name);
+      assert.equal(deletion.messages, before);
+      const transcript = await adminDeletedTranscript(admin, deletion.id);
+      assert.equal(transcript.length, before);
+      assert.ok(transcript.some((m) => m.body === "تم"));
+      assert.equal((await adminVoice(admin, voice.id)).mime, "audio/webm");
+      await assert.rejects(adminDeletedTranscript(family, deletion.id), {
+        status: 403,
+      });
+      // بدء المحادثة من جديد: تعود فارغة للطرفين، والقديم للإدارة فقط.
+      assert.equal(
+        (
+          await startConversation(customer, {
+            producer: "chat-" + tag + "-" + familyId,
+          })
+        ).id,
+        id,
+      );
+      assert.equal((await conversationMessages(family, id)).messages.length, 0);
+      assert.equal(
+        (await listConversations(family)).find((x) => x.id === id)?.preview,
+        null,
+      );
+      await assert.rejects(voiceOf(customer, id, voice.id), { status: 404 });
+      await moderateConversation(customer, id, { action: "unblock" });
+      const fresh = await sendMessage(family, id, { body: "أهلًا من جديد" });
+      assert.deepEqual(
+        (await conversationMessages(customer, id)).messages.map((m) => m.id),
+        [fresh.id],
+      );
+      // صوت محادثة قائمة لا تسمعه الإدارة من هنا.
+      const live = await sendVoice(customer, id, webm, 2000);
+      await assert.rejects(adminVoice(admin, live.id), { status: 404 });
+      assert.equal(
+        (await adminDeletedTranscript(admin, deletion.id)).length,
+        before,
+      );
     } finally {
       await pool.query(
         "DELETE FROM jdatna.reports WHERE producer_id=ANY($1::uuid[])",
@@ -322,9 +394,15 @@ test(
         ]);
       }
       await pool.query(
+        "DELETE FROM jdatna.conversation_deletions WHERE conversation_id IN (SELECT id FROM jdatna.conversations WHERE producer_id=ANY($1::uuid[]))",
+        [[familyId, pendingId]],
+      );
+      await pool.query(
         "DELETE FROM jdatna.messages WHERE conversation_id IN (SELECT id FROM jdatna.conversations WHERE producer_id=ANY($1::uuid[]))",
         [[familyId, pendingId]],
       );
+      if (ids.admin)
+        await pool.query("DELETE FROM jdatna.users WHERE id=$1", [ids.admin]);
       await pool.query(
         "DELETE FROM jdatna.conversations WHERE producer_id=ANY($1::uuid[])",
         [[familyId, pendingId]],

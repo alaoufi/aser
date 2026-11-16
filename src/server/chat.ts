@@ -6,6 +6,7 @@ import { db, transaction } from "./db";
 import { HttpError } from "./security";
 import { notifyUser } from "./push";
 import { publishLive } from "./live";
+import { can } from "../lib/permissions";
 
 export type ConversationSummary = {
   id: string;
@@ -94,8 +95,11 @@ export async function startConversation(user: SessionUser, input: unknown) {
   }
   const row = (
     await db().query(
+      // محادثة حُذفت ثم بدأها أحدهما من جديد: تعود فارغة للطرفين (السابق للإدارة فقط).
       `INSERT INTO jdatna.conversations(id,customer_id,producer_id) VALUES($1,$2,$3)
-       ON CONFLICT(customer_id,producer_id) DO UPDATE SET customer_id=EXCLUDED.customer_id
+       ON CONFLICT(customer_id,producer_id) DO UPDATE SET customer_id=EXCLUDED.customer_id,
+         visible_from=CASE WHEN jdatna.conversations.deleted_at IS NOT NULL THEN now() ELSE jdatna.conversations.visible_from END,
+         deleted_at=NULL,deleted_by=NULL
        RETURNING id`,
       [randomUUID(), customerId, producerId],
     )
@@ -109,17 +113,25 @@ export async function listConversations(
 ): Promise<ConversationSummary[]> {
   return (
     await db().query(
-      `SELECT c.id,
+      // محادثاتي كعميل ومحادثات أسرتي، كل جهة بفهرسها (بدل OR يمسح الجدول كله)، بلا المحذوفة.
+      `WITH mine AS (
+         SELECT c.id FROM jdatna.conversations c WHERE c.customer_id=$1 AND c.deleted_at IS NULL
+         UNION
+         SELECT c.id FROM jdatna.conversations c JOIN jdatna.producer_profiles p ON p.id=c.producer_id
+          WHERE p.user_id=$1 AND c.deleted_at IS NULL
+       )
+       SELECT c.id,
         CASE WHEN c.customer_id=$1 THEN 'customer' ELSE 'producer' END AS side,
         CASE WHEN c.customer_id=$1 THEN COALESCE(p.trade_name,p.name) ELSE u.name END AS title,
-        (SELECT m.body FROM jdatna.messages m WHERE m.conversation_id=c.id ORDER BY m.created_at DESC LIMIT 1) AS preview,
+        (SELECT m.body FROM jdatna.messages m WHERE m.conversation_id=c.id
+          AND m.created_at>=COALESCE(c.visible_from,'-infinity') ORDER BY m.created_at DESC LIMIT 1) AS preview,
         c.last_message_at AS "lastAt",
         (SELECT count(*)::int FROM jdatna.messages m WHERE m.conversation_id=c.id AND m.sender_id<>$1
+          AND m.created_at>=COALESCE(c.visible_from,'-infinity')
           AND m.created_at > CASE WHEN c.customer_id=$1 THEN c.customer_read_at ELSE c.producer_read_at END) AS unread
-       FROM jdatna.conversations c
+       FROM mine JOIN jdatna.conversations c ON c.id=mine.id
        JOIN jdatna.producer_profiles p ON p.id=c.producer_id
        JOIN jdatna.users u ON u.id=c.customer_id
-       WHERE c.customer_id=$1 OR p.user_id=$1
        ORDER BY c.last_message_at DESC LIMIT 100`,
       [user.id],
     )
@@ -178,11 +190,11 @@ async function participant(
       `SELECT c.id,c.customer_id,p.user_id AS producer_user,c.blocked_by,c.producer_id,
         c.customer_read_at,c.producer_read_at,c.customer_delivered_at,c.producer_delivered_at,
         CASE WHEN c.customer_id=$1 THEN COALESCE(p.trade_name,p.name) ELSE u.name END AS title,
-        p.slug AS "producerSlug"
+        p.slug AS "producerSlug",COALESCE(c.visible_from,'-infinity') AS visible_from
        FROM jdatna.conversations c
        JOIN jdatna.producer_profiles p ON p.id=c.producer_id
        JOIN jdatna.users u ON u.id=c.customer_id
-       WHERE c.id=$2 AND (c.customer_id=$1 OR p.user_id=$1)${lock ? " FOR UPDATE OF c" : ""}`,
+       WHERE c.id=$2 AND c.deleted_at IS NULL AND (c.customer_id=$1 OR p.user_id=$1)${lock ? " FOR UPDATE OF c" : ""}`,
       [user.id, id],
     )
   ).rows[0];
@@ -202,6 +214,7 @@ async function participant(
     producer_read_at: Date;
     customer_delivered_at: Date;
     producer_delivered_at: Date;
+    visible_from: Date | string;
   };
 }
 
@@ -223,10 +236,12 @@ export async function conversationMessages(
       await client.query(
         since
           ? `SELECT ${VOICE_COLUMNS} FROM jdatna.messages m LEFT JOIN jdatna.message_voice v ON v.message_id=m.id
-             WHERE m.conversation_id=$1 AND m.created_at>$3 ORDER BY m.created_at LIMIT 200`
+             WHERE m.conversation_id=$1 AND m.created_at>=$3 AND m.created_at>$4 ORDER BY m.created_at LIMIT 200`
           : `SELECT * FROM (SELECT ${VOICE_COLUMNS} FROM jdatna.messages m LEFT JOIN jdatna.message_voice v ON v.message_id=m.id
-             WHERE m.conversation_id=$1 ORDER BY m.created_at DESC LIMIT 200) x ORDER BY "createdAt"`,
-        since ? [c.id, user.id, since] : [c.id, user.id],
+             WHERE m.conversation_id=$1 AND m.created_at>=$3 ORDER BY m.created_at DESC LIMIT 200) x ORDER BY "createdAt"`,
+        since
+          ? [c.id, user.id, c.visible_from, since]
+          : [c.id, user.id, c.visible_from],
       )
     ).rows as ChatMessage[];
     // فتح المحادثة = قراءة واستلام (✓✓ أزرق عند الطرف الآخر)، حتى آخر رسالة عُرضت فعلًا.
@@ -398,8 +413,8 @@ export async function voiceOf(
   const row = (
     await db().query(
       `SELECT v.mime,v.data FROM jdatna.message_voice v JOIN jdatna.messages m ON m.id=v.message_id
-       WHERE v.message_id=$1 AND m.conversation_id=$2`,
-      [messageId, c.id],
+       WHERE v.message_id=$1 AND m.conversation_id=$2 AND m.created_at>=$3`,
+      [messageId, c.id, c.visible_from],
     )
   ).rows[0];
   if (!row) throw new HttpError(404, "الرسالة غير موجودة");
@@ -469,4 +484,120 @@ export async function moderateConversation(
       blockedByMe: !c.blocked_by || c.blocked_by === user.id,
     };
   });
+}
+
+/**
+ * حذف المحادثة: تختفي من الطرفين (القائمة والرسائل والإشعارات)، وتبقى كاملة للإدارة.
+ * إن بدأها أحدهما من جديد عادت فارغة للطرفين.
+ */
+export async function deleteConversation(user: SessionUser, id: string) {
+  const done = await transaction(async (client) => {
+    const c = await participant(client, user, id, true);
+    await client.query(
+      "INSERT INTO jdatna.conversation_deletions(id,conversation_id,deleted_by,visible_from) VALUES($1,$2,$3,$4)",
+      [randomUUID(), c.id, user.id, c.visible_from],
+    );
+    await client.query(
+      "UPDATE jdatna.conversations SET deleted_at=now(),deleted_by=$2 WHERE id=$1",
+      [c.id, user.id],
+    );
+    const raw = c as unknown as { customer_id: string; producer_user: string };
+    return { id: c.id, users: [raw.customer_id, raw.producer_user] };
+  });
+  // تختفي فورًا من قائمة الطرف الآخر وأي نافذة مفتوحة.
+  void publishLive(done.users, { type: "message", c: done.id });
+  return { deleted: true };
+}
+
+/**
+ * رسالة من النظام في محادثة (الاشتراكات): إن كانت المحادثة محذوفة تُستأنف فارغة للطرفين
+ * قبل الإرسال، كما لو بدأها أحدهما من جديد.
+ */
+export async function reopenConversation(id: string) {
+  await db().query(
+    "UPDATE jdatna.conversations SET deleted_at=NULL,deleted_by=NULL,visible_from=now() WHERE id=$1 AND deleted_at IS NOT NULL",
+    [id],
+  );
+}
+
+/** الإدارة ← «المحادثات المحذوفة»: لصلاحية البلاغات. */
+export async function adminDeletedConversations(user: SessionUser) {
+  if (!can(user, "reports")) throw new HttpError(403, "لا تملك صلاحية الوصول");
+  return (
+    await db().query(
+      `SELECT d.id,d.conversation_id AS "conversationId",d.deleted_at AS "deletedAt",
+         du.name AS "deletedBy",u.name AS "customerName",COALESCE(p.trade_name,p.name) AS "familyName",
+         (SELECT count(*)::int FROM jdatna.messages m WHERE m.conversation_id=c.id
+           AND m.created_at>=COALESCE(d.visible_from,'-infinity') AND m.created_at<=d.deleted_at) AS messages
+       FROM jdatna.conversation_deletions d
+       JOIN jdatna.conversations c ON c.id=d.conversation_id
+       JOIN jdatna.producer_profiles p ON p.id=c.producer_id
+       JOIN jdatna.users u ON u.id=c.customer_id
+       LEFT JOIN jdatna.users du ON du.id=d.deleted_by
+       ORDER BY d.deleted_at DESC LIMIT 200`,
+    )
+  ).rows as {
+    id: string;
+    conversationId: string;
+    deletedAt: string;
+    deletedBy: string | null;
+    customerName: string;
+    familyName: string;
+    messages: number;
+  }[];
+}
+
+/** نص محادثة محذوفة كما كانت لحظة الحذف، للإدارة فقط. */
+export async function adminDeletedTranscript(
+  user: SessionUser,
+  deletionId: string,
+) {
+  if (!can(user, "reports")) throw new HttpError(403, "لا تملك صلاحية الوصول");
+  if (!z.uuid().safeParse(deletionId).success)
+    throw new HttpError(404, "المحادثة غير موجودة");
+  const d = (
+    await db().query(
+      `SELECT d.conversation_id,d.visible_from,d.deleted_at,c.customer_id
+       FROM jdatna.conversation_deletions d JOIN jdatna.conversations c ON c.id=d.conversation_id WHERE d.id=$1`,
+      [deletionId],
+    )
+  ).rows[0];
+  if (!d) throw new HttpError(404, "المحادثة غير موجودة");
+  return (
+    await db().query(
+      `SELECT m.id,m.body,m.created_at AS "createdAt",u.name AS sender,
+         m.sender_id=$4 AS customer,v.duration_ms AS "voiceMs"
+       FROM jdatna.messages m JOIN jdatna.users u ON u.id=m.sender_id
+       LEFT JOIN jdatna.message_voice v ON v.message_id=m.id
+       WHERE m.conversation_id=$1 AND m.created_at>=COALESCE($2::timestamptz,'-infinity') AND m.created_at<=$3
+       ORDER BY m.created_at LIMIT 2000`,
+      [d.conversation_id, d.visible_from, d.deleted_at, d.customer_id],
+    )
+  ).rows as {
+    id: string;
+    body: string;
+    createdAt: string;
+    sender: string;
+    customer: boolean;
+    voiceMs: number | null;
+  }[];
+}
+
+/** صوت رسالة في محادثة محذوفة، للإدارة فقط. */
+export async function adminVoice(user: SessionUser, messageId: string) {
+  if (!can(user, "reports")) throw new HttpError(403, "لا تملك صلاحية الوصول");
+  if (!z.uuid().safeParse(messageId).success)
+    throw new HttpError(404, "الرسالة غير موجودة");
+  const row = (
+    await db().query(
+      // صوت المحادثات المحذوفة فقط؛ المحادثات القائمة خاصة بطرفيها.
+      `SELECT v.mime,v.data FROM jdatna.message_voice v JOIN jdatna.messages m ON m.id=v.message_id
+       WHERE v.message_id=$1 AND EXISTS(SELECT 1 FROM jdatna.conversation_deletions d
+         WHERE d.conversation_id=m.conversation_id AND m.created_at<=d.deleted_at
+           AND m.created_at>=COALESCE(d.visible_from,'-infinity'))`,
+      [messageId],
+    )
+  ).rows[0];
+  if (!row) throw new HttpError(404, "الرسالة غير موجودة");
+  return { mime: row.mime as string, data: row.data as Buffer };
 }
