@@ -242,3 +242,40 @@ test("the mobile menu greets the family by name at the top", async ({
       .locator(".menu-greeting"),
   ).toHaveText("مرحبًا، أكلات نجدية");
 });
+
+// مشاركة حساب الأسرة أعلى لوحتها: رابط مختصر لصفحتها العامة بكل منتجاتها.
+test("the family dashboard shares the family page from the top", async ({
+  page,
+}) => {
+  await page.addInitScript(() =>
+    sessionStorage.setItem("jdatna:family-welcome", "1"),
+  );
+  await page.route("**/api/session", (r) =>
+    r.fulfill({
+      json: {
+        user: { ...familySession.user, familyName: "أكلات نجدية" },
+        registrationOpen: true,
+      },
+    }),
+  );
+  await page.route("**/api/producer/profile", (r) =>
+    r.fulfill({ json: { cities: [], categories: [], profile: null } }),
+  );
+  await page.route("**/api/producer/status", (r) =>
+    r.fulfill({ json: { state: null, slug: "akalat-najdia" } }),
+  );
+  await page.route("**/api/share?family=akalat-najdia", (r) =>
+    r.fulfill({ json: { url: "https://jdatna.com/s/Nj7dQa" } }),
+  );
+  await page.goto("/dashboard");
+  await expect(
+    page.getByRole("link", { name: "صفحة أسرتي ومنتجاتها ←" }),
+  ).toHaveAttribute("href", "/producers/akalat-najdia");
+  const menu = page.locator("main .share-menu");
+  await menu.locator("summary").click();
+  await expect(menu.locator(".share-link")).toHaveText("jdatna.com/s/Nj7dQa");
+  await expect(menu.getByRole("link", { name: "واتساب" })).toHaveAttribute(
+    "href",
+    /wa\.me\/\?text=.*jdatna\.com%2Fs%2FNj7dQa/,
+  );
+});

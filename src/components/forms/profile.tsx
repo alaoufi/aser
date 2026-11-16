@@ -19,6 +19,7 @@ import { SectionIcon } from "./section-icon";
 import { DeleteAccountSection } from "./delete-account";
 import { CertificateCard } from "./certificate-card";
 import { stopPushOnLogout } from "@/components/public/push-setup";
+import { ShareButton } from "@/components/public/share-button";
 import {
   AccountShell,
   Guard,
@@ -587,6 +588,41 @@ function FamilyCategories({
     </section>
   );
 }
+/**
+ * «مشاركة» أعلى لوحة الأسرة: رابط مختصر لصفحتها العامة بكل منتجاتها، بقائمة التطبيقات نفسها.
+ * يظهر بعد اعتماد الأسرة فقط (قبلها لا صفحة عامة تُشارك).
+ */
+function FamilyShareTop({ name }: { name: string }) {
+  const [share, setShare] = useState<{ url: string; slug: string } | null>(
+    null,
+  );
+  useEffect(() => {
+    let active = true;
+    api<{ slug: string | null }>("/api/producer/status")
+      .then(async (d) => {
+        if (!d.slug) return;
+        const r = await api<{ url: string }>(
+          `/api/share?family=${encodeURIComponent(d.slug)}`,
+        );
+        if (active) setShare({ url: r.url, slug: d.slug });
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+  if (!share) return null;
+  return (
+    <div className={s.familyShareTop}>
+      <Link href={`/producers/${share.slug}`}>صفحة أسرتي ومنتجاتها ←</Link>
+      <ShareButton
+        title={name}
+        url={share.url}
+        text={`منتجات ${name} في أكلات جدتنا — أكل بيت`}
+      />
+    </div>
+  );
+}
 /** أقسام لوحة الأسرة المنتجة: مربعات صغيرة بدل أسطر الروابط. */
 const familySections: [href: string, label: string, icon: string][] = [
   ["/dashboard/products", "المنتجات", "products"],
@@ -606,6 +642,11 @@ export function Dashboard() {
       <Guard {...session} />
       {session.ready && session.user && (
         <>
+          {session.user.role === "producer" && (
+            <FamilyShareTop
+              name={session.user.familyName || session.user.name}
+            />
+          )}
           <div className={s.actions}>
             <button
               className={s.button}
