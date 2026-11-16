@@ -63,6 +63,10 @@ test("admin adds a member and grants permissions to members and families", async
   });
   await page.goto("/admin");
   await page
+    .getByRole("navigation", { name: "أقسام الإدارة" })
+    .locator("summary")
+    .click();
+  await page
     .getByRole("button", { name: "الأعضاء والصلاحيات", exact: true })
     .click();
   // إضافة عضو جديد برقم جواله وصلاحيات محددة.
@@ -153,6 +157,9 @@ test("a family with admin permissions keeps its own account and gets an admin ac
   ).toHaveAttribute("href", "/admin");
   await page.goto("/admin");
   const nav = page.getByRole("navigation", { name: "أقسام الإدارة" });
+  // القائمة المنسدلة تحمل القسم الحالي، وفيها ما يسمح به للمشرف فقط.
+  await expect(nav.locator("summary")).toContainText("الطلبات");
+  await nav.locator("summary").click();
   // صلاحية الطلبات تشمل «عقود الاشتراكات».
   await expect(nav.getByRole("button")).toHaveText([
     "الطلبات",

@@ -128,6 +128,11 @@ test("the admin reads suggestions, and site-text fields grow with their text", a
     page.getByText("أقترح إضافة قسم للحلويات الموسمية"),
   ).toBeVisible();
   await expect(page.getByText(/جديدة: 1/)).toBeVisible();
+  // أقسام الإدارة قائمة منسدلة: تُفتح ثم يُختار القسم.
+  await page
+    .getByRole("navigation", { name: "أقسام الإدارة" })
+    .locator("summary")
+    .click();
   await page.getByRole("button", { name: "نصوص الموقع", exact: true }).click();
   const short = page.getByLabel("زر البحث");
   const long = page.getByLabel("إرشاد الآيفون");

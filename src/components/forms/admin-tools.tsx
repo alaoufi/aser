@@ -18,6 +18,7 @@ import {
 import { api, Message, s } from "./shared";
 import { PasswordField } from "./password-field";
 import { adminCache, fetchAdmin } from "./admin-cache";
+import { SectionIcon as AdminIcon } from "./section-icon";
 export { prefetchAdmin } from "./admin-cache";
 import {
   productFieldKeys,
@@ -840,44 +841,76 @@ const orderStatus: Record<string, string> = {
   cancelled: "ملغى",
 };
 type Summary = Record<string, number>;
+/** ملخص الإدارة: ثلاث بطاقات (الأسر، الطلبات، المنتجات والبلاغات)، وما يحتاج انتباهًا بالأحمر. */
 export function AdminSummary({ onOpen }: { onOpen: (tab: string) => void }) {
   const r = useResource<{ summary: Summary }>("/api/admin/summary");
   const v = r.data?.summary;
-  const cards: [string, string, string, boolean?][] = v
+  const groups: {
+    title: string;
+    icon: string;
+    stats: [label: string, value: number, tab: string, alert?: boolean][];
+  }[] = v
     ? [
-        [
-          "أسر تنتظر الاعتماد",
-          String(v.familiesPending),
-          "approvals",
-          v.familiesPending > 0,
-        ],
-        ["أسر بانتظار الاستكمال", String(v.familiesIncomplete), "producers"],
-        ["أسر نشطة", String(v.familiesApproved), "producers"],
-        ["بلاغات مفتوحة", String(v.reportsOpen), "reports", v.reportsOpen > 0],
-        ["طلبات آخر 24 ساعة", String(v.ordersToday), "orders"],
-        [
-          "طلبات بلا رد منذ 24 ساعة",
-          String(v.ordersStale),
-          "orders",
-          v.ordersStale > 0,
-        ],
-        ["منتجات ظاهرة", String(v.productsLive), "products"],
+        {
+          title: "الأسر",
+          icon: "producers",
+          stats: [
+            [
+              "تنتظر الاعتماد",
+              v.familiesPending,
+              "approvals",
+              v.familiesPending > 0,
+            ],
+            ["بانتظار الاستكمال", v.familiesIncomplete, "producers"],
+            ["نشطة", v.familiesApproved, "producers"],
+          ],
+        },
+        {
+          title: "الطلبات",
+          icon: "orders",
+          stats: [
+            ["آخر 24 ساعة", v.ordersToday, "orders"],
+            ["بلا رد منذ 24 ساعة", v.ordersStale, "orders", v.ordersStale > 0],
+          ],
+        },
+        {
+          title: "المنتجات والبلاغات",
+          icon: "products",
+          stats: [
+            ["منتجات ظاهرة", v.productsLive, "products"],
+            ["بلاغات مفتوحة", v.reportsOpen, "reports", v.reportsOpen > 0],
+          ],
+        },
       ]
     : [];
   return (
-    <section aria-label="ملخص الإدارة" className={s.summaryGrid}>
+    <section aria-label="ملخص الإدارة" className={s.summaryBoard}>
       {r.error && <Message error={r.error} />}
       {!v && !r.error && <p role="status">جارٍ تحميل الملخص…</p>}
-      {cards.map(([label, value, tab, alert]) => (
-        <button
-          type="button"
-          key={label}
-          className={`${s.summaryCard} ${alert ? s.summaryAlert : ""}`}
-          onClick={() => onOpen(tab)}
+      {groups.map((g) => (
+        <article
+          key={g.title}
+          className={s.summaryGroup}
+          aria-label={`ملخص ${g.title}`}
         >
-          <strong>{value}</strong>
-          <span>{label}</span>
-        </button>
+          <h2 className={s.summaryGroupTitle}>
+            <AdminIcon name={g.icon} />
+            {g.title}
+          </h2>
+          <div className={s.summaryStats}>
+            {g.stats.map(([label, value, tab, alert]) => (
+              <button
+                type="button"
+                key={label}
+                className={`${s.summaryStat} ${alert ? s.summaryAlert : ""}`}
+                onClick={() => onOpen(tab)}
+              >
+                <strong>{value}</strong>
+                <span>{label}</span>
+              </button>
+            ))}
+          </div>
+        </article>
       ))}
     </section>
   );

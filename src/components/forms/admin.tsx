@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { COVERAGE_URL } from "./admin-cache";
 import {
@@ -286,6 +286,25 @@ export function Admin() {
   const [success, setSuccess] = useState("");
   const [filter, setFilter] = useState("all");
   const [query, setQuery] = useState("");
+  const menu = useRef<HTMLDetailsElement>(null);
+  // القائمة تُغلق بالضغط خارجها أو بزر Esc.
+  useEffect(() => {
+    const close = (e: Event) => {
+      const d = menu.current;
+      if (!d?.open) return;
+      if (e instanceof KeyboardEvent) {
+        if (e.key !== "Escape") return;
+        d.open = false;
+        d.querySelector("summary")?.focus();
+      } else if (!d.contains(e.target as Node)) d.open = false;
+    };
+    document.addEventListener("pointerdown", close);
+    document.addEventListener("keydown", close);
+    return () => {
+      document.removeEventListener("pointerdown", close);
+      document.removeEventListener("keydown", close);
+    };
+  }, []);
   const allowed = adminTabs.filter(([, , permission]) =>
     permission === "owner"
       ? session.user?.role === "admin"
@@ -323,54 +342,79 @@ export function Admin() {
       {isManager(session.user) && (
         <>
           <AdminSummary onOpen={setTab} />
-          <nav className={s.adminNav} aria-label="أقسام الإدارة">
-            {adminGroups.map(([group, ids]) => {
-              const items = allowed.filter(([id]) => ids.includes(id));
-              const coverage =
-                ids.includes("locations") && can(session.user, "locations");
-              if (!items.length && !coverage) return null;
-              return (
-                <div
-                  key={group}
-                  role="group"
-                  aria-label={group}
-                  className={s.adminNavGroup}
-                >
-                  {items.map(([id, label]) => (
-                    <button
-                      type="button"
-                      className={s.adminNavItem}
-                      key={id}
-                      aria-pressed={active === id}
-                      onClick={() => setTab(id)}
-                      onPointerEnter={() => prefetchAdmin(tabData[id] ?? [])}
-                      onFocus={() => prefetchAdmin(tabData[id] ?? [])}
+          {/* أقسام الإدارة قائمة منسدلة: زرها يحمل القسم الحالي، وتحتها الأقسام بمجموعاتها. */}
+          <nav className={s.adminMenu} aria-label="أقسام الإدارة">
+            <details className={s.adminMenuDetails} ref={menu}>
+              <summary className={s.adminMenuButton}>
+                <AdminIcon name={active ?? "approvals"} />
+                <span className={s.adminMenuCurrent}>
+                  <small>القسم</small>
+                  {allowed.find(([id]) => id === active)?.[1] ?? "اختر قسمًا"}
+                </span>
+                {waiting.length > 0 && active !== "approvals" && (
+                  <span className={s.adminMenuAlert}>
+                    {waiting.length} تنتظر الاعتماد
+                  </span>
+                )}
+              </summary>
+              <div className={s.adminMenuPanel}>
+                {adminGroups.map(([group, ids]) => {
+                  const items = allowed.filter(([id]) => ids.includes(id));
+                  const coverage =
+                    ids.includes("locations") && can(session.user, "locations");
+                  if (!items.length && !coverage) return null;
+                  return (
+                    <div
+                      key={group}
+                      role="group"
+                      aria-label={group}
+                      className={s.adminMenuGroup}
                     >
-                      <AdminIcon name={id} />
-                      <span>{label}</span>
-                      {id === "approvals" && waiting.length > 0 && (
-                        <span className={s.navBadge}>
-                          {waiting.length}
-                          <span className="sr-only"> تنتظر الاعتماد</span>
-                        </span>
+                      <p className={s.adminMenuGroupTitle} aria-hidden="true">
+                        {group}
+                      </p>
+                      {items.map(([id, label]) => (
+                        <button
+                          type="button"
+                          className={s.adminMenuItem}
+                          key={id}
+                          aria-pressed={active === id}
+                          onClick={() => {
+                            setTab(id);
+                            if (menu.current) menu.current.open = false;
+                          }}
+                          onPointerEnter={() =>
+                            prefetchAdmin(tabData[id] ?? [])
+                          }
+                          onFocus={() => prefetchAdmin(tabData[id] ?? [])}
+                        >
+                          <AdminIcon name={id} />
+                          <span>{label}</span>
+                          {id === "approvals" && waiting.length > 0 && (
+                            <span className={s.adminMenuBadge}>
+                              {waiting.length}
+                              <span className="sr-only"> تنتظر الاعتماد</span>
+                            </span>
+                          )}
+                        </button>
+                      ))}
+                      {coverage && (
+                        // تنقّل داخل الموقع بلا إعادة تحميل، وبياناتها تُحمَّل مسبقًا عند المرور.
+                        <Link
+                          className={s.adminMenuItem}
+                          href="/admin/coverage"
+                          onPointerEnter={() => prefetchAdmin([COVERAGE_URL])}
+                          onFocus={() => prefetchAdmin([COVERAGE_URL])}
+                        >
+                          <AdminIcon name="coverage" />
+                          <span>إدارة التغطية التفصيلية</span>
+                        </Link>
                       )}
-                    </button>
-                  ))}
-                  {coverage && (
-                    // تنقّل داخل الموقع بلا إعادة تحميل، وبياناتها تُحمَّل مسبقًا عند المرور.
-                    <Link
-                      className={s.adminNavItem}
-                      href="/admin/coverage"
-                      onPointerEnter={() => prefetchAdmin([COVERAGE_URL])}
-                      onFocus={() => prefetchAdmin([COVERAGE_URL])}
-                    >
-                      <AdminIcon name="coverage" />
-                      <span>إدارة التغطية التفصيلية</span>
-                    </Link>
-                  )}
-                </div>
-              );
-            })}
+                    </div>
+                  );
+                })}
+              </div>
+            </details>
           </nav>
           {active === "members" ? (
             <MembersAdmin />
