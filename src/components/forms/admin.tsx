@@ -25,6 +25,7 @@ import { MembersAdmin } from "./members";
 import { SectionIcon as AdminIcon } from "./section-icon";
 import { APPROVALS_CHANGED } from "@/components/public/approval-alert";
 import { AdminCouriers } from "./courier";
+import { ContractsAdmin } from "./subscriptions";
 
 /** بيانات كل قسم، تُحمَّل مسبقًا عند المرور على زره أو التركيز عليه. */
 const tabData: Record<string, string[]> = {
@@ -33,6 +34,7 @@ const tabData: Record<string, string[]> = {
   categories: ["/api/admin/categories", "/api/admin/product-fields"],
   locations: ["/api/admin/locations"],
   reports: ["/api/admin/reports"],
+  contracts: ["/api/admin/contracts"],
   template: ["/api/admin/settings"],
   texts: ["/api/admin/texts"],
   app: ["/api/admin/app-links"],
@@ -52,6 +54,7 @@ const adminTabs: [
   ["categories", "إدارة الأقسام", "categories"],
   ["locations", "المواقع", "locations"],
   ["reports", "البلاغات", "reports"],
+  ["contracts", "عقود الاشتراكات", "orders"],
   ["template", "قالب الموقع", "content"],
   ["texts", "نصوص الموقع", "content"],
   ["app", "تطبيق الجوال", "content"],
@@ -63,7 +66,7 @@ const adminTabs: [
 const adminGroups: [group: string, ids: string[]][] = [
   [
     "الأسر والطلبات",
-    ["approvals", "producers", "orders", "products", "reports"],
+    ["approvals", "producers", "orders", "products", "reports", "contracts"],
   ],
   ["الأقسام والمواقع", ["categories", "locations"]],
   [
@@ -373,6 +376,8 @@ export function Admin() {
             <LocationsAdmin />
           ) : active === "reports" ? (
             <ReportsAdmin />
+          ) : active === "contracts" ? (
+            <ContractsAdmin />
           ) : active === "template" ? (
             <TemplateAdmin />
           ) : active === "texts" ? (

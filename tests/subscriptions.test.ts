@@ -167,3 +167,303 @@ test(
     }
   },
 );
+
+test(
+  "isolated subscription menu: family dishes per meal, agreement, the customer's default dish and a day changed a day ahead",
+  { skip: process.env.JDATNA_TEST_DB !== "true" },
+  async () => {
+    const {
+      addMenuItem,
+      removeMenuItem,
+      decideSubscription,
+      customerAgree,
+      viewContract,
+      mySubscriptions,
+      setDefaultDish,
+      setDayDish,
+      familyDaySchedule,
+    } = await import("../src/server/subscriptions");
+    const pool = db();
+    const phone = () =>
+      "+9665" + String(Math.floor(Math.random() * 1e8)).padStart(8, "0");
+    const owner: SessionUser = {
+      id: randomUUID(),
+      name: "أسرة القائمة",
+      phone: phone(),
+      role: "producer",
+    };
+    const customer: SessionUser = {
+      id: randomUUID(),
+      name: "مشترك القائمة",
+      phone: phone(),
+      role: "customer",
+    };
+    const fam = randomUUID();
+    const iso = (offset: number) => {
+      const d = new Date(
+        `${new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Riyadh" }).format(new Date())}T12:00:00Z`,
+      );
+      d.setUTCDate(d.getUTCDate() + offset);
+      return d.toISOString().slice(0, 10);
+    };
+    try {
+      for (const u of [owner, customer])
+        await pool.query(
+          "INSERT INTO jdatna.users(id,name,phone,role,phone_verified_at) VALUES($1,$2,$3,$4,now())",
+          [u.id, u.name, u.phone, u.role],
+        );
+      const city = (
+        await pool.query("SELECT id FROM jdatna.cities ORDER BY id LIMIT 1")
+      ).rows[0].id;
+      await pool.query(
+        "INSERT INTO jdatna.producer_profiles(id,user_id,slug,name,city_id,phone,status,delivery) VALUES($1,$2,$3,'أسرة القائمة',$4,$5,'approved',true)",
+        [fam, owner.id, "menu-" + fam, city, owner.phone],
+      );
+      await saveSubscriptionPlan(owner, {
+        enabled: true,
+        daily: true,
+        weekly: true,
+        monthly: false,
+        period: false,
+        meals: ["breakfast", "lunch"],
+        delivery: true,
+        notes: "",
+      });
+      // قائمة الأطباق لكل وجبة.
+      await addMenuItem(owner, {
+        meal: "breakfast",
+        name: "فول، عدس، بيض مسلوق مع الخبز",
+      });
+      await addMenuItem(owner, { meal: "lunch", name: "كبسة رز مع لحم" });
+      const menu = await addMenuItem(owner, { meal: "lunch", name: "مرقوق" });
+      const kabsa = menu.find((m) => m.name === "كبسة رز مع لحم")!;
+      const marqooq = menu.find((m) => m.name === "مرقوق")!;
+      const breakfast = menu.find((m) => m.meal === "breakfast")!;
+      await assert.rejects(
+        addMenuItem(customer, { meal: "lunch", name: "x y" }),
+        {
+          status: 404,
+        },
+      );
+      // الطلب، ثم لا اختيار قبل الاتفاق.
+      const sub = await requestSubscription(customer, {
+        family: "menu-" + fam,
+        plan: "weekly",
+        startDate: iso(0),
+        days: null,
+        meals: ["breakfast", "lunch"],
+        delivery: false,
+        location: "",
+        notes: "",
+      });
+      await assert.rejects(
+        setDefaultDish(customer, {
+          id: sub.id,
+          meal: "lunch",
+          itemId: kabsa.id,
+        }),
+        { status: 409 },
+      );
+      // موافقة الأسرة تنتظر ضغط العميل «تم الاتفاق مع الأسرة».
+      await assert.rejects(
+        decideSubscription(owner, { id: sub.id, status: "agreed" }),
+        { status: 409 },
+      );
+      await assert.rejects(customerAgree(owner, { id: sub.id }), {
+        status: 404,
+      });
+      await customerAgree(customer, { id: sub.id });
+      await decideSubscription(owner, { id: sub.id, status: "agreed" });
+      await assert.rejects(
+        decideSubscription(owner, { id: sub.id, status: "agreed" }),
+        { status: 409 },
+      );
+      // العقد: يراه الطرفان، وفيه الشروط ونسخة المحادثة، وثابت في القاعدة.
+      const contractId = (await mySubscriptions(customer)).subscriptions[0]
+        .contractId as string;
+      assert.ok(contractId);
+      const contract = await viewContract(customer, contractId);
+      assert.equal((await viewContract(owner, contractId)).id, contractId);
+      const stranger: SessionUser = {
+        id: randomUUID(),
+        name: "غريب",
+        phone: phone(),
+        role: "customer",
+      };
+      await assert.rejects(viewContract(stranger, contractId), { status: 404 });
+      assert.equal(contract.familyName, "أسرة القائمة");
+      assert.equal(contract.customerName, customer.name);
+      assert.equal(contract.terms.planLabel, "أسبوعي");
+      assert.match(contract.transcript[0].body, /طلب اشتراك جديد/);
+      assert.ok(
+        contract.transcript.some((m) => /تم الاتفاق مع الأسرة/.test(m.body)),
+      );
+      assert.match(contract.contentHash, /^[a-f0-9]{64}$/);
+      await assert.rejects(
+        pool.query(
+          "UPDATE jdatna.subscription_contracts SET customer_name='مزور' WHERE id=$1",
+          [contractId],
+        ),
+        /ثابت/,
+      );
+      await assert.rejects(
+        pool.query("DELETE FROM jdatna.subscription_contracts WHERE id=$1", [
+          contractId,
+        ]),
+        /ثابت/,
+      );
+      await assert.rejects(
+        pool.query("TRUNCATE jdatna.subscription_contracts"),
+        /ثابت/,
+      );
+      const agreedMsg = (
+        await pool.query(
+          "SELECT body FROM jdatna.messages WHERE conversation_id=$1 AND sender_id=$2",
+          [sub.conversationId, owner.id],
+        )
+      ).rows[0];
+      assert.match(agreedMsg.body, /وافقت الأسرة على الاتفاق/);
+      // الطبق الدائم: من قائمة الأسرة لهذه الوجبة فقط.
+      await assert.rejects(
+        setDefaultDish(customer, {
+          id: sub.id,
+          meal: "lunch",
+          itemId: breakfast.id,
+        }),
+        { status: 400 },
+      );
+      await assert.rejects(
+        setDefaultDish(customer, {
+          id: sub.id,
+          meal: "dinner",
+          itemId: kabsa.id,
+        }),
+        { status: 400 },
+      );
+      await setDefaultDish(customer, {
+        id: sub.id,
+        meal: "lunch",
+        itemId: kabsa.id,
+      });
+      await setDefaultDish(customer, {
+        id: sub.id,
+        meal: "breakfast",
+        itemId: breakfast.id,
+      });
+      // اليوم مقفل، والغد يُعدَّل، وخارج المدة مرفوض.
+      await assert.rejects(
+        setDayDish(customer, {
+          id: sub.id,
+          day: iso(0),
+          meal: "lunch",
+          itemId: marqooq.id,
+        }),
+        { status: 409 },
+      );
+      await assert.rejects(
+        setDayDish(customer, {
+          id: sub.id,
+          day: iso(10),
+          meal: "lunch",
+          itemId: marqooq.id,
+        }),
+        { status: 400 },
+      );
+      await setDayDish(customer, {
+        id: sub.id,
+        day: iso(1),
+        meal: "lunch",
+        itemId: marqooq.id,
+      });
+      const mine = (await mySubscriptions(customer)).subscriptions[0];
+      assert.equal(mine.status, "agreed");
+      assert.equal(mine.defaults.lunch, kabsa.id);
+      assert.deepEqual(mine.upcoming[0], iso(1));
+      assert.equal(mine.upcoming.at(-1), iso(6), "الأسبوعي سبعة أيام");
+      assert.deepEqual(
+        mine.overrides.map((o: { day: string; itemId: string }) => [
+          o.day,
+          o.itemId,
+        ]),
+        [[iso(1), marqooq.id]],
+      );
+      // جدول الغد عند الأسرة: مرقوق للغداء (تغيير الغد)، والفطور الدائم.
+      const tomorrow = await familyDaySchedule(owner, iso(1));
+      const dishes = Object.fromEntries(
+        tomorrow.rows.map((r) => [r.meal, r.dish]),
+      );
+      assert.deepEqual(dishes, {
+        breakfast: "فول، عدس، بيض مسلوق مع الخبز",
+        lunch: "مرقوق",
+      });
+      // بعد الغد يعود الطبق الدائم.
+      const after = await familyDaySchedule(owner, iso(2));
+      assert.equal(
+        after.rows.find((r) => r.meal === "lunch")?.dish,
+        "كبسة رز مع لحم",
+      );
+      // إلغاء التغيير يعيد الغد للدائم، وحذف الطبق يُخفيه من القائمة فقط.
+      await setDayDish(customer, {
+        id: sub.id,
+        day: iso(1),
+        meal: "lunch",
+        itemId: null,
+      });
+      assert.equal(
+        (await familyDaySchedule(owner, iso(1))).rows.find(
+          (r) => r.meal === "lunch",
+        )?.dish,
+        "كبسة رز مع لحم",
+      );
+      const left = await removeMenuItem(owner, { id: kabsa.id });
+      assert.equal(
+        left.some((m) => m.id === kabsa.id),
+        false,
+      );
+      assert.equal(
+        (await mySubscriptions(customer)).subscriptions[0].itemNames[kabsa.id],
+        "كبسة رز مع لحم",
+      );
+    } finally {
+      // تنظيف الاختبار المعزول: حذف العقد مسموح في قاعدة الاختبار فقط وبضبط صريح.
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        await client.query("SET LOCAL jdatna.contract_cleanup='on'");
+        await client.query(
+          "DELETE FROM jdatna.subscription_contracts WHERE producer_id=$1",
+          [fam],
+        );
+        await client.query("COMMIT");
+      } finally {
+        client.release();
+      }
+      await pool.query(
+        "DELETE FROM jdatna.subscription_requests WHERE producer_id=$1",
+        [fam],
+      );
+      await pool.query(
+        "DELETE FROM jdatna.subscription_menu_items WHERE producer_id=$1",
+        [fam],
+      );
+      await pool.query(
+        "DELETE FROM jdatna.messages WHERE conversation_id IN (SELECT id FROM jdatna.conversations WHERE producer_id=$1)",
+        [fam],
+      );
+      await pool.query(
+        "DELETE FROM jdatna.conversations WHERE producer_id=$1",
+        [fam],
+      );
+      await pool.query(
+        "DELETE FROM jdatna.producer_subscription_plans WHERE producer_id=$1",
+        [fam],
+      );
+      await pool.query("DELETE FROM jdatna.producer_profiles WHERE id=$1", [
+        fam,
+      ]);
+      await pool.query("DELETE FROM jdatna.users WHERE id=ANY($1::uuid[])", [
+        [owner.id, customer.id],
+      ]);
+    }
+  },
+);

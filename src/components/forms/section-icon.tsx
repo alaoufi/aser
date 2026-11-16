@@ -5,6 +5,7 @@ const icons: Record<string, string> = {
     "M12 3a5 5 0 100 10 5 5 0 000-10zM8.5 13.5L7 21l5-2.5 5 2.5-1.5-7.5M9.8 8l1.6 1.6 2.9-3",
   orders: "M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6",
   products: "M4 13a8 8 0 0016 0zM3 13h18M12 5v3M9 6v2M15 6v2",
+  contracts: "M7 3h7l4 4v14H7zM14 3v4h4M9.5 12h6M9.5 15.5h6M9.5 19h3.5",
   reports: "M5 21V4M5 4h11l-2 4 2 4H5",
   categories: "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z",
   locations:

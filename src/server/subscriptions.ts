@@ -1,7 +1,8 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { z } from "zod";
 import type { SessionUser } from "../lib/types";
-import { db } from "./db";
+import { db, transaction } from "./db";
+import { can } from "../lib/permissions";
 import { HttpError } from "./security";
 
 /**
@@ -68,7 +69,9 @@ export async function ownSubscriptions(user: SessionUser) {
   const requests = (
     await db().query(
       `SELECT r.id,r.plan,r.start_date::text AS "startDate",r.days,r.meals,r.delivery,r.location,r.notes,r.status,
-         r.conversation_id AS "conversationId",r.created_at AS "createdAt",u.name AS "customerName"
+         r.conversation_id AS "conversationId",r.created_at AS "createdAt",u.name AS "customerName",
+         r.customer_agreed_at AS "customerAgreedAt",
+         (SELECT k.id FROM jdatna.subscription_contracts k WHERE k.subscription_id=r.id) AS "contractId"
        FROM jdatna.subscription_requests r JOIN jdatna.users u ON u.id=r.user_id
        WHERE r.producer_id=$1 ORDER BY r.created_at DESC LIMIT 100`,
       [family.id],
@@ -79,6 +82,8 @@ export async function ownSubscriptions(user: SessionUser) {
     approved: family.status === "approved",
     familyDelivers: family.delivery,
     requests,
+    menu: await familyMenu(family.id),
+    schedule: await familyDaySchedule(user),
   };
 }
 
@@ -137,6 +142,8 @@ export type SubscriptionFamily = {
   notes: string;
   ratingAverage: number | null;
   ratingCount: number;
+  /** أطباق الاشتراك لكل وجبة تقدّمها الأسرة. */
+  menu: MenuItem[];
 };
 
 /** الأسر المعتمدة التي تتيح الاشتراكات، في منطقة العميل أو مدينته (التوصيل اليومي محلي). */
@@ -174,7 +181,9 @@ export async function subscriptionFamilies(filters: {
       args,
     )
   ).rows;
+  const menus = await menuOf(rows.map((r) => r.id));
   return rows.map((r) => ({
+    menu: (menus.get(r.id) ?? []).filter((m) => r.meals.includes(m.meal)),
     id: r.id,
     slug: r.slug,
     name: r.name,
@@ -294,4 +303,445 @@ export async function requestSubscription(user: SessionUser, input: unknown) {
     body: subscriptionSummary({ ...v, meals, location: v.location }),
   });
   return { id, conversationId: conversation.id };
+}
+
+/* ───────── قائمة أطباق الاشتراك، والاتفاق، واختيار العميل لأطباقه ───────── */
+
+export type MenuItem = { id: string; meal: MealId; name: string };
+
+/** أطباق الاشتراك الفعّالة لأسرة (أو لعدة أسر)، مرتبة بالوجبة ثم الإضافة. */
+async function menuOf(producerIds: string[]) {
+  if (!producerIds.length) return new Map<string, MenuItem[]>();
+  const rows = (
+    await db().query(
+      `SELECT id,producer_id AS "producerId",meal,name FROM jdatna.subscription_menu_items
+       WHERE producer_id=ANY($1::uuid[]) AND active
+       ORDER BY array_position(ARRAY['breakfast','lunch','dinner'],meal),created_at`,
+      [producerIds],
+    )
+  ).rows as (MenuItem & { producerId: string })[];
+  const map = new Map<string, MenuItem[]>();
+  for (const { producerId, ...item } of rows)
+    map.set(producerId, [...(map.get(producerId) ?? []), item]);
+  return map;
+}
+export async function familyMenu(producerId: string) {
+  return (await menuOf([producerId])).get(producerId) ?? [];
+}
+
+export async function addMenuItem(user: SessionUser, input: unknown) {
+  const v = z
+    .object({
+      meal,
+      name: z.string().trim().min(2, "اكتب اسم الطبق").max(120),
+    })
+    .strict()
+    .parse(input);
+  const family = await ownFamily(user);
+  const count = (
+    await db().query(
+      "SELECT count(*)::int AS n FROM jdatna.subscription_menu_items WHERE producer_id=$1 AND active",
+      [family.id],
+    )
+  ).rows[0].n as number;
+  if (count >= 60) throw new HttpError(400, "القائمة ممتلئة (60 طبقًا)");
+  await db().query(
+    "INSERT INTO jdatna.subscription_menu_items(id,producer_id,meal,name) VALUES($1,$2,$3,$4)",
+    [randomUUID(), family.id, v.meal, v.name],
+  );
+  return familyMenu(family.id);
+}
+
+/** حذف طبق من القائمة: يُخفى فقط، فيبقى في اختيارات المشتركين السابقة ويُعرض لهم حتى يغيّروه. */
+export async function removeMenuItem(user: SessionUser, input: unknown) {
+  const { id } = z.object({ id: z.uuid() }).strict().parse(input);
+  const family = await ownFamily(user);
+  const r = await db().query(
+    "UPDATE jdatna.subscription_menu_items SET active=false WHERE id=$1 AND producer_id=$2",
+    [id, family.id],
+  );
+  if (!r.rowCount) throw new HttpError(404, "الطبق غير موجود");
+  return familyMenu(family.id);
+}
+
+/** آخر يوم في الاشتراك (null لليومي المفتوح). */
+const endSql = `CASE r.plan WHEN 'weekly' THEN r.start_date+6 WHEN 'monthly' THEN r.start_date+29
+  WHEN 'period' THEN r.start_date+r.days-1 END`;
+
+/**
+ * قرار الأسرة: «أوافق على الاتفاق» بعد أن يضغط العميل «تم الاتفاق مع الأسرة»، فيُحفظ عقد الاشتراك الثابت
+ * (الشروط ونسخة المحادثة حتى الآن وبصمتها)؛ أو «اعتذار». تصل رسالة للعميل في المحادثة.
+ */
+export async function decideSubscription(user: SessionUser, input: unknown) {
+  const v = z
+    .object({ id: z.uuid(), status: z.enum(["agreed", "declined"]) })
+    .strict()
+    .parse(input);
+  const family = await ownFamily(user);
+  const result = await transaction(async (client) => {
+    const row = (
+      await client.query(
+        `SELECT r.*,r.start_date::text AS start,(${endSql})::text AS "end",u.name AS customer_name,
+           COALESCE(p.trade_name,p.name) AS family_name
+         FROM jdatna.subscription_requests r JOIN jdatna.users u ON u.id=r.user_id
+         JOIN jdatna.producer_profiles p ON p.id=r.producer_id
+         WHERE r.id=$1 AND r.producer_id=$2 FOR UPDATE OF r`,
+        [v.id, family.id],
+      )
+    ).rows[0];
+    if (!row) throw new HttpError(404, "طلب الاشتراك غير موجود");
+    if (row.status === "agreed")
+      throw new HttpError(409, "تم الاتفاق على هذا الاشتراك وحُفظ عقده");
+    if (row.status !== "new")
+      throw new HttpError(409, "طلب الاشتراك ليس بانتظار القرار");
+    if (v.status === "declined") {
+      await client.query(
+        "UPDATE jdatna.subscription_requests SET status='declined' WHERE id=$1",
+        [row.id],
+      );
+      return { conversationId: row.conversation_id, contractId: null };
+    }
+    if (!row.customer_agreed_at)
+      throw new HttpError(
+        409,
+        "بانتظار أن يضغط العميل «تم الاتفاق مع الأسرة» في «اشتراكاتي»",
+      );
+    const transcript = row.conversation_id
+      ? (
+          await client.query(
+            `SELECT CASE WHEN m.sender_id=$2 THEN 'customer' ELSE 'family' END AS side,
+               u.name AS sender,m.body,m.created_at AS at
+             FROM jdatna.messages m JOIN jdatna.users u ON u.id=m.sender_id
+             WHERE m.conversation_id=$1 ORDER BY m.created_at`,
+            [row.conversation_id, row.user_id],
+          )
+        ).rows
+      : [];
+    const terms = {
+      plan: row.plan,
+      planLabel: planLabels[row.plan as PlanId],
+      startDate: row.start,
+      endDate: row.end,
+      days: row.days,
+      meals: row.meals,
+      mealLabels: (row.meals as MealId[]).map((m) => mealLabels[m]),
+      delivery: row.delivery,
+      location: row.location,
+      notes: row.notes,
+    };
+    const familyAgreedAt = new Date().toISOString();
+    const customerAgreedAt = new Date(row.customer_agreed_at).toISOString();
+    const id = randomUUID();
+    // البصمة تثبت أن نص العقد لم يتغير منذ حفظه.
+    const contentHash = createHash("sha256")
+      .update(
+        JSON.stringify({
+          id,
+          subscription: row.id,
+          family: row.family_name,
+          customer: row.customer_name,
+          terms,
+          transcript,
+          customerAgreedAt,
+          familyAgreedAt,
+        }),
+      )
+      .digest("hex");
+    await client.query(
+      `INSERT INTO jdatna.subscription_contracts(id,subscription_id,producer_id,user_id,family_name,customer_name,terms,transcript,
+         customer_agreed_at,family_agreed_at,content_hash)
+       VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+      [
+        id,
+        row.id,
+        family.id,
+        row.user_id,
+        row.family_name,
+        row.customer_name,
+        JSON.stringify(terms),
+        JSON.stringify(transcript),
+        customerAgreedAt,
+        familyAgreedAt,
+        contentHash,
+      ],
+    );
+    await client.query(
+      "UPDATE jdatna.subscription_requests SET status='agreed' WHERE id=$1",
+      [row.id],
+    );
+    return { conversationId: row.conversation_id, contractId: id };
+  });
+  if (result.conversationId) {
+    const { sendMessage } = await import("./chat");
+    await sendMessage(user, result.conversationId, {
+      body: result.contractId
+        ? "وافقت الأسرة على الاتفاق ✓ حُفظ عقد الاشتراك ويمكنكما الاطلاع عليه. اختر أطباقك لكل وجبة من «اشتراكاتي»، ويمكنك تغيير طبق أي يوم قبله بيوم."
+        : "نعتذر عن هذا الاشتراك. يسعدنا تواصلك في المحادثة لأي طلب آخر.",
+    }).catch(() => null);
+  }
+  return ownSubscriptions(user);
+}
+
+/** العميل يضغط «تم الاتفاق مع الأسرة» بعد النقاش، فتُطلب موافقة الأسرة. */
+export async function customerAgree(user: SessionUser, input: unknown) {
+  const { id } = z.object({ id: z.uuid() }).strict().parse(input);
+  const row = (
+    await db().query(
+      `UPDATE jdatna.subscription_requests SET customer_agreed_at=COALESCE(customer_agreed_at,now())
+       WHERE id=$1 AND user_id=$2 AND status='new' RETURNING conversation_id AS "conversationId"`,
+      [id, user.id],
+    )
+  ).rows[0];
+  if (!row)
+    throw new HttpError(404, "طلب الاشتراك غير موجود أو ليس بانتظار الاتفاق");
+  if (row.conversationId) {
+    const { sendMessage } = await import("./chat");
+    await sendMessage(user, row.conversationId, {
+      body: "تم الاتفاق مع الأسرة ✓ أرجو موافقتكم من «الاشتراكات» في لوحة الأسرة، فيُحفظ عقد الاشتراك.",
+    }).catch(() => null);
+  }
+  return mySubscriptions(user);
+}
+
+export type Contract = {
+  id: string;
+  number: number;
+  subscriptionId: string;
+  familyName: string;
+  customerName: string;
+  terms: Record<string, unknown>;
+  transcript: { side: string; sender: string; body: string; at: string }[];
+  customerAgreedAt: string;
+  familyAgreedAt: string;
+  contentHash: string;
+  createdAt: string;
+};
+const contractSelect = `SELECT k.id,k.number::int AS number,k.subscription_id AS "subscriptionId",k.family_name AS "familyName",
+  k.customer_name AS "customerName",k.terms,k.transcript,k.customer_agreed_at AS "customerAgreedAt",
+  k.family_agreed_at AS "familyAgreedAt",k.content_hash AS "contentHash",k.created_at AS "createdAt"
+  FROM jdatna.subscription_contracts k`;
+
+/** العقد: يطّلع عليه العميل وصاحبة الأسرة، والإدارة (صلاحية الطلبات). */
+export async function viewContract(user: SessionUser, id: string) {
+  if (!z.uuid().safeParse(id).success)
+    throw new HttpError(404, "العقد غير موجود");
+  const row = (
+    await db().query(
+      `${contractSelect} JOIN jdatna.producer_profiles p ON p.id=k.producer_id
+       WHERE k.id=$1 AND (k.user_id=$2 OR p.user_id=$2 OR $3)`,
+      [id, user.id, can(user, "orders")],
+    )
+  ).rows[0] as Contract | undefined;
+  if (!row) throw new HttpError(404, "العقد غير موجود");
+  return row;
+}
+
+/** الإدارة ← «عقود الاشتراكات». */
+export async function adminContracts(user: SessionUser) {
+  if (!can(user, "orders"))
+    throw new HttpError(403, "لا تملك صلاحية عقود الاشتراكات");
+  return (
+    await db().query(
+      `SELECT k.id,k.number::int AS number,k.family_name AS "familyName",k.customer_name AS "customerName",
+         k.terms->>'planLabel' AS plan,k.terms->>'startDate' AS "startDate",k.family_agreed_at AS "familyAgreedAt"
+       FROM jdatna.subscription_contracts k ORDER BY k.created_at DESC LIMIT 300`,
+    )
+  ).rows;
+}
+
+const tomorrow = () => {
+  const d = new Date(`${riyadhToday()}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + 1);
+  return d.toISOString().slice(0, 10);
+};
+const addDays = (day: string, n: number) => {
+  const d = new Date(`${day}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+};
+
+/** اشتراك العميل مع التأكد من ملكيته؛ اختيار الأطباق بعد الاتفاق فقط. */
+async function ownAgreed(user: SessionUser, id: string) {
+  const row = (
+    await db().query(
+      `SELECT r.id,r.producer_id,r.meals,r.status,r.start_date::text AS start,(${endSql})::text AS "end"
+       FROM jdatna.subscription_requests r WHERE r.id=$1 AND r.user_id=$2`,
+      [id, user.id],
+    )
+  ).rows[0] as
+    | {
+        id: string;
+        producer_id: string;
+        meals: MealId[];
+        status: string;
+        start: string;
+        end: string | null;
+      }
+    | undefined;
+  if (!row) throw new HttpError(404, "الاشتراك غير موجود");
+  if (row.status !== "agreed")
+    throw new HttpError(
+      409,
+      "تختار أطباقك بعد أن تؤكد الأسرة الاتفاق على الاشتراك",
+    );
+  return row;
+}
+
+async function assertItem(producerId: string, meal: MealId, itemId: string) {
+  const ok = (
+    await db().query(
+      "SELECT 1 FROM jdatna.subscription_menu_items WHERE id=$1 AND producer_id=$2 AND meal=$3 AND active",
+      [itemId, producerId, meal],
+    )
+  ).rowCount;
+  if (!ok) throw new HttpError(400, "اختر طبقًا من قائمة الأسرة لهذه الوجبة");
+}
+
+/** الطبق الدائم لوجبة في الاشتراك. */
+export async function setDefaultDish(user: SessionUser, input: unknown) {
+  const v = z
+    .object({ id: z.uuid(), meal, itemId: z.uuid() })
+    .strict()
+    .parse(input);
+  const sub = await ownAgreed(user, v.id);
+  if (!sub.meals.includes(v.meal))
+    throw new HttpError(400, "هذه الوجبة ليست في اشتراكك");
+  await assertItem(sub.producer_id, v.meal, v.itemId);
+  await db().query(
+    `INSERT INTO jdatna.subscription_choices(subscription_id,meal,item_id) VALUES($1,$2,$3)
+     ON CONFLICT(subscription_id,meal) DO UPDATE SET item_id=EXCLUDED.item_id,updated_at=now()`,
+    [v.id, v.meal, v.itemId],
+  );
+  return mySubscriptions(user);
+}
+
+/**
+ * طبق مختلف ليوم واحد: من الغد فصاعدًا فقط (قبل اليوم بيوم)، وضمن مدة الاشتراك.
+ * itemId=null يعيد اليوم إلى الطبق الدائم.
+ */
+export async function setDayDish(user: SessionUser, input: unknown) {
+  const v = z
+    .object({
+      id: z.uuid(),
+      day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      meal,
+      itemId: z.uuid().nullable(),
+    })
+    .strict()
+    .parse(input);
+  const sub = await ownAgreed(user, v.id);
+  if (!sub.meals.includes(v.meal))
+    throw new HttpError(400, "هذه الوجبة ليست في اشتراكك");
+  if (v.day < tomorrow())
+    throw new HttpError(409, "يُعدَّل طلب اليوم قبله بيوم على الأقل");
+  if (v.day < sub.start || (sub.end && v.day > sub.end))
+    throw new HttpError(400, "هذا اليوم خارج مدة اشتراكك");
+  if (v.itemId === null) {
+    await db().query(
+      "DELETE FROM jdatna.subscription_day_choices WHERE subscription_id=$1 AND day=$2 AND meal=$3",
+      [v.id, v.day, v.meal],
+    );
+  } else {
+    await assertItem(sub.producer_id, v.meal, v.itemId);
+    await db().query(
+      `INSERT INTO jdatna.subscription_day_choices(subscription_id,day,meal,item_id) VALUES($1,$2,$3,$4)
+       ON CONFLICT(subscription_id,day,meal) DO UPDATE SET item_id=EXCLUDED.item_id,updated_at=now()`,
+      [v.id, v.day, v.meal, v.itemId],
+    );
+  }
+  return mySubscriptions(user);
+}
+
+/** الأيام القادمة المعروضة للتعديل: من الغد، أسبوعان داخل مدة الاشتراك. */
+function upcomingDays(start: string, end: string | null) {
+  const days: string[] = [];
+  let day = start > tomorrow() ? start : tomorrow();
+  while (days.length < 14 && (!end || day <= end)) {
+    days.push(day);
+    day = addDays(day, 1);
+  }
+  return days;
+}
+
+/** «اشتراكاتي»: اشتراكات العميل، وقائمة كل أسرة، وأطباقه الدائمة وتغييرات الأيام القادمة. */
+export async function mySubscriptions(user: SessionUser) {
+  const subs = (
+    await db().query(
+      `SELECT r.id,r.producer_id AS "producerId",COALESCE(p.trade_name,p.name) AS "familyName",p.slug,
+         r.plan,r.start_date::text AS "startDate",(${endSql})::text AS "endDate",r.days,r.meals,r.delivery,r.status,
+         r.conversation_id AS "conversationId",r.customer_agreed_at AS "customerAgreedAt",
+         (SELECT k.id FROM jdatna.subscription_contracts k WHERE k.subscription_id=r.id) AS "contractId",
+         COALESCE((SELECT json_object_agg(c.meal,c.item_id) FROM jdatna.subscription_choices c WHERE c.subscription_id=r.id),'{}') AS defaults,
+         COALESCE((SELECT json_agg(json_build_object('day',d.day::text,'meal',d.meal,'itemId',d.item_id))
+           FROM jdatna.subscription_day_choices d WHERE d.subscription_id=r.id AND d.day>=$2::date),'[]') AS overrides
+       FROM jdatna.subscription_requests r JOIN jdatna.producer_profiles p ON p.id=r.producer_id
+       WHERE r.user_id=$1 ORDER BY (r.status='agreed') DESC,r.created_at DESC LIMIT 50`,
+      [user.id, riyadhToday()],
+    )
+  ).rows;
+  const menus = await menuOf([...new Set(subs.map((s) => s.producerId))]);
+  // الأطباق المخفية التي ما زالت مختارة تُعرض باسمها حتى يغيّرها العميل.
+  const chosen = [
+    ...new Set(
+      subs.flatMap((s) => [
+        ...Object.values(s.defaults as Record<string, string>),
+        ...(s.overrides as { itemId: string }[]).map((o) => o.itemId),
+      ]),
+    ),
+  ];
+  const names = new Map<string, string>(
+    chosen.length
+      ? (
+          await db().query(
+            "SELECT id,name FROM jdatna.subscription_menu_items WHERE id=ANY($1::uuid[])",
+            [chosen],
+          )
+        ).rows.map((r) => [r.id, r.name])
+      : [],
+  );
+  return {
+    today: riyadhToday(),
+    firstEditable: tomorrow(),
+    subscriptions: subs.map((s) => ({
+      ...s,
+      menu: (menus.get(s.producerId) ?? []).filter((m) =>
+        (s.meals as MealId[]).includes(m.meal),
+      ),
+      itemNames: Object.fromEntries(names),
+      upcoming:
+        s.status === "agreed" ? upcomingDays(s.startDate, s.endDate) : [],
+    })),
+  };
+}
+
+/** جدول يوم للأسرة (الغد افتراضيًا): لكل مشترك متفق معه وجباته والطبق المختار لكل وجبة. */
+export async function familyDaySchedule(user: SessionUser, day = tomorrow()) {
+  const family = await ownFamily(user);
+  return {
+    day,
+    rows: (
+      await db().query(
+        `SELECT r.id,u.name AS "customerName",r.delivery,r.location,m.meal,
+           COALESCE(di.name,ci.name) AS dish
+         FROM jdatna.subscription_requests r
+         JOIN jdatna.users u ON u.id=r.user_id
+         CROSS JOIN LATERAL unnest(r.meals) AS m(meal)
+         LEFT JOIN jdatna.subscription_day_choices d ON d.subscription_id=r.id AND d.day=$2::date AND d.meal=m.meal
+         LEFT JOIN jdatna.subscription_menu_items di ON di.id=d.item_id
+         LEFT JOIN jdatna.subscription_choices c ON c.subscription_id=r.id AND c.meal=m.meal
+         LEFT JOIN jdatna.subscription_menu_items ci ON ci.id=c.item_id
+         WHERE r.producer_id=$1 AND r.status='agreed' AND r.start_date<=$2::date
+           AND (${endSql} IS NULL OR ${endSql}>=$2::date)
+         ORDER BY u.name,array_position(ARRAY['breakfast','lunch','dinner'],m.meal)`,
+        [family.id, day],
+      )
+    ).rows as {
+      id: string;
+      customerName: string;
+      delivery: boolean;
+      location: string | null;
+      meal: MealId;
+      dish: string | null;
+    }[],
+  };
 }
