@@ -5,7 +5,7 @@ import { db } from "../src/server/db";
 import { rate, ratingView, ratingSummary } from "../src/server/ratings";
 
 test(
-  "isolated ratings: only delivered orders rate, admin rates families, member ratings stay private, one editable rating each",
+  "isolated ratings: only delivered orders rate, once per deal (a new deal rates again), admin once, member ratings stay private",
   { skip: process.env.JDATNA_TEST_DB !== "true" },
   async () => {
     const pool = db();
@@ -105,13 +105,32 @@ test(
           "",
         /أقسم بالله العلي العظيم/,
       );
-      // العضو المتعامل يقيّم الأسرة والمنتج، ويعدّل تقييمه.
+      // العضو المتعامل يقيّم الأسرة مرة واحدة لهذا التعامل؛ الثانية «سبق لك تقييم هذه الأسرة».
       await rate(buyer, {
         kind: "family",
         target: familyId,
         stars: 3,
         oath: true,
       });
+      await assert.rejects(
+        rate(buyer, { kind: "family", target: familyId, stars: 5, oath: true }),
+        { status: 409, message: "سبق لك تقييم هذه الأسرة" },
+      );
+      const once = await ratingView(buyer, {
+        kind: "family",
+        target: familyId,
+      });
+      assert.equal(once.canRate, false, "لا زر تقييم بعد تقييم التعامل");
+      assert.equal(once.rated, "سبق لك تقييم هذه الأسرة");
+      assert.deepEqual(once.mine, { stars: 3, comment: "" });
+      // تعامل جديد (طلب مكتمل آخر) يتيح تقييمًا جديدًا، فقد تتغير الجودة.
+      await order("completed");
+      const again = await ratingView(buyer, {
+        kind: "family",
+        target: familyId,
+      });
+      assert.equal(again.canRate, true);
+      assert.equal(again.rated, undefined);
       await rate(buyer, {
         kind: "family",
         target: familyId,
@@ -132,6 +151,11 @@ test(
         stars: 4,
         oath: true,
       });
+      // الإدارة تقيّم مرة واحدة.
+      await assert.rejects(
+        rate(admin, { kind: "family", target: familyId, stars: 5, oath: true }),
+        { status: 409 },
+      );
       await assert.rejects(
         rate(owner, { kind: "family", target: familyId, stars: 5, oath: true }),
         { status: 403 },
@@ -149,15 +173,16 @@ test(
         rate(buyer, { kind: "family", target: familyId, stars: 6, oath: true }),
       );
       assert.deepEqual(await ratingSummary("family", familyId), {
-        average: 4.5,
-        count: 2,
+        average: 4,
+        count: 3,
       });
       const mine = await ratingView(buyer, {
         kind: "family",
         target: familyId,
       });
       assert.deepEqual(mine.mine, { stars: 5, comment: "أكل لذيذ" });
-      assert.equal(mine.canRate, true);
+      assert.equal(mine.canRate, false);
+      assert.equal(mine.rated, "سبق لك تقييم هذه الأسرة");
       assert.equal(
         (await ratingView(null, { kind: "product", target: productId }))
           .canRate,

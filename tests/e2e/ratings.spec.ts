@@ -50,7 +50,14 @@ test("a member rates an ordered product with shiny stars and the count shows", a
   let sent: unknown;
   const oath =
     "أقسم بالله العلي العظيم أني تعاملت مع هذه الأسرة وتقييمي صادق وما قلت إلا الصدق";
-  let view = { average: 4, count: 3, mine: null, canRate: true, oath };
+  let view: {
+    average: number;
+    count: number;
+    mine: { stars: number; comment: string } | null;
+    canRate: boolean;
+    oath: string;
+    rated?: string;
+  } = { average: 4, count: 3, mine: null, canRate: true, oath };
   await page.route("**/api/ratings**", async (r) => {
     if (r.request().method() === "PUT") {
       sent = r.request().postDataJSON();
@@ -80,6 +87,27 @@ test("a member rates an ordered product with shiny stars and the count shows", a
     oath: true,
   });
   await expect(box.getByText("4.3 · 4 تقييم")).toBeVisible();
+  // تقييم واحد لهذا الطلب: يختفي النموذج بعد الحفظ.
+  await expect(box.getByRole("button", { name: "إرسال التقييم" })).toHaveCount(
+    0,
+  );
+  await expect(box.getByRole("group", { name: "رأيك مهم؟" })).toHaveCount(0);
+  // زيارة لاحقة بلا تعامل جديد: «سبق لك تقييم هذا المنتج» بدل زر التقييم.
+  view = {
+    ...view,
+    canRate: false,
+    mine: { stars: 5, comment: "" },
+    rated: "سبق لك تقييم هذا المنتج",
+  };
+  await page.reload();
+  await expect(
+    page
+      .getByRole("region", { name: "تقييم المنتج" })
+      .getByText("✓ سبق لك تقييم هذا المنتج (5 من 5)"),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "تقييم المنتج" }).getByRole("radio"),
+  ).toHaveCount(0);
 });
 
 test("any of the five plates can be shown enlarged", async ({ page }) => {

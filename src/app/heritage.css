@@ -1552,6 +1552,18 @@ main::before {
   color: #2f4a1f;
   font-weight: 600;
 }
+/* «سبق لك تقييم…»: بدل النموذج حين لا تعامل جديد يتيح التقييم */
+.rating-done {
+  color: #4f5d36;
+  font-size: 14px;
+  font-weight: 700;
+  margin: 6px 0 0;
+}
+.rating-new-deal {
+  color: #6b5a48;
+  display: block;
+  font-size: 12px;
+}
 .rating-error {
   margin: 0;
   color: #7c2416;
