@@ -485,6 +485,7 @@ test(
           );
           const removed = await cleanupAuthRows(1);
           assert.deepEqual(removed, {
+            securityEvents: 0,
             rateLimits: 1,
             otpChallenges: 1,
             sessions: 1,

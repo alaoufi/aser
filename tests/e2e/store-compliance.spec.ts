@@ -191,6 +191,10 @@ test("inside the iPhone app the browser-only add-to-home-screen notifications ba
   const app = await context.newPage();
   await signedIn(app);
   await app.goto("/?source=ios");
+  // ينتظر حفظ «داخل التطبيق» بعد تحميل الصفحة، قبل التنقل (نسخة الإنتاج أسرع من التطوير).
+  await expect
+    .poll(() => app.evaluate(() => Object.values({ ...sessionStorage })))
+    .toContain("ios");
   await app.goto("/orders");
   await expect(app.getByRole("heading", { name: "طلباتي" })).toBeVisible();
   await expect(app.locator(".push-bar")).toHaveCount(0);

@@ -86,8 +86,17 @@ export async function rateLimit(key: string, max: number, seconds: number) {
     `INSERT INTO jdatna.rate_limits(key,count,reset_at) VALUES($1,1,now()+$2*interval '1 second') ON CONFLICT(key) DO UPDATE SET count=CASE WHEN rate_limits.reset_at<=now() THEN 1 ELSE rate_limits.count+1 END,reset_at=CASE WHEN rate_limits.reset_at<=now() THEN now()+$2*interval '1 second' ELSE rate_limits.reset_at END RETURNING count`,
     [key, seconds],
   );
-  if (result.rows[0].count > max)
+  const count = result.rows[0].count as number;
+  if (count > max) {
+    // أول تجاوز في النافذة فقط يُسجَّل، فلا يُغرق السجل بالتكرار.
+    if (count === max + 1) {
+      const { recordSecurityEvent } = await import("./security-events");
+      await recordSecurityEvent("rate_limited", {
+        detail: key.split(":")[0],
+      });
+    }
     throw new HttpError(429, "محاولات كثيرة، يرجى المحاولة لاحقًا");
+  }
 }
 const otpHash = (id: string, code: string) =>
   createHmac("sha256", process.env.OTP_HASH_SECRET!)
@@ -107,6 +116,8 @@ export async function requestOtp(phoneValue: string, purpose: OtpPurpose) {
   const phone = normalizePhone(phoneValue);
   await rateLimit("otp-global", 100, 3600);
   await rateLimit("otp-phone:" + hash(phone), 3, 900);
+  // سقف يومي لكل جوال: الرمز أربعة أرقام، فلا تُتاح محاولات تخمين متواصلة طوال اليوم.
+  await rateLimit("otp-phone-day:" + hash(phone), 8, 86400);
   // أرقام مراجعة المتاجر: لا رسالة، والرمز الثابت أثناء «وضع المراجعة» فقط
   // (قبل فحص «الجوال مسجل» لأنها تحرر رقم إنشاء الحساب من حساب مراجعة سابق).
   const { reviewOtpCode } = await import("./store-review");
@@ -172,6 +183,8 @@ export async function verifyOtp(
         "UPDATE jdatna.otp_challenges SET attempts=attempts+1 WHERE id=$1",
         [id],
       );
+      // سقف يومي للمحاولات على الجوال الواحد عبر كل رموزه: 15 محاولة من 9000 احتمال يوميًا.
+      await rateLimit("verify-phone-day:" + hash(challenge.phone), 15, 86400);
       if (
         !timingSafeEqual(
           Buffer.from(challenge.code_hash, "hex"),

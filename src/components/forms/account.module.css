@@ -1500,3 +1500,21 @@
   font-weight: 700;
   font-size: 0.9rem;
 }
+/* الإدارة ← سجل الأمان */
+.securitySummary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0;
+  list-style: none;
+}
+.securitySummary li {
+  padding: 8px 14px;
+  border: 1px solid #e3d2b4;
+  border-radius: 12px;
+  background: #fffaf1;
+}
+.securitySummary strong {
+  color: #9c2f1e;
+  font-size: 1.15em;
+}

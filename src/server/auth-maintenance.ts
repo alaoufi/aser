@@ -16,7 +16,13 @@ export async function cleanupAuthRows(batchSize = 1000) {
       `WITH expired AS (SELECT token_hash FROM jdatna.sessions WHERE expires_at<=now() ORDER BY expires_at LIMIT $1 FOR UPDATE SKIP LOCKED) DELETE FROM jdatna.sessions s USING expired e WHERE s.token_hash=e.token_hash AND s.expires_at<=now()`,
       [batchSize],
     );
+    // سجل الأمان: يُحتفظ به 90 يومًا.
+    const events = await client.query(
+      `WITH old AS (SELECT id FROM jdatna.security_events WHERE created_at<now()-interval '90 days' ORDER BY created_at LIMIT $1 FOR UPDATE SKIP LOCKED) DELETE FROM jdatna.security_events s USING old o WHERE s.id=o.id`,
+      [batchSize],
+    );
     return {
+      securityEvents: events.rowCount ?? 0,
       rateLimits: limits.rowCount ?? 0,
       otpChallenges: challenges.rowCount ?? 0,
       sessions: sessions.rowCount ?? 0,
