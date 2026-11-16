@@ -101,12 +101,18 @@ test(
       assert.equal((await ownCourier(after))?.nationalId, "1023456789");
       assert.ok((await pendingApprovals(admin)).count >= 1);
 
-      // قبل الاعتماد: لا يظهر للأسرة. العميل العادي لا يرى القائمة أصلًا.
+      // قبل الاعتماد: لا يظهر للأسرة ولا للعميل.
       assert.equal(
         (await listCouriers(family, { city })).some((k) => k.id === courierId),
         false,
       );
-      await assert.rejects(listCouriers(stranger, {}), { status: 403 });
+      // العميل يتصفح «تجمع المندوبين» (العامين المعتمدين فقط).
+      assert.equal(
+        (await listCouriers(stranger, { city })).some(
+          (k) => k.id === courierId,
+        ),
+        false,
+      );
       await assert.rejects(adminCouriers(family), { status: 403 });
       const pending = (await adminCouriers(admin)).find(
         (k) => k.id === courierId,
@@ -124,6 +130,11 @@ test(
         reason: "تم الاعتماد، أهلًا بك",
       });
 
+      assert.ok(
+        (await listCouriers(stranger, { city })).some(
+          (k) => k.id === courierId,
+        ),
+      );
       // بعد الاعتماد: يظهر للأسرة في مدينته، ولا يظهر في مدينة أخرى، ولا تظهر هويته.
       const card = (await listCouriers(family, { city })).find(
         (k) => k.id === courierId,

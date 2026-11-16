@@ -5,13 +5,15 @@ import { db } from "../src/server/db";
 import {
   assignOrderCourier,
   courierDeliveries,
+  customerChooseCourier,
   listCouriers,
   markCourierDelivered,
   ownCourier,
+  setCourierPickup,
   saveCourier,
   setCourierActive,
 } from "../src/server/couriers";
-import { producerOrders } from "../src/server/orders";
+import { memberOrders, producerOrders } from "../src/server/orders";
 import { rate, ratingView } from "../src/server/ratings";
 import type { SessionUser } from "../src/lib/types";
 
@@ -50,7 +52,8 @@ test(
     const docs = [randomUUID(), randomUUID()];
     const productId = randomUUID(),
       orderId = randomUUID(),
-      pickupOrder = randomUUID();
+      pickupOrder = randomUUID(),
+      ownOrder = randomUUID();
     const tag = randomUUID().slice(0, 8);
     const centerNode = "test-center:" + tag;
     let regionNode = "";
@@ -249,10 +252,106 @@ test(
         assignOrderCourier(fCity, { ...assign, courierUserId: k2.id }),
         { status: 409 },
       );
+
+      // «تجمع المندوبين» للعميل: العامون فقط، وحساب المندوب لا يتصفحه.
+      assert.ok(
+        (await listCouriers(customer, {})).some((k) => k.userId === k2.id),
+      );
+      assert.ok(
+        (await listCouriers(customer, {})).every((k) => k.familyName === null),
+      );
+      await assert.rejects(listCouriers(k1User, {}), { status: 403 });
+      // العميل يختار مندوبًا لطلبه هو (توصيل مقبول)، لا لطلب غيره ولا بعد التوصيل.
+      await pool.query(
+        `INSERT INTO jdatna.order_requests(id,request_key,request_hash,user_id,producer_id,product_id,snapshot,customer_name,phone,quantity,meal,start_date,end_date,status)
+         VALUES($1,$2,'h',$3,$4,$5,'{"productName":"طبق التوصيل"}','عميل التوصيل',$6,1,'lunch',current_date+1,current_date+1,'pending')`,
+        [
+          ownOrder,
+          randomUUID(),
+          customer.id,
+          fam.city,
+          productId,
+          customer.phone,
+        ],
+      );
+      await pool.query(
+        "INSERT INTO jdatna.order_fulfillment(order_id,method,location) VALUES($1,'delivery','حي الملقا')",
+        [ownOrder],
+      );
+      const pick = { orderId: ownOrder, courierUserId: k2.id };
+      await assert.rejects(customerChooseCourier(customer, pick), {
+        status: 409,
+      });
+      await pool.query(
+        "UPDATE jdatna.order_requests SET status='preparing' WHERE id=$1",
+        [ownOrder],
+      );
+      await assert.rejects(customerChooseCourier(fCity, pick), {
+        status: 404,
+      });
+      await assert.rejects(
+        customerChooseCourier(customer, { ...pick, orderId }),
+        { status: 409 },
+      );
+      assert.equal(
+        (await customerChooseCourier(customer, pick)).courierName,
+        k2.name,
+      );
+      // يغيّر اختياره قبل التوصيل، والأسرة لا تغيّر مندوبًا اختاره العميل.
+      assert.equal(
+        (
+          await customerChooseCourier(customer, {
+            ...pick,
+            courierUserId: k1.id,
+          })
+        ).courierName,
+        k1.name,
+      );
+      await assert.rejects(
+        assignOrderCourier(fCity, {
+          ...assign,
+          orderId: ownOrder,
+          courierUserId: k2.id,
+        }),
+        { status: 409 },
+      );
+      const mine = (await memberOrders(customer)).find(
+        (o) => o.id === ownOrder,
+      );
+      assert.equal(mine?.courierName, k1.name);
+      assert.equal(mine?.courierByMe, true);
+      assert.equal(mine?.courierPhone, k1.phone);
+      const famSees = (await producerOrders(fCity)).find(
+        (o) => o.id === ownOrder,
+      );
+      assert.equal(famSees?.courierByCustomer, true);
+      const forCourier = (await courierDeliveries(k1User)).find(
+        (d) => d.orderId === ownOrder,
+      );
+      assert.equal(forCourier?.byCustomer, true);
+      // موقع الاستلام: موقع الأسرة المحفوظ في ملفها.
+      assert.equal(forCourier?.pickupLocation, "حي النخيل، شارع الأسرة");
+      // الأسرة ترسل موقع الاستلام لمندوب العميل؛ أسرة أخرى لا تستطيع.
+      const spot = {
+        orderId: ownOrder,
+        pickupLocation: "https://maps.google.com/?q=24.8,46.7",
+      };
+      await assert.rejects(setCourierPickup(fFar, spot), { status: 404 });
+      await setCourierPickup(fCity, spot);
+      assert.equal(
+        (await courierDeliveries(k1User)).find((d) => d.orderId === ownOrder)
+          ?.pickupLocation,
+        spot.pickupLocation,
+      );
+      // طلب أسندته الأسرة لا يغيّره العميل.
+      await assert.rejects(
+        customerChooseCourier(customer, { ...pick, orderId }),
+        { status: 409 },
+      );
     } finally {
       await pool.query(
         "DELETE FROM jdatna.order_requests WHERE id=ANY($1::uuid[])",
-        [[orderId, pickupOrder]],
+        [[orderId, pickupOrder, ownOrder]],
       );
       await pool.query("DELETE FROM jdatna.products WHERE id=$1", [productId]);
       await pool.query(

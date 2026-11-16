@@ -200,19 +200,23 @@ export async function saveCourier(user: SessionUser, input: unknown) {
 }
 
 /**
- * «المندوبين»: للأسر المنتجة المعتمدة والإدارة فقط.
- * يُعيد معرّف ملف الأسرة لتصفية المندوبين حسب تغطيتها، أو null للإدارة (ترى الجميع).
+ * «تجمع المندوبين»: للأسر المعتمدة والعملاء والإدارة.
+ * الأسرة: مندوبها الخاص والعامون داخل تغطيتها. العميل: المندوبون العامون فقط (الخاص لأسرته وحدها).
+ * الإدارة: الجميع. حساب المندوب لا يتصفح المندوبين.
  */
-async function browseScope(user: SessionUser): Promise<string | null> {
+type BrowseScope = { family: string | null; publicOnly: boolean };
+async function browseScope(user: SessionUser): Promise<BrowseScope> {
   const family = (
     await db().query(
       "SELECT id FROM jdatna.producer_profiles WHERE user_id=$1 AND status='approved'",
       [user.id],
     )
   ).rows[0];
-  if (family) return family.id as string;
-  if (can(user, "producers")) return null;
-  throw new HttpError(403, "قائمة المندوبين للأسر المنتجة المعتمدة");
+  if (family) return { family: family.id as string, publicOnly: false };
+  if (can(user, "producers")) return { family: null, publicOnly: false };
+  if (user.role === "courier")
+    throw new HttpError(403, "تجمع المندوبين للعملاء والأسر المنتجة");
+  return { family: null, publicOnly: true };
 }
 
 /**
@@ -264,7 +268,7 @@ export async function listCouriers(
   user: SessionUser,
   filters: { region?: string; city?: string; courierUserId?: string },
 ): Promise<CourierCard[]> {
-  const family = await browseScope(user);
+  const { family, publicOnly } = await browseScope(user);
   const args: unknown[] = [family];
   // غير النشط يختفي اسمه من القائمة.
   const where = [
@@ -278,6 +282,7 @@ export async function listCouriers(
     where.push(
       `(k.family_id=$1::uuid OR (k.family_id IS NULL AND ${courierInFamilyArea}))`,
     );
+  if (publicOnly) where.push("k.family_id IS NULL");
   if (filters.courierUserId) {
     args.push(filters.courierUserId);
     where.push(`k.user_id=$${args.length}`);
@@ -330,14 +335,19 @@ export async function assignOrderCourier(user: SessionUser, input: unknown) {
     .parse(input);
   const order = (
     await db().query(
-      `SELECT o.id,o.status,COALESCE(p.trade_name,p.name) AS family,f.method,o.snapshot->>'productName' AS product
+      `SELECT o.id,o.status,COALESCE(p.trade_name,p.name) AS family,f.method,o.snapshot->>'productName' AS product,
+         oc.assigned_by=o.user_id AS "customerChose"
        FROM jdatna.order_requests o JOIN jdatna.producer_profiles p ON p.id=o.producer_id
        LEFT JOIN jdatna.order_fulfillment f ON f.order_id=o.id
+       LEFT JOIN jdatna.order_couriers oc ON oc.order_id=o.id
        WHERE o.id=$1 AND p.user_id=$2 AND p.status='approved'`,
       [value.orderId, user.id],
     )
   ).rows[0];
   if (!order) throw new HttpError(404, "الطلب غير موجود");
+  // العميل اختار مندوبه بنفسه: لا تُغيّره الأسرة.
+  if (order.customerChose)
+    throw new HttpError(409, "اختار العميل مندوبًا لتوصيل هذا الطلب بنفسه");
   if (order.method !== "delivery")
     throw new HttpError(409, "هذا الطلب استلام مباشر وليس توصيلًا");
   if (!["accepted", "preparing", "ready"].includes(order.status))
@@ -364,6 +374,108 @@ export async function assignOrderCourier(user: SessionUser, input: unknown) {
   return { orderId: order.id as string, courierName: courier.name };
 }
 
+/**
+ * العميل لم يتفق مع الأسرة على التوصيل: يختار من «تجمع المندوبين» مندوبًا عامًا لطلبه
+ * (طلب توصيل مقبول لم يكتمل)، فيصل المندوب إشعار بموقع الاستلام (موقع الأسرة) وموقع العميل،
+ * وتعرف الأسرة أن مندوب العميل سيستلم منها. للعميل تغيير اختياره قبل التوصيل؛ ولا يغيّر مندوبًا أسندته الأسرة.
+ */
+export async function customerChooseCourier(user: SessionUser, input: unknown) {
+  const value = z
+    .object({ orderId: z.uuid(), courierUserId: z.uuid() })
+    .strict()
+    .parse(input);
+  const order = (
+    await db().query(
+      `SELECT o.id,o.status,o.user_id AS "customerId",p.user_id AS "familyUserId",COALESCE(p.trade_name,p.name) AS family,
+         f.method,o.snapshot->>'productName' AS product,p.pickup_location AS "familyPickup",
+         oc.assigned_by AS "assignedBy",oc.status AS "courierStatus"
+       FROM jdatna.order_requests o JOIN jdatna.producer_profiles p ON p.id=o.producer_id
+       LEFT JOIN jdatna.order_fulfillment f ON f.order_id=o.id
+       LEFT JOIN jdatna.order_couriers oc ON oc.order_id=o.id
+       WHERE o.id=$1 AND o.user_id=$2`,
+      [value.orderId, user.id],
+    )
+  ).rows[0];
+  if (!order) throw new HttpError(404, "الطلب غير موجود");
+  if (order.method !== "delivery")
+    throw new HttpError(409, "هذا الطلب استلام مباشر وليس توصيلًا");
+  if (!["accepted", "preparing", "ready"].includes(order.status))
+    throw new HttpError(
+      409,
+      "اختر المندوب بعد أن تقبل الأسرة طلبك وقبل اكتماله",
+    );
+  if (order.courierStatus === "delivered")
+    throw new HttpError(409, "تم توصيل هذا الطلب");
+  if (order.assignedBy && order.assignedBy !== user.id)
+    throw new HttpError(409, "أسندت الأسرة توصيل طلبك لمندوب");
+  const courier = (
+    await listCouriers(user, { courierUserId: value.courierUserId })
+  )[0];
+  if (!courier || courier.familyName)
+    throw new HttpError(400, "المندوب غير متاح الآن");
+  const pickup =
+    order.familyPickup && String(order.familyPickup).trim().length >= 5
+      ? String(order.familyPickup).slice(0, 1000)
+      : `الاستلام من «${order.family}»: يُتفق على الموقع معها`;
+  const saved = await db().query(
+    `INSERT INTO jdatna.order_couriers(order_id,courier_user_id,pickup_location,assigned_by) VALUES($1,$2,$3,$4)
+     ON CONFLICT(order_id) DO UPDATE SET courier_user_id=EXCLUDED.courier_user_id,pickup_location=EXCLUDED.pickup_location,assigned_at=now()
+     WHERE jdatna.order_couriers.status='assigned' AND jdatna.order_couriers.assigned_by=$4`,
+    [order.id, value.courierUserId, pickup, user.id],
+  );
+  if (!saved.rowCount)
+    throw new HttpError(409, "تغيّر توصيل هذا الطلب، حدّث الصفحة");
+  const { notifyUser } = await import("./push");
+  void notifyUser(value.courierUserId, {
+    title: "طلب توصيل جديد",
+    body: `اختارك عميل لتوصيل ${order.product ?? "طلبه"} من «${order.family}».`,
+    url: "/courier",
+    tag: `delivery-${order.id}`,
+  });
+  void notifyUser(order.familyUserId, {
+    title: "مندوب العميل",
+    body: `اختار العميل المندوب ${courier.name} لتوصيل ${order.product ?? "طلبه"}، وسيستلم منكم.`,
+    url: "/dashboard/orders",
+    tag: `courier-${order.id}`,
+  });
+  return { orderId: order.id as string, courierName: courier.name };
+}
+
+/**
+ * الأسرة ترسل موقع الاستلام لمندوب اختاره العميل (لا تغيّر المندوب)، فيصله مع إشعار.
+ */
+export async function setCourierPickup(user: SessionUser, input: unknown) {
+  const value = z
+    .object({
+      orderId: z.uuid(),
+      pickupLocation: z
+        .string()
+        .trim()
+        .min(5, "اكتب موقع الاستلام أو رابط الخريطة")
+        .max(1000),
+    })
+    .strict()
+    .parse(input);
+  const row = (
+    await db().query(
+      `UPDATE jdatna.order_couriers oc SET pickup_location=$3
+       FROM jdatna.order_requests o JOIN jdatna.producer_profiles p ON p.id=o.producer_id
+       WHERE oc.order_id=$1 AND o.id=oc.order_id AND p.user_id=$2 AND oc.status='assigned'
+       RETURNING oc.courier_user_id AS "courierUserId",COALESCE(p.trade_name,p.name) AS family,o.snapshot->>'productName' AS product`,
+      [value.orderId, user.id, value.pickupLocation],
+    )
+  ).rows[0];
+  if (!row) throw new HttpError(404, "لا يوجد مندوب لهذا الطلب الآن");
+  const { notifyUser } = await import("./push");
+  void notifyUser(row.courierUserId, {
+    title: "موقع الاستلام",
+    body: `أرسلت «${row.family}» موقع استلام ${row.product ?? "الطلب"}.`,
+    url: "/courier",
+    tag: `pickup-${value.orderId}`,
+  });
+  return { orderId: value.orderId, pickupLocation: value.pickupLocation };
+}
+
 /** «طلبات التوصيل» عند المندوب: موقع الأسرة للاستلام وموقع العميل للتوصيل. */
 export async function courierDeliveries(user: SessionUser) {
   return (
@@ -371,7 +483,8 @@ export async function courierDeliveries(user: SessionUser) {
       `SELECT oc.order_id AS "orderId",oc.status,oc.assigned_at AS "assignedAt",oc.delivered_at AS "deliveredAt",
          o.snapshot->>'productName' AS product,o.quantity,o.start_date::text AS "startDate",o.status AS "orderStatus",
          COALESCE(p.trade_name,p.name) AS family,p.phone AS "familyPhone",oc.pickup_location AS "pickupLocation",
-         o.customer_name AS "customerName",o.phone AS "customerPhone",f.location AS "deliveryLocation"
+         o.customer_name AS "customerName",o.phone AS "customerPhone",f.location AS "deliveryLocation",
+         oc.assigned_by=o.user_id AS "byCustomer"
        FROM jdatna.order_couriers oc
        JOIN jdatna.order_requests o ON o.id=oc.order_id
        JOIN jdatna.producer_profiles p ON p.id=o.producer_id

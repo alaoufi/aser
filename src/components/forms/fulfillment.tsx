@@ -7,6 +7,7 @@ type State = {
   pickup: boolean;
   delivery: boolean;
   pickupLocation: string | null;
+  locationPublic: boolean;
 };
 
 /** طرق التسليم في لوحة الأسرة: تسليم مباشر، أو توصيل، أو كلاهما. تظهر للعميل عند الطلب. */
@@ -14,6 +15,7 @@ export function FulfillmentCard() {
   const [state, setState] = useState<State | null>(null),
     [pickup, setPickup] = useState(false),
     [delivery, setDelivery] = useState(false),
+    [locationPublic, setLocationPublic] = useState(false),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [success, setSuccess] = useState(""),
@@ -25,6 +27,7 @@ export function FulfillmentCard() {
         setState(v);
         setPickup(v.pickup);
         setDelivery(v.delivery);
+        setLocationPublic(Boolean(v.locationPublic));
       })
       .catch(() => setFailed(true));
   }, []);
@@ -44,7 +47,8 @@ export function FulfillmentCard() {
         body: JSON.stringify({
           pickup,
           delivery,
-          pickupLocation: pickup ? String(f.get("pickupLocation") ?? "") : null,
+          pickupLocation: String(f.get("pickupLocation") ?? "").trim() || null,
+          locationPublic,
         }),
       });
       setState(saved);
@@ -65,7 +69,8 @@ export function FulfillmentCard() {
       <h2>طرق التسليم</h2>
       <p className={s.muted}>
         اختر طريقة أو أكثر، وتظهر للعميل عند الطلب. في التسليم المباشر يرى
-        العميل موقعك بعد قبولك طلبه، وفي التوصيل يرسل لك العميل موقعه.
+        العميل موقعك بعد قبولك طلبه، وفي التوصيل يرسل لك العميل موقعه. احفظ موقع
+        أسرتك ليصل للمندوب تلقائيًا عند استلام الطلبات.
       </p>
       <Message error={error} success={success} />
       {state && (
@@ -91,15 +96,40 @@ export function FulfillmentCard() {
               </label>
             </div>
           </fieldset>
-          {pickup && (
-            <LocationInput
-              name="pickupLocation"
-              label="موقع التسليم المباشر"
-              hint="العنوان أو رابط الخرائط. يظهر للعميل بعد قبولك طلبه فقط."
-              defaultValue={state.pickupLocation}
-              required
-            />
-          )}
+          <LocationInput
+            name="pickupLocation"
+            label="موقع الأسرة"
+            hint={
+              pickup
+                ? "العنوان أو رابط الخرائط. يظهر للعميل بعد قبولك طلبه، ويصل للمندوب ليستلم طلبات التوصيل."
+                : "العنوان أو رابط الخرائط. يصل للمندوب ليستلم طلبات التوصيل منك، ولا يظهر للعملاء."
+            }
+            defaultValue={state.pickupLocation}
+            required={pickup}
+          />
+          <fieldset>
+            <legend>موقع الأسرة معلن في صفحتها؟</legend>
+            <div className={s.checks}>
+              <label>
+                <input
+                  type="radio"
+                  name="locationPublic"
+                  checked={locationPublic}
+                  onChange={() => setLocationPublic(true)}
+                />
+                نعم، يظهر للجميع في صفحة الأسرة
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  name="locationPublic"
+                  checked={!locationPublic}
+                  onChange={() => setLocationPublic(false)}
+                />
+                لا، يصل للمندوب وصاحب الطلب فقط
+              </label>
+            </div>
+          </fieldset>
           <button className={s.button} disabled={busy}>
             {busy ? "جارٍ الحفظ…" : "حفظ طرق التسليم"}
           </button>

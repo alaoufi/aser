@@ -146,6 +146,11 @@ type Order = {
   courierStatus?: "assigned" | "delivered" | null;
   courierPickup?: string | null;
   familyPickup?: string | null;
+  /** للأسرة: المندوب اختاره العميل بنفسه (لا تغيّره الأسرة). */
+  courierByCustomer?: boolean | null;
+  /** للعميل: جوال مندوب طلبه، وهل اختاره هو. */
+  courierPhone?: string | null;
+  courierByMe?: boolean | null;
 };
 const today = () =>
   new Intl.DateTimeFormat("en-CA", {
@@ -910,6 +915,9 @@ export function Orders({ producer = false }: { producer?: boolean }) {
                     location={order.deliveryLocation}
                   />
                 )}
+                {order.fulfillment === "delivery" && (
+                  <CustomerCourier order={order} />
+                )}
                 {order.notes && <p>{order.notes}</p>}
                 <div className={s.actions}>
                   <OrderChatButton
@@ -1083,6 +1091,101 @@ type CourierOption = {
   centers: { name: string; price: number | null }[];
 };
 /**
+ * العميل: مندوب توصيل طلبه (اسمه وجواله) إن وُجد. وإن لم تسند الأسرة مندوبًا ولم يتفق معها
+ * على التوصيل، يختار من «تجمع المندوبين» مندوبًا عامًا بعد قبول طلبه وقبل اكتماله.
+ */
+function CustomerCourier({ order }: { order: Order }) {
+  const open = ["accepted", "preparing", "ready"].includes(order.status);
+  const canChoose =
+    open &&
+    order.courierStatus !== "delivered" &&
+    (!order.courierName || order.courierByMe);
+  if (!order.courierName && !open) return null;
+  const phone = order.courierPhone?.replace(/^\+/, "");
+  return (
+    <div className={s.courierAssign}>
+      {order.courierName ? (
+        <p>
+          <strong>مندوب التوصيل:</strong> {order.courierName}
+          {order.courierByMe ? " (اخترته أنت)" : " (من الأسرة)"}
+          {order.courierStatus === "delivered" ? " — تم التوصيل ✓" : ""}
+          {phone && order.courierStatus !== "delivered" && (
+            <>
+              {" "}
+              <a href={`tel:+${phone}`}>اتصال بالمندوب</a>
+            </>
+          )}
+        </p>
+      ) : (
+        <p className={s.muted}>
+          لم يُحدَّد مندوب لتوصيل طلبك. اتفق مع الأسرة على التوصيل، أو اختر
+          مندوبًا بنفسك.
+        </p>
+      )}
+      {canChoose && (
+        <a
+          className={s.buttonSecondary}
+          href={`/couriers?order=${encodeURIComponent(order.id)}`}
+        >
+          {order.courierName ? "تغيير المندوب" : "اختر مندوبًا للتوصيل"}
+        </a>
+      )}
+    </div>
+  );
+}
+
+/** مندوب اختاره العميل: الأسرة ترسل له موقع الاستلام (يصله مع موقع العميل). */
+function CourierPickupForm({ order }: { order: Order }) {
+  const [error, setError] = useState(""),
+    [done, setDone] = useState(""),
+    [sending, setSending] = useState(false);
+  async function send(form: FormData) {
+    setSending(true);
+    setError("");
+    try {
+      await api("/api/producer/orders/courier", {
+        method: "PATCH",
+        body: JSON.stringify({
+          orderId: order.id,
+          pickupLocation: String(form.get("pickupLocation") ?? ""),
+        }),
+      });
+      setDone("تم ✓ وصل موقع الاستلام للمندوب.");
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setSending(false);
+    }
+  }
+  return (
+    <form
+      aria-label="موقع الاستلام للمندوب"
+      onSubmit={(e) => {
+        e.preventDefault();
+        void send(new FormData(e.currentTarget));
+      }}
+    >
+      <LocationInput
+        name="pickupLocation"
+        label="موقع الاستلام (موقع الأسرة)"
+        hint="يصل لمندوب العميل مع موقع العميل للتوصيل."
+        defaultValue={
+          // «يُتفق عليه» نص بديل لا موقع: يبدأ الحقل بموقع الأسرة المحفوظ إن وُجد.
+          order.courierPickup?.startsWith("الاستلام من «")
+            ? order.familyPickup
+            : (order.courierPickup ?? order.familyPickup)
+        }
+        required
+      />
+      <Message error={error} success={done} />
+      <button type="submit" className={s.buttonSecondary} disabled={sending}>
+        أرسل موقعك للمندوب
+      </button>
+    </form>
+  );
+}
+
+/**
  * إسناد التوصيل لمندوب: يظهر المندوبون النشطون في تغطية الأسرة،
  * ويصل المندوب موقع الاستلام (موقع الأسرة) وموقع العميل للتوصيل.
  */
@@ -1094,7 +1197,8 @@ function CourierAssign({ order }: { order: Order }) {
     [assigned, setAssigned] = useState(order.courierName ?? "");
   const canAssign =
     ["accepted", "preparing", "ready"].includes(order.status) &&
-    order.courierStatus !== "delivered";
+    order.courierStatus !== "delivered" &&
+    !order.courierByCustomer;
   async function show() {
     setOpen(true);
     setError("");
@@ -1137,6 +1241,7 @@ function CourierAssign({ order }: { order: Order }) {
       {assigned && (
         <p>
           <strong>المندوب:</strong> {assigned}
+          {order.courierByCustomer ? " (اختاره العميل، ويستلم منكم)" : ""}
           {order.courierStatus === "delivered" ? " — تم التوصيل ✓" : ""}
         </p>
       )}
@@ -1147,6 +1252,9 @@ function CourierAssign({ order }: { order: Order }) {
           title="تقييم المندوب"
           compact
         />
+      )}
+      {order.courierByCustomer && order.courierStatus === "assigned" && (
+        <CourierPickupForm order={order} />
       )}
       {canAssign && !open && (
         <button type="button" className={s.buttonSecondary} onClick={show}>

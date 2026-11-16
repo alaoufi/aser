@@ -362,3 +362,195 @@ test("a family assigns a delivery order to an active courier", async ({
     pickupLocation: "حي النخيل، شارع الأسرة",
   });
 });
+
+// العميل لم يتفق مع الأسرة على التوصيل: من طلبه إلى «تجمع المندوبين» ويختار مندوبًا عامًا.
+test("a customer picks a courier for an accepted delivery order from the couriers gathering", async ({
+  page,
+}) => {
+  await page.route("**/api/session", (r) =>
+    r.fulfill({
+      json: {
+        user: {
+          id: "u",
+          name: "عميل",
+          phone: "+966500000051",
+          role: "customer",
+        },
+        registrationOpen: true,
+      },
+    }),
+  );
+  const orderId = "00000000-0000-4000-8000-000000000061";
+  await page.route("**/api/orders", (r) =>
+    r.fulfill({
+      json: {
+        orders: [
+          {
+            id: orderId,
+            productId: "p",
+            snapshot: {
+              productName: "كبسة",
+              producerName: "أكلات نجدية",
+              unit: "طبق",
+              price: 30,
+              offer: null,
+            },
+            name: "عميل",
+            phone: "+966500000051",
+            quantity: 1,
+            meal: "lunch",
+            days: 1,
+            startDate: "2026-11-20",
+            endDate: "2026-11-20",
+            notes: "",
+            status: "accepted",
+            fulfillment: "delivery",
+            deliveryLocation: "حي الملقا",
+            courierName: null,
+          },
+        ],
+      },
+    }),
+  );
+  await page.goto("/orders");
+  await expect(page.getByText("لم يُحدَّد مندوب لتوصيل طلبك")).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "اختر مندوبًا للتوصيل" }),
+  ).toHaveAttribute("href", `/couriers?order=${orderId}`);
+
+  await page.route("**/api/producer/profile", (r) =>
+    r.fulfill({ json: { profile: null, categories: [], cities: [city] } }),
+  );
+  await page.route("**/api/couriers**", (r) =>
+    r.fulfill({
+      json: {
+        couriers: [
+          {
+            id: "c1",
+            userId: "00000000-0000-4000-8000-000000000041",
+            name: "سعد المندوب",
+            carType: "كامري 2020",
+            cityName: "الرياض",
+            regionName: "منطقة الرياض",
+            phone: "+966500000021",
+            whatsapp: null,
+            cityPrice: 15,
+            centers: [],
+            familyName: null,
+          },
+        ],
+      },
+    }),
+  );
+  let chosen: unknown;
+  await page.route("**/api/orders/courier", (r) => {
+    chosen = r.request().postDataJSON();
+    return r.fulfill({ json: { orderId, courierName: "سعد المندوب" } });
+  });
+  await page.goto(`/couriers?order=${orderId}`);
+  // العميل لا يرى قسم «مندوبي الخاص» ولا زر المحادثة الخاص بالأسر.
+  await expect(page.getByRole("region", { name: "مندوبي الخاص" })).toHaveCount(
+    0,
+  );
+  const list = page.getByRole("list", { name: "قائمة المندوبين" });
+  await expect(list.getByRole("button", { name: "محادثة" })).toHaveCount(0);
+  await list.getByRole("button", { name: "اختره لتوصيل طلبي" }).click();
+  await expect(page.getByRole("status")).toContainText(
+    "اخترت سعد المندوب لتوصيل طلبك",
+  );
+  expect(chosen).toEqual({
+    orderId,
+    courierUserId: "00000000-0000-4000-8000-000000000041",
+  });
+});
+
+// مندوب اختاره العميل: الأسرة لا تغيّره، وترسل له موقع الاستلام.
+test("a family sends its pickup location to the courier the customer chose", async ({
+  page,
+}) => {
+  await page.addInitScript(() =>
+    sessionStorage.setItem("jdatna:family-welcome", "1"),
+  );
+  await page.route("**/api/session", (r) =>
+    r.fulfill({
+      json: {
+        user: {
+          id: "f",
+          name: "أسرة",
+          phone: "+966500000022",
+          role: "producer",
+        },
+        registrationOpen: true,
+      },
+    }),
+  );
+  await page.route("**/api/producer/status", (r) =>
+    r.fulfill({ json: { state: null } }),
+  );
+  let sent: { method: string; body: unknown } | undefined;
+  await page.route("**/api/producer/orders**", (r) => {
+    const path = new URL(r.request().url()).pathname;
+    if (path.endsWith("/courier")) {
+      sent = {
+        method: r.request().method(),
+        body: r.request().postDataJSON(),
+      };
+      return r.fulfill({ json: { orderId: "o1", pickupLocation: "x" } });
+    }
+    if (path.endsWith("/alerts"))
+      return r.fulfill({ json: { alerts: [], pending: 0 } });
+    return r.fulfill({
+      json: {
+        orders: [
+          {
+            id: "00000000-0000-4000-8000-000000000072",
+            productId: "p1",
+            snapshot: {
+              productName: "مرقوق",
+              producerName: "أسرة",
+              unit: "صحن",
+              price: 20,
+              offer: null,
+            },
+            name: "أبو فهد",
+            phone: "+966500000023",
+            quantity: 1,
+            meal: "lunch",
+            days: 1,
+            startDate: "2026-11-16",
+            endDate: "2026-11-16",
+            notes: "",
+            status: "preparing",
+            fulfillment: "delivery",
+            deliveryLocation: "حي الملقا",
+            customerId: "u1",
+            courierUserId: "00000000-0000-4000-8000-000000000041",
+            courierName: "سعد المندوب",
+            courierStatus: "assigned",
+            courierByCustomer: true,
+            courierPickup: "الاستلام من «أسرة»: يُتفق على الموقع معها",
+            familyPickup: null,
+          },
+        ],
+      },
+    });
+  });
+  await page.goto("/dashboard/orders");
+  await expect(page.getByText("(اختاره العميل، ويستلم منكم)")).toBeVisible();
+  await expect(page.getByRole("button", { name: "تغيير المندوب" })).toHaveCount(
+    0,
+  );
+  const form = page.getByRole("form", { name: "موقع الاستلام للمندوب" });
+  await form
+    .getByLabel("موقع الاستلام (موقع الأسرة)")
+    .fill("حي النخيل، شارع 5");
+  await form.getByRole("button", { name: "أرسل موقعك للمندوب" }).click();
+  await expect(form.getByText("وصل موقع الاستلام للمندوب")).toBeVisible();
+  expect(sent).toEqual({
+    method: "PATCH",
+    body: {
+      orderId: "00000000-0000-4000-8000-000000000072",
+      pickupLocation: "حي النخيل، شارع 5",
+    },
+  });
+});
