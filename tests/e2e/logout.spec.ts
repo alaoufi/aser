@@ -26,6 +26,10 @@ test("the menu ends with login for visitors and logout for members", async ({
   await page.route("**/api/orders", (r) => r.fulfill({ json: { orders: [] } }));
   await page.goto("/orders");
   // «خروج» في قائمة «حسابي» أيضًا.
+  await page
+    .getByRole("navigation", { name: "حسابي", exact: true })
+    .getByText("قائمة حسابي")
+    .click();
   await expect(
     page
       .getByRole("navigation", { name: "حسابي", exact: true })

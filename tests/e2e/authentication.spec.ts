@@ -285,6 +285,7 @@ test("account navigation recognizes customer and producer identity", async ({
   );
   await page.goto("/orders");
   const nav = page.getByRole("navigation", { name: "حسابي", exact: true });
+  await nav.getByText("قائمة حسابي").click();
   await expect(
     nav.getByRole("link", { name: "طلباتي", exact: true }),
   ).toBeVisible();
@@ -292,10 +293,9 @@ test("account navigation recognizes customer and producer identity", async ({
   role = "producer";
   // القائمة سطر واحد: «لوحتي» للأسرة، وأقسامها مربعات داخل اللوحة.
   await page.goto("/dashboard/orders");
-  await expect(nav.getByRole("link", { name: "لوحتي" })).toHaveAttribute(
-    "href",
-    "/dashboard",
-  );
+  await expect(
+    nav.getByRole("link", { name: "لوحتي", includeHidden: true }),
+  ).toHaveAttribute("href", "/dashboard");
   await expect(nav.locator('a[href="/dashboard/products"]')).toHaveCount(0);
 });
 

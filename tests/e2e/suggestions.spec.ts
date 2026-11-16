@@ -48,9 +48,16 @@ test("account links look like buttons and mark the current page", async ({
   await page.route("**/api/orders", (r) => r.fulfill({ json: { orders: [] } }));
   await page.goto("/orders");
   const nav = page.getByRole("navigation", { name: "حسابي", exact: true });
+  // قائمة «حسابي» منسدلة: زرها يحمل اسم الصفحة الحالية.
+  await expect(nav.getByText("قائمة حسابي")).toContainText("طلباتي");
+  await nav.getByText("قائمة حسابي").click();
   const current = nav.getByRole("link", { name: "طلباتي" });
   await expect(current).toHaveAttribute("aria-current", "page");
   const other = nav.getByRole("link", { name: "المحادثات" });
+  // بعد انتهاء حركة فتح القائمة.
+  await expect
+    .poll(() => other.evaluate((el) => el.getBoundingClientRect().height))
+    .toBeGreaterThanOrEqual(44);
   const style = await other.evaluate((el) => {
     const s = getComputedStyle(el);
     return {

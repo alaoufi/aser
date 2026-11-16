@@ -15,7 +15,6 @@ import { CookingAvailability } from "./cooking-availability";
 import { FulfillmentCard } from "./fulfillment";
 import { ContactVisibilityCard } from "./contact-visibility";
 import { BrandCard } from "./brand-card";
-import { SectionIcon } from "./section-icon";
 import { DeleteAccountSection } from "./delete-account";
 import { CertificateCard } from "./certificate-card";
 import { stopPushOnLogout } from "@/components/public/push-setup";
@@ -625,18 +624,6 @@ function FamilyShareTop({ name }: { name: string }) {
   );
 }
 /** أقسام لوحة الأسرة المنتجة: مربعات صغيرة بدل أسطر الروابط. */
-const familySections: [href: string, label: string, icon: string][] = [
-  ["/dashboard/products", "المنتجات", "products"],
-  ["/dashboard/orders", "الطلبات", "orders"],
-  ["/dashboard/offers", "العروض", "offers"],
-  ["/dashboard/subscriptions", "الاشتراكات", "orders"],
-  ["/dashboard/library", "مكتبة الصور", "library"],
-  ["/dashboard/coverage", "التغطية", "coverage"],
-  // مندوب الأسرة الخاص: تسجّله بنفسها بتعهّد، دون اعتماد الإدارة.
-  ["/dashboard/couriers", "مندوبي الخاص", "couriers"],
-  // مندوبو التوصيل المعتمدون في مدينة الأسرة: محادثة واتصال وواتساب.
-  ["/couriers", "المندوبون", "couriers"],
-];
 export function Dashboard() {
   const session = useSession();
   return (
@@ -666,19 +653,10 @@ export function Dashboard() {
             </button>
           </div>
           {isFamilyAccount(session.user) && (
-            <nav
-              className={`${s.adminNav} ${s.familyNav}`}
-              aria-label="أقسام الأسرة المنتجة"
-            >
-              <div className={s.adminNavGroup}>
-                {familySections.map(([href, label, icon]) => (
-                  <Link key={href} className={s.adminNavItem} href={href}>
-                    <SectionIcon name={icon} />
-                    <span>{label}</span>
-                  </Link>
-                ))}
-              </div>
-            </nav>
+            <p className={s.muted}>
+              أقسام أسرتك في التبويبات أعلاه. ومندوبو التوصيل المعتمدون في
+              مدينتك في <Link href="/couriers">صفحة المندوبين</Link>.
+            </p>
           )}
           {isFamilyAccount(session.user) && <CertificateCard />}
           <ProfileForm />

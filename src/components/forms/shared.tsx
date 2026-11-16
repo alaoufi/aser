@@ -7,6 +7,7 @@ import s from "./account.module.css";
 import { isManager } from "@/lib/permissions";
 import { LogoutButton } from "@/components/public/logout-button";
 import { PasswordField } from "./password-field";
+import { FolderTabs, type FolderTab } from "./folder-tabs";
 export { s };
 export async function api<T>(url: string, options?: RequestInit): Promise<T> {
   const r = await fetch(url, {
@@ -162,6 +163,10 @@ function AccountNavigation() {
     </>
   );
 }
+/**
+ * قائمة «حسابي» منسدلة: زر واحد يحمل اسم الصفحة الحالية، وتحته الروابط و«خروج».
+ * تُغلق عند اختيار رابط أو الضغط خارجها أو زر Esc.
+ */
 function AccountLinks({
   links,
   path,
@@ -169,20 +174,82 @@ function AccountLinks({
   links: [string, string][];
   path: string;
 }) {
+  const menu = useRef<HTMLDetailsElement>(null);
+  const current =
+    links.find(([href]) => href === path)?.[1] ??
+    links.find(([href]) => href !== "/" && path.startsWith(`${href}/`))?.[1];
+  // اختيار صفحة (بالفأرة أو لوحة المفاتيح) يغلق القائمة.
+  useEffect(() => {
+    if (menu.current) menu.current.open = false;
+  }, [path]);
+  useEffect(() => {
+    const close = (e: Event) => {
+      const d = menu.current;
+      if (!d?.open) return;
+      if (e instanceof KeyboardEvent) {
+        if (e.key !== "Escape") return;
+        d.open = false;
+        d.querySelector("summary")?.focus();
+        return;
+      }
+      if (!d.contains(e.target as Node)) d.open = false;
+    };
+    document.addEventListener("pointerdown", close);
+    document.addEventListener("keydown", close);
+    return () => {
+      document.removeEventListener("pointerdown", close);
+      document.removeEventListener("keydown", close);
+    };
+  }, []);
   return (
     <nav aria-label="حسابي" className={s.nav}>
-      {links.map(([href, label]) => (
-        <Link
-          key={href}
-          href={href}
-          className={s.navLink}
-          aria-current={path === href ? "page" : undefined}
-        >
-          {label}
-        </Link>
-      ))}
-      <LogoutButton className={`${s.navLink} ${s.navLogout}`} />
+      <details className={s.accountMenu} ref={menu}>
+        <summary className={s.accountMenuButton}>
+          <span aria-hidden="true">☰</span> قائمة حسابي
+          {current && <span className={s.accountMenuCurrent}>{current}</span>}
+        </summary>
+        <div className={s.accountMenuList}>
+          {links.map(([href, label]) => (
+            <Link
+              key={href}
+              href={href}
+              className={s.navLink}
+              aria-current={path === href ? "page" : undefined}
+            >
+              {label}
+            </Link>
+          ))}
+          <LogoutButton className={`${s.navLink} ${s.navLogout}`} />
+        </div>
+      </details>
     </nav>
+  );
+}
+/** أقسام لوحة الأسرة: تبويبات ثلاثية الأبعاد أعلى كل صفحة من صفحات اللوحة. */
+export const FAMILY_TABS: FolderTab[] = [
+  { id: "home", label: "الرئيسية", href: "/dashboard" },
+  { id: "products", label: "المنتجات", href: "/dashboard/products" },
+  { id: "orders", label: "الطلبات", href: "/dashboard/orders" },
+  { id: "offers", label: "العروض", href: "/dashboard/offers" },
+  {
+    id: "subscriptions",
+    label: "الاشتراكات",
+    href: "/dashboard/subscriptions",
+  },
+  { id: "library", label: "مكتبة الصور", href: "/dashboard/library" },
+  { id: "coverage", label: "التغطية", href: "/dashboard/coverage" },
+  // مندوب الأسرة الخاص: تسجّله بنفسها بتعهّد، دون اعتماد الإدارة.
+  { id: "couriers", label: "مندوبي الخاص", href: "/dashboard/couriers" },
+];
+function FamilyTabs({ children }: { children: React.ReactNode }) {
+  const { user } = useSession();
+  const path = usePathname();
+  const tab = FAMILY_TABS.find((t) => t.href === path);
+  if (!user || !isFamilyAccount(user) || !tab) return <>{children}</>;
+  return (
+    <FolderTabs label="أقسام الأسرة المنتجة" tabs={FAMILY_TABS} active={tab.id}>
+      {children}
+    </FolderTabs>
   );
 }
 export function AccountShell({
@@ -198,7 +265,7 @@ export function AccountShell({
   return (
     <section className={`${s.shell}${compact ? ` ${s.shellCompact}` : ""}`}>
       {navigation && <AccountNavigation />}
-      {children}
+      {navigation ? <FamilyTabs>{children}</FamilyTabs> : children}
     </section>
   );
 }
