@@ -9,6 +9,8 @@ type View = {
   mine: { stars: number; comment: string } | null;
   canRate: boolean;
   oath?: string;
+  /** «سبق لك تقييم…» */
+  rated?: string;
 };
 
 /** ملخص التقييم، ونموذج «رأيك مهم؟» لمن تعامل فعليًا. */
@@ -38,8 +40,9 @@ export function RatingBox({
     api<View>(`/api/ratings?kind=${kind}&target=${encodeURIComponent(target)}`)
       .then((v) => {
         setView(v);
-        setStars(v.mine?.stars ?? 0);
-        setComment(v.mine?.comment ?? "");
+        // تعامل جديد: تقييم جديد من الصفر، لا تعديل للسابق.
+        setStars(0);
+        setComment("");
       })
       .catch(() => setView(null));
   }, [kind, target, session.ready, session.user?.id]);
@@ -65,7 +68,17 @@ export function RatingBox({
           body: JSON.stringify({ kind, target, stars, comment, oath: true }),
         },
       );
-      setView((v) => v && { ...v, ...summary, mine: { stars, comment } });
+      // بعد الحفظ يختفي النموذج: تقييم واحد لكل تعامل.
+      setView(
+        (v) =>
+          v && {
+            ...v,
+            ...summary,
+            mine: { stars, comment },
+            canRate: false,
+            rated: undefined,
+          },
+      );
       setMessage("شكرًا، تم حفظ تقييمك.");
     } catch (err) {
       setError((err as Error).message);
@@ -82,6 +95,13 @@ export function RatingBox({
         {!compact && <h3>{title}</h3>}
         <Stars value={view.average} count={view.count} />
       </div>
+      {message && !view.canRate && <p className="rating-ok">{message}</p>}
+      {view.rated && !message && (
+        <p className="rating-done" role="status">
+          ✓ {view.rated}
+          {view.mine && ` (${view.mine.stars} من 5)`}
+        </p>
+      )}
       {view.canRate && (
         <form onSubmit={submit} className="rating-form">
           <fieldset>
@@ -135,14 +155,14 @@ export function RatingBox({
             <span>{view.oath}</span>
           </label>
           <button className="button small" disabled={busy || !sworn}>
-            {busy
-              ? "جارٍ الحفظ…"
-              : view.mine
-                ? "تحديث تقييمي"
-                : "إرسال التقييم"}
+            {busy ? "جارٍ الحفظ…" : "إرسال التقييم"}
           </button>
+          {view.mine && (
+            <small className="rating-new-deal">
+              تقييم لتعاملك الجديد؛ تقييمك السابق محفوظ.
+            </small>
+          )}
           <div aria-live="polite">
-            {message && <p className="rating-ok">{message}</p>}
             {error && (
               <p role="alert" className="rating-error">
                 {error}

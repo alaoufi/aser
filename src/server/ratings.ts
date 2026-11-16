@@ -11,6 +11,8 @@ export type RatingSummary = { average: number | null; count: number };
 export type RatingView = RatingSummary & {
   mine: { stars: number; comment: string } | null;
   canRate: boolean;
+  /** «سبق لك تقييم…»: قيّم تعامله ولا تعامل جديدًا يتيح تقييمًا آخر. */
+  rated?: string;
   /** نص القسم الذي يوافق عليه المقيِّم قبل الإرسال (من «نصوص الموقع»). */
   oath?: string;
 };
@@ -49,12 +51,33 @@ export async function ratingSummary(
   return { average: row.average, count: row.count };
 }
 
-/** هل لهذا المستخدم أن يقيّم الهدف؟ وبأي صفة؟ */
+/**
+ * هل لهذا المستخدم تعامل لم يقيّمه بعد؟ التقييم مرة واحدة لكل تعامل (طلب مكتمل أو توصيل تم)،
+ * والتعامل الجديد يتيح تقييمًا جديدًا. الإدارة تقيّم الأسرة والمندوب مرة واحدة دون طلب.
+ * يُعيد صفة المقيِّم والطلب الذي يُنسب له التقييم، أو null.
+ */
 async function eligibility(
   user: SessionUser,
   k: RatingKind,
   targetId: string,
-): Promise<"member" | "admin" | "family" | null> {
+): Promise<{
+  role: "member" | "admin" | "family";
+  orderId: string | null;
+} | null> {
+  const unrated = (orderCol: string) =>
+    `NOT EXISTS (SELECT 1 FROM jdatna.ratings r WHERE r.kind='${k}' AND r.target_id=$1 AND r.rater_id=$2 AND r.order_id=${orderCol})`;
+  const first = async (sql: string) =>
+    ((await db().query(sql, [targetId, user.id])).rows[0]?.id as
+      string | undefined) ?? null;
+  const adminOnce = async () =>
+    (
+      await db().query(
+        "SELECT 1 FROM jdatna.ratings WHERE kind=$1 AND target_id=$2 AND rater_id=$3 AND order_id IS NULL",
+        [k, targetId, user.id],
+      )
+    ).rowCount
+      ? null
+      : { role: "admin" as const, orderId: null };
   if (k === "family") {
     const family = (
       await db().query(
@@ -63,50 +86,50 @@ async function eligibility(
       )
     ).rows[0];
     if (!family || family.user_id === user.id) return null;
-    if (can(user, "producers")) return "admin";
-    const ok = (
-      await db().query(
-        `SELECT 1 FROM jdatna.order_requests o WHERE o.producer_id=$1 AND o.user_id=$2 AND ${dealt} LIMIT 1`,
-        [targetId, user.id],
-      )
-    ).rowCount;
-    return ok ? "member" : null;
+    const orderId = await first(
+      `SELECT o.id FROM jdatna.order_requests o WHERE o.producer_id=$1 AND o.user_id=$2 AND ${dealt}
+       AND ${unrated("o.id")} ORDER BY o.created_at LIMIT 1`,
+    );
+    if (orderId) return { role: "member", orderId };
+    return can(user, "producers") ? adminOnce() : null;
   }
   if (k === "product") {
-    const ok = (
-      await db().query(
-        `SELECT 1 FROM jdatna.order_requests o JOIN jdatna.producer_profiles p ON p.id=o.producer_id
-         WHERE o.product_id=$1 AND o.user_id=$2 AND p.user_id<>$2 AND ${dealt} LIMIT 1`,
-        [targetId, user.id],
-      )
-    ).rowCount;
-    return ok ? "member" : null;
+    const orderId = await first(
+      `SELECT o.id FROM jdatna.order_requests o JOIN jdatna.producer_profiles p ON p.id=o.producer_id
+       WHERE o.product_id=$1 AND o.user_id=$2 AND p.user_id<>$2 AND ${dealt}
+       AND ${unrated("o.id")} ORDER BY o.created_at LIMIT 1`,
+    );
+    return orderId ? { role: "member", orderId } : null;
   }
   if (k === "courier") {
-    // المندوب تقيّمه الأسرة التي أوصل طلبها («تم التوصيل»)، والإدارة.
+    // المندوب تقيّمه الأسرة عن كل توصيل تم لطلبها، والإدارة مرة واحدة.
     if (targetId === user.id) return null;
-    if (can(user, "producers")) return "admin";
-    const ok = (
-      await db().query(
-        `SELECT 1 FROM jdatna.order_couriers oc JOIN jdatna.order_requests o ON o.id=oc.order_id
-         JOIN jdatna.producer_profiles p ON p.id=o.producer_id
-         WHERE oc.courier_user_id=$1 AND oc.status='delivered' AND p.user_id=$2 LIMIT 1`,
-        [targetId, user.id],
-      )
-    ).rowCount;
-    return ok ? "family" : null;
+    const orderId = await first(
+      `SELECT oc.order_id AS id FROM jdatna.order_couriers oc JOIN jdatna.order_requests o ON o.id=oc.order_id
+       JOIN jdatna.producer_profiles p ON p.id=o.producer_id
+       WHERE oc.courier_user_id=$1 AND oc.status='delivered' AND p.user_id=$2
+       AND ${unrated("oc.order_id")} ORDER BY oc.delivered_at LIMIT 1`,
+    );
+    if (orderId) return { role: "family", orderId };
+    return can(user, "producers") ? adminOnce() : null;
   }
-  // العضو تقيّمه الأسرة التي تعاملت معه.
+  // العضو تقيّمه الأسرة عن كل طلب مكتمل منه.
   if (targetId === user.id) return null;
-  const ok = (
-    await db().query(
-      `SELECT 1 FROM jdatna.order_requests o JOIN jdatna.producer_profiles p ON p.id=o.producer_id
-       WHERE o.user_id=$1 AND p.user_id=$2 AND ${dealt} LIMIT 1`,
-      [targetId, user.id],
-    )
-  ).rowCount;
-  return ok ? "family" : null;
+  const orderId = await first(
+    `SELECT o.id FROM jdatna.order_requests o JOIN jdatna.producer_profiles p ON p.id=o.producer_id
+     WHERE o.user_id=$1 AND p.user_id=$2 AND ${dealt}
+     AND ${unrated("o.id")} ORDER BY o.created_at LIMIT 1`,
+  );
+  return orderId ? { role: "family", orderId } : null;
 }
+
+/** رسالة «سبق لك تقييم…» حسب نوع الهدف. */
+export const ratedMessage: Record<RatingKind, string> = {
+  product: "سبق لك تقييم هذا المنتج",
+  family: "سبق لك تقييم هذه الأسرة",
+  member: "سبق لك تقييم هذا العميل",
+  courier: "سبق لك تقييم هذا المندوب",
+};
 
 /** تقييم العضو خاص: يراه من تعامل معه من الأسر، والإدارة. */
 async function assertCanViewMember(user: SessionUser | null, targetId: string) {
@@ -136,10 +159,11 @@ export async function ratingView(
   if (k === "member") await assertCanViewMember(user, targetId);
   const summary = await ratingSummary(k, targetId);
   if (!user) return { ...summary, mine: null, canRate: false };
+  // آخر تقييم له على هذا الهدف (للعرض)، وهل له تعامل جديد لم يقيّمه.
   const mine =
     (
       await db().query(
-        "SELECT stars,comment FROM jdatna.ratings WHERE kind=$1 AND target_id=$2 AND rater_id=$3",
+        "SELECT stars,comment FROM jdatna.ratings WHERE kind=$1 AND target_id=$2 AND rater_id=$3 ORDER BY created_at DESC LIMIT 1",
         [k, targetId, user.id],
       )
     ).rows[0] ?? null;
@@ -149,6 +173,7 @@ export async function ratingView(
     mine,
     canRate,
     ...(canRate ? { oath: await oathText(k) } : {}),
+    ...(!canRate && mine ? { rated: ratedMessage[k] } : {}),
   };
 }
 
@@ -164,21 +189,34 @@ export async function rate(user: SessionUser, input: unknown) {
     })
     .strict()
     .parse(input);
-  const role = await eligibility(user, value.kind, value.target);
-  if (!role) throw new HttpError(403, "التقييم متاح بعد تسليم طلبك من الموقع");
-  await db().query(
-    `INSERT INTO jdatna.ratings(id,kind,target_id,rater_id,rater_role,stars,comment) VALUES($1,$2,$3,$4,$5,$6,$7)
-     ON CONFLICT(kind,target_id,rater_id) DO UPDATE SET stars=EXCLUDED.stars,comment=EXCLUDED.comment,rater_role=EXCLUDED.rater_role,updated_at=now()`,
+  const eligible = await eligibility(user, value.kind, value.target);
+  if (!eligible) {
+    // قيّم تعامله السابق ولا تعامل جديد: رسالة واضحة، لا تقييم مكرر.
+    const rated = (
+      await db().query(
+        "SELECT 1 FROM jdatna.ratings WHERE kind=$1 AND target_id=$2 AND rater_id=$3",
+        [value.kind, value.target, user.id],
+      )
+    ).rowCount;
+    if (rated) throw new HttpError(409, ratedMessage[value.kind]);
+    throw new HttpError(403, "التقييم متاح بعد تسليم طلبك من الموقع");
+  }
+  const saved = await db().query(
+    `INSERT INTO jdatna.ratings(id,kind,target_id,rater_id,rater_role,stars,comment,order_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8)
+     ON CONFLICT DO NOTHING`,
     [
       randomUUID(),
       value.kind,
       value.target,
       user.id,
-      role,
+      eligible.role,
       value.stars,
       value.comment,
+      eligible.orderId,
     ],
   );
+  // طلبان معًا لنفس التعامل: يُحفظ الأول فقط.
+  if (!saved.rowCount) throw new HttpError(409, ratedMessage[value.kind]);
   if (value.kind === "family") {
     // التقييم العاشر بخمس نجوم يُصدر شهادة «أسرة مميزة»؛ تعذّر الإصدار لا يُفشل التقييم.
     const { awardIfEligible } = await import("./certificates");
