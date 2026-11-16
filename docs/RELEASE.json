@@ -8,21 +8,20 @@
     "browser_chromium": "6/6 coverage+eligibility;2/2 center-name followup; four responsive widths",
     "typecheck": "passed",
     "build": "passed",
-    "infrastructure_and_backup_restore": "passed after deployment; Aykdmh unchanged",
+    "infrastructure_and_backup_restore": "passed after deployment",
     "live_browser": "Exact release; real city tree plus mocked own-session/save UI verifies multiple custom subareas+reload;4 widths no overflow/pageerror; no production fake account or area",
     "otp_endpoint": "Unchanged signup/reset-only OTP; min password4 with no composition requirement; salted scrypt and limits retained"
   },
   "registrationOpen": true,
   "SMS": true,
   "privateStorage": true,
-  "aykdmh_hosting_commit": "a2a6cfe",
   "source_pushed": true,
   "limitations": [
     "Off-server backup pending",
     "No physical-phone/WebKit verification or new SMS delivery test",
     "Deep geography requires administrative curation"
   ],
-  "sms_provider": "Same active Taqnyat credentials as Aykdmh; enabled at explicit owner request to test delivery on own phone",
+  "sms_provider": "Taqnyat. The SMS credentials are not yet a Jdatna-only account; a separate account is pending the owner's decision (paid service).",
   "footer_verification": "Affiliation retained",
   "image_id": "sha256:74836a608f7beca1295a3e996cf039957e7c9fe4ddd4ed856daaf7641f15e993",
   "sms_delivery_confirmed": true,
@@ -34,12 +33,7 @@
     "qassim": 14,
     "existingCityRecordsUnchanged": true,
     "coverage": "cities/governorates; not all villages or administrative centers",
-    "firstRegions": [
-      "riyadh",
-      "makkah",
-      "madinah",
-      "qassim"
-    ]
+    "firstRegions": ["riyadh", "makkah", "madinah", "qassim"]
   },
   "brand_logo": {
     "path": "/brand/jdatna-main.webp",
@@ -164,5 +158,10 @@
     "auto_deploy_enabled": false,
     "verified_remote_commit_before_this_record": "8314ea2219b9d95aecb20032add7710af76943c9",
     "verified_on": "2026-11-09"
+  },
+  "separation": {
+    "decided_on": "2026-11-16",
+    "rule": "Jdatna checks and touches only jdatna-* containers and Jdatna paths; routing in alaoufi/server-edge sites/jdatna.com.caddy",
+    "internal_port_target": "127.0.0.1:8092"
   }
 }

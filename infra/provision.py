@@ -1,9 +1,9 @@
 """One-time provisioning on the authorized Contabo host; refuses existing storage.
 
-Run only after placing infra/ under /opt/jdatna. No external downloads or changes
-to existing application services, proxy, database, DNS or Docker daemon config.
+Run only after placing infra/ under /opt/jdatna. Touches only Jdatna paths
+(/opt/jdatna, /srv/jdatna, /etc/jdatna, /var/backups/jdatna) and jdatna-* units; no
+other site, proxy, DNS or Docker daemon config.
 """
-import hashlib
 import json
 import os
 from pathlib import Path
@@ -36,16 +36,8 @@ for unit in ['srv-jdatna-data.mount', 'var-backups-jdatna.mount',
 stat = os.statvfs('/')
 assert stat.f_bavail * stat.f_frsize > 45 * 1024**3, 'Insufficient free space'
 
-baseline = {'containers': {}, 'config_sha256': {}}
-for name in ['aykdmh-web', 'aykdmh-app', 'aykdmh-db', 'aykdmh-livekit']:
-    d = json.loads(run('docker', 'inspect', name))[0]
-    baseline['containers'][name] = {'id': d['Id'], 'started': d['State']['StartedAt']}
-for p in [Path('/opt/aykdmh/deploy/docker-compose.yml'),
-          *Path('/opt/aykdmh/deploy/caddy').rglob('*')]:
-    if p.is_file():
-        baseline['config_sha256'][str(p)] = hashlib.sha256(p.read_bytes()).hexdigest()
+# فصل تام (2026-11-16): لا يسجّل التجهيز حالة أي موقع آخر ولا يفحصها.
 (ROOT / 'audit').mkdir(mode=0o700)
-write(ROOT / 'audit/before.json', json.dumps(baseline, indent=2))
 
 run('useradd', '--system', '--home-dir', '/srv/jdatna', '--no-create-home',
     '--shell', '/usr/sbin/nologin', 'jdatna')

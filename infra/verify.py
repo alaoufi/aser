@@ -1,5 +1,4 @@
 """Verify infrastructure and restore only into a uniquely named Jdatna test DB."""
-import hashlib
 import json
 import os
 from pathlib import Path
@@ -24,28 +23,12 @@ def check(value, message):
     print('PASS:', message, flush=True)
 
 
-before = json.loads(Path('/opt/jdatna/audit/before.json').read_text())
-for name, old in before['containers'].items():
-    d = json.loads(run('docker', 'inspect', name))[0]
-    check(d['Id'] == old['id'] and d['State']['StartedAt'] == old['started']
-          and d['State']['Running'], name + ' unchanged and running')
-for p, digest in before['config_sha256'].items():
-    content = Path(p).read_bytes()
-    addition = Path('/opt/jdatna/infra/jdatna-proxy.caddy')
-    if p == '/opt/aykdmh/deploy/caddy/Caddyfile' and addition.exists():
-        approved_file = Path('/opt/jdatna/audit/approved-ingress.json')
-        if approved_file.exists():
-            approved = json.loads(approved_file.read_text())
-            check(hashlib.sha256(content).hexdigest() == approved['approved_sha256'],
-                  'Shared ingress matches approved Coolify routing')
-            check(approved['backup_path'] == '/etc/aykdmh/coolify-site/original-ingress.caddy',
-                  'Original ingress backup has expected independent path')
-            content = Path(approved['backup_path']).read_bytes()
-        suffix = b'\n' + addition.read_bytes()
-        if content.endswith(suffix):
-            content = content[:-len(suffix)]
-    check(hashlib.sha256(content).hexdigest() == digest,
-          'Original existing config preserved: ' + p)
+def warn(value, message):
+    print(('PASS:' if value else 'WARN:'), message, flush=True)
+
+
+# فصل تام (قرار المالك 2026-11-16): هذا الفحص لجدتنا فقط. لا يفحص حاويات أي موقع آخر
+# ولا إعداداته، فنشر موقع آخر لا يوقف نشر جدتنا. جدتنا تلمس حاويات jdatna-* فقط.
 d = json.loads(run('docker', 'inspect', 'jdatna-db'))[0]
 check(d['State'].get('Health', {}).get('Status') == 'healthy', 'Database healthy')
 check(d['HostConfig']['Memory'] == 1024**3 and d['HostConfig']['NanoCpus'] == 10**9,
@@ -62,10 +45,20 @@ check(len(apps) == 1, 'Exactly one Jdatna application is running')
 app = json.loads(run('docker', 'inspect', apps[0]))[0]
 check(app['Config']['User'] == '10001:10001' and app['HostConfig']['ReadonlyRootfs'],
       'Application runs non-root on a read-only filesystem')
-check('aykdmh_default' not in app['NetworkSettings']['Networks'] and
-      'jdatna_database' in app['NetworkSettings']['Networks'], 'Application networks isolated from Aykdmh')
-check(app['HostConfig']['PortBindings'].get('3000/tcp') == [{'HostIp':'172.18.0.1','HostPort':'8092'}],
-      'Application port binds only the private ingress gateway')
+# التطبيق على شبكة قاعدة جدتنا، وكل شبكة ينضم لها لا يشاركه فيها إلا حاويات جدتنا.
+app_networks = set(app['NetworkSettings']['Networks'])
+check('jdatna_database' in app_networks, 'Application joins the Jdatna database network')
+for network in sorted(app_networks):
+    members = json.loads(run('docker', 'network', 'inspect', network))[0].get('Containers') or {}
+    others = sorted(m['Name'] for cid, m in members.items()
+                    if cid != app['Id'] and not m['Name'].startswith('jdatna'))
+    warn(not others, 'Network ' + network + ' shared only with Jdatna containers'
+         + ('' if not others else ' (also: ' + ', '.join(others) + ')'))
+# منفذ داخلي واحد 8092 للبوابة، على 127.0.0.1 (الهدف) أو عنوان البوابة الخاص (مرحلة انتقالية)؛ لا واجهة عامة.
+bindings = app['HostConfig']['PortBindings'].get('3000/tcp') or []
+check(bindings and all(b['HostPort'] == '8092' and b['HostIp'] in ('127.0.0.1', '172.18.0.1')
+                       for b in bindings),
+      'Application publishes only the private gateway port 8092')
 store = json.loads(run('docker', 'inspect', 'jdatna-storage'))[0]
 check(not store['HostConfig']['PortBindings'] and set(store['NetworkSettings']['Networks']) == {'jdatna_storage'},
       'Object storage has no host ports or other project networks')
@@ -102,10 +95,6 @@ wrong = subprocess.run(['docker','exec','-i','jdatna-db','sh','-c',
           input=b'incorrect-verification-password\n', capture_output=True)
 check(wrong.returncode != 0 and b'password authentication failed' in wrong.stderr,
       'Wrong application password rejected')
-other = json.loads(run('docker','inspect','aykdmh-db'))[0]
-other_ip = other['NetworkSettings']['Networks']['aykdmh_default']['IPAddress']
-probe = subprocess.run(['docker','exec','jdatna-db','pg_isready','-h',other_ip,'-t','3'], capture_output=True)
-check(probe.returncode == 2, 'Jdatna network cannot reach Aykdmh PostgreSQL')
 latest = sorted(Path('/var/backups/jdatna').glob('jdatna-*.tar.gpg'))[-1]
 run('sha256sum', '-c', str(latest) + '.sha256')
 env = dict(os.environ, GNUPGHOME='/etc/jdatna/gnupg')
@@ -142,6 +131,6 @@ finally:
         p.unlink()
     stage.rmdir()
 check(run('systemctl','is-active','jdatna-backup.timer').strip() == b'active', 'Daily backup timer active')
-code = run('curl','-sS','-o','/dev/null','-w','%{http_code}','--max-time','15','https://aykdmh.com').decode()
-check(code == '200', 'Aykdmh HTTPS still returns HTTP 200')
+code = run('curl','-sS','-o','/dev/null','-w','%{http_code}','--max-time','15','https://jdatna.com/api/health').decode()
+check(code == '200', 'Jdatna HTTPS health returns HTTP 200')
 print('ALL CHECKS PASSED', flush=True)

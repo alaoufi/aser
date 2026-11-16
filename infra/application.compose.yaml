@@ -29,7 +29,7 @@ services:
     tmpfs:
       - /tmp:size=32m,mode=1777
       - /app/.next/cache:size=32m,uid=10001,gid=10001,mode=0700
-    ports: ["172.18.0.1:8092:3000"]
+    ports: ["127.0.0.1:8092:3000"]
     networks: [application, database, storage]
     labels:
       jdatna.role: application

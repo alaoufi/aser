@@ -23,7 +23,7 @@ export function mask(value: string) {
 
 /**
  * عنوان الزائر الحقيقي: Caddy (البوابة الوحيدة إلى الموقع) يضع عنوان من اتصل به آخر قيمة
- * في X-Forwarded-For ويتجاهل ما أرسله الزائر. التطبيق لا يُصل إليه إلا عبره (172.18.0.1).
+ * في X-Forwarded-For ويتجاهل ما أرسله الزائر. التطبيق لا يُصل إليه إلا عبره (منفذ داخلي 8092).
  */
 export function clientIp(request: Request): string | null {
   const last = request.headers

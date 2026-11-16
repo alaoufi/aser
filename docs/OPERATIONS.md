@@ -1,8 +1,10 @@
 # Operations — Jdatna only
 
-SSH: `ssh aykdmh`. Run commands below on the server. Never print secret files or
-inspect container environments indiscriminately. Existing Aykdmh services are out
-of scope for these commands.
+SSH: `ssh -t root@84.247.166.216 "..."` (one command per line from PowerShell).
+Run commands below on the server. Never print secret files or inspect container
+environments indiscriminately. Every other site on the server is out of scope: Jdatna
+commands touch only `jdatna-*` containers, `/opt/jdatna`, `/srv/jdatna`, `/etc/jdatna`
+and `/var/backups/jdatna`.
 
 ## Status and validation
 
@@ -14,9 +16,9 @@ python3 /opt/jdatna/infra/verify.py
 ```
 
 The verification script creates then drops one uniquely named restore database
-inside **jdatna-db** and rolls back its CRUD test. It never modifies Aykdmh data.
-Its baseline container-start checks intentionally flag later unrelated Aykdmh
-deployments; review those changes before refreshing any baseline.
+inside **jdatna-db** and rolls back its CRUD test. It checks Jdatna only (since
+2026-11-16 it no longer inspects other sites' containers, so their deployments never
+block a Jdatna deployment).
 
 ## Backup
 
@@ -38,8 +40,8 @@ For recovery, provision a **new isolated target**, verify SHA256 and fully decry
 the archive before extracting it. Restore roles before restoring database.dump
 with `pg_restore --exit-on-error`, and restore uploads with the expected owner.
 Use a scratch database first and verify schema, grants and application behavior.
-Never restore onto `aykdmh-db`, and never use destructive restore flags against a
-live database. `verify.py` implements the tested scratch restoration path.
+Never restore onto a database other than a fresh Jdatna target, and never use
+destructive restore flags against a live database. `verify.py` implements the tested scratch restoration path.
 
 Database dumps are transaction-consistent. Once the app writes media concurrently,
 define its media retention/snapshot strategy; the current filesystem tar is not an
@@ -74,13 +76,9 @@ public domain routing and HTTPS are configured for that static page only.
 
 `jdatna-page.service` runs the static page from `/srv/jdatna/data/site`.
 Source: `site/index.html`; config: `infra/page.compose.yaml` and `infra/page.Caddyfile`.
-HTTPS terminates in the existing shared Caddy ingress. Only the Jdatna domain
-blocks in `infra/jdatna-proxy.caddy` were appended to its Caddyfile. Preserve those
-blocks in future Aykdmh deployments; its upstream deployment source has not been
-changed by this task. Ingress backup:
-`/opt/jdatna/audit/Caddyfile.before-jdatna-1794088864815229646`.
-Restore that file and validate/reload Caddy only if rolling back domain routing.
-Do not restart Aykdmh containers to update the static page.
+HTTPS and routing for jdatna.com belong to the neutral server gateway
+(`alaoufi/server-edge`, file `sites/jdatna.com.caddy`). Jdatna never edits the gateway's
+other files or another site's configuration.
 
 New backups include the `site` folder when present. Publishing a page update is
 an atomic replacement of its index.html; no database migration is involved.
