@@ -2,6 +2,7 @@ import { productStatusLabels } from "@/lib/site-texts";
 import { categoryLabel } from "@/lib/category-label";
 import { LocationFields } from "@/components/public/location-fields";
 import type { Metadata } from "next";
+import { openGraph } from "@/lib/seo";
 import { cookies } from "next/headers";
 import { RegionPicker } from "@/components/public/region-picker";
 import { regionsOf } from "@/components/public/today-table";
@@ -26,17 +27,57 @@ export async function generateMetadata({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }): Promise<Metadata> {
   const raw = await searchParams;
-  const category = typeof raw.category === "string" ? raw.category : "";
-  const producer = typeof raw.producer === "string" ? raw.producer : "";
+  const one = (k: string) =>
+    typeof raw[k] === "string" ? (raw[k] as string).trim() : "";
+  const category = one("category"),
+    producer = one("producer"),
+    region = one("region"),
+    q = one("q").slice(0, 60);
+  // عنوان ووصف بكلمات البحث الدلالية، ورابط معتمد واحد لكل صفحة بحث (لا تكرار في الفهرس).
+  const page = (title: string, description: string, canonical: string) => ({
+    title,
+    description,
+    alternates: { canonical },
+    openGraph: openGraph({ title, description, url: canonical }),
+  });
   if (category) {
     const found = (await getCategories()).find((c) => c.id === category);
-    if (found) return { title: found.name };
+    if (found)
+      return page(
+        `${found.name} — أكل بيت من الأسر المنتجة`,
+        `${found.name} من بيوت الأسر المنتجة السعودية: أكلات شعبية وطبخ بيت بالتوصيل أو الاستلام. اطلب ${found.name} من الأسرة مباشرة في أكلات جدتنا.`,
+        `/browse?category=${encodeURIComponent(found.id)}`,
+      );
   }
   if (producer) {
     const found = await getProducer(producer);
-    if (found) return { title: `منتجات ${found.name}` };
+    if (found)
+      return page(
+        `منتجات ${found.name}`,
+        `أكلات ${found.name}، أسرة منتجة في ${found.cityName}: أكل بيت وأكلات شعبية تطلبها من الأسرة مباشرة.`,
+        `/browse?producer=${encodeURIComponent(found.slug)}`,
+      );
   }
-  return { title: "طبخات اليوم" };
+  if (region) {
+    const found = (await getCities()).find((c) => c.regionId === region);
+    if (found)
+      return page(
+        `أكلات شعبية وأسر منتجة في ${found.regionName}`,
+        `أكل بيت وأكلات شعبية من الأسر المنتجة في ${found.regionName}: جريش وقرصان ومرقوق وكبسة وحلويات شعبية بالتوصيل أو الاستلام.`,
+        `/browse?region=${encodeURIComponent(region)}`,
+      );
+  }
+  if (q)
+    return page(
+      `${q} — أكل بيت من الأسر المنتجة`,
+      `اطلب ${q} أكل بيت من الأسر المنتجة السعودية في أكلات جدتنا، بالتوصيل أو الاستلام من الأسرة مباشرة.`,
+      `/browse?q=${encodeURIComponent(q)}`,
+    );
+  return page(
+    "طبخات اليوم — أكلات شعبية وطبخ بيت",
+    "طبخات اليوم من الأسر المنتجة السعودية: أكلات شعبية وطبخ بيت متاح الآن قريب منك، تطلبه من الأسرة مباشرة.",
+    "/browse",
+  );
 }
 export const dynamic = "force-dynamic";
 

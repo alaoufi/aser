@@ -3,7 +3,12 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { getCities, regionalProducers } from "@/server/catalog";
 import { EmptyState, ProducerCard } from "@/components/public/ui";
-export const metadata: Metadata = { title: "الأسر المنتجة" };
+export const metadata: Metadata = {
+  title: "الأسر المنتجة — أكل بيت من بيوت أهلنا",
+  description:
+    "الأسر المنتجة السعودية في أكلات جدتنا: أسر منتجة قريبة منك في الرياض وجدة ومكة والمدينة والدمام والقصيم وكل المملكة، تطبخ أكلات شعبية وطبخ بيت وتوصلها لك.",
+  alternates: { canonical: "/producers" },
+};
 export const dynamic = "force-dynamic";
 export default async function Producers({
   searchParams,

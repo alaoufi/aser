@@ -2,7 +2,12 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { Lines } from "@/components/public/ui";
 import { getSiteTexts } from "@/server/settings";
-export const metadata: Metadata = { title: "حكايتنا" };
+export const metadata: Metadata = {
+  title: "حكايتنا",
+  description:
+    "حكاية أكلات جدتنا: منصة سعودية تجمع الأسر المنتجة وأكلاتهم الشعبية وطبخ البيت مع الناس، ليطلبوا من الأسرة مباشرة.",
+  alternates: { canonical: "/about" },
+};
 export default async function About() {
   const t = await getSiteTexts();
   return (

@@ -721,6 +721,26 @@ img {
   color: var(--muted);
   margin: 8px 0;
 }
+/* «يبحث الناس عن»: روابط بحث حقيقية تساعد الزوار ومحركات البحث */
+.footer-searches {
+  border-top: 1px solid rgb(255 255 255 / 12%);
+  padding: 14px 0;
+}
+.footer-searches h3 {
+  font-size: 13px;
+  margin: 0 0 8px;
+}
+.footer-searches p {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin: 0;
+}
+.footer-searches a {
+  color: var(--muted);
+  font-size: 12px;
+  min-height: 24px;
+}
 .store-badges {
   display: grid;
   gap: 10px;

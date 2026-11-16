@@ -81,10 +81,16 @@ test("a family sees a clear add button, opens a category and hides or deletes a 
     page.getByRole("button", { name: "إضافة منتج", exact: true }),
   ).toBeVisible();
   // القسم الأول مفتوح، والثاني يُفتح بالضغط.
-  await expect(page.getByText("جريش", { exact: true })).toBeVisible();
-  await expect(page.getByText("كليجا", { exact: true })).toBeHidden();
+  await expect(
+    page.locator("main").getByText("جريش", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.locator("main").getByText("كليجا", { exact: true }),
+  ).toBeHidden();
   await page.getByText("الحلويات").click();
-  await expect(page.getByText("كليجا", { exact: true })).toBeVisible();
+  await expect(
+    page.locator("main").getByText("كليجا", { exact: true }),
+  ).toBeVisible();
 
   await page.getByRole("button", { name: "إخفاء جريش" }).click();
   await expect(page.locator(".save-toast")).toContainText("تم الحفظ");
@@ -93,7 +99,9 @@ test("a family sees a clear add button, opens a category and hides or deletes a 
 
   page.once("dialog", (d) => d.accept());
   await page.getByRole("button", { name: "حذف مرقوق" }).click();
-  await expect(page.getByText("مرقوق", { exact: true })).toHaveCount(0);
+  await expect(
+    page.locator("main").getByText("مرقوق", { exact: true }),
+  ).toHaveCount(0);
   expect(sent).toEqual([
     { id: "00000000-0000-4000-8000-000000000001", action: "hide" },
     { id: "00000000-0000-4000-8000-000000000002", action: "delete" },

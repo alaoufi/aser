@@ -4,6 +4,20 @@ import { FoodPhotos } from "@/components/public/food-photos";
 import { NajdiDoor } from "@/components/public/najdi-door";
 import { getSiteTexts, visitorTemplate } from "@/server/settings";
 import Link from "next/link";
+import type { Metadata } from "next";
+import { SITE_DESCRIPTION, openGraph } from "@/lib/seo";
+// الرئيسية: عنوان ووصف بكلمات البحث الأكثر طلبًا، ورابطها المعتمد.
+export const metadata: Metadata = {
+  title: {
+    absolute: "أكلات جدتنا | أكلات شعبية وطبخ بيت من الأسر المنتجة السعودية",
+  },
+  alternates: { canonical: "/" },
+  openGraph: openGraph({
+    url: "/",
+    title: "أكلات جدتنا | أكلات شعبية وطبخ بيت من الأسر المنتجة",
+    description: SITE_DESCRIPTION,
+  }),
+};
 import { cookies } from "next/headers";
 import { TodayTable, regionsOf } from "@/components/public/today-table";
 import {

@@ -3,7 +3,14 @@ import { Offers } from "@/components/forms/offers";
 import { RegionPicker } from "@/components/public/region-picker";
 import { regionsOf } from "@/components/public/today-table";
 import { getCities } from "@/server/catalog";
+import type { Metadata } from "next";
 export const dynamic = "force-dynamic";
+export const metadata: Metadata = {
+  title: "العروض الخاصة على أكل البيت",
+  description:
+    "عروض الأسر المنتجة على الأكلات الشعبية وطبخ البيت: عروض الفطور والغداء والعشاء والمناسبات في منطقتك.",
+  alternates: { canonical: "/offers" },
+};
 /** العروض في نطاق الزائر: منطقته (تلقائيًا من موقعه)، وما يُشحن لكل المناطق. */
 export default async function Page({
   searchParams,
