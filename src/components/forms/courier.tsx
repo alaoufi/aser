@@ -12,6 +12,7 @@ import {
   LoginForm,
   Message,
   api,
+  isFamilyAccount,
   s,
   useSession,
 } from "./shared";
@@ -679,9 +680,18 @@ export function FamilyCouriersPage() {
   );
 }
 
-/** «المندوبين» للأسر المنتجة: حسب المدينة، مع محادثة واتصال وواتساب. */
+/**
+ * «تجمع المندوبين»: الأسرة ترى مندوبها الخاص والعامين في تغطيتها، والعميل يرى العامين فقط
+ * ويتفق مع أحدهم. وإن جاء العميل من طلبه (?order=) يختار المندوب لتوصيله مباشرة.
+ */
 export function CouriersDirectory() {
   const session = useSession();
+  const family = isFamilyAccount(session.user);
+  const [orderId, setOrderId] = useState("");
+  const [chosen, setChosen] = useState("");
+  useEffect(() => {
+    setOrderId(new URLSearchParams(window.location.search).get("order") ?? "");
+  }, []);
   const [cities, setCities] = useState<City[]>([]);
   const [city, setCity] = useState("");
   const [region, setRegion] = useState("");
@@ -710,6 +720,21 @@ export function CouriersDirectory() {
       })
       .catch((e) => setError((e as Error).message));
   }, [session.user?.id, city, region]);
+  async function choose(courier: Card) {
+    setBusy(courier.id);
+    setError("");
+    try {
+      const d = await api<{ courierName: string }>("/api/orders/courier", {
+        method: "PUT",
+        body: JSON.stringify({ orderId, courierUserId: courier.userId }),
+      });
+      setChosen(d.courierName);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy("");
+    }
+  }
   async function chat(courier: Card) {
     setBusy(courier.id);
     try {
@@ -730,11 +755,30 @@ export function CouriersDirectory() {
     <AccountShell>
       <h1>المندوبون</h1>
       <Guard {...session} />
-      {session.user && <FamilyCouriers />}
-      <p className={s.muted}>
-        مندوبون معتمدون ونشطون الآن داخل تغطيتك (المدينة أو المراكز). الاتفاق
-        والأجرة بينك وبين المندوب.
-      </p>
+      {session.user && family && <FamilyCouriers />}
+      {family ? (
+        <p className={s.muted}>
+          مندوبون معتمدون ونشطون الآن داخل تغطيتك (المدينة أو المراكز). الاتفاق
+          والأجرة بينك وبين المندوب.
+        </p>
+      ) : (
+        <p className={s.muted}>
+          مندوبون معتمدون ونشطون الآن. إن لم تتفق مع الأسرة على التوصيل، اختر
+          مندوبًا في مدينتك واتفق معه. الاتفاق والأجرة بينك وبين المندوب.
+        </p>
+      )}
+      {!family && orderId && !chosen && (
+        <p className={s.notice}>
+          تختار الآن مندوبًا لتوصيل طلبك: اضغط «اختره لتوصيل طلبي» على المندوب
+          المناسب.
+        </p>
+      )}
+      {chosen && (
+        <p role="status" className={s.notice}>
+          تم ✓ اخترت {chosen} لتوصيل طلبك، ووصله إشعار، وعرفت الأسرة أنه سيستلم
+          منها. <Link href="/orders">العودة إلى طلباتي ←</Link>
+        </p>
+      )}
       <div className={s.grid}>
         <label className={s.field}>
           المنطقة
@@ -771,7 +815,11 @@ export function CouriersDirectory() {
       {list === null && !error ? (
         <p role="status">جارٍ تحميل المندوبين…</p>
       ) : list && list.length === 0 ? (
-        <p className={s.notice}>لا يوجد مندوب نشط في تغطيتك الآن.</p>
+        <p className={s.notice}>
+          {family
+            ? "لا يوجد مندوب نشط في تغطيتك الآن."
+            : "لا يوجد مندوب نشط في هذه المنطقة الآن."}
+        </p>
       ) : (
         <ul className={s.courierList} aria-label="قائمة المندوبين">
           {list?.map((k) => (
@@ -798,14 +846,26 @@ export function CouriersDirectory() {
                 ))}
               </ul>
               <div className={s.actions}>
-                <button
-                  type="button"
-                  className={s.button}
-                  disabled={busy === k.id}
-                  onClick={() => chat(k)}
-                >
-                  محادثة
-                </button>
+                {!family && orderId && !chosen && (
+                  <button
+                    type="button"
+                    className={s.button}
+                    disabled={busy === k.id}
+                    onClick={() => choose(k)}
+                  >
+                    اختره لتوصيل طلبي
+                  </button>
+                )}
+                {family && (
+                  <button
+                    type="button"
+                    className={s.button}
+                    disabled={busy === k.id}
+                    onClick={() => chat(k)}
+                  >
+                    محادثة
+                  </button>
+                )}
                 {k.phone && (
                   <a className={s.contact} href={`tel:+${intl(k.phone)}`}>
                     اتصال
@@ -814,7 +874,7 @@ export function CouriersDirectory() {
                 {k.whatsapp && (
                   <a
                     className={s.contact}
-                    href={`https://wa.me/${intl(k.whatsapp)}?text=${encodeURIComponent("السلام عليكم، أنا من أسرة منتجة في أكلات جدتنا، أرغب بالاتفاق على توصيل طلبات.")}`}
+                    href={`https://wa.me/${intl(k.whatsapp)}?text=${encodeURIComponent(family ? "السلام عليكم، أنا من أسرة منتجة في أكلات جدتنا، أرغب بالاتفاق على توصيل طلبات." : "السلام عليكم، أنا عميل في أكلات جدتنا، أرغب بالاتفاق على توصيل طلبي.")}`}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
@@ -947,6 +1007,8 @@ type Delivery = {
   customerName: string;
   customerPhone: string;
   deliveryLocation: string | null;
+  /** اختاره العميل من «تجمع المندوبين» (لا الأسرة). */
+  byCustomer?: boolean;
 };
 /** «طلبات التوصيل»: موقع الأسرة لاستلام الطلب وموقع العميل لتوصيله. */
 function CourierDeliveries() {
@@ -994,6 +1056,11 @@ function CourierDeliveries() {
               {d.product ?? "طلب"} — {d.quantity}
               {d.status === "delivered" ? " · تم التوصيل ✓" : ""}
             </h3>
+            <p className={s.muted}>
+              {d.byCustomer
+                ? "اختارك العميل لتوصيل طلبه: اتفق معه على الأجرة، واستلم من الأسرة."
+                : "أسندت إليك الأسرة هذا التوصيل."}
+            </p>
             <p>
               الأسرة: {d.family}{" "}
               <a className={s.contact} href={`tel:${d.familyPhone}`}>

@@ -362,3 +362,104 @@ test("a family assigns a delivery order to an active courier", async ({
     pickupLocation: "حي النخيل، شارع الأسرة",
   });
 });
+
+// العميل لم يتفق مع الأسرة على التوصيل: من طلبه إلى «تجمع المندوبين» ويختار مندوبًا عامًا.
+test("a customer picks a courier for an accepted delivery order from the couriers gathering", async ({
+  page,
+}) => {
+  await page.route("**/api/session", (r) =>
+    r.fulfill({
+      json: {
+        user: {
+          id: "u",
+          name: "عميل",
+          phone: "+966500000051",
+          role: "customer",
+        },
+        registrationOpen: true,
+      },
+    }),
+  );
+  const orderId = "00000000-0000-4000-8000-000000000061";
+  await page.route("**/api/orders", (r) =>
+    r.fulfill({
+      json: {
+        orders: [
+          {
+            id: orderId,
+            productId: "p",
+            snapshot: {
+              productName: "كبسة",
+              producerName: "أكلات نجدية",
+              unit: "طبق",
+              price: 30,
+              offer: null,
+            },
+            name: "عميل",
+            phone: "+966500000051",
+            quantity: 1,
+            meal: "lunch",
+            days: 1,
+            startDate: "2026-11-20",
+            endDate: "2026-11-20",
+            notes: "",
+            status: "accepted",
+            fulfillment: "delivery",
+            deliveryLocation: "حي الملقا",
+            courierName: null,
+          },
+        ],
+      },
+    }),
+  );
+  await page.goto("/orders");
+  await expect(page.getByText("لم يُحدَّد مندوب لتوصيل طلبك")).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "اختر مندوبًا للتوصيل" }),
+  ).toHaveAttribute("href", `/couriers?order=${orderId}`);
+
+  await page.route("**/api/producer/profile", (r) =>
+    r.fulfill({ json: { profile: null, categories: [], cities: [city] } }),
+  );
+  await page.route("**/api/couriers**", (r) =>
+    r.fulfill({
+      json: {
+        couriers: [
+          {
+            id: "c1",
+            userId: "00000000-0000-4000-8000-000000000041",
+            name: "سعد المندوب",
+            carType: "كامري 2020",
+            cityName: "الرياض",
+            regionName: "منطقة الرياض",
+            phone: "+966500000021",
+            whatsapp: null,
+            cityPrice: 15,
+            centers: [],
+            familyName: null,
+          },
+        ],
+      },
+    }),
+  );
+  let chosen: unknown;
+  await page.route("**/api/orders/courier", (r) => {
+    chosen = r.request().postDataJSON();
+    return r.fulfill({ json: { orderId, courierName: "سعد المندوب" } });
+  });
+  await page.goto(`/couriers?order=${orderId}`);
+  // العميل لا يرى قسم «مندوبي الخاص» ولا زر المحادثة الخاص بالأسر.
+  await expect(page.getByRole("region", { name: "مندوبي الخاص" })).toHaveCount(
+    0,
+  );
+  const list = page.getByRole("list", { name: "قائمة المندوبين" });
+  await expect(list.getByRole("button", { name: "محادثة" })).toHaveCount(0);
+  await list.getByRole("button", { name: "اختره لتوصيل طلبي" }).click();
+  await expect(page.getByRole("status")).toContainText(
+    "اخترت سعد المندوب لتوصيل طلبك",
+  );
+  expect(chosen).toEqual({
+    orderId,
+    courierUserId: "00000000-0000-4000-8000-000000000041",
+  });
+});

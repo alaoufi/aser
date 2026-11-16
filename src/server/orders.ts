@@ -288,8 +288,14 @@ export async function memberOrders(user: SessionUser) {
   return (
     await db().query(
       // موقع التسليم المباشر يظهر للعميل بعد قبول الأسرة طلبه، لا قبل ذلك.
-      `SELECT ${fields},CASE WHEN f.method='pickup' AND o.status IN ('accepted','preparing','ready','completed') THEN p.pickup_location END AS "pickupLocation"
-       FROM jdatna.order_requests o JOIN jdatna.producer_profiles p ON p.id=o.producer_id ${withFulfillment} WHERE o.user_id=$1 ORDER BY o.created_at DESC LIMIT 200`,
+      // مندوب التوصيل: اسمه وجواله للعميل صاحب الطلب فقط، ومن اختاره (العميل أو الأسرة).
+      `SELECT ${fields},CASE WHEN f.method='pickup' AND o.status IN ('accepted','preparing','ready','completed') THEN p.pickup_location END AS "pickupLocation",
+         kp.name AS "courierName",ku.phone AS "courierPhone",oc.status AS "courierStatus",oc.assigned_by=o.user_id AS "courierByMe"
+       FROM jdatna.order_requests o JOIN jdatna.producer_profiles p ON p.id=o.producer_id ${withFulfillment}
+       LEFT JOIN jdatna.order_couriers oc ON oc.order_id=o.id
+       LEFT JOIN jdatna.courier_profiles kp ON kp.user_id=oc.courier_user_id
+       LEFT JOIN jdatna.users ku ON ku.id=oc.courier_user_id
+       WHERE o.user_id=$1 ORDER BY o.created_at DESC LIMIT 200`,
       [user.id],
     )
   ).rows;
@@ -325,7 +331,8 @@ export async function producerOrders(user: SessionUser) {
   return (
     await db().query(
       `SELECT ${fields},o.producer_seen_at IS NULL AS "isNew",o.user_id AS "customerId",
-         oc.courier_user_id AS "courierUserId",kp.name AS "courierName",oc.status AS "courierStatus",oc.pickup_location AS "courierPickup",p.pickup_location AS "familyPickup"
+         oc.courier_user_id AS "courierUserId",kp.name AS "courierName",oc.status AS "courierStatus",oc.pickup_location AS "courierPickup",p.pickup_location AS "familyPickup",
+         oc.assigned_by=o.user_id AS "courierByCustomer"
        FROM jdatna.order_requests o JOIN jdatna.producer_profiles p ON p.id=o.producer_id ${withFulfillment}
        LEFT JOIN jdatna.order_couriers oc ON oc.order_id=o.id
        LEFT JOIN jdatna.courier_profiles kp ON kp.user_id=oc.courier_user_id
