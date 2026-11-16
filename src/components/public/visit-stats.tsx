@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 
 type Stats =
   | { visible: false }
@@ -92,5 +92,64 @@ export function ViewCount({
         <small className="visit-admin-only"> (ظاهر للإدارة فقط)</small>
       )}
     </p>
+  );
+}
+
+type FamilyStats =
+  | { visible: false }
+  | {
+      visible: true;
+      views: number;
+      adminOnly: boolean;
+      productsViews: number;
+      products: Record<string, number>;
+    };
+const FamilyViewsContext = createContext<FamilyStats | null>(null);
+
+/**
+ * صفحة الأسرة: تسجّل مشاهدة الصفحة مرة، وتشارك الأعداد مع الملخص وبطاقات المنتجات تحتها
+ * (مشاهدات الصفحة، وإجمالي مشاهدات المنتجات، وعدد كل منتج). الظهور بحسب إعداد الإدارة.
+ */
+export function FamilyViews({
+  id,
+  children,
+}: {
+  id: string;
+  children: React.ReactNode;
+}) {
+  const [stats, setStats] = useState<FamilyStats | null>(null);
+  useEffect(() => {
+    post("/api/views", { kind: "producer", id })
+      .then((d) => d && setStats(d))
+      .catch(() => {});
+  }, [id]);
+  return (
+    <FamilyViewsContext.Provider value={stats}>
+      {children}
+    </FamilyViewsContext.Provider>
+  );
+}
+
+export function FamilyViewsSummary() {
+  const stats = useContext(FamilyViewsContext);
+  if (!stats?.visible) return null;
+  return (
+    <p className="view-count">
+      <span aria-hidden="true">👁</span> {num(stats.views)} مشاهدة للصفحة ·{" "}
+      {num(stats.productsViews)} مشاهدة لمنتجاتها
+      {stats.adminOnly && (
+        <small className="visit-admin-only"> (ظاهر للإدارة فقط)</small>
+      )}
+    </p>
+  );
+}
+
+export function ProductViewBadge({ id }: { id: string }) {
+  const stats = useContext(FamilyViewsContext);
+  if (!stats?.visible) return null;
+  return (
+    <small className="view-count card-views">
+      <span aria-hidden="true">👁</span> {num(stats.products[id] ?? 0)} مشاهدة
+    </small>
   );
 }

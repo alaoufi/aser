@@ -3,7 +3,11 @@ import { identityProps } from "@/lib/brand";
 import { ReportButton } from "@/components/public/report-button";
 import { getPublicCoverage } from "@/server/coverage";
 import { ShareButton } from "@/components/public/share-button";
-import { ViewCount } from "@/components/public/visit-stats";
+import {
+  FamilyViews,
+  FamilyViewsSummary,
+  ProductViewBadge,
+} from "@/components/public/visit-stats";
 import { ChatButton } from "@/components/forms/chat";
 import { LocationCheck } from "@/components/maps/location-check";
 import { RatingBox } from "@/components/forms/rating-box";
@@ -68,219 +72,222 @@ export default async function ProducerDetail({
   const whatsapp = p.whatsapp ? phoneNumber(p.whatsapp) : null;
   const logo = p.logoUrl && safeMediaUrl(p.logoUrl);
   return (
-    <div className="wrap page-space">
-      <JsonLd
-        data={{
-          "@context": "https://schema.org",
-          "@type": "FoodEstablishment",
-          "@id": absoluteUrl(`/producers/${p.slug}#family`),
-          name: p.name,
-          description: excerpt(p.description, 500) || undefined,
-          url: absoluteUrl(`/producers/${p.slug}`),
-          ...(logo
-            ? { image: absoluteUrl(logo), logo: absoluteUrl(logo) }
-            : {}),
-          servesCuisine: ["أكلات شعبية سعودية", "طبخ بيت"],
-          address: {
-            "@type": "PostalAddress",
-            addressLocality: p.cityName,
-            addressRegion: p.regionName,
-            addressCountry: "SA",
-          },
-          ...(p.phone ? { telephone: p.phone } : {}),
-          ...(p.ratingAverage && p.ratingCount
-            ? {
-                aggregateRating: {
-                  "@type": "AggregateRating",
-                  ratingValue: p.ratingAverage,
-                  ratingCount: p.ratingCount,
-                  bestRating: 5,
-                  worstRating: 1,
-                },
-              }
-            : {}),
-          ...(products.length
-            ? {
-                hasMenu: {
-                  "@type": "Menu",
-                  hasMenuItem: products.slice(0, 30).map((x) => ({
-                    "@type": "MenuItem",
-                    name: x.name,
-                    url: absoluteUrl(`/products/${x.id}`),
-                    ...(x.price !== null
-                      ? {
-                          offers: {
-                            "@type": "Offer",
-                            price: x.price,
-                            priceCurrency: "SAR",
-                          },
-                        }
-                      : {}),
-                  })),
-                },
-              }
-            : {}),
-          isPartOf: { "@id": SITE_URL + "/#website" },
-        }}
-      />
-      <div className="page-top">
-        <Link href="/producers" className="text-link">
-          الأسر المنتجة ←
-        </Link>
-        <ShareButton
-          title={p.name}
-          url={share}
-          text={`منتجات ${p.name} في أكلات جدتنا — أكل بيت من ${p.cityName}`}
-          image={logo || null}
+    <FamilyViews id={p.id}>
+      <div className="wrap page-space">
+        <JsonLd
+          data={{
+            "@context": "https://schema.org",
+            "@type": "FoodEstablishment",
+            "@id": absoluteUrl(`/producers/${p.slug}#family`),
+            name: p.name,
+            description: excerpt(p.description, 500) || undefined,
+            url: absoluteUrl(`/producers/${p.slug}`),
+            ...(logo
+              ? { image: absoluteUrl(logo), logo: absoluteUrl(logo) }
+              : {}),
+            servesCuisine: ["أكلات شعبية سعودية", "طبخ بيت"],
+            address: {
+              "@type": "PostalAddress",
+              addressLocality: p.cityName,
+              addressRegion: p.regionName,
+              addressCountry: "SA",
+            },
+            ...(p.phone ? { telephone: p.phone } : {}),
+            ...(p.ratingAverage && p.ratingCount
+              ? {
+                  aggregateRating: {
+                    "@type": "AggregateRating",
+                    ratingValue: p.ratingAverage,
+                    ratingCount: p.ratingCount,
+                    bestRating: 5,
+                    worstRating: 1,
+                  },
+                }
+              : {}),
+            ...(products.length
+              ? {
+                  hasMenu: {
+                    "@type": "Menu",
+                    hasMenuItem: products.slice(0, 30).map((x) => ({
+                      "@type": "MenuItem",
+                      name: x.name,
+                      url: absoluteUrl(`/products/${x.id}`),
+                      ...(x.price !== null
+                        ? {
+                            offers: {
+                              "@type": "Offer",
+                              price: x.price,
+                              priceCurrency: "SAR",
+                            },
+                          }
+                        : {}),
+                    })),
+                  },
+                }
+              : {}),
+            isPartOf: { "@id": SITE_URL + "/#website" },
+          }}
         />
-      </div>
-      <section
-        className={`profile-header ${identityProps(p.id, p.brand).className}`}
-        style={identityProps(p.id, p.brand).style}
-      >
-        <div className="profile-symbol" aria-hidden="true">
-          ⌂
-        </div>
-        <div>
-          <p className="eyebrow">
-            {p.regionName} · {p.cityName}
-          </p>
-          <h1>{p.name}</h1>
-          <ViewCount kind="producer" id={p.id} />
-          {p.notCookingToday && (
-            <p role="status" className="muted">
-              لا يوجد طبخ اليوم. طلبات المواعيد القادمة متاحة بالاتفاق مع الأسرة
-              المنتجة.
-            </p>
-          )}
-          {p.certificateId && (
-            <Link
-              className="badge inline distinguished-badge"
-              href={`/certificates/${p.certificateId}`}
-            >
-              <span aria-hidden="true">★</span>{" "}
-              {texts["certificate.badge"] || "أسرة مميزة"}
-            </Link>
-          )}
-          <p className="profile-description">{p.description}</p>
-        </div>
-      </section>
-      <div className="detail-grid">
-        <section>
-          <h2>من مائدة الأسرة المنتجة</h2>
-          {products.length ? (
-            <div className="product-grid two">
-              {products.map((item) => (
-                <ProductCard
-                  key={item.id}
-                  product={item}
-                  labels={productStatusLabels(texts)}
-                />
-              ))}
-            </div>
-          ) : (
-            <EmptyState
-              title="لم تُنشر منتجات بعد"
-              text="تابع هذه الصفحة للتعرف على منتجات الأسرة المنتجة عند نشرها."
-            />
-          )}
-        </section>
-        <aside className="info-panel">
-          <h2>تواصل مع الأسرة المنتجة</h2>
-          <p>اتفق مباشرة على السعر والكمية ووقت التجهيز والاستلام.</p>
-          <RatingBox
-            kind="family"
-            target={p.id}
-            title={texts["rating.family"] || "تقييم الأسرة المنتجة"}
-            prompt={texts["rating.prompt"] || "رأيك مهم؟"}
+        <div className="page-top">
+          <Link href="/producers" className="text-link">
+            الأسر المنتجة ←
+          </Link>
+          <ShareButton
+            title={p.name}
+            url={share}
+            text={`منتجات ${p.name} في أكلات جدتنا — أكل بيت من ${p.cityName}`}
+            image={logo || null}
           />
-          <div className="contact-actions">
-            <ChatButton producerSlug={p.slug} />
-            {phone && (
-              <a href={`tel:+${phone}`} className="button">
-                اتصل بالأسرة المنتجة
-              </a>
-            )}
-            {whatsapp && (
-              <a
-                href={`https://wa.me/${whatsapp}`}
-                className="button secondary"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                تواصل عبر واتساب ↗
-              </a>
-            )}
+        </div>
+        <section
+          className={`profile-header ${identityProps(p.id, p.brand).className}`}
+          style={identityProps(p.id, p.brand).style}
+        >
+          <div className="profile-symbol" aria-hidden="true">
+            ⌂
           </div>
-          <hr />
-          <h3>التوصيل والاستلام</h3>
-          <p>
-            {p.delivery
-              ? "التوصيل متاح بالتنسيق مع الأسرة المنتجة."
-              : "التوصيل غير متاح."}
-          </p>
-          <p>{p.pickup ? "الاستلام متاح بالتنسيق المباشر." : ""}</p>
-          {p.delivery && Boolean(coverage.length) && (
-            <ul>
-              {coverage.map((area) => (
-                <li key={area.nodeId}>
-                  {area.label} —{" "}
-                  {area.fee === null
-                    ? "رسوم التوصيل بالاتفاق"
-                    : area.fee === 0
-                      ? "توصيل مجاني"
-                      : priceLabel(area.fee)}
-                </li>
-              ))}
-            </ul>
-          )}
-          {p.delivery && <LocationCheck producerSlug={p.slug} />}
-          <p className="muted">
-            يُشارك موقع الاستلام الدقيق معك بالتنسيق الخاص؛ لا يُعرض عنوان
-            المنزل علنًا.
-          </p>
-          {p.businessHours && (
-            <>
-              <h3>أوقات العمل</h3>
-              <p className="pre-line">{p.businessHours}</p>
-            </>
-          )}
-          {p.socialLinks.length > 0 && (
-            <>
-              <h3>تابع الأسرة المنتجة</h3>
-              <div className="social-links">
-                {p.socialLinks.map((s, i) => {
-                  const url = safeUrl(s.url);
-                  return url ? (
-                    <a
-                      key={i}
-                      href={url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {s.platform} ↗
-                    </a>
-                  ) : null;
-                })}
-              </div>
-            </>
-          )}
-          {p.website && safeUrl(p.website) && (
-            <p>
-              <a
-                className="text-link"
-                href={safeUrl(p.website)!}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                الموقع الإلكتروني للأسرة المنتجة ↗
-              </a>
+          <div>
+            <p className="eyebrow">
+              {p.regionName} · {p.cityName}
             </p>
-          )}
-          <small>المراجعة الإدارية ليست ترخيصًا أو اعتمادًا حكوميًا.</small>
-          <ReportButton producerId={p.id} />
-        </aside>
+            <h1>{p.name}</h1>
+            <FamilyViewsSummary />
+            {p.notCookingToday && (
+              <p role="status" className="muted">
+                لا يوجد طبخ اليوم. طلبات المواعيد القادمة متاحة بالاتفاق مع
+                الأسرة المنتجة.
+              </p>
+            )}
+            {p.certificateId && (
+              <Link
+                className="badge inline distinguished-badge"
+                href={`/certificates/${p.certificateId}`}
+              >
+                <span aria-hidden="true">★</span>{" "}
+                {texts["certificate.badge"] || "أسرة مميزة"}
+              </Link>
+            )}
+            <p className="profile-description">{p.description}</p>
+          </div>
+        </section>
+        <div className="detail-grid">
+          <section>
+            <h2>من مائدة الأسرة المنتجة</h2>
+            {products.length ? (
+              <div className="product-grid two">
+                {products.map((item) => (
+                  <ProductCard
+                    key={item.id}
+                    product={item}
+                    labels={productStatusLabels(texts)}
+                    extra={<ProductViewBadge id={item.id} />}
+                  />
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                title="لم تُنشر منتجات بعد"
+                text="تابع هذه الصفحة للتعرف على منتجات الأسرة المنتجة عند نشرها."
+              />
+            )}
+          </section>
+          <aside className="info-panel">
+            <h2>تواصل مع الأسرة المنتجة</h2>
+            <p>اتفق مباشرة على السعر والكمية ووقت التجهيز والاستلام.</p>
+            <RatingBox
+              kind="family"
+              target={p.id}
+              title={texts["rating.family"] || "تقييم الأسرة المنتجة"}
+              prompt={texts["rating.prompt"] || "رأيك مهم؟"}
+            />
+            <div className="contact-actions">
+              <ChatButton producerSlug={p.slug} />
+              {phone && (
+                <a href={`tel:+${phone}`} className="button">
+                  اتصل بالأسرة المنتجة
+                </a>
+              )}
+              {whatsapp && (
+                <a
+                  href={`https://wa.me/${whatsapp}`}
+                  className="button secondary"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  تواصل عبر واتساب ↗
+                </a>
+              )}
+            </div>
+            <hr />
+            <h3>التوصيل والاستلام</h3>
+            <p>
+              {p.delivery
+                ? "التوصيل متاح بالتنسيق مع الأسرة المنتجة."
+                : "التوصيل غير متاح."}
+            </p>
+            <p>{p.pickup ? "الاستلام متاح بالتنسيق المباشر." : ""}</p>
+            {p.delivery && Boolean(coverage.length) && (
+              <ul>
+                {coverage.map((area) => (
+                  <li key={area.nodeId}>
+                    {area.label} —{" "}
+                    {area.fee === null
+                      ? "رسوم التوصيل بالاتفاق"
+                      : area.fee === 0
+                        ? "توصيل مجاني"
+                        : priceLabel(area.fee)}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {p.delivery && <LocationCheck producerSlug={p.slug} />}
+            <p className="muted">
+              يُشارك موقع الاستلام الدقيق معك بالتنسيق الخاص؛ لا يُعرض عنوان
+              المنزل علنًا.
+            </p>
+            {p.businessHours && (
+              <>
+                <h3>أوقات العمل</h3>
+                <p className="pre-line">{p.businessHours}</p>
+              </>
+            )}
+            {p.socialLinks.length > 0 && (
+              <>
+                <h3>تابع الأسرة المنتجة</h3>
+                <div className="social-links">
+                  {p.socialLinks.map((s, i) => {
+                    const url = safeUrl(s.url);
+                    return url ? (
+                      <a
+                        key={i}
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {s.platform} ↗
+                      </a>
+                    ) : null;
+                  })}
+                </div>
+              </>
+            )}
+            {p.website && safeUrl(p.website) && (
+              <p>
+                <a
+                  className="text-link"
+                  href={safeUrl(p.website)!}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  الموقع الإلكتروني للأسرة المنتجة ↗
+                </a>
+              </p>
+            )}
+            <small>المراجعة الإدارية ليست ترخيصًا أو اعتمادًا حكوميًا.</small>
+            <ReportButton producerId={p.id} />
+          </aside>
+        </div>
       </div>
-    </div>
+    </FamilyViews>
   );
 }

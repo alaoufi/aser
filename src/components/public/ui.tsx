@@ -59,10 +59,13 @@ export function productIdentity(p: Product) {
 export function ProductCard({
   product: p,
   labels = availability,
+  extra,
 }: {
   product: Product;
   /** أسماء حالة المنتج من «نصوص الموقع». */
   labels?: Record<string, string>;
+  /** إضافة أسفل البطاقة (عدد المشاهدات في صفحة الأسرة). */
+  extra?: React.ReactNode;
 }) {
   const id = productIdentity(p);
   return (
@@ -92,6 +95,7 @@ export function ProductCard({
         {p.deliveryScope === "kingdom" && (
           <small className="shipping-badge">شحن لكل المملكة</small>
         )}
+        {extra}
       </div>
     </Link>
   );

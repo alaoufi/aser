@@ -36,6 +36,7 @@ test("the family dashboard sections are 3D tabs, and the current one is marked",
     "العروض",
     "الاشتراكات",
     "مكتبة الصور",
+    "المشاهدات",
     "التغطية",
     "مندوبي الخاص",
   ]);
@@ -136,4 +137,47 @@ test("«معلوماتي» opens into tabs: personal data, password, appearance 
     "aria-selected",
     "true",
   );
+});
+
+test("«المشاهدات» shows the family page views, its products total and each product", async ({
+  page,
+}) => {
+  await family(page);
+  await page.route("**/api/producer/views", (r) =>
+    r.fulfill({
+      json: {
+        slug: "najdi",
+        public: false,
+        pageViews: 1250,
+        productsViews: 340,
+        products: [
+          { id: "p1", name: "كبسة لحم", visible: true, views: 300 },
+          { id: "p2", name: "جريش", visible: false, views: 40 },
+        ],
+      },
+    }),
+  );
+  await page.setViewportSize({ width: 320, height: 700 });
+  await page.goto("/dashboard/views");
+  const tabs = page.getByRole("navigation", { name: "أقسام الأسرة المنتجة" });
+  await expect(tabs.getByRole("link", { name: "المشاهدات" })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+  const cards = page.getByRole("list", { name: "ملخص المشاهدات" });
+  await expect(cards.getByRole("listitem")).toHaveText([
+    "1,250مشاهدات صفحة الأسرة",
+    "340إجمالي مشاهدات المنتجات",
+    "1,590الإجمالي (الصفحة والمنتجات)",
+  ]);
+  const list = page.getByRole("list", { name: "مشاهدات المنتجات" });
+  await expect(list.getByRole("listitem").first()).toContainText("كبسة لحم");
+  await expect(list.getByRole("listitem").first()).toContainText("300 مشاهدة");
+  await expect(list.getByRole("listitem").nth(1)).toContainText("(مخفي)");
+  await expect(page.getByText("مخفية عن الزوار الآن")).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
 });
