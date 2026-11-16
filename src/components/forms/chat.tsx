@@ -15,7 +15,20 @@ type Summary = {
   lastAt: string;
   unread: number;
 };
-type Message = { id: string; body: string; mine: boolean; createdAt: string };
+type Message = {
+  id: string;
+  body: string;
+  mine: boolean;
+  createdAt: string;
+  /** مدة الرسالة الصوتية بالميلي ثانية؛ غيابها يعني رسالة نصية. */
+  voiceMs?: number | null;
+};
+/** الحد الأقصى للرسالة الصوتية: دقيقتان. */
+const VOICE_LIMIT = 120_000;
+const clock = (ms: number) => {
+  const total = Math.max(0, Math.round(ms / 1000));
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
+};
 type Thread = {
   conversation: {
     id: string;
@@ -153,6 +166,8 @@ function Conversation({ id, onBack }: { id: string; onBack: () => void }) {
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [reporting, setReporting] = useState(false);
+  const [confirmBlock, setConfirmBlock] = useState(false);
+  const [recording, setRecording] = useState(false);
   const [notice, setNotice] = useState("");
   const bottom = useRef<HTMLDivElement>(null);
   const menu = useRef<HTMLDetailsElement>(null);
@@ -191,10 +206,11 @@ function Conversation({ id, onBack }: { id: string; onBack: () => void }) {
         r.reported
           ? "وصل بلاغك للإدارة وستراجعه. شكرًا لك."
           : r.blocked
-            ? "حُظرت المحادثة؛ لا يستطيع أي طرف الإرسال فيها."
+            ? "تم الحظر ✓ لا يستطيع أي طرف الإرسال في هذه المحادثة. يمكنك إلغاء الحظر من زر الخيارات ⋮."
             : "أُلغي الحظر.",
       );
       setReporting(false);
+      setConfirmBlock(false);
       if (menu.current) menu.current.open = false;
     } catch (e) {
       setError((e as Error).message);
@@ -349,7 +365,12 @@ function Conversation({ id, onBack }: { id: string; onBack: () => void }) {
               !thread.conversation.blocked && (
                 <button
                   type="button"
-                  onClick={() => moderate({ action: "block" })}
+                  onClick={() => {
+                    // الحظر بعد تأكيد صريح، لا من ضغطة واحدة.
+                    setReporting(false);
+                    setConfirmBlock(true);
+                    if (menu.current) menu.current.open = false;
+                  }}
                 >
                   حظر المحادثة
                 </button>
@@ -358,6 +379,35 @@ function Conversation({ id, onBack }: { id: string; onBack: () => void }) {
           </div>
         </details>
       </div>
+      {confirmBlock && (
+        <div
+          className={c.report}
+          role="alertdialog"
+          aria-labelledby="chat-block-title"
+          aria-describedby="chat-block-text"
+        >
+          <strong id="chat-block-title">
+            هل تريد حظر المحادثة مع {thread.conversation.title}؟
+          </strong>
+          <p id="chat-block-text">
+            بعد الحظر لن يستطيع أي منكما إرسال رسائل في هذه المحادثة، وتبقى
+            الرسائل السابقة محفوظة. يمكنك إلغاء الحظر لاحقًا من زر الخيارات ⋮.
+          </p>
+          <div className={c.reportActions}>
+            <button
+              type="button"
+              className={c.danger}
+              autoFocus
+              onClick={() => moderate({ action: "block" })}
+            >
+              نعم، احظر المحادثة
+            </button>
+            <button type="button" onClick={() => setConfirmBlock(false)}>
+              تراجع
+            </button>
+          </div>
+        </div>
+      )}
       {reporting && (
         <form
           className={c.report}
@@ -410,7 +460,20 @@ function Conversation({ id, onBack }: { id: string; onBack: () => void }) {
             <div key={m.id} style={{ display: "contents" }}>
               {label && <p className={c.day}>{label}</p>}
               <p className={`${c.bubble} ${m.mine ? c.mine : ""}`}>
-                {m.body}
+                {m.voiceMs != null ? (
+                  <span className={c.voice}>
+                    {/* biome-ignore lint/a11y/useMediaCaption: تسجيل صوتي بين طرفي المحادثة لا يوجد له نص مكتوب؛ مدته معروضة بجانبه */}
+                    <audio
+                      controls
+                      preload="none"
+                      src={`/api/conversations/${encodeURIComponent(id)}/voice/${encodeURIComponent(m.id)}`}
+                      aria-label={`رسالة صوتية مدتها ${clock(m.voiceMs)}`}
+                    />
+                    <small>🎤 {clock(m.voiceMs)}</small>
+                  </span>
+                ) : (
+                  m.body
+                )}
                 <span className={c.meta}>
                   <time dateTime={m.createdAt}>{time(m.createdAt)}</time>
                   {m.mine && (
@@ -440,6 +503,7 @@ function Conversation({ id, onBack }: { id: string; onBack: () => void }) {
             اكتب رسالة
           </label>
           <textarea
+            hidden={recording}
             id="chat-message"
             rows={1}
             maxLength={2000}
@@ -458,8 +522,17 @@ function Conversation({ id, onBack }: { id: string; onBack: () => void }) {
               }
             }}
           />
+          {!draft.trim() && (
+            <VoiceRecorder
+              id={id}
+              onRecording={setRecording}
+              onError={setError}
+              onSent={(m) => merge([m])}
+            />
+          )}
           <button
             className={c.send}
+            hidden={!draft.trim()}
             disabled={busy || !draft.trim()}
             aria-label="إرسال"
           >
@@ -476,6 +549,189 @@ function Conversation({ id, onBack }: { id: string; onBack: () => void }) {
           </button>
         </form>
       )}
+    </>
+  );
+}
+
+/**
+ * التسجيل الصوتي: ضغطة على الميكروفون تبدأ التسجيل (حتى دقيقتين)، ثم «إرسال» أو «إلغاء».
+ * يتوقف ويُرسل تلقائيًا عند الحد. الميكروفون يُغلق فور الانتهاء.
+ */
+function VoiceRecorder({
+  id,
+  onRecording,
+  onError,
+  onSent,
+}: {
+  id: string;
+  onRecording: (on: boolean) => void;
+  onError: (message: string) => void;
+  onSent: (message: Message) => void;
+}) {
+  const [state, setState] = useState<"idle" | "recording" | "sending">("idle");
+  const [elapsed, setElapsed] = useState(0);
+  const active = useRef<{
+    recorder: MediaRecorder;
+    stream: MediaStream;
+    cancel: boolean;
+    timer: number;
+  } | null>(null);
+  useEffect(
+    () => () => {
+      // مغادرة المحادثة أثناء التسجيل: يُلغى ويُغلق الميكروفون.
+      const r = active.current;
+      if (!r) return;
+      r.cancel = true;
+      clearInterval(r.timer);
+      if (r.recorder.state !== "inactive") r.recorder.stop();
+      for (const t of r.stream.getTracks()) t.stop();
+    },
+    [],
+  );
+  async function start() {
+    onError("");
+    if (
+      typeof MediaRecorder === "undefined" ||
+      !navigator.mediaDevices?.getUserMedia
+    ) {
+      onError("متصفحك لا يدعم التسجيل الصوتي. حدّثه أو استخدم متصفحًا آخر.");
+      return;
+    }
+    let stream: MediaStream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch {
+      onError(
+        "لم يُسمح باستخدام الميكروفون. اسمح للموقع به من إعدادات المتصفح ثم حاول مجددًا.",
+      );
+      return;
+    }
+    const mimeType = [
+      "audio/webm;codecs=opus",
+      "audio/mp4",
+      "audio/ogg;codecs=opus",
+    ].find((t) => MediaRecorder.isTypeSupported?.(t));
+    const recorder = new MediaRecorder(stream, {
+      ...(mimeType ? { mimeType } : {}),
+      audioBitsPerSecond: 32000,
+    });
+    const chunks: Blob[] = [];
+    const started = Date.now();
+    const r = { recorder, stream, cancel: false, timer: 0 };
+    recorder.ondataavailable = (e) => {
+      if (e.data.size) chunks.push(e.data);
+    };
+    recorder.onstop = async () => {
+      clearInterval(r.timer);
+      for (const t of stream.getTracks()) t.stop();
+      active.current = null;
+      const duration = Math.min(Date.now() - started, VOICE_LIMIT);
+      if (r.cancel) {
+        setState("idle");
+        onRecording(false);
+        return;
+      }
+      if (duration < 1000) {
+        setState("idle");
+        onRecording(false);
+        onError("التسجيل قصير جدًا. سجّل ثانية على الأقل.");
+        return;
+      }
+      setState("sending");
+      const form = new FormData();
+      form.append(
+        "file",
+        new Blob(chunks, {
+          type: recorder.mimeType || mimeType || "audio/webm",
+        }),
+        "voice",
+      );
+      form.append("duration", String(duration));
+      try {
+        onSent(
+          await api<Message>(
+            `/api/conversations/${encodeURIComponent(id)}/voice`,
+            { method: "POST", body: form },
+          ),
+        );
+      } catch (e) {
+        onError((e as Error).message);
+      } finally {
+        setState("idle");
+        onRecording(false);
+      }
+    };
+    recorder.start(250);
+    r.timer = window.setInterval(() => {
+      const d = Date.now() - started;
+      setElapsed(d);
+      if (d >= VOICE_LIMIT && recorder.state === "recording") recorder.stop();
+    }, 200);
+    active.current = r;
+    setElapsed(0);
+    setState("recording");
+    onRecording(true);
+  }
+  const finish = (cancel: boolean) => {
+    const r = active.current;
+    if (!r) return;
+    r.cancel = cancel;
+    if (r.recorder.state !== "inactive") r.recorder.stop();
+  };
+  if (state === "idle")
+    return (
+      <button
+        type="button"
+        className={c.send}
+        onClick={start}
+        aria-label="تسجيل رسالة صوتية"
+        title="تسجيل رسالة صوتية (حتى دقيقتين)"
+      >
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          aria-hidden="true"
+        >
+          <path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V22h2v-3.08A7 7 0 0 0 19 12z" />
+        </svg>
+      </button>
+    );
+  return (
+    <>
+      <p className={c.recording} role="status">
+        <span className={c.recDot} aria-hidden="true" />
+        {state === "sending"
+          ? "جارٍ إرسال التسجيل…"
+          : `جارٍ التسجيل ${clock(elapsed)} من ${clock(VOICE_LIMIT)}`}
+      </p>
+      <button
+        type="button"
+        className={c.recCancel}
+        onClick={() => finish(true)}
+        disabled={state === "sending"}
+      >
+        إلغاء
+      </button>
+      <button
+        type="button"
+        className={c.send}
+        onClick={() => finish(false)}
+        disabled={state === "sending"}
+        aria-label="إرسال التسجيل"
+      >
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          aria-hidden="true"
+          style={{ transform: "scaleX(-1)" }}
+        >
+          <path d="M2 21l21-9L2 3v7l15 2-15 2z" />
+        </svg>
+      </button>
     </>
   );
 }

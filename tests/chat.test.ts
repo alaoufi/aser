@@ -10,6 +10,8 @@ import {
   unreadConversations,
   moderateConversation,
   markDelivered,
+  sendVoice,
+  voiceOf,
 } from "../src/server/chat";
 
 test(
@@ -251,6 +253,60 @@ test(
       ).rows[0];
       assert.equal(report.reporter_id, family.id);
       assert.match(report.reason, /بلاغ محادثة/);
+
+      // الرسائل الصوتية: صيغة صوت حقيقية فقط، حتى دقيقتين، ولطرفي المحادثة فقط.
+      const webm = new Uint8Array(400);
+      webm.set([0x1a, 0x45, 0xdf, 0xa3]);
+      webm.fill(7, 4);
+      const voice = await sendVoice(customer, id, webm, 3200);
+      assert.equal(voice.voiceMs, 3200);
+      assert.equal(voice.body, "🎤 رسالة صوتية (0:03)");
+      const heard = (await conversationMessages(family, id)).messages.find(
+        (m) => m.id === voice.id,
+      );
+      assert.equal(heard?.voiceMs, 3200);
+      assert.equal(heard?.mine, false);
+      assert.equal(
+        (await conversationMessages(family, id)).messages.find(
+          (m) => m.body === "تم",
+        )?.voiceMs,
+        null,
+      );
+      const audio = await voiceOf(family, id, voice.id);
+      assert.equal(audio.mime, "audio/webm");
+      assert.deepEqual(new Uint8Array(audio.data), webm);
+      assert.equal((await voiceOf(customer, id, voice.id)).mime, "audio/webm");
+      await assert.rejects(voiceOf(outsider, id, voice.id), { status: 404 });
+      await assert.rejects(voiceOf(family, id, randomUUID()), { status: 404 });
+      const mp4 = new Uint8Array(400);
+      mp4.set([0, 0, 0, 0x20, 0x66, 0x74, 0x79, 0x70]);
+      assert.equal(
+        (
+          await voiceOf(
+            family,
+            id,
+            (await sendVoice(family, id, mp4, 61000)).id,
+          )
+        ).mime,
+        "audio/mp4",
+      );
+      await assert.rejects(
+        sendVoice(customer, id, new Uint8Array(400).fill(65), 3000),
+        { status: 400 },
+      );
+      await assert.rejects(sendVoice(customer, id, webm, 121_000));
+      await assert.rejects(sendVoice(customer, id, webm, 100));
+      await assert.rejects(
+        sendVoice(customer, id, webm.subarray(0, 50), 3000),
+        {
+          status: 400,
+        },
+      );
+      await assert.rejects(sendVoice(outsider, id, webm, 3000), {
+        status: 404,
+      });
+      await moderateConversation(customer, id, { action: "block" });
+      await assert.rejects(sendVoice(family, id, webm, 3000), { status: 403 });
     } finally {
       await pool.query(
         "DELETE FROM jdatna.reports WHERE producer_id=ANY($1::uuid[])",
