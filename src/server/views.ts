@@ -32,6 +32,7 @@ export async function recordView(
   input: unknown,
 ) {
   const { kind, id } = viewSchema.parse(input);
+  if (!databaseConfigured()) return { visible: false as const };
   // الصفحة يجب أن تكون عامة: منتج ظاهر لأسرة معتمدة، أو أسرة معتمدة.
   const target = (
     await db().query(
@@ -141,6 +142,7 @@ const ONLINE_MS = 5 * 60_000;
  * (آخر 5 دقائق). يُسجَّل الزائر دائمًا، ويظهر العدد للجميع إن فعّلته الإدارة وإلا للإدارة فقط.
  */
 export async function recordVisit(request: Request, user: SessionUser | null) {
+  if (!databaseConfigured()) return { visible: false as const };
   const agent = request.headers.get("user-agent") ?? "";
   const visitor = mask(
     user ? `user:${user.id}` : `anon:${clientIp(request) ?? ""}:${agent}`,

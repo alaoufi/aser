@@ -13,11 +13,13 @@ type Stats =
 const post = (url: string, body?: unknown) =>
   fetch(url, {
     method: "POST",
-    // يُكمل الطلب حتى لو أُغلقت الصفحة أثناءه، فلا ينقطع في منتصفه.
-    keepalive: true,
     headers: { "Content-Type": "application/json" },
     body: body ? JSON.stringify(body) : undefined,
-  }).then((r) => (r.ok ? r.json() : null));
+    // الجسم يُقرأ دائمًا، حتى مع رد خطأ، وإلا بقي الطلب مفتوحًا في المتصفح.
+  }).then(async (r) => {
+    const data = await r.json().catch(() => null);
+    return r.ok ? data : null;
+  });
 const num = (n: number) => n.toLocaleString("en-US");
 
 /**
