@@ -56,18 +56,25 @@ async function ensure() {
   await loading;
 }
 
-/** رمز الدولة (ISO مثل NL) لكل عنوان، أو null إن لم يُعرف. */
+/** العناوين الخاصة والداخلية لا دولة لها. */
+const PRIVATE =
+  /^(10\.|127\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.|::1$|f[cd]|fe80)/i;
+
+/** رمز الدولة (ISO مثل NL) لكل عنوان، أو null إن لم يُعرف (أو كان خاصًا). */
 export async function countriesOf(ips: string[]) {
   await ensure();
   const out = new Map<string, string | null>();
-  for (const ip of ips) {
+  for (const raw of ips) {
+    const ip = raw.replace(/^::ffff:/i, "");
     let code: string | null = null;
     try {
-      code = reader?.get(ip)?.country?.iso_code ?? null;
+      code = PRIVATE.test(ip)
+        ? null
+        : (reader?.get(ip)?.country?.iso_code ?? null);
     } catch {
       code = null;
     }
-    out.set(ip, code);
+    out.set(raw, code);
   }
   return out;
 }

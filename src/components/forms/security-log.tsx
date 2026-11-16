@@ -10,7 +10,9 @@ type Kind =
   | "otp.failed"
   | "rate_limited"
   | "access.denied"
-  | "origin.rejected";
+  | "origin.rejected"
+  | "login.locked"
+  | "login.while_locked";
 type Report = {
   range: { from: string; to: string; days: number };
   cards: {
@@ -22,6 +24,7 @@ type Report = {
     otpFailed: number;
     rateLimited: number;
     denied: number;
+    locked: number;
     adminLogins: number;
   };
   daily: { day: string; failed: number; blocked: number }[];
@@ -43,6 +46,8 @@ const kindLabels: Record<Kind, string> = {
   rate_limited: "تجاوز حد المحاولات",
   "access.denied": "محاولة دخول قسم إدارة",
   "origin.rejected": "طلب من موقع آخر",
+  "login.locked": "قفل حساب بعد 5 محاولات خاطئة",
+  "login.while_locked": "دخول إلى حساب مقفل",
   "login.admin": "دخول حساب إدارة",
 };
 const statusLabels: Record<Status, string> = {
@@ -132,6 +137,7 @@ export function SecurityLog() {
     ["رموز تحقق خاطئة", c?.otpFailed, "warn"],
     ["تجاوز حد المحاولات", c?.rateLimited, "alert"],
     ["رفض دخول الإدارة أو مصدر غريب", c?.denied, "alert"],
+    ["حسابات قُفلت", c?.locked, "alert"],
     ["دخول الإدارة الناجح", c?.adminLogins, "ok"],
   ];
   return (
@@ -296,7 +302,7 @@ export function SecurityLog() {
                         <td>
                           {x.code
                             ? `${flag(x.code)} ${countryName(x.code)}`
-                            : "—"}
+                            : "غير معروفة"}
                         </td>
                         <td className={r.count}>{num(x.count)}</td>
                       </tr>
@@ -342,7 +348,9 @@ export function SecurityLog() {
                       {e.ip ?? "—"}
                     </td>
                     <td>
-                      {e.code ? `${flag(e.code)} ${countryName(e.code)}` : "—"}
+                      {e.code
+                        ? `${flag(e.code)} ${countryName(e.code)}`
+                        : "غير معروفة"}
                     </td>
                     <td className={r.count}>{e.attempts}</td>
                     <td>{e.detail ?? ""}</td>

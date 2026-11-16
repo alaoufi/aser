@@ -70,30 +70,16 @@ const adminTabs: [
 ];
 /** تجميع الأقسام في شاشة الإدارة (الأسماء للقارئ الآلي فقط). */
 const adminGroups: [group: string, ids: string[]][] = [
+  // الأمان قسم مستقل أول القائمة: التقرير الأمني والمحادثات المحذوفة.
+  ["الأمان", ["security", "deleted-chats"]],
   [
     "الأسر والطلبات",
-    [
-      "approvals",
-      "producers",
-      "orders",
-      "products",
-      "reports",
-      "contracts",
-      "deleted-chats",
-    ],
+    ["approvals", "producers", "orders", "products", "reports", "contracts"],
   ],
   ["الأقسام والمواقع", ["categories", "locations"]],
   [
     "الموقع والأعضاء",
-    [
-      "template",
-      "texts",
-      "app",
-      "review",
-      "members",
-      "suggestions",
-      "security",
-    ],
+    ["template", "texts", "app", "review", "members", "suggestions"],
   ],
 ];
 type Application = {

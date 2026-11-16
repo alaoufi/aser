@@ -8,6 +8,7 @@ import {
   rateLimit,
   sessionToken,
   startAdminChallenge,
+  SESSION_EXPIRY,
 } from "./auth";
 import { HttpError, normalizePhone } from "./security";
 import { toAsciiDigits } from "../lib/digits";
@@ -115,26 +116,52 @@ export async function passwordLogin(input: unknown) {
   // سقف يومي لكل حساب: كلمات المرور القصيرة (أربع خانات) لا تُخمَّن بالمحاولات المتواصلة.
   // صاحب الحساب يعود في اليوم التالي أو يستعيد كلمة المرور برمز الجوال.
   await rateLimit("password-login-day:" + hash(identifier), 30, 86400);
-  return transaction(async (client) => {
+  // المحاولة الخاطئة تُحفظ (لا تتراجع مع الخطأ)، ثم يُرمى الخطأ بعد إنهاء المعاملة.
+  const outcome = await transaction(async (client) => {
     const row = validIdentifier
       ? (
           await client.query(
-            `SELECT id,name,phone,role,username,permissions,password_hash,suspended_at FROM jdatna.users WHERE ${phone ? "phone" : "username"}=$1 AND phone_verified_at IS NOT NULL FOR UPDATE`,
+            `SELECT id,name,phone,role,username,permissions,password_hash,suspended_at,failed_logins,login_locked_at FROM jdatna.users WHERE ${phone ? "phone" : "username"}=$1 AND phone_verified_at IS NOT NULL FOR UPDATE`,
             [identifier],
           )
         ).rows[0]
       : null;
     const matches = await verifyPassword(value.password, row?.password_hash);
-    if (!row || !matches)
-      throw new HttpError(401, "اسم الدخول أو كلمة المرور غير صحيحة");
+    // حساب مقفل: لا دخول حتى بكلمة المرور الصحيحة؛ يُفتح باستعادة كلمة المرور.
+    if (row?.login_locked_at)
+      return { fail: "locked" as const, userId: row.id as string, just: false };
+    if (!row || !matches) {
+      if (!row) return { fail: "wrong" as const, userId: null, just: false };
+      const r = (
+        await client.query(
+          `UPDATE jdatna.users SET failed_logins=failed_logins+1,
+             login_locked_at=CASE WHEN failed_logins+1>=$2 THEN now() ELSE NULL END
+           WHERE id=$1 RETURNING login_locked_at`,
+          [row.id, LOGIN_LOCK_AFTER],
+        )
+      ).rows[0];
+      return r.login_locked_at
+        ? { fail: "locked" as const, userId: row.id as string, just: true }
+        : { fail: "wrong" as const, userId: row.id as string, just: false };
+    }
     const {
       password_hash: _,
       suspended_at: suspended,
+      failed_logins: __,
+      login_locked_at: ___,
       ...user
     } = row as SessionUser & {
       password_hash: string;
       suspended_at: string | null;
+      failed_logins: number;
+      login_locked_at: string | null;
     };
+    // دخول صحيح: يُصفَّر عدّاد المحاولات الخاطئة.
+    if (row.failed_logins)
+      await client.query(
+        "UPDATE jdatna.users SET failed_logins=0 WHERE id=$1",
+        [user.id],
+      );
     if (suspended)
       throw new HttpError(403, "هذا الحساب موقوف؛ تواصل مع إدارة المنصة");
     // دخول صحيح: يُصفَّر العداد اليومي، فلا يُقفل صاحب الحساب بدخوله المعتاد.
@@ -157,12 +184,31 @@ export async function passwordLogin(input: unknown) {
     }
     const token = randomBytes(32).toString("hex");
     await client.query(
-      "INSERT INTO jdatna.sessions(token_hash,user_id,expires_at) VALUES($1,$2,now()+interval '365 days')",
+      `INSERT INTO jdatna.sessions(token_hash,user_id,expires_at) VALUES($1,$2,${SESSION_EXPIRY})`,
       [hash(token), user.id],
     );
     return { user, token, next: roleDestination(user.role) };
   });
+  if ("fail" in outcome) {
+    // userId وjustLocked للسجل الأمني في الخادم فقط، خارج details فلا تصل للمتصفح.
+    if (outcome.fail === "locked")
+      throw Object.assign(
+        new HttpError(
+          423,
+          "قُفل الحساب بعد 5 محاولات دخول خاطئة. استعد كلمة المرور من «نسيت كلمة المرور» برمز يصل جوالك.",
+          { locked: true },
+        ),
+        { justLocked: outcome.just, userId: outcome.userId },
+      );
+    throw Object.assign(
+      new HttpError(401, "اسم الدخول أو كلمة المرور غير صحيحة"),
+      { userId: outcome.userId },
+    );
+  }
+  return outcome;
 }
+/** عدد المحاولات الخاطئة المتتالية الذي يُقفل بعده الحساب (طلب المالك). */
+export const LOGIN_LOCK_AFTER = 5;
 export async function setCredentials(request: Request, input: unknown) {
   const token = sessionToken(request);
   if (!token) throw new HttpError(401, "يرجى تسجيل الدخول");
@@ -199,7 +245,8 @@ export async function setCredentials(request: Request, input: unknown) {
       const passwordHash = await hashPassword(value.password);
       const user = (
         await client.query(
-          "UPDATE jdatna.users SET password_hash=$2,username=CASE WHEN $4 THEN $3 ELSE username END WHERE id=$1 RETURNING id,name,phone,role,username",
+          // استعادة كلمة المرور برمز الجوال تفتح الحساب المقفل وتصفّر المحاولات.
+          "UPDATE jdatna.users SET password_hash=$2,failed_logins=0,login_locked_at=NULL,username=CASE WHEN $4 THEN $3 ELSE username END WHERE id=$1 RETURNING id,name,phone,role,username",
           [
             proof.user_id,
             passwordHash,
@@ -213,7 +260,7 @@ export async function setCredentials(request: Request, input: unknown) {
       ]);
       const freshToken = randomBytes(32).toString("hex");
       await client.query(
-        "INSERT INTO jdatna.sessions(token_hash,user_id,expires_at) VALUES($1,$2,now()+interval '365 days')",
+        `INSERT INTO jdatna.sessions(token_hash,user_id,expires_at) VALUES($1,$2,${SESSION_EXPIRY})`,
         [hash(freshToken), user.id],
       );
       return { user, token: freshToken, next: roleDestination(user.role) };
@@ -266,7 +313,7 @@ export async function updateMyAccount(
       )
         throw new HttpError(400, "كلمة المرور الحالية غير صحيحة");
       await client.query(
-        "UPDATE jdatna.users SET password_hash=$2 WHERE id=$1",
+        "UPDATE jdatna.users SET password_hash=$2,failed_logins=0,login_locked_at=NULL WHERE id=$1",
         [user.id, await hashPassword(value.newPassword)],
       );
       const token = sessionToken(request);

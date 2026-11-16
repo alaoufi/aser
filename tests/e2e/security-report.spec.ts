@@ -36,6 +36,7 @@ test("the security report shows period cards, daily chart, top countries and IPs
           otpFailed: 30,
           rateLimited: 4,
           denied: 2,
+          locked: 1,
           adminLogins: 1,
         },
         daily: Array.from({ length: days }, (_, i) => ({
@@ -74,7 +75,7 @@ test("the security report shows period cards, daily chart, top countries and IPs
   const cards = report.getByRole("list", { name: "ملخص الفترة" });
   await expect(cards).toContainText("12,474");
   await expect(cards).toContainText("إجمالي محاولات الاختراق");
-  await expect(cards.getByRole("listitem")).toHaveCount(9);
+  await expect(cards.getByRole("listitem")).toHaveCount(10);
   await expect(
     report.getByRole("figure", { name: "المحاولات يوميًا" }),
   ).toBeVisible();

@@ -11,7 +11,9 @@ export type SecurityEventKind =
   | "otp.failed"
   | "rate_limited"
   | "access.denied"
-  | "origin.rejected";
+  | "origin.rejected"
+  | "login.locked"
+  | "login.while_locked";
 
 /** تمويه ثابت (HMAC) لا يُعكس: يجمّع محاولات المصدر الواحد دون حفظ العنوان أو الجوال نصًّا. */
 export function mask(value: string) {
@@ -133,11 +135,19 @@ export const eventStatus: Record<
   rate_limited: "blocked",
   "access.denied": "blocked",
   "origin.rejected": "blocked",
+  "login.locked": "blocked",
+  "login.while_locked": "blocked",
   "login.admin": "success",
 };
 const statusKinds = {
   failed: ["login.failed", "otp.failed"],
-  blocked: ["rate_limited", "access.denied", "origin.rejected"],
+  blocked: [
+    "rate_limited",
+    "access.denied",
+    "origin.rejected",
+    "login.locked",
+    "login.while_locked",
+  ],
   success: ["login.admin"],
 } as const;
 
@@ -172,7 +182,7 @@ export async function securityReport(user: SessionUser, input: unknown) {
     WHERE (e.created_at AT TIME ZONE 'Asia/Riyadh')::date BETWEEN $1::date AND $2::date
       AND e.kind = ANY($3::text[])`;
   const args = [from, to, kinds];
-  const attack = `e.kind IN ('login.failed','otp.failed','rate_limited','access.denied','origin.rejected')`;
+  const attack = `e.kind IN ('login.failed','otp.failed','rate_limited','access.denied','origin.rejected','login.locked','login.while_locked')`;
   const [counts, distinct, daily, ips, events] = await Promise.all([
     db().query(
       `SELECT e.kind,count(*)::int AS n ${base} GROUP BY e.kind`,
@@ -185,7 +195,7 @@ export async function securityReport(user: SessionUser, input: unknown) {
     db().query(
       `SELECT to_char((e.created_at AT TIME ZONE 'Asia/Riyadh')::date,'YYYY-MM-DD') AS day,
          count(*) FILTER (WHERE e.kind IN ('login.failed','otp.failed'))::int AS failed,
-         count(*) FILTER (WHERE e.kind IN ('rate_limited','access.denied','origin.rejected'))::int AS blocked
+         count(*) FILTER (WHERE e.kind IN ('rate_limited','access.denied','origin.rejected','login.locked','login.while_locked'))::int AS blocked
        ${base} GROUP BY 1 ORDER BY 1`,
       args,
     ),
@@ -235,7 +245,8 @@ export async function securityReport(user: SessionUser, input: unknown) {
     n("otp.failed") +
     n("rate_limited") +
     n("access.denied") +
-    n("origin.rejected");
+    n("origin.rejected") +
+    n("login.while_locked");
   const dayMap = new Map(
     (daily.rows as { day: string; failed: number; blocked: number }[]).map(
       (d) => [d.day, d],
@@ -253,6 +264,7 @@ export async function securityReport(user: SessionUser, input: unknown) {
       otpFailed: n("otp.failed"),
       rateLimited: n("rate_limited"),
       denied: n("access.denied") + n("origin.rejected"),
+      locked: n("login.locked"),
       adminLogins: n("login.admin"),
     },
     daily: Array.from({ length: days }, (_, i) => {

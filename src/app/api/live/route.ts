@@ -3,10 +3,30 @@ import { subscribeLive } from "@/server/live";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
+/** حد الاتصالات اللحظية المفتوحة معًا لكل حساب (نوافذ وأجهزة): يمنع استنزاف الخادم. */
+const MAX_STREAMS = 8;
+const open: Map<string, number> = ((
+  globalThis as unknown as { __jdatnaLive?: Map<string, number> }
+).__jdatnaLive ??= new Map());
+
 /** بث لحظي (Server-Sent Events) لأحداث محادثات المستخدم: رسالة جديدة أو قراءة. */
 export async function GET(request: Request) {
   const user = await sessionUser(request);
   if (!user) return new Response("", { status: 401 });
+  if ((open.get(user.id) ?? 0) >= MAX_STREAMS)
+    return new Response("", {
+      status: 429,
+      headers: { "Retry-After": "30", "Cache-Control": "no-store" },
+    });
+  open.set(user.id, (open.get(user.id) ?? 0) + 1);
+  let released = false;
+  const release = () => {
+    if (released) return;
+    released = true;
+    const n = (open.get(user.id) ?? 1) - 1;
+    if (n > 0) open.set(user.id, n);
+    else open.delete(user.id);
+  };
   const encoder = new TextEncoder();
   let cleanup = () => {};
   const stream = new ReadableStream({
@@ -33,6 +53,7 @@ export async function GET(request: Request) {
           .catch(() => {});
       }, 25_000);
       cleanup = () => {
+        release();
         clearInterval(beat);
         unsubscribe();
         try {
