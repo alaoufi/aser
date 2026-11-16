@@ -3,7 +3,7 @@ import { z } from "zod";
 import type { SessionUser } from "../lib/types";
 import { db, transaction } from "./db";
 import { HttpError } from "./security";
-import { compareRegions } from "../lib/regions";
+import { cityOrder, compareRegions } from "../lib/regions";
 import { can } from "../lib/permissions";
 export type CoverageKind =
   "region" | "governorate" | "city" | "center" | "neighborhood";
@@ -141,11 +141,29 @@ export async function getCoverageTree(): Promise<CoverageNode[]> {
       .filter((node) => node.kind === "region")
       .map((node) => [node.regionId, node.name]),
   );
-  return rows.sort((a, b) =>
-    compareRegions(
-      { id: a.regionId, name: regionNames.get(a.regionId) ?? a.regionId },
-      { id: b.regionId, name: regionNames.get(b.regionId) ?? b.regionId },
-    ),
+  // داخل المنطقة: كل مستوى من المسار بترتيبه المتبع (مقر الإمارة ثم المحافظات الكبرى)، والأب قبل أبنائه.
+  const rankIn = (regionId: string, name: string) => {
+    const i = (cityOrder[regionId] ?? []).indexOf(name);
+    return i < 0 ? 999 : i;
+  };
+  const byPath = (a: (typeof rows)[number], b: (typeof rows)[number]) => {
+    const pa = String(a.label).split(" / "),
+      pb = String(b.label).split(" / ");
+    for (let i = 0; i < Math.min(pa.length, pb.length); i++) {
+      if (pa[i] === pb[i]) continue;
+      return (
+        rankIn(a.regionId, pa[i]) - rankIn(b.regionId, pb[i]) ||
+        pa[i].localeCompare(pb[i], "ar")
+      );
+    }
+    return pa.length - pb.length;
+  };
+  return rows.sort(
+    (a, b) =>
+      compareRegions(
+        { id: a.regionId, name: regionNames.get(a.regionId) ?? a.regionId },
+        { id: b.regionId, name: regionNames.get(b.regionId) ?? b.regionId },
+      ) || byPath(a, b),
   );
 }
 export async function ownCoverage(user: SessionUser) {
