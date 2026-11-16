@@ -92,6 +92,21 @@ test(
         /أو كليهما/,
       );
       const pickupAt = "https://maps.google.com/?q=26.33,43.97";
+      // التوصيل فقط: موقع الأسرة يُحفظ إن كُتب (لاستلام المندوب)، والقصير مرفوض.
+      await assert.rejects(
+        saveFulfillment(owner, {
+          pickup: false,
+          delivery: true,
+          pickupLocation: "حي",
+        }),
+        /موقع الأسرة كاملًا/,
+      );
+      await saveFulfillment(owner, {
+        pickup: false,
+        delivery: true,
+        pickupLocation: pickupAt,
+      });
+      assert.equal((await ownFulfillment(owner)).pickupLocation, pickupAt);
       await saveFulfillment(owner, {
         pickup: true,
         delivery: true,

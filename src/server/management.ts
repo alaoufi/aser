@@ -457,6 +457,9 @@ const fulfillmentSchema = z
   })
   .refine((v) => !v.pickup || (v.pickupLocation ?? "").length >= 5, {
     message: "حدد موقع التسليم المباشر: العنوان أو رابط الخرائط",
+  })
+  .refine((v) => !v.pickupLocation || v.pickupLocation.length >= 5, {
+    message: "اكتب موقع الأسرة كاملًا: العنوان أو رابط الخرائط",
   });
 /** طرق التسليم في لوحة الأسرة. تعديلها لا يعيد الملف للمراجعة. */
 export async function ownFulfillment(user: SessionUser) {
@@ -479,7 +482,8 @@ export async function saveFulfillment(user: SessionUser, input: unknown) {
     await db().query(
       `UPDATE jdatna.producer_profiles SET pickup=$2,delivery=$3,pickup_location=$4,updated_at=now() WHERE user_id=$1
        RETURNING pickup,delivery,pickup_location AS "pickupLocation"`,
-      [user.id, v.pickup, v.delivery, v.pickup ? v.pickupLocation : null],
+      // موقع الأسرة يُحفظ دائمًا إن كُتب: للتسليم المباشر، ولاستلام المندوب في التوصيل.
+      [user.id, v.pickup, v.delivery, v.pickupLocation || null],
     )
   ).rows[0];
   if (!row) throw new HttpError(404, "سجّل ملف الأسرة المنتجة أولًا");

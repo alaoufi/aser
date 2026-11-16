@@ -44,7 +44,7 @@ export function FulfillmentCard() {
         body: JSON.stringify({
           pickup,
           delivery,
-          pickupLocation: pickup ? String(f.get("pickupLocation") ?? "") : null,
+          pickupLocation: String(f.get("pickupLocation") ?? "").trim() || null,
         }),
       });
       setState(saved);
@@ -65,7 +65,8 @@ export function FulfillmentCard() {
       <h2>طرق التسليم</h2>
       <p className={s.muted}>
         اختر طريقة أو أكثر، وتظهر للعميل عند الطلب. في التسليم المباشر يرى
-        العميل موقعك بعد قبولك طلبه، وفي التوصيل يرسل لك العميل موقعه.
+        العميل موقعك بعد قبولك طلبه، وفي التوصيل يرسل لك العميل موقعه. احفظ موقع
+        أسرتك ليصل للمندوب تلقائيًا عند استلام الطلبات.
       </p>
       <Message error={error} success={success} />
       {state && (
@@ -91,15 +92,17 @@ export function FulfillmentCard() {
               </label>
             </div>
           </fieldset>
-          {pickup && (
-            <LocationInput
-              name="pickupLocation"
-              label="موقع التسليم المباشر"
-              hint="العنوان أو رابط الخرائط. يظهر للعميل بعد قبولك طلبه فقط."
-              defaultValue={state.pickupLocation}
-              required
-            />
-          )}
+          <LocationInput
+            name="pickupLocation"
+            label="موقع الأسرة"
+            hint={
+              pickup
+                ? "العنوان أو رابط الخرائط. يظهر للعميل بعد قبولك طلبه، ويصل للمندوب ليستلم طلبات التوصيل."
+                : "العنوان أو رابط الخرائط. يصل للمندوب ليستلم طلبات التوصيل منك، ولا يظهر للعملاء."
+            }
+            defaultValue={state.pickupLocation}
+            required={pickup}
+          />
           <button className={s.button} disabled={busy}>
             {busy ? "جارٍ الحفظ…" : "حفظ طرق التسليم"}
           </button>

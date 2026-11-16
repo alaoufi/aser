@@ -57,7 +57,7 @@ test("family chooses pickup and delivery from its dashboard and must give a pick
   const delivery = card.getByRole("checkbox", { name: /توصيل/ });
   await expect(pickup).toBeChecked();
   await expect(delivery).not.toBeChecked();
-  const where = card.getByLabel("موقع التسليم المباشر", { exact: true });
+  const where = card.getByLabel("موقع الأسرة", { exact: true });
   await expect(where).toHaveAttribute("required", "");
   await where.fill("https://maps.google.com/?q=26.33,43.97");
   await delivery.check();
@@ -68,17 +68,22 @@ test("family chooses pickup and delivery from its dashboard and must give a pick
     delivery: true,
     pickupLocation: "https://maps.google.com/?q=26.33,43.97",
   });
-  // التوصيل فقط: لا حاجة لموقع التسليم.
+  // التوصيل فقط: الموقع اختياري، ويبقى محفوظًا ليصل للمندوب.
   await pickup.uncheck();
-  await expect(where).toHaveCount(0);
+  await expect(where).not.toHaveAttribute("required", "");
   await card.getByRole("button", { name: "حفظ طرق التسليم" }).click();
   await expect
     .poll(() => saved)
     .toEqual({
       pickup: false,
       delivery: true,
-      pickupLocation: null,
+      pickupLocation: "https://maps.google.com/?q=26.33,43.97",
     });
+  await where.fill("");
+  await card.getByRole("button", { name: "حفظ طرق التسليم" }).click();
+  await expect
+    .poll(() => saved)
+    .toEqual({ pickup: false, delivery: true, pickupLocation: null });
   // ولا يُحفظ دون أي طريقة.
   await delivery.uncheck();
   await card.getByRole("button", { name: "حفظ طرق التسليم" }).click();
