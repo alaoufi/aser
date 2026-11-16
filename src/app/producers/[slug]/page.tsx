@@ -9,6 +9,7 @@ import {
   ProductViewBadge,
 } from "@/components/public/visit-stats";
 import { ChatButton } from "@/components/forms/chat";
+import { LocationLink } from "@/components/forms/location-share";
 import { LocationCheck } from "@/components/maps/location-check";
 import { RatingBox } from "@/components/forms/rating-box";
 import { getSiteTexts } from "@/server/settings";
@@ -259,10 +260,14 @@ export default async function ProducerDetail({
               </ul>
             )}
             {p.delivery && <LocationCheck producerSlug={p.slug} />}
-            <p className="muted">
-              يُشارك موقع الاستلام الدقيق معك بالتنسيق الخاص؛ لا يُعرض عنوان
-              المنزل علنًا.
-            </p>
+            {p.publicLocation ? (
+              <LocationLink label="موقع الأسرة" location={p.publicLocation} />
+            ) : (
+              <p className="muted">
+                يُشارك موقع الاستلام الدقيق معك بالتنسيق الخاص؛ لا يُعرض عنوان
+                المنزل علنًا.
+              </p>
+            )}
             {p.businessHours && (
               <>
                 <h3>أوقات العمل</h3>

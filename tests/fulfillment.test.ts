@@ -116,7 +116,40 @@ test(
         pickup: true,
         delivery: true,
         pickupLocation: pickupAt,
+        locationPublic: false,
       });
+      // معلن أو لا بحسب رغبة الأسرة؛ الإعلان يحتاج موقعًا.
+      const { getProducer } = await import("../src/server/catalog");
+      const slug = (
+        await pool.query(
+          "SELECT slug FROM jdatna.producer_profiles WHERE id=$1",
+          [familyId],
+        )
+      ).rows[0].slug as string;
+      assert.equal((await getProducer(slug))?.publicLocation, null);
+      await assert.rejects(
+        saveFulfillment(owner, {
+          pickup: false,
+          delivery: true,
+          pickupLocation: null,
+          locationPublic: true,
+        }),
+        /ليُعلن/,
+      );
+      await saveFulfillment(owner, {
+        pickup: true,
+        delivery: true,
+        pickupLocation: pickupAt,
+        locationPublic: true,
+      });
+      assert.equal((await getProducer(slug))?.publicLocation, pickupAt);
+      await saveFulfillment(owner, {
+        pickup: true,
+        delivery: true,
+        pickupLocation: pickupAt,
+        locationPublic: false,
+      });
+      assert.equal((await getProducer(slug))?.publicLocation, null);
       // تعديل طرق التسليم لا يعيد الأسرة للمراجعة.
       assert.equal(
         (

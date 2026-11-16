@@ -7,6 +7,7 @@ type State = {
   pickup: boolean;
   delivery: boolean;
   pickupLocation: string | null;
+  locationPublic: boolean;
 };
 
 /** طرق التسليم في لوحة الأسرة: تسليم مباشر، أو توصيل، أو كلاهما. تظهر للعميل عند الطلب. */
@@ -14,6 +15,7 @@ export function FulfillmentCard() {
   const [state, setState] = useState<State | null>(null),
     [pickup, setPickup] = useState(false),
     [delivery, setDelivery] = useState(false),
+    [locationPublic, setLocationPublic] = useState(false),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [success, setSuccess] = useState(""),
@@ -25,6 +27,7 @@ export function FulfillmentCard() {
         setState(v);
         setPickup(v.pickup);
         setDelivery(v.delivery);
+        setLocationPublic(Boolean(v.locationPublic));
       })
       .catch(() => setFailed(true));
   }, []);
@@ -45,6 +48,7 @@ export function FulfillmentCard() {
           pickup,
           delivery,
           pickupLocation: String(f.get("pickupLocation") ?? "").trim() || null,
+          locationPublic,
         }),
       });
       setState(saved);
@@ -103,6 +107,29 @@ export function FulfillmentCard() {
             defaultValue={state.pickupLocation}
             required={pickup}
           />
+          <fieldset>
+            <legend>موقع الأسرة معلن في صفحتها؟</legend>
+            <div className={s.checks}>
+              <label>
+                <input
+                  type="radio"
+                  name="locationPublic"
+                  checked={locationPublic}
+                  onChange={() => setLocationPublic(true)}
+                />
+                نعم، يظهر للجميع في صفحة الأسرة
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  name="locationPublic"
+                  checked={!locationPublic}
+                  onChange={() => setLocationPublic(false)}
+                />
+                لا، يصل للمندوب وصاحب الطلب فقط
+              </label>
+            </div>
+          </fieldset>
           <button className={s.button} disabled={busy}>
             {busy ? "جارٍ الحفظ…" : "حفظ طرق التسليم"}
           </button>

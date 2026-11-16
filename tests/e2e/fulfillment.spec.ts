@@ -48,7 +48,12 @@ test("family chooses pickup and delivery from its dashboard and must give a pick
       return r.fulfill({ json: saved });
     }
     return r.fulfill({
-      json: { pickup: true, delivery: false, pickupLocation: null },
+      json: {
+        pickup: true,
+        delivery: false,
+        pickupLocation: null,
+        locationPublic: false,
+      },
     });
   });
   await page.goto("/dashboard");
@@ -67,7 +72,13 @@ test("family chooses pickup and delivery from its dashboard and must give a pick
     pickup: true,
     delivery: true,
     pickupLocation: "https://maps.google.com/?q=26.33,43.97",
+    locationPublic: false,
   });
+  // الأسرة تختار إعلان موقعها في صفحتها: نعم/لا.
+  await card.getByRole("radio", { name: /^نعم/ }).check();
+  await card.getByRole("button", { name: "حفظ طرق التسليم" }).click();
+  await expect.poll(() => saved?.locationPublic).toBe(true);
+  await card.getByRole("radio", { name: /^لا/ }).check();
   // التوصيل فقط: الموقع اختياري، ويبقى محفوظًا ليصل للمندوب.
   await pickup.uncheck();
   await expect(where).not.toHaveAttribute("required", "");
@@ -78,12 +89,18 @@ test("family chooses pickup and delivery from its dashboard and must give a pick
       pickup: false,
       delivery: true,
       pickupLocation: "https://maps.google.com/?q=26.33,43.97",
+      locationPublic: false,
     });
   await where.fill("");
   await card.getByRole("button", { name: "حفظ طرق التسليم" }).click();
   await expect
     .poll(() => saved)
-    .toEqual({ pickup: false, delivery: true, pickupLocation: null });
+    .toEqual({
+      pickup: false,
+      delivery: true,
+      pickupLocation: null,
+      locationPublic: false,
+    });
   // ولا يُحفظ دون أي طريقة.
   await delivery.uncheck();
   await card.getByRole("button", { name: "حفظ طرق التسليم" }).click();

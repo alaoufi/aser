@@ -38,6 +38,8 @@ export type Producer = {
   phone: string | null;
   whatsapp: string | null;
   delivery: boolean;
+  /** موقع الأسرة إن أعلنته في صفحتها. */
+  publicLocation?: string | null;
   pickup: boolean;
   logoUrl: string | null;
   coverUrl: string | null;
