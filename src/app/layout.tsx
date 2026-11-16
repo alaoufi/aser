@@ -79,9 +79,12 @@ export const metadata: Metadata = {
   // رموز التحقق لـ Google Search Console وBing Webmaster من متغيرات الخادم (لا أسرار فيها).
   verification: {
     google: process.env.GOOGLE_SITE_VERIFICATION || undefined,
-    other: process.env.BING_SITE_VERIFICATION
-      ? { "msvalidate.01": process.env.BING_SITE_VERIFICATION }
-      : undefined,
+    // رمز Bing Webmaster لـ jdatna.com (عام بطبيعته؛ متغير الخادم يغيّره إن لزم).
+    other: {
+      "msvalidate.01":
+        process.env.BING_SITE_VERIFICATION ||
+        "DD56AF86857C1DF8A258AB365A6A4C76",
+    },
   },
   category: "food",
   icons: {
