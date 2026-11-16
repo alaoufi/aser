@@ -2,6 +2,7 @@ import { api, json, jsonBody } from "@/server/http";
 import { requireUser, rateLimit } from "@/server/auth";
 import {
   conversationMessages,
+  deleteConversation,
   moderateConversation,
   sendMessage,
 } from "@/server/chat";
@@ -37,4 +38,10 @@ export const PATCH = api(async (request, context: Context) => {
       await jsonBody(request),
     ),
   );
+}, true);
+/** حذف المحادثة من الطرفين؛ تبقى للإدارة. */
+export const DELETE = api(async (request, context: Context) => {
+  const user = await requireUser(request);
+  await rateLimit("chat-moderate:" + user.id, 30, 3600);
+  return json(await deleteConversation(user, (await context.params).id));
 }, true);

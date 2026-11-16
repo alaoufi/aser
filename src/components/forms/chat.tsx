@@ -22,7 +22,22 @@ type Message = {
   createdAt: string;
   /** مدة الرسالة الصوتية بالميلي ثانية؛ غيابها يعني رسالة نصية. */
   voiceMs?: number | null;
+  /** تظهر فورًا قبل رد الخادم (🕓)، ثم تُستبدل بالرسالة المحفوظة. */
+  pending?: boolean;
 };
+/** آخر ما عُرض من كل محادثة ومن القائمة: يفتح فورًا ثم يتحدّث في الخلفية. */
+const threadCache = new Map<string, Thread>();
+let listCache: Summary[] | null = null;
+/** يجمع تحديثات متقاربة (رسالة وقراءة معًا) في طلب واحد. */
+function debounce(fn: () => void, ms = 250) {
+  let t: ReturnType<typeof setTimeout> | null = null;
+  const run = () => {
+    if (t) clearTimeout(t);
+    t = setTimeout(fn, ms);
+  };
+  run.cancel = () => t && clearTimeout(t);
+  return run;
+}
 /** الحد الأقصى للرسالة الصوتية: دقيقتان. */
 const VOICE_LIMIT = 120_000;
 const clock = (ms: number) => {
@@ -69,8 +84,9 @@ export function Messages() {
   const params = useSearchParams();
   const router = useRouter();
   const openId = params.get("c") ?? "";
-  const [list, setList] = useState<Summary[] | null>(null);
+  const [list, setList] = useState<Summary[] | null>(() => listCache);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   // تحميل القائمة يبدأ فورًا مع فحص الجلسة لا بعده، فلا ينتظر المستخدم طلبين متتاليين.
   const signedOut = session.ready && !session.user;
   useEffect(() => {
@@ -78,21 +94,41 @@ export function Messages() {
     let active = true;
     const load = () =>
       api<{ conversations: Summary[] }>("/api/conversations")
-        .then((d) => active && setList(d.conversations))
+        .then((d) => {
+          if (!active) return;
+          listCache = d.conversations;
+          setList(d.conversations);
+        })
         .catch((e) => {
           if (active && session.ready) setError((e as Error).message);
         });
     load();
+    const later = debounce(load);
     const timer = setInterval(load, 30000);
-    const off = onLive(() => load());
+    const off = onLive(later);
     return () => {
       active = false;
+      later.cancel();
       clearInterval(timer);
       off();
     };
-  }, [signedOut, session.user?.id, openId]);
-  const open = (id: string) =>
+  }, [signedOut, session.user?.id]);
+  const open = (id: string) => {
+    // فتح محادثة يقرؤها: تختفي شارتها فورًا دون انتظار إعادة تحميل القائمة.
+    setList((l) => l && l.map((x) => (x.id === id ? { ...x, unread: 0 } : x)));
+    setNotice("");
     router.push(id ? `/messages?c=${encodeURIComponent(id)}` : "/messages");
+  };
+  const removed = (id: string) => {
+    setList((l) => {
+      const next = l ? l.filter((x) => x.id !== id) : l;
+      listCache = next;
+      return next;
+    });
+    threadCache.delete(id);
+    setNotice("حُذفت المحادثة من عندك وعند الطرف الآخر.");
+    router.push("/messages");
+  };
   return (
     // صفحة المحادثات بلا سطر روابط الحساب ولا فراغ علوي: الرسائل والقائمة في الرأس أصلًا.
     <AccountShell navigation={false} compact>
@@ -104,6 +140,11 @@ export function Messages() {
               <h1>المحادثات</h1>
             </div>
             {error && <p className={c.error}>{error}</p>}
+            {notice && (
+              <p role="status" className={c.safetyNotice}>
+                {notice}
+              </p>
+            )}
             {list === null ? (
               <p role="status" className={c.empty}>
                 جارٍ تحميل المحادثات…
@@ -149,7 +190,12 @@ export function Messages() {
           </aside>
           <section className={c.thread} aria-label="المحادثة">
             {openId ? (
-              <Conversation key={openId} id={openId} onBack={() => open("")} />
+              <Conversation
+                key={openId}
+                id={openId}
+                onBack={() => open("")}
+                onDeleted={() => removed(openId)}
+              />
             ) : (
               <p className={c.empty}>اختر محادثة لعرضها.</p>
             )}
@@ -160,8 +206,22 @@ export function Messages() {
   );
 }
 
-function Conversation({ id, onBack }: { id: string; onBack: () => void }) {
-  const [thread, setThread] = useState<Thread | null>(null);
+function Conversation({
+  id,
+  onBack,
+  onDeleted,
+}: {
+  id: string;
+  onBack: () => void;
+  onDeleted: () => void;
+}) {
+  // من الذاكرة فورًا إن فُتحت سابقًا، ثم تُحدَّث في الخلفية.
+  const [thread, setThread] = useState<Thread | null>(
+    () => threadCache.get(id) ?? null,
+  );
+  // حذفها الطرف الآخر وهي مفتوحة.
+  const [gone, setGone] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState("");
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
@@ -241,11 +301,20 @@ function Conversation({ id, onBack }: { id: string; onBack: () => void }) {
         // قُرئت المحادثة: تحدّث شارة الرسائل الجديدة فورًا.
         window.dispatchEvent(new Event(UNREAD_REFRESH));
       })
-      .catch((e) => active && setError((e as Error).message));
+      .catch((e) => {
+        if (!active) return;
+        if ((e as { status?: number }).status === 404 && threadCache.has(id))
+          setGone(true);
+        setError((e as Error).message);
+        threadCache.delete(id);
+      });
     return () => {
       active = false;
     };
   }, [id]);
+  useEffect(() => {
+    if (thread) threadCache.set(id, thread);
+  }, [id, thread]);
   const last = thread?.messages.at(-1)?.createdAt;
   useEffect(() => {
     if (!thread) return;
@@ -274,18 +343,26 @@ function Conversation({ id, onBack }: { id: string; onBack: () => void }) {
               : t,
           );
         })
-        .catch(() => {});
+        .catch((e) => {
+          // حُذفت المحادثة من الطرف الآخر وهي مفتوحة.
+          if ((e as { status?: number }).status === 404) {
+            setGone(true);
+            threadCache.delete(id);
+          }
+        });
     };
     // الرسائل والقراءة تصل لحظيًا، والتحديث كل 20 ثانية احتياط عند انقطاع البث.
+    const later = debounce(refresh);
     const timer = setInterval(refresh, 20000);
     const off = onLive((e) => {
-      if (e.c === id || e.type === "sync") refresh();
+      if (e.c === id || e.type === "sync") later();
     });
     const onVisible = () => {
       if (document.visibilityState === "visible") refresh();
     };
     document.addEventListener("visibilitychange", onVisible);
     return () => {
+      later.cancel();
       clearInterval(timer);
       off();
       document.removeEventListener("visibilitychange", onVisible);
@@ -298,22 +375,50 @@ function Conversation({ id, onBack }: { id: string; onBack: () => void }) {
     e.preventDefault();
     const body = draft.trim();
     if (!body) return;
-    setBusy(true);
     setError("");
+    // تظهر الرسالة فورًا بعلامة 🕓، ويُفرَّغ الحقل دون انتظار الخادم.
+    const temp: Message = {
+      id: `pending-${Date.now()}`,
+      body,
+      mine: true,
+      createdAt: new Date().toISOString(),
+      pending: true,
+    };
+    merge([temp]);
+    setDraft("");
+    requestAnimationFrame(() => grow(input.current));
     try {
       const m = await api<Message>(
         `/api/conversations/${encodeURIComponent(id)}`,
         { method: "POST", body: JSON.stringify({ body }) },
       );
+      setThread((t) =>
+        t
+          ? {
+              ...t,
+              messages: t.messages.filter((x) => x.id !== temp.id),
+            }
+          : t,
+      );
       merge([m]);
-      setDraft("");
-      requestAnimationFrame(() => grow(input.current));
     } catch (err) {
+      // لم تُرسل: تُزال وتعود للحقل كما كُتبت.
+      setThread((t) =>
+        t ? { ...t, messages: t.messages.filter((x) => x.id !== temp.id) } : t,
+      );
+      setDraft((d) => d || body);
       setError((err as Error).message);
-    } finally {
-      setBusy(false);
     }
   }
+  if (gone)
+    return (
+      <p role="status" className={c.empty}>
+        حُذفت هذه المحادثة.{" "}
+        <button type="button" className={c.goneBack} onClick={onBack}>
+          → المحادثات
+        </button>
+      </p>
+    );
   if (error && !thread) return <p className={c.error}>{error}</p>;
   if (!thread)
     return (
@@ -376,9 +481,62 @@ function Conversation({ id, onBack }: { id: string; onBack: () => void }) {
                 </button>
               )
             )}
+            <button
+              type="button"
+              className={c.menuDanger}
+              onClick={() => {
+                setReporting(false);
+                setConfirmBlock(false);
+                setConfirmDelete(true);
+                if (menu.current) menu.current.open = false;
+              }}
+            >
+              حذف المحادثة
+            </button>
           </div>
         </details>
       </div>
+      {confirmDelete && (
+        <div
+          className={c.report}
+          role="alertdialog"
+          aria-labelledby="chat-delete-title"
+          aria-describedby="chat-delete-text"
+        >
+          <strong id="chat-delete-title">
+            حذف المحادثة مع {thread.conversation.title}؟
+          </strong>
+          <p id="chat-delete-text">
+            تُحذف المحادثة ورسائلها من عندك وعند {thread.conversation.title}،
+            ولا يمكن استرجاعها. تبقى نسخة محفوظة لدى إدارة المنصة للمراجعة عند
+            الحاجة فقط.
+          </p>
+          <div className={c.reportActions}>
+            <button
+              type="button"
+              className={c.danger}
+              autoFocus
+              onClick={async () => {
+                setError("");
+                try {
+                  await api(`/api/conversations/${encodeURIComponent(id)}`, {
+                    method: "DELETE",
+                  });
+                  threadCache.delete(id);
+                  onDeleted();
+                } catch (e) {
+                  setError((e as Error).message);
+                }
+              }}
+            >
+              نعم، احذف المحادثة
+            </button>
+            <button type="button" onClick={() => setConfirmDelete(false)}>
+              تراجع
+            </button>
+          </div>
+        </div>
+      )}
       {confirmBlock && (
         <div
           className={c.report}
@@ -476,12 +634,23 @@ function Conversation({ id, onBack }: { id: string; onBack: () => void }) {
                 )}
                 <span className={c.meta}>
                   <time dateTime={m.createdAt}>{time(m.createdAt)}</time>
-                  {m.mine && (
-                    <Ticks
-                      at={m.createdAt}
-                      read={thread.conversation.otherReadAt}
-                      delivered={thread.conversation.otherDeliveredAt}
-                    />
+                  {m.mine && m.pending ? (
+                    <span
+                      className={c.ticks}
+                      role="img"
+                      aria-label="جارٍ الإرسال"
+                      title="جارٍ الإرسال"
+                    >
+                      🕓
+                    </span>
+                  ) : (
+                    m.mine && (
+                      <Ticks
+                        at={m.createdAt}
+                        read={thread.conversation.otherReadAt}
+                        delivered={thread.conversation.otherDeliveredAt}
+                      />
+                    )
                   )}
                 </span>
               </p>

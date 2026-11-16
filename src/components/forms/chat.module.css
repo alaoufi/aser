@@ -419,3 +419,16 @@
   border-color: #b42318;
   color: #fff;
 }
+.safetyMenu .menuDanger {
+  color: #b42318;
+}
+.goneBack {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid #d1d7db;
+  border-radius: 22px;
+  background: #fff;
+  color: #111b21;
+  font: inherit;
+  cursor: pointer;
+}

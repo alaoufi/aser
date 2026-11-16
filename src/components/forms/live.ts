@@ -31,14 +31,25 @@ function open() {
   // المتصفح يعيد الاتصال تلقائيًا؛ عند انتهاء الجلسة (401) يتوقف ونعتمد على التحديث الدوري.
 }
 
+let closing: ReturnType<typeof setTimeout> | null = null;
 export function onLive(fn: Listener) {
   listeners.add(fn);
+  if (closing) {
+    clearTimeout(closing);
+    closing = null;
+  }
   open();
   return () => {
     listeners.delete(fn);
-    if (!listeners.size && source) {
-      source.close();
-      source = null;
-    }
+    // التنقل بين المحادثات يزيل المستمعين ويعيدهم في اللحظة نفسها: لا يُغلق الاتصال
+    // ويُعاد فتحه (تأخير وفقد أحداث)، بل يُغلق فقط إن بقي بلا مستمع ثواني.
+    if (!listeners.size && source && !closing)
+      closing = setTimeout(() => {
+        closing = null;
+        if (!listeners.size && source) {
+          source.close();
+          source = null;
+        }
+      }, 5000);
   };
 }

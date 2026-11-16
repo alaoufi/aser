@@ -301,7 +301,7 @@ export async function setupReview(user: SessionUser, input: unknown) {
     const conversation = (
       await client.query(
         `INSERT INTO jdatna.conversations(id,customer_id,producer_id) VALUES($1,$2,$3)
-         ON CONFLICT(customer_id,producer_id) DO UPDATE SET blocked_by=NULL RETURNING id`,
+         ON CONFLICT(customer_id,producer_id) DO UPDATE SET blocked_by=NULL,deleted_at=NULL,deleted_by=NULL,visible_from=NULL RETURNING id`,
         [randomUUID(), clientId, familyId],
       )
     ).rows[0].id as string;
