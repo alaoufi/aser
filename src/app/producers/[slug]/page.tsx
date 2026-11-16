@@ -14,7 +14,11 @@ import { RatingBox } from "@/components/forms/rating-box";
 import { getSiteTexts } from "@/server/settings";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getProducer, getProducerProducts } from "@/server/catalog";
+import {
+  countProducerProducts,
+  getProducer,
+  getProducerProducts,
+} from "@/server/catalog";
 import {
   ProductCard,
   EmptyState,
@@ -27,6 +31,16 @@ import { JsonLd } from "@/components/public/json-ld";
 import { shortLink } from "@/server/share";
 import { SITE_URL, absoluteUrl, excerpt, openGraph } from "@/lib/seo";
 export const dynamic = "force-dynamic";
+/** «عدد المنتجات المعروضة» بصيغة العدد العربية. */
+function productsLabel(n: number) {
+  if (!n) return "لا منتجات معروضة بعد";
+  const count = n.toLocaleString("en-US");
+  if (n === 1) return "منتج واحد معروض";
+  if (n === 2) return "منتجان معروضان";
+  if (n % 100 >= 3 && n % 100 <= 10) return `${count} منتجات معروضة`;
+  if (n >= 100 && n % 100 <= 2) return `${count} منتج معروض`;
+  return `${count} منتجًا معروضًا`;
+}
 export async function generateMetadata({
   params,
 }: {
@@ -62,8 +76,9 @@ export default async function ProducerDetail({
 }) {
   const p = await getProducer((await params).slug);
   if (!p) notFound();
-  const [products, texts, share] = await Promise.all([
+  const [products, shown, texts, share] = await Promise.all([
     getProducerProducts(p.id),
+    countProducerProducts(p.id),
     getSiteTexts(),
     shortLink("family", p.id),
   ]);
@@ -151,6 +166,9 @@ export default async function ProducerDetail({
               {p.regionName} · {p.cityName}
             </p>
             <h1>{p.name}</h1>
+            <p className="view-count">
+              <span aria-hidden="true">🍲</span> {productsLabel(shown)}
+            </p>
             <FamilyViewsSummary />
             {p.notCookingToday && (
               <p role="status" className="muted">

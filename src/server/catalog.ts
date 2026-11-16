@@ -258,6 +258,17 @@ export async function getProducerProducts(
   ).rows.map(mapProduct);
 }
 
+/** عدد منتجات الأسرة المعروضة للزوار (بلا حد القائمة). */
+export async function countProducerProducts(producerId: string) {
+  if (!databaseConfigured() || !/^[a-f0-9-]{36}$/i.test(producerId)) return 0;
+  return (
+    await db().query(
+      "SELECT count(*)::int AS n FROM jdatna.products x JOIN jdatna.producer_profiles p ON p.id=x.producer_id WHERE p.id=$1 AND p.status='approved' AND x.visible=true",
+      [producerId],
+    )
+  ).rows[0].n as number;
+}
+
 // قوائم التصفح: الأسر المعتمدة مع عدد منتجاتها المتاحة، وعدد المنتجات المتاحة لكل قسم.
 export async function browseLists(f: { region?: string; city?: string } = {}) {
   if (!databaseConfigured())
