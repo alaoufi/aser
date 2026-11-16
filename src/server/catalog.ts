@@ -2,6 +2,7 @@ import type { Category, City, Producer, Product, Filters } from "../lib/types";
 import { db, databaseConfigured } from "./db";
 import { categories, cities } from "./constants";
 import { notCookingTodaySql } from "./cooking-availability";
+import { compareCities } from "../lib/regions";
 import { sortCategoryTree, visibleCategoryTree } from "../lib/category-label";
 /** الأقسام؛ المخفية من الإدارة لا تظهر للزوار ولا في اختيار الأسر، وتظهر للإدارة فقط. */
 export async function getCategories(
@@ -44,14 +45,19 @@ export async function publicCategories(region = ""): Promise<Category[]> {
     used.rows.map((r) => r.id as string),
   );
 }
+/**
+ * المدن بالترتيب المتبع: الرياض ثم مكة المكرمة ثم المدينة المنورة…، وداخل كل منطقة مقرها أولًا.
+ * كل قوائم المناطق والمدن في الموقع تُبنى من هذا الترتيب.
+ */
 export async function getCities(): Promise<City[]> {
-  return databaseConfigured()
+  const list: City[] = databaseConfigured()
     ? (
         await db().query(
-          'SELECT c.id,c.name,c.region_id AS "regionId",r.name AS "regionName" FROM jdatna.cities c JOIN jdatna.regions r ON r.id=c.region_id ORDER BY c.name',
+          'SELECT c.id,c.name,c.region_id AS "regionId",r.name AS "regionName" FROM jdatna.cities c JOIN jdatna.regions r ON r.id=c.region_id',
         )
       ).rows
-    : cities;
+    : [...cities];
+  return list.sort(compareCities);
 }
 export const producerSelect = `SELECT ${notCookingTodaySql()} AS "notCookingToday",p.id,p.slug,COALESCE(p.trade_name,p.name) AS name,p.description,p.city_id AS "cityId",
 c.name AS "cityName",r.name AS "regionName",p.neighborhood,p.verified,
