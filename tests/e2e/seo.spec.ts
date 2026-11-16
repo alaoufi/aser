@@ -36,6 +36,9 @@ test("the home page carries search keywords, share image and site schema", async
     /\/brand\/og-image\.jpg$/,
   );
   expect(await meta('meta[property="og:locale"]')).toBe("ar_SA");
+  expect(await meta('meta[name="msvalidate.01"]')).toBe(
+    "DD56AF86857C1DF8A258AB365A6A4C76",
+  );
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     "href",
     "https://jdatna.com",
