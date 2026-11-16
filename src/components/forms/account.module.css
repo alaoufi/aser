@@ -1518,3 +1518,238 @@
   color: #9c2f1e;
   font-size: 1.15em;
 }
+
+/* ملخص الإدارة: ثلاث بطاقات مجمّعة بأيقونة وعنوان، وأرقامها متجاورة */
+.summaryBoard {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr));
+  gap: 12px;
+  margin: 0 0 18px;
+}
+.summaryGroup {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: linear-gradient(180deg, #fffdf8, #fbf3e4);
+  box-shadow: 0 6px 18px -14px rgb(46 29 18 / 0.45);
+}
+.summaryGroupTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 15px;
+  color: #4f5d36;
+}
+.summaryGroupTitle svg {
+  flex: none;
+}
+.summaryStats {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+.summaryStat {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 4px;
+  min-height: 78px;
+  padding: 10px 6px;
+  border: 1px solid #eadbc2;
+  border-radius: 12px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.summaryStat:hover {
+  transform: translateY(-2px);
+  border-color: #d6a35c;
+  box-shadow: 0 6px 14px rgb(46 29 18 / 0.1);
+}
+.summaryStat:focus-visible {
+  outline: 3px solid #9c2f1e;
+  outline-offset: 2px;
+}
+.summaryStat strong {
+  font-size: 26px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: #4f5d36;
+}
+.summaryStat span {
+  font-size: 12.5px;
+  line-height: 1.35;
+  color: var(--muted);
+}
+.summaryStat.summaryAlert {
+  border-color: #e3b9ae;
+  background: #fff3ef;
+}
+
+/* أقسام الإدارة: قائمة منسدلة */
+.adminMenu {
+  margin: 0 0 22px;
+}
+.adminMenuDetails {
+  position: relative;
+}
+.adminMenuButton {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  min-height: 56px;
+  padding: 10px 16px;
+  border: 1.5px solid #4f5d36;
+  border-radius: 16px;
+  background: #4f5d36;
+  color: #fff;
+  cursor: pointer;
+  user-select: none;
+  box-shadow: 0 3px 0 #3b4628;
+}
+.adminMenuButton::-webkit-details-marker {
+  display: none;
+}
+.adminMenuButton::after {
+  content: "▾";
+  margin-inline-start: auto;
+  font-size: 18px;
+  transition: transform 0.25s ease;
+}
+.adminMenuDetails[open] .adminMenuButton::after {
+  transform: rotate(180deg);
+}
+.adminMenuButton:focus-visible {
+  outline: 3px solid #9c2f1e;
+  outline-offset: 2px;
+}
+.adminMenuButton svg {
+  color: #f4ead9;
+}
+.adminMenuCurrent {
+  display: grid;
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 1.3;
+}
+.adminMenuCurrent small {
+  font-weight: 500;
+  font-size: 11.5px;
+  opacity: 0.8;
+}
+.adminMenuAlert {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #9c2f1e;
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.adminMenuPanel {
+  position: absolute;
+  inset-inline: 0;
+  top: calc(100% + 8px);
+  z-index: 30;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+  gap: 12px;
+  max-height: min(70vh, 560px);
+  overflow-y: auto;
+  padding: 12px;
+  border: 1px solid #e3d2b4;
+  border-radius: 16px;
+  background: #fffdf8;
+  box-shadow: 0 20px 44px -18px rgb(40 25 15 / 0.5);
+  transform-origin: top;
+  animation: admin-menu-open 0.22s ease-out;
+}
+@keyframes admin-menu-open {
+  from {
+    opacity: 0;
+    transform: perspective(900px) rotateX(-18deg) translateY(-6px);
+  }
+}
+.adminMenuGroup {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+}
+.adminMenuGroupTitle {
+  margin: 0 4px 4px;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed #dcc9a8;
+  color: #9c2f1e;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.adminMenuItem {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 14.5px;
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+}
+.adminMenuItem svg {
+  flex: none;
+  color: #4f5d36;
+}
+.adminMenuItem:hover,
+.adminMenuItem:focus-visible {
+  background: #f6ecda;
+  outline: none;
+}
+.adminMenuItem[aria-pressed="true"] {
+  background: #4f5d36;
+  color: #fff;
+}
+.adminMenuItem[aria-pressed="true"] svg {
+  color: #f4ead9;
+}
+.adminMenuBadge {
+  margin-inline-start: auto;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 11px;
+  background: #9c2f1e;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 22px;
+  text-align: center;
+}
+@media (prefers-reduced-motion: reduce) {
+  .summaryStat,
+  .adminMenuButton::after {
+    transition: none;
+  }
+  .summaryStat:hover {
+    transform: none;
+  }
+  .adminMenuPanel {
+    animation: none;
+  }
+}

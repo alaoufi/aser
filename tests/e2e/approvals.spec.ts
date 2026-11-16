@@ -51,9 +51,14 @@ test("admin is alerted to families waiting for approval and opens the approvals 
   await expect(alert).toContainText("أسرة منتجة تنتظر الاعتماد");
   await alert.getByRole("link", { name: "فتح اعتماد الأسر" }).click();
   await expect(page).toHaveURL(/\/admin\?tab=approvals$/);
-  const tab = page.getByRole("button", { name: /اعتماد الأسر والمندوبين/ });
+  // القسم المفتوح ظاهر على زر قائمة الأقسام، وشارة الانتظار داخل القائمة.
+  const nav = page.getByRole("navigation", { name: "أقسام الإدارة" });
+  await expect(nav.locator("summary")).toContainText("اعتماد الأسر والمندوبين");
+  await nav.locator("summary").click();
+  const tab = nav.getByRole("button", { name: /اعتماد الأسر والمندوبين/ });
   await expect(tab).toHaveAttribute("aria-pressed", "true");
   await expect(tab).toContainText("1");
+  await page.keyboard.press("Escape");
   const panel = page.getByRole("region", { name: "اعتماد الأسر المنتجة" });
   await expect(
     panel.getByRole("heading", { name: "أسرة تنتظر" }),
@@ -92,6 +97,11 @@ test("site texts can be searched by place, label or wording", async ({
     }),
   );
   await page.goto("/admin");
+  // أقسام الإدارة قائمة منسدلة: تُفتح ثم يُختار القسم.
+  await page
+    .getByRole("navigation", { name: "أقسام الإدارة" })
+    .locator("summary")
+    .click();
   await page.getByRole("button", { name: "نصوص الموقع", exact: true }).click();
   const search = page.getByLabel("بحث في النصوص");
   // بالهمزة أو دونها.

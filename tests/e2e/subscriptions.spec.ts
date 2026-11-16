@@ -497,6 +497,11 @@ test("the admin sees subscription contracts in their own tab", async ({
     }),
   );
   await page.goto("/admin");
+  // أقسام الإدارة قائمة منسدلة: تُفتح ثم يُختار القسم.
+  await page
+    .getByRole("navigation", { name: "أقسام الإدارة" })
+    .locator("summary")
+    .click();
   await page
     .getByRole("button", { name: "عقود الاشتراكات", exact: true })
     .click();

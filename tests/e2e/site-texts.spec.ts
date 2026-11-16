@@ -70,6 +70,11 @@ test("admin edits, deletes and restores visible site texts", async ({
     return r.fulfill({ json: { texts } });
   });
   await page.goto("/admin");
+  // أقسام الإدارة قائمة منسدلة: تُفتح ثم يُختار القسم.
+  await page
+    .getByRole("navigation", { name: "أقسام الإدارة" })
+    .locator("summary")
+    .click();
   await page.getByRole("button", { name: "نصوص الموقع", exact: true }).click();
   const empty = page.getByLabel("المائدة الفارغة");
   await expect(empty).toHaveValue("بانتظار العروض");

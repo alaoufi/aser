@@ -60,6 +60,11 @@ test("admin assigns deep subsection and excludes its own descendants as parents"
     } else await r.fulfill({ json: { categories } });
   });
   await page.goto("/admin");
+  // أقسام الإدارة قائمة منسدلة: تُفتح ثم يُختار القسم.
+  await page
+    .getByRole("navigation", { name: "أقسام الإدارة" })
+    .locator("summary")
+    .click();
   await page
     .getByRole("button", { name: "إدارة الأقسام", exact: true })
     .click();

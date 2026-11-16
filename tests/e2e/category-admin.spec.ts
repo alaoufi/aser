@@ -58,6 +58,11 @@ test("tapping a category opens it right below for editing, and it is deleted onl
     return r.fulfill({ json: { ok: true } });
   });
   await page.goto("/admin");
+  // أقسام الإدارة قائمة منسدلة: تُفتح ثم يُختار القسم.
+  await page
+    .getByRole("navigation", { name: "أقسام الإدارة" })
+    .locator("summary")
+    .click();
   await page
     .getByRole("button", { name: "إدارة الأقسام", exact: true })
     .click();

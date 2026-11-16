@@ -73,6 +73,11 @@ test("admin products: explained, searchable, and each product can be hidden, fea
     await r.fulfill({ json: { status: "suspended" } });
   });
   await page.goto("/admin");
+  // أقسام الإدارة قائمة منسدلة: تُفتح ثم يُختار القسم.
+  await page
+    .getByRole("navigation", { name: "أقسام الإدارة" })
+    .locator("summary")
+    .click();
   await page.getByRole("button", { name: "المنتجات", exact: true }).click();
   const box = page.getByRole("region", { name: "المنتجات" });
   await expect(box).toContainText("حظر الأسرة");

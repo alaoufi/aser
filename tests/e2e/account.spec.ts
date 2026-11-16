@@ -121,6 +121,11 @@ test("admin category validates slug before sending and preserves errors from ser
       : route.fulfill({ status: 409, json: { error: "التصنيف مسجل مسبقًا" } }),
   );
   await page.goto("/admin");
+  // أقسام الإدارة قائمة منسدلة: تُفتح ثم يُختار القسم.
+  await page
+    .getByRole("navigation", { name: "أقسام الإدارة" })
+    .locator("summary")
+    .click();
   await page
     .getByRole("button", { name: "إدارة الأقسام", exact: true })
     .click();
