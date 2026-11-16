@@ -21,6 +21,12 @@ export async function cleanupAuthRows(batchSize = 1000) {
       `WITH old AS (SELECT id FROM jdatna.security_events WHERE created_at<now()-interval '90 days' ORDER BY created_at LIMIT $1 FOR UPDATE SKIP LOCKED) DELETE FROM jdatna.security_events s USING old o WHERE s.id=o.id`,
       [batchSize],
     );
+    // سجل «زائر اليوم» للمشاهدات: يكفي يومان (العدّادات نفسها باقية).
+    await client.query(
+      `WITH old AS (SELECT kind,target_id,visitor,day FROM jdatna.view_seen WHERE day<(now() AT TIME ZONE 'Asia/Riyadh')::date-2 LIMIT $1 FOR UPDATE SKIP LOCKED)
+       DELETE FROM jdatna.view_seen s USING old o WHERE s.kind=o.kind AND s.target_id=o.target_id AND s.visitor=o.visitor AND s.day=o.day`,
+      [batchSize],
+    );
     return {
       securityEvents: events.rowCount ?? 0,
       rateLimits: limits.rowCount ?? 0,

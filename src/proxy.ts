@@ -47,8 +47,8 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // كل شيء عدا الملفات الثابتة (صور، خطوط، سكربتات Next) التي لا تكلف الخادم.
+  // كل شيء عدا ملفات Next الداخلية (_next: الثابتة وإعادة التحميل في التطوير) والملفات الثابتة.
   matcher: [
-    "/((?!_next/static|_next/image|favicon|brand/|food/|fonts/|icons/|.*\\.(?:png|jpg|jpeg|webp|svg|ico|gif|woff2?|txt|xml|js|css|json|webmanifest)$).*)",
+    "/((?!_next/|__nextjs|favicon|brand/|food/|fonts/|icons/|.*\\.(?:png|jpg|jpeg|webp|svg|ico|gif|woff2?|txt|xml|js|css|json|webmanifest)$).*)",
   ],
 };

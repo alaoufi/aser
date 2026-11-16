@@ -26,6 +26,7 @@ import {
 } from "@/server/settings";
 import { StoreBadges } from "@/components/public/store-badges";
 import { TemplateSwitcher } from "@/components/public/template-switcher";
+import { VisitStats } from "@/components/public/visit-stats";
 import { JsonLd } from "@/components/public/json-ld";
 import {
   POPULAR_SEARCHES,
@@ -275,6 +276,7 @@ export default async function RootLayout({
                 texts["store.googlePlay"] || "احصل عليه من Google Play",
             }}
           />
+          <VisitStats />
           <div className="footer-bottom">
             <span>
               © {new Date().getFullYear()} أكلات جدتنا

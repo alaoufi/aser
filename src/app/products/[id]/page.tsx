@@ -11,6 +11,7 @@ import { getProducer, getProduct } from "@/server/catalog";
 import { phoneNumber, priceLabel, safeMediaUrl } from "@/components/public/ui";
 import { JsonLd } from "@/components/public/json-ld";
 import { ShareButton } from "@/components/public/share-button";
+import { ViewCount } from "@/components/public/visit-stats";
 import { shortLink } from "@/server/share";
 import { SITE_URL, absoluteUrl, excerpt, openGraph } from "@/lib/seo";
 export const dynamic = "force-dynamic";
@@ -157,6 +158,7 @@ export default async function ProductDetail({
             {productStatusLabels(texts)[p.status]}
           </span>
           <h1>{p.name}</h1>
+          <ViewCount kind="product" id={p.id} />
           {p.notCookingToday && (
             <p role="status" className="muted">
               لا يوجد طبخ اليوم لدى هذه الأسرة المنتجة. يمكنك طلب موعد يبدأ من

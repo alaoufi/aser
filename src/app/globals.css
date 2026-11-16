@@ -3268,3 +3268,35 @@ main {
     display: none !important;
   }
 }
+/* الزوار أسفل الصفحة، ومشاهدات صفحة المنتج والأسرة */
+.visit-stats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 18px;
+  margin: 14px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid rgb(255 255 255 / 0.12);
+  font-size: 13px;
+  color: #e3d0b7;
+}
+.visit-stats b {
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
+.online-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 0 3px rgb(34 197 94 / 0.25);
+}
+.visit-admin-only {
+  opacity: 0.75;
+}
+.view-count {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+}

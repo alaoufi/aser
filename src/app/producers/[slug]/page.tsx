@@ -3,6 +3,7 @@ import { identityProps } from "@/lib/brand";
 import { ReportButton } from "@/components/public/report-button";
 import { getPublicCoverage } from "@/server/coverage";
 import { ShareButton } from "@/components/public/share-button";
+import { ViewCount } from "@/components/public/visit-stats";
 import { ChatButton } from "@/components/forms/chat";
 import { LocationCheck } from "@/components/maps/location-check";
 import { RatingBox } from "@/components/forms/rating-box";
@@ -145,6 +146,7 @@ export default async function ProducerDetail({
             {p.regionName} · {p.cityName}
           </p>
           <h1>{p.name}</h1>
+          <ViewCount kind="producer" id={p.id} />
           {p.notCookingToday && (
             <p role="status" className="muted">
               لا يوجد طبخ اليوم. طلبات المواعيد القادمة متاحة بالاتفاق مع الأسرة
