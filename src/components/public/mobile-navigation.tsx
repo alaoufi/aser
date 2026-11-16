@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { AccountLink } from "./account-link";
+import { AccountGreeting, AccountLink } from "./account-link";
 import { LogoutButton } from "./logout-button";
 import { FamilyStatusChip } from "@/components/forms/family-status";
 import { useEffect, useRef } from "react";
@@ -68,6 +68,7 @@ export function MobileNavigation({ switcher }: { switcher?: React.ReactNode }) {
             ref.current.open = false;
         }}
       >
+        <AccountGreeting />
         <FamilyStatusChip place="menu" />
         <Link href="/">الرئيسية</Link>
         <Link href="/browse">طبخات اليوم</Link>

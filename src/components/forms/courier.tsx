@@ -613,6 +613,21 @@ function FamilyCouriers() {
   );
 }
 
+/** صفحة «مندوبي الخاص» في لوحة الأسرة. */
+export function FamilyCouriersPage() {
+  const session = useSession();
+  return (
+    <AccountShell>
+      <h1>مندوبي الخاص</h1>
+      <Guard {...session} />
+      {session.user && <FamilyCouriers />}
+      <p>
+        <Link href="/couriers">المندوبون المعتمدون في مدينتك ←</Link>
+      </p>
+    </AccountShell>
+  );
+}
+
 /** «المندوبين» للأسر المنتجة: حسب المدينة، مع محادثة واتصال وواتساب. */
 export function CouriersDirectory() {
   const session = useSession();

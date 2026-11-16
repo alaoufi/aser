@@ -171,3 +171,111 @@ test("a private courier sees its family badge and no ID form", async ({
     page.getByRole("heading", { name: "بيانات المندوب" }),
   ).toHaveCount(0);
 });
+
+// صاحب الحساب واضح: «مرحبًا، اسم الأسرة» أعلى صفحات الحساب وأعلى قائمة الجوال،
+// و«مندوبي الخاص» مربع في لوحة الأسرة يفتح صفحته.
+test("the family sees its own name on top and a «my private courier» tile", async ({
+  page,
+}) => {
+  await page.addInitScript(() =>
+    sessionStorage.setItem("jdatna:family-welcome", "1"),
+  );
+  await page.route("**/api/session", (r) =>
+    r.fulfill({
+      json: {
+        user: {
+          ...familySession.user,
+          name: "سعود",
+          familyName: "أكلات نجدية",
+        },
+        registrationOpen: true,
+      },
+    }),
+  );
+  // بيانات لوحة الأسرة كاملة كما يردها الخادم (الأقسام والمدن).
+  await page.route("**/api/producer/profile", (r) =>
+    r.fulfill({ json: { cities: [], categories: [], profile: null } }),
+  );
+  await page.route("**/api/producer/couriers", (r) =>
+    r.fulfill({
+      json: { familyName: "أكلات نجدية", pledge: "أتعهد.", couriers: [] },
+    }),
+  );
+  await page.goto("/dashboard");
+  const greeting = page.locator("main").getByText(/مرحبًا، أكلات نجدية/);
+  await expect(greeting).toBeVisible();
+  await expect(page.locator("main")).toContainText("أسرة منتجة");
+  const tile = page
+    .getByRole("navigation", { name: "أقسام الأسرة المنتجة" })
+    .getByRole("link", { name: "مندوبي الخاص" });
+  await expect(tile).toHaveAttribute("href", "/dashboard/couriers");
+  await page.goto("/dashboard/couriers");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "مندوبي الخاص" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "مندوبي الخاص" }),
+  ).toBeVisible();
+});
+
+test("the mobile menu greets the family by name at the top", async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(!isMobile, "قائمة الجوال");
+  await page.addInitScript(() =>
+    sessionStorage.setItem("jdatna:family-welcome", "1"),
+  );
+  await page.route("**/api/session", (r) =>
+    r.fulfill({
+      json: {
+        user: { ...familySession.user, familyName: "أكلات نجدية" },
+        registrationOpen: true,
+      },
+    }),
+  );
+  await page.goto("/");
+  await page.getByLabel("قائمة التنقل").click();
+  await expect(
+    page
+      .getByRole("navigation", { name: "التنقل للجوال" })
+      .locator(".menu-greeting"),
+  ).toHaveText("مرحبًا، أكلات نجدية");
+});
+
+// مشاركة حساب الأسرة أعلى لوحتها: رابط مختصر لصفحتها العامة بكل منتجاتها.
+test("the family dashboard shares the family page from the top", async ({
+  page,
+}) => {
+  await page.addInitScript(() =>
+    sessionStorage.setItem("jdatna:family-welcome", "1"),
+  );
+  await page.route("**/api/session", (r) =>
+    r.fulfill({
+      json: {
+        user: { ...familySession.user, familyName: "أكلات نجدية" },
+        registrationOpen: true,
+      },
+    }),
+  );
+  await page.route("**/api/producer/profile", (r) =>
+    r.fulfill({ json: { cities: [], categories: [], profile: null } }),
+  );
+  await page.route("**/api/producer/status", (r) =>
+    r.fulfill({ json: { state: null, slug: "akalat-najdia" } }),
+  );
+  await page.route("**/api/share?family=akalat-najdia", (r) =>
+    r.fulfill({ json: { url: "https://jdatna.com/s/Nj7dQa" } }),
+  );
+  await page.goto("/dashboard");
+  await expect(
+    page.getByRole("link", { name: "صفحة أسرتي ومنتجاتها ←" }),
+  ).toHaveAttribute("href", "/producers/akalat-najdia");
+  const menu = page.locator("main .share-menu");
+  await menu.locator("summary").click();
+  await expect(menu.locator(".share-link")).toHaveText("jdatna.com/s/Nj7dQa");
+  await expect(menu.getByRole("link", { name: "واتساب" })).toHaveAttribute(
+    "href",
+    /wa\.me\/\?text=.*jdatna\.com%2Fs%2FNj7dQa/,
+  );
+});
