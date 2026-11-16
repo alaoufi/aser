@@ -44,9 +44,10 @@ test("admin's personal account is separate from the admin account and edits name
   const personal = page.getByRole("navigation", { name: "حسابي", exact: true });
   await expect(personal.getByRole("link", { name: "طلباتي" })).toBeVisible();
   await expect(personal.getByRole("link", { name: "معلوماتي" })).toBeVisible();
+  // الحساب الخاص منفصل: لا يدخل منه على حساب الإدارة (التبديل من أعلى الموقع فقط).
   await expect(
     page.locator("main").getByRole("link", { name: "حساب الإدارة" }),
-  ).toHaveAttribute("href", "/admin");
+  ).toHaveCount(0);
   await expect(page.getByLabel("رقم الجوال")).toHaveValue("+966500000099");
   await page.getByLabel("الاسم", { exact: true }).fill("أبو محمد");
   await page.getByRole("button", { name: "حفظ الاسم" }).click();

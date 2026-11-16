@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { AccountGreeting, AccountLink } from "./account-link";
+import { AccountGreeting, AccountLink, FamilyMenuLinks } from "./account-link";
 import { LogoutButton } from "./logout-button";
 import { FamilyStatusChip } from "@/components/forms/family-status";
 import { useEffect, useRef } from "react";
@@ -81,6 +81,7 @@ export function MobileNavigation({ switcher }: { switcher?: React.ReactNode }) {
         {switcher}
         {/* آخر القائمة: «تسجيل الدخول» لغير المسجّل، و«حسابي» ثم «خروج» للمسجّل. */}
         <AccountLink />
+        <FamilyMenuLinks />
         <LogoutButton />
       </nav>
     </details>

@@ -26,6 +26,7 @@ import {
   LoginForm,
   Message,
   api,
+  isFamilyAccount,
   s,
   useSession,
 } from "./shared";
@@ -642,7 +643,7 @@ export function Dashboard() {
       <Guard {...session} />
       {session.ready && session.user && (
         <>
-          {session.user.role === "producer" && (
+          {isFamilyAccount(session.user) && (
             <FamilyShareTop
               name={session.user.familyName || session.user.name}
             />
@@ -662,9 +663,8 @@ export function Dashboard() {
             >
               تسجيل الخروج
             </button>
-            {session.user.role === "admin" && <a href="/admin">لوحة الإدارة</a>}
           </div>
-          {session.user.role === "producer" && (
+          {isFamilyAccount(session.user) && (
             <nav
               className={`${s.adminNav} ${s.familyNav}`}
               aria-label="أقسام الأسرة المنتجة"
@@ -679,7 +679,7 @@ export function Dashboard() {
               </div>
             </nav>
           )}
-          {session.user.role === "producer" && <CertificateCard />}
+          {isFamilyAccount(session.user) && <CertificateCard />}
           <ProfileForm />
           <DeleteAccountSection />
         </>

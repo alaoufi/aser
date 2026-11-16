@@ -1,14 +1,21 @@
 "use client";
 import Link from "next/link";
-import { useSession } from "@/components/forms/shared";
+import {
+  accountKind,
+  isFamilyAccount,
+  useSession,
+} from "@/components/forms/shared";
 import { isManager } from "@/lib/permissions";
 
 /**
  * «حسابي الخاص»: لوحة الأسرة أو طلبات العضو. المدير الكامل كذلك له حسابه الخاص
  * (طلباته ومحادثاته ومعلوماته)، و«حساب الإدارة» منفصل عنه.
  */
-export function ownAccountHref(user: { role: string } | null | undefined) {
-  return user?.role === "producer"
+export function ownAccountHref(
+  user: { role: string; familyName?: string | null } | null | undefined,
+) {
+  // حساب الأسرة (ومنه المدير الكامل الذي له أسرة) يفتح لوحة الأسرة.
+  return user?.role === "producer" || user?.familyName
     ? "/dashboard"
     : user?.role === "courier"
       ? "/courier"
@@ -40,8 +47,18 @@ export function AccountGreeting() {
   const { user } = useSession();
   if (!user) return null;
   return (
-    <p className="menu-greeting">
-      مرحبًا، <strong>{user.familyName || user.name}</strong>
-    </p>
+    <div className="menu-greeting">
+      <p>
+        مرحبًا، <strong>{user.familyName || user.name}</strong>
+      </p>
+      <small>{accountKind(user)}</small>
+    </div>
   );
+}
+
+/** «مندوبي الخاص» في قائمة الجوال لحسابات الأسر. */
+export function FamilyMenuLinks() {
+  const { user } = useSession();
+  if (!isFamilyAccount(user)) return null;
+  return <Link href="/dashboard/couriers">مندوبي الخاص</Link>;
 }
