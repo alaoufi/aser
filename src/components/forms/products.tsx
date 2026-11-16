@@ -16,6 +16,7 @@ function Keep({ name, value }: { name: string; value: unknown }) {
   return <input type="hidden" name={name} value={String(value ?? "")} />;
 }
 import { productStatusLabels } from "@/lib/site-texts";
+import { ShareAction } from "./share-action";
 export function Products() {
   const session = useSession();
   const [products, setProducts] = useState<Product[]>([]);
@@ -461,6 +462,19 @@ export function Products() {
             </p>
           ) : (
             <div className={s.productGroups}>
+              <p className={s.shareAll}>
+                <ShareAction
+                  query={`family=${encodeURIComponent(products[0].producerSlug)}`}
+                  title={products[0].producerName}
+                  text={`منتجات ${products[0].producerName} في أكلات جدتنا — أكل بيت`}
+                  label="مشاركة كل منتجات الأسرة"
+                  buttonText="مشاركة كل منتجاتي ↗"
+                  className={s.button}
+                />{" "}
+                <span className={s.muted}>
+                  رابط مختصر لصفحة أسرتك بكل منتجاتها، لواتساب وتيك توك.
+                </span>
+              </p>
               {groups.map((g, i) => (
                 <details
                   key={g.id || "none"}
@@ -509,6 +523,14 @@ export function Products() {
                             >
                               {p.visible === false ? "إظهار" : "إخفاء"}
                             </button>
+                          )}
+                          {p.visible !== false && (
+                            <ShareAction
+                              query={`product=${encodeURIComponent(p.id)}`}
+                              title={p.name}
+                              text={`${p.name} من ${p.producerName}${p.price !== null ? ` — ${p.price} ر.س` : ""} في أكلات جدتنا`}
+                              label={`مشاركة ${p.name}`}
+                            />
                           )}
                           <button
                             type="button"
