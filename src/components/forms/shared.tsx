@@ -108,10 +108,24 @@ export function Message({
     </>
   );
 }
+/** حساب أسرة: دوره أسرة منتجة، أو له ملف أسرة (مثل المدير الكامل). */
+export function isFamilyAccount(user: SessionUser | null | undefined) {
+  return Boolean(user && (user.role === "producer" || user.familyName));
+}
+/** نوع الحساب كما يُكتب تحت الاسم. */
+export function accountKind(user: SessionUser) {
+  if (user.role === "courier") return "حساب مندوب";
+  if (isFamilyAccount(user)) return "حساب أسرة منتجة";
+  if (user.role === "admin" || (user.permissions?.length ?? 0) > 0)
+    return "حساب الإدارة";
+  return "حساب عميل";
+}
 function AccountNavigation() {
   const { user } = useSession();
   const path = usePathname();
   if (!user) return null;
+  // حساب أسرة: دوره أسرة منتجة، أو المدير الكامل الذي له ملف أسرة.
+  const family = isFamilyAccount(user);
   const links: [string, string][] = [
     ["/", "الرئيسية"],
     ["/orders", "طلباتي"],
@@ -119,9 +133,12 @@ function AccountNavigation() {
     ["/me", "معلوماتي"],
     ...((user.role === "courier"
       ? [["/courier", "لوحتي كمندوب"]]
-      : user.role === "producer"
-        ? // أقسام الأسرة في «لوحتي» بمربعات؛ «حساب الإدارة» في قائمة «حسابي» أعلى الموقع.
-          [["/dashboard", "لوحتي"]]
+      : family
+        ? // أقسام الأسرة في «لوحتي» بمربعات، و«مندوبي الخاص» ظاهر في القائمة أيضًا.
+          [
+            ["/dashboard", "لوحتي"],
+            ["/dashboard/couriers", "مندوبي الخاص"],
+          ]
         : [
             ["/offers", "العروض الخاصة"],
             // المدير الكامل حسابه الخاص يكون طالب خدمة أو أسرة.
@@ -130,22 +147,16 @@ function AccountNavigation() {
               : ["/register", "طلب انضمام كأسرة"],
           ]) as [string, string][]),
   ];
-  // صاحب الحساب واضح لا مجهول: اسم الأسرة (الاسم التجاري) للأسرة، واسمه لغيرها.
+  // صاحب الحساب واضح لا مجهول: اسم الأسرة (الاسم التجاري) للأسرة، واسمه لغيرها، ونوع الحساب تحته.
   const shown = user.familyName || user.name;
-  const kind =
-    user.role === "producer"
-      ? "أسرة منتجة"
-      : user.role === "courier"
-        ? "مندوب توصيل"
-        : user.role === "admin" || (user.permissions?.length ?? 0) > 0
-          ? "الإدارة"
-          : "عميل";
   return (
     <>
-      <p className={s.greeting}>
-        مرحبًا، <strong>{shown}</strong>
-        <span className={s.greetingRole}>{kind}</span>
-      </p>
+      <div className={s.greeting}>
+        <p>
+          مرحبًا، <strong>{shown}</strong>
+        </p>
+        <p className={s.greetingRole}>{accountKind(user)}</p>
+      </div>
       {/* روابط بارزة كأزرار، والصفحة الحالية مميزة بلونها. */}
       <AccountLinks links={links} path={path} />
     </>

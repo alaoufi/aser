@@ -240,7 +240,17 @@ test("the mobile menu greets the family by name at the top", async ({
     page
       .getByRole("navigation", { name: "التنقل للجوال" })
       .locator(".menu-greeting"),
-  ).toHaveText("مرحبًا، أكلات نجدية");
+  ).toContainText("مرحبًا، أكلات نجدية");
+  await expect(
+    page
+      .getByRole("navigation", { name: "التنقل للجوال" })
+      .locator(".menu-greeting small"),
+  ).toHaveText("حساب أسرة منتجة");
+  await expect(
+    page
+      .getByRole("navigation", { name: "التنقل للجوال" })
+      .getByRole("link", { name: "مندوبي الخاص" }),
+  ).toHaveAttribute("href", "/dashboard/couriers");
 });
 
 // مشاركة حساب الأسرة أعلى لوحتها: رابط مختصر لصفحتها العامة بكل منتجاتها.
@@ -278,4 +288,75 @@ test("the family dashboard shares the family page from the top", async ({
     "href",
     /wa\.me\/\?text=.*jdatna\.com%2Fs%2FNj7dQa/,
   );
+});
+
+// المدير الكامل الذي له أسرة: حسابه حساب أسرة، فيرى «مندوبي الخاص» في القائمة واللوحة،
+// و«حسابي الخاص» يفتح لوحة الأسرة، ونوع الحساب تحت الاسم مباشرة.
+test("an admin who owns a family sees the family sections and «my private courier»", async ({
+  page,
+}) => {
+  await page.addInitScript(() =>
+    sessionStorage.setItem("jdatna:family-welcome", "1"),
+  );
+  await page.route("**/api/session", (r) =>
+    r.fulfill({
+      json: {
+        user: {
+          id: "a",
+          name: "المالك",
+          phone: "+966500000099",
+          role: "admin",
+          permissions: [],
+          familyName: "أكلات نجدية",
+        },
+        registrationOpen: true,
+      },
+    }),
+  );
+  await page.route("**/api/producer/profile", (r) =>
+    r.fulfill({ json: { cities: [], categories: [], profile: null } }),
+  );
+  await page.goto("/dashboard");
+  const greeting = page
+    .locator("main p")
+    .filter({ hasText: "مرحبًا، أكلات نجدية" });
+  await expect(greeting).toBeVisible();
+  await expect(greeting.locator("+ p")).toHaveText("حساب أسرة منتجة");
+  await expect(
+    page.getByRole("navigation", { name: "حسابي" }).getByRole("link", {
+      name: "مندوبي الخاص",
+    }),
+  ).toHaveAttribute("href", "/dashboard/couriers");
+  await expect(
+    page
+      .getByRole("navigation", { name: "أقسام الأسرة المنتجة" })
+      .getByRole("link", { name: "مندوبي الخاص" }),
+  ).toBeVisible();
+  await expect(
+    page
+      .getByRole("link", { name: "حسابي الخاص", includeHidden: true })
+      .first(),
+  ).toHaveAttribute("href", "/dashboard");
+});
+
+test("account type is written under the name: customer and courier", async ({
+  page,
+}) => {
+  for (const [role, kind] of [
+    ["customer", "حساب عميل"],
+    ["courier", "حساب مندوب"],
+  ] as const) {
+    await page.route("**/api/session", (r) =>
+      r.fulfill({
+        json: {
+          user: { id: "u", name: "سالم", phone: "+966500000077", role },
+          registrationOpen: true,
+        },
+      }),
+    );
+    await page.goto("/me");
+    const greeting = page.locator("main p").filter({ hasText: "مرحبًا، سالم" });
+    await expect(greeting.locator("+ p")).toHaveText(kind);
+    await page.unroute("**/api/session");
+  }
 });

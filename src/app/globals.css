@@ -1726,6 +1726,15 @@ hr {
 .menu-greeting strong {
   font-size: 17px;
 }
+.menu-greeting p {
+  margin: 0;
+}
+.menu-greeting small {
+  color: #4f5d36;
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+}
 /* أعلى الصفحة: رابط الرجوع في جهة، و«مشاركة» في الجهة الأخرى */
 .page-top {
   align-items: center;
