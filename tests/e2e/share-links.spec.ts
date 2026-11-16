@@ -58,51 +58,109 @@ test.describe("short share links for products and family pages", () => {
     }
   });
 
-  test("the product page shows a short link with WhatsApp, and the link opens the product", async ({
+  test("product page: share sits at the top as an expandable menu of apps, and the short link opens the product", async ({
     page,
     request,
   }) => {
     await page.goto(`/products/${product}`);
-    const share = page.locator(".share-control").filter({
-      hasText: "مشاركة المنتج",
-    });
-    const link = share.locator(".share-link");
+    const menu = page.locator(".page-top .share-menu");
+    const toggle = menu.locator("summary");
+    await expect(toggle).toHaveText("مشاركة");
+    // مطوية حتى يُضغط عليها، ثم تتمدد بكل التطبيقات.
+    await expect(menu.locator(".share-panel")).toBeHidden();
+    await toggle.click();
+    const apps = menu.getByRole("list", { name: "المشاركة عبر" });
+    for (const app of [
+      "مشاركة (صورة + رابط)",
+      "واتساب",
+      "تيليجرام",
+      "فيسبوك",
+      "تويتر / X",
+      "سناب شات",
+      "تيك توك",
+      "إنستغرام",
+      "نسخ الرابط",
+      "رمز QR",
+    ])
+      await expect(apps.getByText(app).first()).toBeVisible();
+    // رمز QR يظهر عند الضغط، وصورته من الخادم.
+    await apps.getByRole("button", { name: "رمز QR" }).click();
+    await expect(menu.getByAltText("رمز QR لرابط المشاركة")).toBeVisible();
+    const link = menu.locator(".share-link");
     await expect(link).toHaveText(/^jdatna\.com\/s\/[2-9a-zA-Z]{6}$/);
     const code = (await link.textContent())!.split("/s/")[1];
-    const whatsapp = share.getByRole("link", { name: "واتساب" });
-    await expect(whatsapp).toHaveAttribute(
+    const short = encodeURIComponent("https://jdatna.com/s/" + code);
+    await expect(apps.getByRole("link", { name: "واتساب" })).toHaveAttribute(
       "href",
-      new RegExp(
-        "^https://wa\\.me/\\?text=.*" +
-          encodeURIComponent("https://jdatna.com/s/" + code),
-      ),
+      new RegExp("^https://wa\\.me/\\?text=.*" + short),
     );
-    await expect(
-      share.getByRole("button", { name: "تيك توك وتطبيقات أخرى ↗" }),
-    ).toBeVisible();
-    // نفس الرمز في كل زيارة.
+    await expect(apps.getByRole("link", { name: "تيليجرام" })).toHaveAttribute(
+      "href",
+      new RegExp("^https://t\\.me/share/url\\?url=" + short),
+    );
+    // تنكمش بالضغط مرة أخرى.
+    await toggle.click();
+    await expect(menu.locator(".share-panel")).toBeHidden();
+    // نفس الرمز في كل زيارة، ويحوّل إلى صفحة المنتج.
     await page.reload();
+    await toggle.click();
     await expect(link).toHaveText("jdatna.com/s/" + code);
-    // الرابط المختصر يحوّل إلى صفحة المنتج.
     const res = await request.get(`/s/${code}`, { maxRedirects: 0 });
     expect(res.status()).toBe(301);
     expect(res.headers().location).toBe(
       `https://jdatna.com/products/${product}`,
     );
-    // رمز غير موجود يحوّل إلى «طبخات اليوم».
+    const qr = await request.get(`/s/${code}/qr`);
+    expect(qr.headers()["content-type"]).toContain("image/svg+xml");
+    expect(await qr.text()).toContain("<svg");
+    expect((await request.get("/s/zzzzzz/qr")).status()).toBe(404);
     const missing = await request.get("/s/zzzzzz", { maxRedirects: 0 });
     expect(missing.headers().location).toBe("https://jdatna.com/browse");
   });
 
-  test("the family page shares all its products with one short link", async ({
+  test("product page contact: chat always, WhatsApp and call only as the family chooses, no redirect button", async ({
+    page,
+  }) => {
+    await page.goto(`/products/${product}`);
+    const contact = page.locator(".contact-actions");
+    // الزائر غير المسجّل: المحادثة تدعوه للتسجيل أولًا.
+    await expect(
+      contact.getByRole("link", { name: "سجّل لمراسلة الأسرة المنتجة" }),
+    ).toBeVisible();
+    await expect(
+      contact.getByRole("link", { name: "تواصل عبر واتساب ↗" }),
+    ).toHaveAttribute("href", /^https:\/\/wa\.me\/9665\d{8}\?text=/);
+    await expect(
+      contact.getByRole("link", { name: "اتصل بالأسرة المنتجة" }),
+    ).toHaveAttribute("href", /^tel:\+9665\d{8}$/);
+    await expect(
+      page.getByRole("link", { name: /تواصل مع الأسرة المنتجة ←/ }),
+    ).toHaveCount(0);
+    // الأسرة تخفي الواتساب والجوال: تبقى المحادثة وحدها.
+    await pool!.query(
+      "UPDATE jdatna.producer_profiles SET show_phone=false,show_whatsapp=false WHERE id=$1",
+      [fam],
+    );
+    await page.reload();
+    // الزائر غير المسجّل: المحادثة تدعوه للتسجيل أولًا.
+    await expect(
+      contact.getByRole("link", { name: "سجّل لمراسلة الأسرة المنتجة" }),
+    ).toBeVisible();
+    await expect(contact.getByRole("link")).toHaveCount(1);
+    await pool!.query(
+      "UPDATE jdatna.producer_profiles SET show_phone=true,show_whatsapp=true WHERE id=$1",
+      [fam],
+    );
+  });
+
+  test("the family page shares all its products from the top with one short link", async ({
     page,
     request,
   }) => {
     await page.goto(`/producers/link-${fam}`);
-    const share = page.locator(".share-control").filter({
-      hasText: "مشاركة منتجات الأسرة",
-    });
-    const link = share.locator(".share-link");
+    const menu = page.locator(".page-top .share-menu");
+    await menu.locator("summary").click();
+    const link = menu.locator(".share-link");
     await expect(link).toHaveText(/^jdatna\.com\/s\/[2-9a-zA-Z]{6}$/);
     const code = (await link.textContent())!.split("/s/")[1];
     const res = await request.get(`/s/${code}`, { maxRedirects: 0 });

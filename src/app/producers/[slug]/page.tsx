@@ -122,9 +122,17 @@ export default async function ProducerDetail({
           isPartOf: { "@id": SITE_URL + "/#website" },
         }}
       />
-      <Link href="/producers" className="text-link">
-        الأسر المنتجة ←
-      </Link>
+      <div className="page-top">
+        <Link href="/producers" className="text-link">
+          الأسر المنتجة ←
+        </Link>
+        <ShareButton
+          title={p.name}
+          url={share}
+          text={`منتجات ${p.name} في أكلات جدتنا — أكل بيت من ${p.cityName}`}
+          image={logo || null}
+        />
+      </div>
       <section
         className={`profile-header ${identityProps(p.id, p.brand).className}`}
         style={identityProps(p.id, p.brand).style}
@@ -177,12 +185,6 @@ export default async function ProducerDetail({
         </section>
         <aside className="info-panel">
           <h2>تواصل مع الأسرة المنتجة</h2>
-          <ShareButton
-            title={p.name}
-            url={share}
-            label="مشاركة منتجات الأسرة"
-            text={`منتجات ${p.name} في أكلات جدتنا — أكل بيت من ${p.cityName}`}
-          />
           <p>اتفق مباشرة على السعر والكمية ووقت التجهيز والاستلام.</p>
           <RatingBox
             kind="family"

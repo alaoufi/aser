@@ -129,9 +129,17 @@ export default async function ProductDetail({
           ],
         }}
       />
-      <Link href="/browse" className="text-link">
-        طبخات اليوم ←
-      </Link>
+      <div className="page-top">
+        <Link href="/browse" className="text-link">
+          طبخات اليوم ←
+        </Link>
+        <ShareButton
+          title={p.name}
+          url={share}
+          text={`${p.name} من ${p.producerName}${p.price !== null ? ` — ${p.price} ر.س` : ""} في أكلات جدتنا`}
+          image={image || null}
+        />
+      </div>
       <div className="product-detail">
         <div className="product-portrait">
           {p.imageUrl && safeMediaUrl(p.imageUrl) ? (
@@ -212,23 +220,29 @@ export default async function ProductDetail({
             title={texts["rating.product"] || "تقييم المنتج"}
             prompt={texts["rating.prompt"] || "رأيك مهم؟"}
           />
-          <ChatButton producerSlug={p.producerSlug} />
-          <Link className="button" href={`/producers/${p.producerSlug}`}>
-            {p.price === null
-              ? "استفسر عن السعر من الأسرة المنتجة"
-              : "تواصل مع الأسرة المنتجة"}{" "}
-            ←
-          </Link>
+          {/* التواصل: المحادثة دائمًا، والواتساب والاتصال حسب اختيار الأسرة. */}
+          <div className="contact-actions">
+            <ChatButton producerSlug={p.producerSlug} />
+            {familyWhatsapp && (
+              <a
+                href={`https://wa.me/${familyWhatsapp}?text=${encodeURIComponent(`السلام عليكم، أستفسر عن «${p.name}» في أكلات جدتنا`)}`}
+                className="button secondary"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                تواصل عبر واتساب ↗
+              </a>
+            )}
+            {familyPhone && (
+              <a href={`tel:+${familyPhone}`} className="button secondary">
+                اتصل بالأسرة المنتجة
+              </a>
+            )}
+          </div>
           <p className="muted">
             التواصل والاتفاق مباشرة مع الأسرة المنتجة. لا يوجد دفع إلكتروني داخل
             المنصة.
           </p>
-          <ShareButton
-            title={p.name}
-            url={share}
-            label="مشاركة المنتج"
-            text={`${p.name} من ${p.producerName}${p.price !== null ? ` — ${p.price} ر.س` : ""} في أكلات جدتنا`}
-          />
         </section>
       </div>
       <ReportButton productId={p.id} />

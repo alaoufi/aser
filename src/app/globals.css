@@ -1716,6 +1716,106 @@ hr {
 .share-title {
   font-size: 14px;
 }
+/* أعلى الصفحة: رابط الرجوع في جهة، و«مشاركة» في الجهة الأخرى */
+.page-top {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+}
+/* «مشاركة»: أيقونة وكلمة، تتمدد قائمتها وتنكمش */
+.share-menu {
+  position: relative;
+}
+.share-menu > summary {
+  align-items: center;
+  background: #fff;
+  border: 1px solid rgba(46, 29, 18, 0.25);
+  border-radius: 999px;
+  cursor: pointer;
+  display: inline-flex;
+  font-weight: 700;
+  gap: 6px;
+  list-style: none;
+  min-height: 44px;
+  padding: 6px 16px;
+}
+.share-menu > summary::-webkit-details-marker {
+  display: none;
+}
+.share-menu[open] > summary {
+  background: #4f5d36;
+  border-color: #4f5d36;
+  color: #fff;
+}
+.share-panel {
+  background: #fff;
+  border: 1px solid rgba(46, 29, 18, 0.18);
+  border-radius: 14px;
+  box-shadow: 0 12px 28px rgba(46, 29, 18, 0.18);
+  display: grid;
+  gap: 10px;
+  inset-inline-end: 0;
+  margin-top: 8px;
+  max-width: calc(100vw - 32px);
+  padding: 12px;
+  position: absolute;
+  width: 260px;
+  z-index: 30;
+}
+.share-panel ul {
+  display: grid;
+  gap: 4px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.share-panel a,
+.share-panel button {
+  align-items: center;
+  background: none;
+  border: 0;
+  border-radius: 10px;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  gap: 10px;
+  min-height: 44px;
+  padding: 6px 10px;
+  text-align: start;
+  width: 100%;
+}
+.share-panel a:hover,
+.share-panel button:hover,
+.share-panel a:focus-visible,
+.share-panel button:focus-visible {
+  background: #f4ead9;
+}
+.share-panel a > span,
+.share-panel button > span {
+  display: inline-flex;
+  flex: none;
+}
+.share-panel small {
+  font-size: 11px;
+}
+.share-qr {
+  justify-self: center;
+}
+.share-qr img {
+  background: #fff;
+  border: 1px solid rgba(46, 29, 18, 0.15);
+  border-radius: 10px;
+  display: block;
+  height: 180px;
+  width: 180px;
+}
+.share-panel .share-link {
+  justify-self: stretch;
+  text-align: center;
+}
 /* الرابط المختصر ظاهرًا ويُنسخ باللمس المطوّل */
 .share-link {
   background: #fbf6ec;
