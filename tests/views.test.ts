@@ -5,6 +5,7 @@ import { db } from "../src/server/db";
 import {
   recordView,
   recordVisit,
+  familyViews,
   setViewsPublic,
   viewsAdmin,
 } from "../src/server/views";
@@ -36,7 +37,9 @@ test(
     const owner = mk("producer"),
       admin = mk("admin"),
       visitor = mk("customer");
-    const familyId = randomUUID();
+    const familyId = randomUUID(),
+      shown = randomUUID(),
+      hidden = randomUUID();
     const before = (
       await pool.query(
         "SELECT value FROM jdatna.site_settings WHERE key='views.public'",
@@ -66,7 +69,13 @@ test(
       await recordView(req(browser), owner, view);
       await recordView(req("Googlebot/2.1"), null, view);
       const asAdmin = await recordView(req(browser), admin, view);
-      assert.deepEqual(asAdmin, { views: 3, visible: true, adminOnly: true });
+      assert.deepEqual(asAdmin, {
+        views: 3,
+        visible: true,
+        adminOnly: true,
+        productsViews: 0,
+        products: {},
+      });
       await assert.rejects(
         recordView(req(browser), null, { kind: "producer", id: randomUUID() }),
         { status: 404 },
@@ -77,7 +86,44 @@ test(
       });
       await setViewsPublic(admin, { public: true });
       const open = await recordView(req(browser), visitor, view);
-      assert.deepEqual(open, { views: 4, visible: true, adminOnly: false });
+      assert.deepEqual(open, {
+        views: 4,
+        visible: true,
+        adminOnly: false,
+        productsViews: 0,
+        products: {},
+      });
+      // منتجات الأسرة: عدد كل منتج، وإجمالي منتجاتها، والمخفي يظهر للأسرة فقط.
+      await pool.query(
+        `INSERT INTO jdatna.products(id,producer_id,name,description,unit,status,visible)
+         VALUES($1,$3,'كبسة','وصف','طبق','available',true),($2,$3,'جريش','وصف','طبق','available',false)`,
+        [shown, hidden, familyId],
+      );
+      await recordView(req(browser), null, { kind: "product", id: shown });
+      await recordView(req(browser, "203.0.113.73"), null, {
+        kind: "product",
+        id: shown,
+      });
+      await pool.query(
+        "INSERT INTO jdatna.view_counts(kind,target_id,views) VALUES('product',$1,5)",
+        [hidden],
+      );
+      const page = await recordView(req(browser), visitor, view);
+      assert.deepEqual(page.visible && [page.productsViews, page.products], [
+        2,
+        { [shown]: 2 },
+      ]);
+      const mine = await familyViews(owner);
+      assert.equal(mine.pageViews, 4);
+      assert.equal(mine.productsViews, 7);
+      assert.deepEqual(
+        mine.products.map((p) => [p.id, p.views, p.visible]),
+        [
+          [hidden, 5, false],
+          [shown, 2, true],
+        ],
+      );
+      await assert.rejects(familyViews(visitor), { status: 404 });
       assert.ok(
         (await viewsAdmin(admin)).producers.some(
           (p) => p.id === familyId && p.views === 4,
@@ -99,11 +145,15 @@ test(
         "UPDATE jdatna.site_settings SET value=$1 WHERE key='views.public'",
         [before ?? "off"],
       );
-      await pool.query("DELETE FROM jdatna.view_counts WHERE target_id=$1; ", [
-        familyId,
+      await pool.query(
+        "DELETE FROM jdatna.view_counts WHERE target_id=ANY($1)",
+        [[familyId, shown, hidden]],
+      );
+      await pool.query("DELETE FROM jdatna.view_seen WHERE target_id=ANY($1)", [
+        [familyId, shown, hidden],
       ]);
-      await pool.query("DELETE FROM jdatna.view_seen WHERE target_id=$1", [
-        familyId,
+      await pool.query("DELETE FROM jdatna.products WHERE id=ANY($1)", [
+        [shown, hidden],
       ]);
       await pool.query(
         "DELETE FROM jdatna.admin_audit_logs WHERE actor_id=$1",

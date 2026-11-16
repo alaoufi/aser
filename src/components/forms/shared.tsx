@@ -237,6 +237,7 @@ export const FAMILY_TABS: FolderTab[] = [
     href: "/dashboard/subscriptions",
   },
   { id: "library", label: "مكتبة الصور", href: "/dashboard/library" },
+  { id: "views", label: "المشاهدات", href: "/dashboard/views" },
   { id: "coverage", label: "التغطية", href: "/dashboard/coverage" },
   // مندوب الأسرة الخاص: تسجّله بنفسها بتعهّد، دون اعتماد الإدارة.
   { id: "couriers", label: "مندوبي الخاص", href: "/dashboard/couriers" },

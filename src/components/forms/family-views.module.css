@@ -1,0 +1,58 @@
+/* لوحة الأسرة ← المشاهدات */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(150px, 100%), 1fr));
+  gap: 10px;
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+}
+.cards li {
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+  border: 1px solid #ead9bd;
+  border-radius: 14px;
+  background: #fff;
+}
+.cards strong {
+  font-size: 26px;
+  line-height: 1.1;
+  color: #2e1d12;
+  font-variant-numeric: tabular-nums;
+}
+.cards span {
+  font-size: 13px;
+  color: #74634f;
+}
+.list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.list li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 4px 10px;
+  padding: 10px 14px;
+  border: 1px solid #ead9bd;
+  border-radius: 12px;
+  background: #fff;
+}
+.list b {
+  color: #9c4a1e;
+  font-variant-numeric: tabular-nums;
+}
+.list i {
+  grid-column: 1 / -1;
+  height: 5px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #9c4a1e, #d6a35c);
+}
+.hidden {
+  font-size: 12px;
+  color: #74634f;
+}

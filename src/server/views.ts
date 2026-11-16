@@ -74,9 +74,60 @@ export async function recordView(
   );
   const open = await viewsPublic();
   const manager = isManager(user);
-  return open || manager
-    ? { views, visible: true, adminOnly: !open }
-    : { visible: false as const };
+  if (!open && !manager) return { visible: false as const };
+  if (kind === "product") return { views, visible: true, adminOnly: !open };
+  // صفحة الأسرة: مع عدد صفحتها، إجمالي مشاهدات منتجاتها الظاهرة وعدد كل منتج.
+  const products = await productViews(id, true);
+  return {
+    views,
+    visible: true,
+    adminOnly: !open,
+    productsViews: products.reduce((n, p) => n + p.views, 0),
+    products: Object.fromEntries(products.map((p) => [p.id, p.views])),
+  };
+}
+
+/** مشاهدات منتجات أسرة: الظاهرة فقط للصفحة العامة، وكلها للوحة الأسرة. */
+async function productViews(producerId: string, visibleOnly: boolean) {
+  return (
+    await db().query(
+      `SELECT x.id,x.name,x.visible,COALESCE(v.views,0)::int AS views
+       FROM jdatna.products x
+       LEFT JOIN jdatna.view_counts v ON v.kind='product' AND v.target_id=x.id
+       WHERE x.producer_id=$1 AND x.deleted_at IS NULL ${visibleOnly ? "AND x.visible" : ""}
+       ORDER BY views DESC, x.created_at DESC`,
+      [producerId],
+    )
+  ).rows as { id: string; name: string; visible: boolean; views: number }[];
+}
+
+/**
+ * لوحة الأسرة ← «المشاهدات»: مشاهدات صفحة الأسرة، وإجمالي مشاهدات منتجاتها، وعدد كل منتج.
+ * أرقام الأسرة نفسها تظهر لها دائمًا (لا لغيرها)، أيًّا كان إعداد الظهور العام.
+ */
+export async function familyViews(user: SessionUser) {
+  const family = (
+    await db().query(
+      "SELECT id,slug FROM jdatna.producer_profiles WHERE user_id=$1",
+      [user.id],
+    )
+  ).rows[0] as { id: string; slug: string } | undefined;
+  if (!family) throw new HttpError(404, "لا يوجد ملف أسرة منتجة لهذا الحساب");
+  const [page, products, open] = await Promise.all([
+    db().query(
+      "SELECT views::int AS n FROM jdatna.view_counts WHERE kind='producer' AND target_id=$1",
+      [family.id],
+    ),
+    productViews(family.id, false),
+    viewsPublic(),
+  ]);
+  return {
+    slug: family.slug,
+    public: open,
+    pageViews: (page.rows[0]?.n as number | undefined) ?? 0,
+    productsViews: products.reduce((n, p) => n + p.views, 0),
+    products,
+  };
 }
 
 /** الإدارة ← «المشاهدات»: التفعيل للجميع، وأكثر المنتجات والأسر مشاهدة. */
