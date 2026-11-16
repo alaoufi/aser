@@ -26,6 +26,7 @@ import { SectionIcon as AdminIcon } from "./section-icon";
 import { APPROVALS_CHANGED } from "@/components/public/approval-alert";
 import { AdminCouriers } from "./courier";
 import { ContractsAdmin } from "./subscriptions";
+import { SecurityLog } from "./security-log";
 
 /** بيانات كل قسم، تُحمَّل مسبقًا عند المرور على زره أو التركيز عليه. */
 const tabData: Record<string, string[]> = {
@@ -40,6 +41,7 @@ const tabData: Record<string, string[]> = {
   app: ["/api/admin/app-links"],
   review: ["/api/admin/store-review"],
   members: ["/api/admin/members?q="],
+  security: ["/api/admin/security"],
 };
 /** أقسام الإدارة وصلاحية كل قسم؛ «الأعضاء» للمدير الكامل فقط. */
 const adminTabs: [
@@ -61,6 +63,7 @@ const adminTabs: [
   ["review", "مراجعة المتاجر", "owner"],
   ["members", "الأعضاء والصلاحيات", "owner"],
   ["suggestions", "الاقتراحات", "owner"],
+  ["security", "سجل الأمان", "owner"],
 ];
 /** تجميع الأقسام في شاشة الإدارة (الأسماء للقارئ الآلي فقط). */
 const adminGroups: [group: string, ids: string[]][] = [
@@ -71,7 +74,15 @@ const adminGroups: [group: string, ids: string[]][] = [
   ["الأقسام والمواقع", ["categories", "locations"]],
   [
     "الموقع والأعضاء",
-    ["template", "texts", "app", "review", "members", "suggestions"],
+    [
+      "template",
+      "texts",
+      "app",
+      "review",
+      "members",
+      "suggestions",
+      "security",
+    ],
   ],
 ];
 type Application = {
@@ -378,6 +389,8 @@ export function Admin() {
             <ReportsAdmin />
           ) : active === "contracts" ? (
             <ContractsAdmin />
+          ) : active === "security" ? (
+            <SecurityLog />
           ) : active === "template" ? (
             <TemplateAdmin />
           ) : active === "texts" ? (

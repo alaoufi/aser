@@ -1,8 +1,12 @@
 import { api, json, jsonBody } from "@/server/http";
 import { requireUser, rateLimit } from "@/server/auth";
 import { getSiteTemplate, setSiteTemplate } from "@/server/settings";
+import { can } from "@/lib/permissions";
+import { HttpError } from "@/server/security";
+/** قالب الموقع في الإدارة: لصلاحية المحتوى فقط. */
 export const GET = api(async (request) => {
-  await requireUser(request);
+  if (!can(await requireUser(request), "content"))
+    throw new HttpError(403, "لا تملك صلاحية الإدارة");
   return json({ template: await getSiteTemplate() });
 });
 export const PUT = api(async (request) => {

@@ -3,12 +3,16 @@ import { z } from "zod";
 import { api, jsonBody } from "@/server/http";
 import {
   ADMIN_SESSION_SECONDS,
+  rateLimit,
   sessionCookie,
   verifyAdminLogin,
 } from "@/server/auth";
+import { recordSecurityEvent, sourceKey } from "@/server/security-events";
 import { otpCodePattern } from "@/server/otp";
 import { HttpError } from "@/server/security";
 export const POST = api(async (request) => {
+  const source = sourceKey(request);
+  if (source) await rateLimit("verify-ip:" + source, 40, 900);
   const body = z
     .object({
       challengeId: z.uuid(),
@@ -20,8 +24,11 @@ export const POST = api(async (request) => {
     .strict()
     .parse(await jsonBody(request));
   const result = await verifyAdminLogin(body.challengeId, body.code);
-  if (!result)
+  if (!result) {
+    await recordSecurityEvent("otp.failed", { request, detail: "admin" });
     throw new HttpError(400, "رمز الدخول غير صحيح أو منتهي الصلاحية");
+  }
+  await recordSecurityEvent("login.admin", { request, userId: result.user.id });
   return Response.json(
     { user: result.user, next: "/admin" },
     {

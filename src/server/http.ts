@@ -14,6 +14,18 @@ export function api(
       }
       return await handler(request, context);
     } catch (error) {
+      if (error instanceof HttpError && error.status === 403) {
+        // رفض مصدر الطلب، أو محاولة دخول مسار إدارة بلا صلاحية: يُسجَّل في «سجل الأمان».
+        const path = new URL(request.url).pathname;
+        const origin = error.message === "مصدر الطلب غير مسموح";
+        if (origin || path.startsWith("/api/admin")) {
+          const { recordSecurityEvent } = await import("./security-events");
+          await recordSecurityEvent(
+            origin ? "origin.rejected" : "access.denied",
+            { request, detail: `${request.method} ${path}` },
+          );
+        }
+      }
       if (error instanceof HttpError)
         return Response.json(
           { error: error.message, ...error.details },

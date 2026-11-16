@@ -1,8 +1,13 @@
 import { api, json, jsonBody } from "@/server/http";
 import { requireUser, rateLimit } from "@/server/auth";
-import { getCoverageTree, curateCoverage } from "@/server/coverage";
+import {
+  getCoverageTree,
+  curateCoverage,
+  requireCoverageAdmin,
+} from "@/server/coverage";
+/** شجرة التغطية للإدارة: لصلاحية المواقع فقط. */
 export const GET = api(async (request) => {
-  await requireUser(request);
+  requireCoverageAdmin(await requireUser(request));
   return json({ nodes: await getCoverageTree() });
 });
 export const POST = api(async (request) => {

@@ -2,10 +2,18 @@ import { toAsciiDigits } from "@/lib/digits";
 import { otpCodePattern } from "@/server/otp";
 import { z } from "zod";
 import { api, jsonBody } from "@/server/http";
-import { verifyOtp, sessionCookie, otpPurposeSchema } from "@/server/auth";
+import {
+  rateLimit,
+  verifyOtp,
+  sessionCookie,
+  otpPurposeSchema,
+} from "@/server/auth";
+import { recordSecurityEvent, sourceKey } from "@/server/security-events";
 import { HttpError } from "@/server/security";
 import { roleDestination } from "@/server/credentials";
 export const POST = api(async (request) => {
+  const source = sourceKey(request);
+  if (source) await rateLimit("verify-ip:" + source, 40, 900);
   const body = z
     .object({
       challengeId: z.uuid(),
@@ -29,8 +37,10 @@ export const POST = api(async (request) => {
     body.name,
     body.purpose,
   );
-  if (!result)
+  if (!result) {
+    await recordSecurityEvent("otp.failed", { request, detail: body.purpose });
     throw new HttpError(400, "رمز التحقق غير صحيح أو منتهي الصلاحية");
+  }
   return Response.json(
     {
       user: result.user,

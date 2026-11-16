@@ -1,11 +1,18 @@
 import { z } from "zod";
 import { api, json, jsonBody } from "@/server/http";
-import { requireUser } from "@/server/auth";
+import { rateLimit, requireUser } from "@/server/auth";
 import { reviewProducer } from "@/server/management";
 import { pingIndexNow } from "@/server/indexnow";
 import { db } from "@/server/db";
-export const POST = api(async (request, context) => {
+
+/** حد للتعديل لكل حساب: يمنع إغراق الخادم بالطلبات المتكررة. */
+async function limited(request: Request) {
   const user = await requireUser(request);
+  await rateLimit("admin-write:" + user.id, 300, 3600);
+  return user;
+}
+export const POST = api(async (request, context) => {
+  const user = await limited(request);
   const { id } = await context.params;
   const producerId = z.uuid().parse(id);
   const result = await reviewProducer(
