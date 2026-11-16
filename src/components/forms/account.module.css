@@ -11,12 +11,15 @@
 .accountMenu {
   position: relative;
   display: inline-block;
+  max-width: 100%;
 }
 .accountMenuButton {
   list-style: none;
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  max-width: 100%;
   min-height: 46px;
   padding: 8px 18px;
   border: 1.5px solid #4f5d36;
@@ -56,7 +59,7 @@
   z-index: 30;
   display: grid;
   gap: 6px;
-  min-width: 230px;
+  min-width: min(230px, calc(100vw - 32px));
   padding: 10px;
   border: 1px solid #e3d2b4;
   border-radius: 16px;
@@ -156,7 +159,7 @@
 }
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
   gap: 20px;
 }
 .field {

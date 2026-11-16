@@ -48,9 +48,13 @@ test("the family dashboard sections are 3D tabs, and the current one is marked",
       .evaluate((el) => getComputedStyle(el).transform);
   await expect.poll(() => lean("الطلبات")).not.toMatch(/^none$/);
   expect(await lean("الطلبات")).not.toBe(await lean("العروض"));
-  await tabs.getByRole("link", { name: "الرئيسية" }).click();
-  await expect(page).toHaveURL(/\/dashboard$/);
   await expect(tabs.getByRole("link", { name: "الرئيسية" })).toHaveAttribute(
+    "href",
+    "/dashboard",
+  );
+  await tabs.getByRole("link", { name: "المنتجات" }).click();
+  await expect(page).toHaveURL(/\/dashboard\/products$/);
+  await expect(tabs.getByRole("link", { name: "المنتجات" })).toHaveAttribute(
     "aria-current",
     "page",
   );
