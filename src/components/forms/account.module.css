@@ -1264,3 +1264,11 @@
   margin-top: 3px;
   width: 22px;
 }
+/* «مشاركة كل منتجاتي» أعلى قائمة منتجات الأسرة */
+.shareAll {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 12px;
+}

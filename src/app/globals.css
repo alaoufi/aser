@@ -1713,6 +1713,29 @@ hr {
   padding: 8px 14px;
   justify-self: start;
 }
+.share-title {
+  font-size: 14px;
+}
+/* الرابط المختصر ظاهرًا ويُنسخ باللمس المطوّل */
+.share-link {
+  background: #fbf6ec;
+  border: 1px dashed rgba(46, 29, 18, 0.35);
+  border-radius: 10px;
+  font-family: ui-monospace, monospace;
+  font-size: 15px;
+  justify-self: start;
+  padding: 8px 12px;
+  user-select: all;
+}
+.share-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.share-whatsapp {
+  align-items: center;
+  display: inline-flex;
+}
 .report-control {
   margin-top: 24px;
 }

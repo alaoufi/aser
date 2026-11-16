@@ -10,6 +10,8 @@ import Link from "next/link";
 import { getProducer, getProduct } from "@/server/catalog";
 import { phoneNumber, priceLabel, safeMediaUrl } from "@/components/public/ui";
 import { JsonLd } from "@/components/public/json-ld";
+import { ShareButton } from "@/components/public/share-button";
+import { shortLink } from "@/server/share";
 import { SITE_URL, absoluteUrl, excerpt, openGraph } from "@/lib/seo";
 export const dynamic = "force-dynamic";
 export async function generateMetadata({
@@ -58,7 +60,10 @@ export default async function ProductDetail({
   if (!p) notFound();
   const offer = (await searchParams).offer;
   // وسائل تواصل الأسرة المنتجة المنشورة في صفحتها العامة فقط، لعرضها بعد إرسال الطلب.
-  const family = await getProducer(p.producerSlug);
+  const [family, share] = await Promise.all([
+    getProducer(p.producerSlug),
+    shortLink("product", p.id),
+  ]);
   const familyPhone = family?.phone ? phoneNumber(family.phone) : null;
   const familyWhatsapp = family?.whatsapp ? phoneNumber(family.whatsapp) : null;
   const image = p.imageUrl && safeMediaUrl(p.imageUrl);
@@ -218,6 +223,12 @@ export default async function ProductDetail({
             التواصل والاتفاق مباشرة مع الأسرة المنتجة. لا يوجد دفع إلكتروني داخل
             المنصة.
           </p>
+          <ShareButton
+            title={p.name}
+            url={share}
+            label="مشاركة المنتج"
+            text={`${p.name} من ${p.producerName}${p.price !== null ? ` — ${p.price} ر.س` : ""} في أكلات جدتنا`}
+          />
         </section>
       </div>
       <ReportButton productId={p.id} />

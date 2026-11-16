@@ -19,6 +19,7 @@ import {
   priceLabel,
 } from "@/components/public/ui";
 import { JsonLd } from "@/components/public/json-ld";
+import { shortLink } from "@/server/share";
 import { SITE_URL, absoluteUrl, excerpt, openGraph } from "@/lib/seo";
 export const dynamic = "force-dynamic";
 export async function generateMetadata({
@@ -56,9 +57,10 @@ export default async function ProducerDetail({
 }) {
   const p = await getProducer((await params).slug);
   if (!p) notFound();
-  const [products, texts] = await Promise.all([
+  const [products, texts, share] = await Promise.all([
     getProducerProducts(p.id),
     getSiteTexts(),
+    shortLink("family", p.id),
   ]);
   const coverage = p.delivery ? await getPublicCoverage(p.id) : [];
   const phone = p.phone ? phoneNumber(p.phone) : null;
@@ -175,7 +177,12 @@ export default async function ProducerDetail({
         </section>
         <aside className="info-panel">
           <h2>تواصل مع الأسرة المنتجة</h2>
-          <ShareButton title={p.name} />
+          <ShareButton
+            title={p.name}
+            url={share}
+            label="مشاركة منتجات الأسرة"
+            text={`منتجات ${p.name} في أكلات جدتنا — أكل بيت من ${p.cityName}`}
+          />
           <p>اتفق مباشرة على السعر والكمية ووقت التجهيز والاستلام.</p>
           <RatingBox
             kind="family"
