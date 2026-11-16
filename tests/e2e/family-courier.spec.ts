@@ -322,6 +322,10 @@ test("an admin who owns a family sees the family sections and «my private couri
     .filter({ hasText: "مرحبًا، أكلات نجدية" });
   await expect(greeting).toBeVisible();
   await expect(greeting.locator("+ p")).toHaveText("حساب أسرة منتجة");
+  await page
+    .getByRole("navigation", { name: "حسابي" })
+    .getByText("قائمة حسابي")
+    .click();
   await expect(
     page.getByRole("navigation", { name: "حسابي" }).getByRole("link", {
       name: "مندوبي الخاص",

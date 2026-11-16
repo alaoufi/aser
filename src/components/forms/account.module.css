@@ -5,10 +5,83 @@
   color: #3c2b20;
 }
 .nav {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
   margin-bottom: 18px;
+}
+/* قائمة «حسابي» المنسدلة */
+.accountMenu {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+}
+.accountMenuButton {
+  list-style: none;
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  max-width: 100%;
+  min-height: 46px;
+  padding: 8px 18px;
+  border: 1.5px solid #4f5d36;
+  border-radius: 999px;
+  background: #4f5d36;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  user-select: none;
+  box-shadow: 0 3px 0 #3b4628;
+}
+.accountMenuButton::-webkit-details-marker {
+  display: none;
+}
+.accountMenuButton::after {
+  content: "▾";
+  transition: transform 0.25s ease;
+}
+.accountMenu[open] .accountMenuButton::after {
+  transform: rotate(180deg);
+}
+.accountMenuButton:focus-visible {
+  outline: 3px solid #9c2f1e;
+  outline-offset: 2px;
+}
+.accountMenuCurrent {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.18);
+  font-weight: 600;
+  font-size: 0.9em;
+}
+.accountMenuList {
+  position: absolute;
+  inset-inline-start: 0;
+  top: calc(100% + 8px);
+  z-index: 30;
+  display: grid;
+  gap: 6px;
+  min-width: min(230px, calc(100vw - 32px));
+  padding: 10px;
+  border: 1px solid #e3d2b4;
+  border-radius: 16px;
+  background: #fffdf8;
+  box-shadow: 0 18px 40px -16px rgb(40 25 15 / 0.45);
+  transform-origin: top;
+  animation: account-menu-open 0.22s ease-out;
+}
+@keyframes account-menu-open {
+  from {
+    opacity: 0;
+    transform: perspective(800px) rotateX(-25deg) translateY(-6px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .accountMenuList {
+    animation: none;
+  }
+}
+.accountMenuList .navLink {
+  justify-content: flex-start;
+  width: 100%;
 }
 /* روابط التنقل أزرارًا واضحة: إطار وخلفية ومساحة لمس، والصفحة الحالية بلون الزيتون. */
 .navLink {
@@ -86,7 +159,7 @@
 }
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
   gap: 20px;
 }
 .field {
@@ -1363,4 +1436,67 @@
 }
 .subDays select {
   min-height: 40px;
+}
+/* «معلوماتي» ← «المظهر»: بطاقتا شكل الموقع */
+.lookChoices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.lookChoice {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+  padding: 12px;
+  border: 1.5px solid #d6b98d;
+  border-radius: 16px;
+  background: #fffaf1;
+  color: var(--ink);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.lookChoice:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px -14px rgb(40 25 15 / 0.5);
+}
+.lookChoice:focus-visible {
+  outline: 3px solid #9c2f1e;
+  outline-offset: 2px;
+}
+.lookChoice[aria-pressed="true"] {
+  border-color: #4f5d36;
+  box-shadow: 0 0 0 2px #4f5d36;
+}
+.lookSwatch {
+  width: 100%;
+  height: 72px;
+  border-radius: 10px;
+}
+.look_classic .lookSwatch {
+  background:
+    linear-gradient(90deg, #526247 0 22%, transparent 22%),
+    linear-gradient(180deg, #fcf8f0, #f3e7d3);
+  border: 1px solid #e5d9c6;
+}
+.look_najdi .lookSwatch {
+  background:
+    repeating-linear-gradient(
+      45deg,
+      #9c2f1e 0 8px,
+      #2c1d12 8px 16px,
+      #f4ead9 16px 24px
+    ),
+    #f4ead9;
+}
+.lookOn {
+  color: #4f5d36;
+  font-weight: 700;
+  font-size: 0.9rem;
 }

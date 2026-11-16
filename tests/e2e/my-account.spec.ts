@@ -42,6 +42,7 @@ test("admin's personal account is separate from the admin account and edits name
   await page.goto("/me");
   await expect(page.getByRole("heading", { name: "معلوماتي" })).toBeVisible();
   const personal = page.getByRole("navigation", { name: "حسابي", exact: true });
+  await personal.getByText("قائمة حسابي").click();
   await expect(personal.getByRole("link", { name: "طلباتي" })).toBeVisible();
   await expect(personal.getByRole("link", { name: "معلوماتي" })).toBeVisible();
   // الحساب الخاص منفصل: لا يدخل منه على حساب الإدارة (التبديل من أعلى الموقع فقط).
@@ -54,6 +55,11 @@ test("admin's personal account is separate from the admin account and edits name
   await expect(page.getByText("تم حفظ الاسم ✓")).toBeVisible();
   expect(sent[0]).toEqual({ name: "أبو محمد" });
 
+  // «معلوماتي» تبويبات: البيانات الشخصية، كلمة المرور، المظهر، حذف الحساب.
+  await page.getByRole("tab", { name: "كلمة المرور" }).click();
+  await expect(
+    page.getByRole("tabpanel", { name: "كلمة المرور" }),
+  ).toBeVisible();
   const pwd = page.getByRole("form", { name: "تغيير كلمة المرور" });
   await pwd.getByLabel("كلمة المرور الحالية", { exact: true }).fill("9999");
   await pwd.getByLabel("كلمة المرور الجديدة", { exact: true }).fill("2468");
