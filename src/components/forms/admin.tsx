@@ -19,6 +19,7 @@ import {
 } from "./admin-tools";
 import { familyAccountState, type FamilyState } from "@/lib/family-status";
 import { AccountShell, Guard, Message, api, s, useSession } from "./shared";
+import { ownAccountHref } from "@/components/public/account-link";
 import { can, isManager, type AdminPermission } from "@/lib/permissions";
 import { MembersAdmin } from "./members";
 import { SectionIcon as AdminIcon } from "./section-icon";
@@ -299,8 +300,9 @@ export function Admin() {
     <AccountShell navigation={false}>
       <div className={s.actions}>
         <h1>حساب الإدارة</h1>
-        <Link href="/orders" className={s.buttonSecondary}>
-          حسابي الخاص
+        {/* الرجوع للحساب الخاص: لوحة الأسرة إن كان له أسرة، وإلا طلباته. */}
+        <Link href={ownAccountHref(session.user)} className={s.buttonSecondary}>
+          ← الرجوع لحسابي الخاص
         </Link>
       </div>
       <Guard {...session} admin />

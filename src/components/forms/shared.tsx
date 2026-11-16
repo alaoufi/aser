@@ -116,8 +116,7 @@ export function isFamilyAccount(user: SessionUser | null | undefined) {
 export function accountKind(user: SessionUser) {
   if (user.role === "courier") return "حساب مندوب";
   if (isFamilyAccount(user)) return "حساب أسرة منتجة";
-  if (user.role === "admin" || (user.permissions?.length ?? 0) > 0)
-    return "حساب الإدارة";
+  // الحساب الخاص منفصل عن حساب الإدارة: صاحب الصلاحيات هنا عضو كغيره.
   return "حساب عميل";
 }
 function AccountNavigation() {

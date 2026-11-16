@@ -360,3 +360,47 @@ test("account type is written under the name: customer and courier", async ({
     await page.unroute("**/api/session");
   }
 });
+
+// حساب الإدارة منفصل عن الحساب الخاص: فيه «الرجوع لحسابي الخاص» فقط، ولوحة الأسرة بلا رابط للإدارة.
+test("admin and personal accounts stay separate, with a way back from admin", async ({
+  page,
+}) => {
+  await page.addInitScript(() =>
+    sessionStorage.setItem("jdatna:family-welcome", "1"),
+  );
+  await page.route("**/api/session", (r) =>
+    r.fulfill({
+      json: {
+        user: {
+          id: "a",
+          name: "المالك",
+          phone: "+966500000099",
+          role: "admin",
+          permissions: [],
+          familyName: "أكلات نجدية",
+        },
+        registrationOpen: true,
+      },
+    }),
+  );
+  await page.route("**/api/producer/profile", (r) =>
+    r.fulfill({ json: { cities: [], categories: [], profile: null } }),
+  );
+  await page.goto("/dashboard");
+  await expect(
+    page
+      .locator("main")
+      .getByRole("link", { name: /لوحة الإدارة|حساب الإدارة/ }),
+  ).toHaveCount(0);
+  await page.goto("/admin");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "حساب الإدارة" }),
+  ).toBeVisible();
+  await expect(
+    page.locator("main").getByRole("link", { name: "← الرجوع لحسابي الخاص" }),
+  ).toHaveAttribute("href", "/dashboard");
+  // لا روابط الحساب الخاص داخل حساب الإدارة.
+  await expect(
+    page.getByRole("navigation", { name: "حسابي", exact: true }),
+  ).toHaveCount(0);
+});

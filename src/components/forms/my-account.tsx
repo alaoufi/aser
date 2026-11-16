@@ -129,11 +129,6 @@ export function MyAccount() {
             </button>
           </form>
           <div className={s.actions}>
-            {isManager(me) && (
-              <Link className={s.buttonSecondary} href="/admin">
-                حساب الإدارة
-              </Link>
-            )}
             <Link href="/account/delete">حذف حسابي</Link>
           </div>
         </>

@@ -663,7 +663,6 @@ export function Dashboard() {
             >
               تسجيل الخروج
             </button>
-            {session.user.role === "admin" && <a href="/admin">لوحة الإدارة</a>}
           </div>
           {isFamilyAccount(session.user) && (
             <nav
