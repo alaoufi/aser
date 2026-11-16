@@ -9,6 +9,7 @@ import {
   listCouriers,
   markCourierDelivered,
   ownCourier,
+  setCourierPickup,
   saveCourier,
   setCourierActive,
 } from "../src/server/couriers";
@@ -330,6 +331,18 @@ test(
       assert.equal(forCourier?.byCustomer, true);
       // موقع الاستلام: موقع الأسرة المحفوظ في ملفها.
       assert.equal(forCourier?.pickupLocation, "حي النخيل، شارع الأسرة");
+      // الأسرة ترسل موقع الاستلام لمندوب العميل؛ أسرة أخرى لا تستطيع.
+      const spot = {
+        orderId: ownOrder,
+        pickupLocation: "https://maps.google.com/?q=24.8,46.7",
+      };
+      await assert.rejects(setCourierPickup(fFar, spot), { status: 404 });
+      await setCourierPickup(fCity, spot);
+      assert.equal(
+        (await courierDeliveries(k1User)).find((d) => d.orderId === ownOrder)
+          ?.pickupLocation,
+        spot.pickupLocation,
+      );
       // طلب أسندته الأسرة لا يغيّره العميل.
       await assert.rejects(
         customerChooseCourier(customer, { ...pick, orderId }),

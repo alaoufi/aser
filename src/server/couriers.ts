@@ -441,6 +441,41 @@ export async function customerChooseCourier(user: SessionUser, input: unknown) {
   return { orderId: order.id as string, courierName: courier.name };
 }
 
+/**
+ * الأسرة ترسل موقع الاستلام لمندوب اختاره العميل (لا تغيّر المندوب)، فيصله مع إشعار.
+ */
+export async function setCourierPickup(user: SessionUser, input: unknown) {
+  const value = z
+    .object({
+      orderId: z.uuid(),
+      pickupLocation: z
+        .string()
+        .trim()
+        .min(5, "اكتب موقع الاستلام أو رابط الخريطة")
+        .max(1000),
+    })
+    .strict()
+    .parse(input);
+  const row = (
+    await db().query(
+      `UPDATE jdatna.order_couriers oc SET pickup_location=$3
+       FROM jdatna.order_requests o JOIN jdatna.producer_profiles p ON p.id=o.producer_id
+       WHERE oc.order_id=$1 AND o.id=oc.order_id AND p.user_id=$2 AND oc.status='assigned'
+       RETURNING oc.courier_user_id AS "courierUserId",COALESCE(p.trade_name,p.name) AS family,o.snapshot->>'productName' AS product`,
+      [value.orderId, user.id, value.pickupLocation],
+    )
+  ).rows[0];
+  if (!row) throw new HttpError(404, "لا يوجد مندوب لهذا الطلب الآن");
+  const { notifyUser } = await import("./push");
+  void notifyUser(row.courierUserId, {
+    title: "موقع الاستلام",
+    body: `أرسلت «${row.family}» موقع استلام ${row.product ?? "الطلب"}.`,
+    url: "/courier",
+    tag: `pickup-${value.orderId}`,
+  });
+  return { orderId: value.orderId, pickupLocation: value.pickupLocation };
+}
+
 /** «طلبات التوصيل» عند المندوب: موقع الأسرة للاستلام وموقع العميل للتوصيل. */
 export async function courierDeliveries(user: SessionUser) {
   return (

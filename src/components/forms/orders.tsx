@@ -1134,6 +1134,57 @@ function CustomerCourier({ order }: { order: Order }) {
   );
 }
 
+/** مندوب اختاره العميل: الأسرة ترسل له موقع الاستلام (يصله مع موقع العميل). */
+function CourierPickupForm({ order }: { order: Order }) {
+  const [error, setError] = useState(""),
+    [done, setDone] = useState(""),
+    [sending, setSending] = useState(false);
+  async function send(form: FormData) {
+    setSending(true);
+    setError("");
+    try {
+      await api("/api/producer/orders/courier", {
+        method: "PATCH",
+        body: JSON.stringify({
+          orderId: order.id,
+          pickupLocation: String(form.get("pickupLocation") ?? ""),
+        }),
+      });
+      setDone("تم ✓ وصل موقع الاستلام للمندوب.");
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setSending(false);
+    }
+  }
+  return (
+    <form
+      aria-label="موقع الاستلام للمندوب"
+      onSubmit={(e) => {
+        e.preventDefault();
+        void send(new FormData(e.currentTarget));
+      }}
+    >
+      <LocationInput
+        name="pickupLocation"
+        label="موقع الاستلام (موقع الأسرة)"
+        hint="يصل لمندوب العميل مع موقع العميل للتوصيل."
+        defaultValue={
+          // «يُتفق عليه» نص بديل لا موقع: يبدأ الحقل بموقع الأسرة المحفوظ إن وُجد.
+          order.courierPickup?.startsWith("الاستلام من «")
+            ? order.familyPickup
+            : (order.courierPickup ?? order.familyPickup)
+        }
+        required
+      />
+      <Message error={error} success={done} />
+      <button type="submit" className={s.buttonSecondary} disabled={sending}>
+        أرسل موقعك للمندوب
+      </button>
+    </form>
+  );
+}
+
 /**
  * إسناد التوصيل لمندوب: يظهر المندوبون النشطون في تغطية الأسرة،
  * ويصل المندوب موقع الاستلام (موقع الأسرة) وموقع العميل للتوصيل.
@@ -1201,6 +1252,9 @@ function CourierAssign({ order }: { order: Order }) {
           title="تقييم المندوب"
           compact
         />
+      )}
+      {order.courierByCustomer && order.courierStatus === "assigned" && (
+        <CourierPickupForm order={order} />
       )}
       {canAssign && !open && (
         <button type="button" className={s.buttonSecondary} onClick={show}>

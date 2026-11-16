@@ -463,3 +463,94 @@ test("a customer picks a courier for an accepted delivery order from the courier
     courierUserId: "00000000-0000-4000-8000-000000000041",
   });
 });
+
+// مندوب اختاره العميل: الأسرة لا تغيّره، وترسل له موقع الاستلام.
+test("a family sends its pickup location to the courier the customer chose", async ({
+  page,
+}) => {
+  await page.addInitScript(() =>
+    sessionStorage.setItem("jdatna:family-welcome", "1"),
+  );
+  await page.route("**/api/session", (r) =>
+    r.fulfill({
+      json: {
+        user: {
+          id: "f",
+          name: "أسرة",
+          phone: "+966500000022",
+          role: "producer",
+        },
+        registrationOpen: true,
+      },
+    }),
+  );
+  await page.route("**/api/producer/status", (r) =>
+    r.fulfill({ json: { state: null } }),
+  );
+  let sent: { method: string; body: unknown } | undefined;
+  await page.route("**/api/producer/orders**", (r) => {
+    const path = new URL(r.request().url()).pathname;
+    if (path.endsWith("/courier")) {
+      sent = {
+        method: r.request().method(),
+        body: r.request().postDataJSON(),
+      };
+      return r.fulfill({ json: { orderId: "o1", pickupLocation: "x" } });
+    }
+    if (path.endsWith("/alerts"))
+      return r.fulfill({ json: { alerts: [], pending: 0 } });
+    return r.fulfill({
+      json: {
+        orders: [
+          {
+            id: "00000000-0000-4000-8000-000000000072",
+            productId: "p1",
+            snapshot: {
+              productName: "مرقوق",
+              producerName: "أسرة",
+              unit: "صحن",
+              price: 20,
+              offer: null,
+            },
+            name: "أبو فهد",
+            phone: "+966500000023",
+            quantity: 1,
+            meal: "lunch",
+            days: 1,
+            startDate: "2026-11-16",
+            endDate: "2026-11-16",
+            notes: "",
+            status: "preparing",
+            fulfillment: "delivery",
+            deliveryLocation: "حي الملقا",
+            customerId: "u1",
+            courierUserId: "00000000-0000-4000-8000-000000000041",
+            courierName: "سعد المندوب",
+            courierStatus: "assigned",
+            courierByCustomer: true,
+            courierPickup: "الاستلام من «أسرة»: يُتفق على الموقع معها",
+            familyPickup: null,
+          },
+        ],
+      },
+    });
+  });
+  await page.goto("/dashboard/orders");
+  await expect(page.getByText("(اختاره العميل، ويستلم منكم)")).toBeVisible();
+  await expect(page.getByRole("button", { name: "تغيير المندوب" })).toHaveCount(
+    0,
+  );
+  const form = page.getByRole("form", { name: "موقع الاستلام للمندوب" });
+  await form
+    .getByLabel("موقع الاستلام (موقع الأسرة)")
+    .fill("حي النخيل، شارع 5");
+  await form.getByRole("button", { name: "أرسل موقعك للمندوب" }).click();
+  await expect(form.getByText("وصل موقع الاستلام للمندوب")).toBeVisible();
+  expect(sent).toEqual({
+    method: "PATCH",
+    body: {
+      orderId: "00000000-0000-4000-8000-000000000072",
+      pickupLocation: "حي النخيل، شارع 5",
+    },
+  });
+});
