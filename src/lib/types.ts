@@ -109,4 +109,6 @@ export type SessionUser = {
   username?: string | null;
   /** صلاحيات المشرف (staff) فقط. */
   permissions?: string[];
+  /** اسم الأسرة المنتجة (الاسم التجاري) لصاحب الحساب إن كان له ملف أسرة: للترحيب الواضح. */
+  familyName?: string | null;
 };

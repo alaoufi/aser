@@ -1716,6 +1716,16 @@ hr {
 .share-title {
   font-size: 14px;
 }
+/* «مرحبًا، اسم الأسرة» أعلى قائمة الجوال */
+.menu-greeting {
+  border-bottom: 1px solid rgba(46, 29, 18, 0.15);
+  font-size: 15px;
+  margin: 0 0 6px;
+  padding: 10px 14px;
+}
+.menu-greeting strong {
+  font-size: 17px;
+}
 /* أعلى الصفحة: رابط الرجوع في جهة، و«مشاركة» في الجهة الأخرى */
 .page-top {
   align-items: center;

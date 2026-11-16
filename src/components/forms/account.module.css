@@ -1272,3 +1272,25 @@
   gap: 8px;
   margin: 0 0 12px;
 }
+/* الترحيب باسم صاحب الحساب أعلى صفحات الحساب: واضح لا مجهول */
+.greeting {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 18px;
+  gap: 8px;
+  margin: 0 0 10px;
+}
+.greeting strong {
+  color: #2e1d12;
+  font-size: 20px;
+}
+.greetingRole {
+  background: #f4ead9;
+  border: 1px solid rgba(46, 29, 18, 0.2);
+  border-radius: 999px;
+  color: #4f5d36;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 2px 10px;
+}

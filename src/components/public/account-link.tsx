@@ -34,3 +34,14 @@ export function AccountLink({ className }: { className?: string }) {
     </>
   );
 }
+
+/** أعلى قائمة الجوال: «مرحبًا، اسم الأسرة» حتى يكون صاحب الحساب واضحًا. */
+export function AccountGreeting() {
+  const { user } = useSession();
+  if (!user) return null;
+  return (
+    <p className="menu-greeting">
+      مرحبًا، <strong>{user.familyName || user.name}</strong>
+    </p>
+  );
+}

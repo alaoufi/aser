@@ -594,6 +594,8 @@ const familySections: [href: string, label: string, icon: string][] = [
   ["/dashboard/offers", "العروض", "offers"],
   ["/dashboard/library", "مكتبة الصور", "library"],
   ["/dashboard/coverage", "التغطية", "coverage"],
+  // مندوب الأسرة الخاص: تسجّله بنفسها بتعهّد، دون اعتماد الإدارة.
+  ["/dashboard/couriers", "مندوبي الخاص", "couriers"],
   // مندوبو التوصيل المعتمدون في مدينة الأسرة: محادثة واتصال وواتساب.
   ["/couriers", "المندوبون", "couriers"],
 ];
@@ -605,7 +607,6 @@ export function Dashboard() {
       {session.ready && session.user && (
         <>
           <div className={s.actions}>
-            <p>مرحبًا، {session.user.name}</p>
             <button
               className={s.button}
               onClick={async () => {

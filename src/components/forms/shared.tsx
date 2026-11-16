@@ -130,8 +130,35 @@ function AccountNavigation() {
               : ["/register", "طلب انضمام كأسرة"],
           ]) as [string, string][]),
   ];
+  // صاحب الحساب واضح لا مجهول: اسم الأسرة (الاسم التجاري) للأسرة، واسمه لغيرها.
+  const shown = user.familyName || user.name;
+  const kind =
+    user.role === "producer"
+      ? "أسرة منتجة"
+      : user.role === "courier"
+        ? "مندوب توصيل"
+        : user.role === "admin" || (user.permissions?.length ?? 0) > 0
+          ? "الإدارة"
+          : "عميل";
   return (
-    // روابط بارزة كأزرار، والصفحة الحالية مميزة بلونها.
+    <>
+      <p className={s.greeting}>
+        مرحبًا، <strong>{shown}</strong>
+        <span className={s.greetingRole}>{kind}</span>
+      </p>
+      {/* روابط بارزة كأزرار، والصفحة الحالية مميزة بلونها. */}
+      <AccountLinks links={links} path={path} />
+    </>
+  );
+}
+function AccountLinks({
+  links,
+  path,
+}: {
+  links: [string, string][];
+  path: string;
+}) {
+  return (
     <nav aria-label="حسابي" className={s.nav}>
       {links.map(([href, label]) => (
         <Link

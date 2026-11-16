@@ -64,7 +64,9 @@ export async function sessionInfo(request: Request): Promise<{
   if (!token) return null;
   const row = (
     await db().query(
-      'SELECT u.id,u.name,u.phone,u.role,u.username,u.permissions,(u.password_hash IS NOT NULL) AS "hasPassword",false AS "canSetCredentials" FROM jdatna.sessions s JOIN jdatna.users u ON u.id=s.user_id WHERE s.token_hash=$1 AND s.expires_at>now() AND NOT s.setup_only AND u.suspended_at IS NULL',
+      `SELECT u.id,u.name,u.phone,u.role,u.username,u.permissions,(u.password_hash IS NOT NULL) AS "hasPassword",false AS "canSetCredentials",
+        (SELECT COALESCE(p.trade_name,p.name) FROM jdatna.producer_profiles p WHERE p.user_id=u.id) AS "familyName"
+       FROM jdatna.sessions s JOIN jdatna.users u ON u.id=s.user_id WHERE s.token_hash=$1 AND s.expires_at>now() AND NOT s.setup_only AND u.suspended_at IS NULL`,
       [hash(token)],
     )
   ).rows[0];
