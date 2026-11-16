@@ -187,6 +187,7 @@ export default async function RootLayout({
             <Link href="/browse">طبخات اليوم</Link>
             <Link href="/producers">الأسر المنتجة</Link>
             <Link href="/offers">العروض الخاصة</Link>
+            <Link href="/subscriptions">الاشتراكات</Link>
             <Link href="/about">حكايتنا</Link>
           </nav>
           <div className="header-actions">
@@ -237,6 +238,7 @@ export default async function RootLayout({
               <Link href="/browse">الأكلات والمنتجات</Link>
               <Link href="/producers">الأسر المنتجة</Link>
               <Link href="/offers">العروض الخاصة</Link>
+              <Link href="/subscriptions">الاشتراكات</Link>
               <Link href="/orders">طلباتي</Link>
             </div>
             <div>

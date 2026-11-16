@@ -1,0 +1,230 @@
+import { test, expect } from "@playwright/test";
+import { randomUUID } from "node:crypto";
+import { Pool } from "pg";
+
+// «الاشتراكات»: أسر المنطقة التي تقبل الاشتراك، ثم «طلب اشتراك» بالنوع وتاريخ البدء والوجبات والتوصيل،
+// ثم التحويل إلى المحادثة مع الأسرة.
+test.describe("subscriptions for customers", () => {
+  test.skip(
+    process.env.JDATNA_TEST_DB !== "true" || !process.env.DATABASE_URL,
+    "Requires isolated database environment",
+  );
+  test.describe.configure({ mode: "serial" });
+  const user = randomUUID(),
+    fam = randomUUID();
+  let pool: Pool | undefined,
+    region = "",
+    started = false;
+  test.beforeAll(async () => {
+    pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 2 });
+    expect(
+      (
+        (await pool.query("SELECT current_database() AS n")).rows[0].n as string
+      ).startsWith("jdatna_test_"),
+    ).toBe(true);
+    started = true;
+    const phone =
+      "+9665" + String(Math.floor(Math.random() * 1e8)).padStart(8, "0");
+    const city = (
+      await pool.query(
+        "SELECT id,region_id FROM jdatna.cities ORDER BY id LIMIT 1",
+      )
+    ).rows[0];
+    region = city.region_id;
+    await pool.query(
+      "INSERT INTO jdatna.users(id,name,phone,role,phone_verified_at) VALUES($1,'أسرة',$2,'producer',now())",
+      [user, phone],
+    );
+    await pool.query(
+      "INSERT INTO jdatna.producer_profiles(id,user_id,slug,name,city_id,phone,status,delivery) VALUES($1,$2,$3,'مطبخ الاشتراك',$4,$5,'approved',true)",
+      [fam, user, "subs-" + fam, city.id, phone],
+    );
+    await pool.query(
+      "INSERT INTO jdatna.producer_subscription_plans(producer_id,enabled,daily,weekly,monthly,period,meals,delivery) VALUES($1,true,true,true,false,true,ARRAY['lunch','dinner'],true)",
+      [fam],
+    );
+  });
+  test.afterAll(async () => {
+    try {
+      if (pool && started) {
+        await pool.query(
+          "DELETE FROM jdatna.producer_subscription_plans WHERE producer_id=$1",
+          [fam],
+        );
+        await pool.query("DELETE FROM jdatna.producer_profiles WHERE id=$1", [
+          fam,
+        ]);
+        await pool.query("DELETE FROM jdatna.users WHERE id=$1", [user]);
+      }
+    } finally {
+      await pool?.end();
+    }
+  });
+
+  test("a visitor sees the family's plans and is invited to sign in", async ({
+    page,
+  }) => {
+    await page.goto(`/subscriptions?region=${encodeURIComponent(region)}`);
+    const card = page
+      .getByRole("list", { name: "أسر تقبل الاشتراكات" })
+      .getByRole("listitem")
+      .filter({ hasText: "مطبخ الاشتراك" });
+    await expect(card).toContainText("يومي");
+    await expect(card).toContainText("أسبوعي");
+    await expect(card).toContainText("مدة محددة");
+    await expect(card).not.toContainText("شهري");
+    await expect(card).toContainText("غداء · عشاء · مع التوصيل");
+    await expect(
+      card.getByRole("link", { name: "سجّل لطلب اشتراك" }),
+    ).toBeVisible();
+    // الاشتراكات في القائمة الرئيسية.
+    await expect(
+      page
+        .getByRole("link", { name: "الاشتراكات", includeHidden: true })
+        .first(),
+    ).toHaveAttribute("href", "/subscriptions");
+  });
+
+  test("a customer requests a subscription and lands in the chat", async ({
+    page,
+  }) => {
+    await page.route("**/api/session", (r) =>
+      r.fulfill({
+        json: {
+          user: {
+            id: "c",
+            name: "عميل",
+            phone: "+966500000055",
+            role: "customer",
+          },
+          registrationOpen: true,
+        },
+      }),
+    );
+    let sent: Record<string, unknown> | undefined;
+    await page.route("**/api/subscriptions", (r) => {
+      sent = r.request().postDataJSON();
+      return r.fulfill({ json: { id: "s1", conversationId: "conv-1" } });
+    });
+    await page.route("**/api/conversations**", (r) =>
+      r.fulfill({ json: { conversations: [] } }),
+    );
+    await page.goto(`/subscriptions?region=${encodeURIComponent(region)}`);
+    const card = page
+      .getByRole("listitem")
+      .filter({ hasText: "مطبخ الاشتراك" });
+    await card.getByRole("button", { name: "طلب اشتراك" }).click();
+    const form = card.getByRole("form", {
+      name: "طلب اشتراك من مطبخ الاشتراك",
+    });
+    // فقط ما تتيحه الأسرة.
+    await expect(form.getByRole("radio")).toHaveCount(3);
+    await form.getByRole("radio", { name: "مدة محددة" }).check();
+    await form.getByLabel("مدة محددة يبدأ من تاريخ").fill("2099-01-10");
+    await form.getByLabel("عدد الأيام").fill("10");
+    await form.getByRole("checkbox", { name: "غداء" }).check();
+    await form.getByRole("checkbox", { name: "مع التوصيل" }).check();
+    await form.getByLabel("موقع التوصيل").fill("حي النخيل، شارع 5");
+    await form
+      .getByRole("button", { name: "أرسل الطلب وانتقل للمحادثة" })
+      .click();
+    await expect(page).toHaveURL(/\/messages\?c=conv-1$/);
+    expect(sent).toEqual({
+      family: "subs-" + fam,
+      plan: "period",
+      startDate: "2099-01-10",
+      days: 10,
+      meals: ["lunch"],
+      delivery: true,
+      location: "حي النخيل، شارع 5",
+      notes: "",
+    });
+  });
+});
+
+// لوحة الأسرة ← «الاشتراكات»: تختار الأنواع والوجبات والتوصيل، وترى طلبات الاشتراك مع رابط المحادثة.
+test("the family sets which subscriptions it offers and sees incoming requests", async ({
+  page,
+}) => {
+  await page.addInitScript(() =>
+    sessionStorage.setItem("jdatna:family-welcome", "1"),
+  );
+  await page.route("**/api/session", (r) =>
+    r.fulfill({
+      json: {
+        user: {
+          id: "f",
+          name: "أسرة",
+          phone: "+966500000041",
+          role: "producer",
+          familyName: "أكلات نجدية",
+        },
+        registrationOpen: true,
+      },
+    }),
+  );
+  let saved: Record<string, unknown> | undefined;
+  const state = {
+    plan: {
+      enabled: false,
+      daily: false,
+      weekly: false,
+      monthly: false,
+      period: false,
+      meals: [] as string[],
+      delivery: false,
+      notes: "",
+    },
+    approved: true,
+    familyDelivers: true,
+    requests: [
+      {
+        id: "r1",
+        plan: "weekly",
+        startDate: "2099-01-01",
+        days: null,
+        meals: ["lunch"],
+        delivery: true,
+        location: "حي",
+        notes: "",
+        status: "new",
+        conversationId: "conv-9",
+        customerName: "سالم",
+      },
+    ],
+  };
+  await page.route("**/api/producer/subscriptions", (r) => {
+    if (r.request().method() === "PUT") {
+      saved = r.request().postDataJSON();
+      return r.fulfill({ json: { ...state, plan: saved } });
+    }
+    return r.fulfill({ json: state });
+  });
+  await page.goto("/dashboard/subscriptions");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "الاشتراكات" }),
+  ).toBeVisible();
+  await page.getByText("أقبل طلبات الاشتراك").click();
+  await page.getByRole("checkbox", { name: "يومي" }).check();
+  await page.getByRole("checkbox", { name: "شهري" }).check();
+  await page.getByRole("checkbox", { name: "غداء" }).check();
+  await page.getByRole("checkbox", { name: "مع التوصيل" }).check();
+  await page.getByRole("button", { name: "حفظ الاشتراكات" }).click();
+  await expect(page.getByText(/تم الحفظ ✓ أسرتك تظهر الآن/)).toBeVisible();
+  expect(saved).toEqual({
+    enabled: true,
+    daily: true,
+    weekly: false,
+    monthly: true,
+    period: false,
+    meals: ["lunch"],
+    delivery: true,
+    notes: "",
+  });
+  const requests = page.getByRole("region", { name: "طلبات الاشتراك" });
+  await expect(requests).toContainText("سالم");
+  await expect(requests).toContainText("أسبوعي");
+  await expect(
+    requests.getByRole("link", { name: "المحادثة للاتفاق ←" }),
+  ).toHaveAttribute("href", "/messages?c=conv-9");
+});
