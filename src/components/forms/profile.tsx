@@ -629,6 +629,7 @@ const familySections: [href: string, label: string, icon: string][] = [
   ["/dashboard/products", "المنتجات", "products"],
   ["/dashboard/orders", "الطلبات", "orders"],
   ["/dashboard/offers", "العروض", "offers"],
+  ["/dashboard/subscriptions", "الاشتراكات", "orders"],
   ["/dashboard/library", "مكتبة الصور", "library"],
   ["/dashboard/coverage", "التغطية", "coverage"],
   // مندوب الأسرة الخاص: تسجّله بنفسها بتعهّد، دون اعتماد الإدارة.
