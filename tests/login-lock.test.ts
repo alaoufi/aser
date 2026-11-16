@@ -92,21 +92,19 @@ test(
         "INSERT INTO jdatna.users(id,name,phone,role,phone_verified_at,password_hash) VALUES($1,'مدير',$3,'admin',now(),$5),($2,'عميل',$4,'customer',now(),$5)",
         [...ids, ...phones, await hashPassword("2468")],
       );
-      const hours = async (phone: string) => {
-        const { token } = await passwordLogin({
-          identifier: phone,
-          password: "2468",
-        });
+      // الجلسة تُقرأ بحساب صاحبها (لكل حساب جلسة واحدة في هذا الاختبار).
+      const hours = async (phone: string, userId: string) => {
+        await passwordLogin({ identifier: phone, password: "2468" });
         return (
           await pool.query(
-            "SELECT extract(epoch FROM expires_at-now())/3600 AS h FROM jdatna.sessions WHERE token_hash=$1",
-            [hash(token!)],
+            "SELECT extract(epoch FROM max(expires_at)-now())/3600 AS h FROM jdatna.sessions WHERE user_id=$1",
+            [userId],
           )
         ).rows[0].h as number;
       };
-      const admin = await hours(phones[0]);
+      const admin = await hours(phones[0], ids[0]);
       assert.ok(admin > 11.9 && admin <= 12, String(admin));
-      const member = await hours(phones[1]);
+      const member = await hours(phones[1], ids[1]);
       assert.ok(member > 364 * 24, String(member));
     } finally {
       await pool.query(
