@@ -176,6 +176,8 @@ test(
       addMenuItem,
       removeMenuItem,
       decideSubscription,
+      customerAgree,
+      viewContract,
       mySubscriptions,
       setDefaultDish,
       setDayDish,
@@ -262,14 +264,65 @@ test(
         }),
         { status: 409 },
       );
+      // موافقة الأسرة تنتظر ضغط العميل «تم الاتفاق مع الأسرة».
+      await assert.rejects(
+        decideSubscription(owner, { id: sub.id, status: "agreed" }),
+        { status: 409 },
+      );
+      await assert.rejects(customerAgree(owner, { id: sub.id }), {
+        status: 404,
+      });
+      await customerAgree(customer, { id: sub.id });
       await decideSubscription(owner, { id: sub.id, status: "agreed" });
+      await assert.rejects(
+        decideSubscription(owner, { id: sub.id, status: "agreed" }),
+        { status: 409 },
+      );
+      // العقد: يراه الطرفان، وفيه الشروط ونسخة المحادثة، وثابت في القاعدة.
+      const contractId = (await mySubscriptions(customer)).subscriptions[0]
+        .contractId as string;
+      assert.ok(contractId);
+      const contract = await viewContract(customer, contractId);
+      assert.equal((await viewContract(owner, contractId)).id, contractId);
+      const stranger: SessionUser = {
+        id: randomUUID(),
+        name: "غريب",
+        phone: phone(),
+        role: "customer",
+      };
+      await assert.rejects(viewContract(stranger, contractId), { status: 404 });
+      assert.equal(contract.familyName, "أسرة القائمة");
+      assert.equal(contract.customerName, customer.name);
+      assert.equal(contract.terms.planLabel, "أسبوعي");
+      assert.match(contract.transcript[0].body, /طلب اشتراك جديد/);
+      assert.ok(
+        contract.transcript.some((m) => /تم الاتفاق مع الأسرة/.test(m.body)),
+      );
+      assert.match(contract.contentHash, /^[a-f0-9]{64}$/);
+      await assert.rejects(
+        pool.query(
+          "UPDATE jdatna.subscription_contracts SET customer_name='مزور' WHERE id=$1",
+          [contractId],
+        ),
+        /ثابت/,
+      );
+      await assert.rejects(
+        pool.query("DELETE FROM jdatna.subscription_contracts WHERE id=$1", [
+          contractId,
+        ]),
+        /ثابت/,
+      );
+      await assert.rejects(
+        pool.query("TRUNCATE jdatna.subscription_contracts"),
+        /ثابت/,
+      );
       const agreedMsg = (
         await pool.query(
           "SELECT body FROM jdatna.messages WHERE conversation_id=$1 AND sender_id=$2",
           [sub.conversationId, owner.id],
         )
       ).rows[0];
-      assert.match(agreedMsg.body, /تم الاتفاق على الاشتراك/);
+      assert.match(agreedMsg.body, /وافقت الأسرة على الاتفاق/);
       // الطبق الدائم: من قائمة الأسرة لهذه الوجبة فقط.
       await assert.rejects(
         setDefaultDish(customer, {
@@ -372,6 +425,19 @@ test(
         "كبسة رز مع لحم",
       );
     } finally {
+      // تنظيف الاختبار المعزول: حذف العقد مسموح في قاعدة الاختبار فقط وبضبط صريح.
+      const client = await pool.connect();
+      try {
+        await client.query("BEGIN");
+        await client.query("SET LOCAL jdatna.contract_cleanup='on'");
+        await client.query(
+          "DELETE FROM jdatna.subscription_contracts WHERE producer_id=$1",
+          [fam],
+        );
+        await client.query("COMMIT");
+      } finally {
+        client.release();
+      }
       await pool.query(
         "DELETE FROM jdatna.subscription_requests WHERE producer_id=$1",
         [fam],

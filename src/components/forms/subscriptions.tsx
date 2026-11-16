@@ -59,6 +59,8 @@ type IncomingRequest = {
   status: string;
   conversationId: string | null;
   customerName: string;
+  customerAgreedAt: string | null;
+  contractId: string | null;
 };
 
 /** لوحة الأسرة ← «الاشتراكات»: ما تتيحه من أنواع ووجبات وتوصيل، والطلبات الواردة. */
@@ -338,26 +340,48 @@ export function FamilySubscriptions() {
                       الحالة:{" "}
                       <strong>{statusLabel[r.status] ?? r.status}</strong>
                     </p>
-                    {r.status !== "agreed" && (
-                      <button
-                        type="button"
-                        className={s.button}
-                        onClick={async () => {
-                          if (
-                            await call("/api/producer/subscriptions/decide", {
-                              id: r.id,
-                              status: "agreed",
-                            })
-                          ) {
-                            await reload();
-                            setSuccess(
-                              "تم الاتفاق ✓ وصلت رسالة للعميل ليختار أطباقه.",
-                            );
-                          }
-                        }}
+                    {r.status === "new" &&
+                      (r.customerAgreedAt ? (
+                        <>
+                          <p className={s.notice}>
+                            ضغط العميل «تم الاتفاق مع الأسرة». موافقتك تحفظ عقد
+                            الاشتراك مع نسخة المحادثة، ولا يُعدَّل ولا يُحذف.
+                          </p>
+                          <button
+                            type="button"
+                            className={s.button}
+                            onClick={async () => {
+                              if (
+                                await call(
+                                  "/api/producer/subscriptions/decide",
+                                  {
+                                    id: r.id,
+                                    status: "agreed",
+                                  },
+                                )
+                              ) {
+                                await reload();
+                                setSuccess(
+                                  "تمت الموافقة ✓ حُفظ عقد الاشتراك، ووصلت رسالة للعميل ليختار أطباقه.",
+                                );
+                              }
+                            }}
+                          >
+                            أوافق على الاتفاق
+                          </button>
+                        </>
+                      ) : (
+                        <p className={s.muted}>
+                          بانتظار أن يضغط العميل «تم الاتفاق مع الأسرة» بعد
+                          اتفاقكما في المحادثة.
+                        </p>
+                      ))}
+                    {r.contractId && (
+                      <Link
+                        href={`/contracts/${encodeURIComponent(r.contractId)}`}
                       >
-                        تم الاتفاق
-                      </button>
+                        عقد الاشتراك ←
+                      </Link>
                     )}
                     {r.status === "new" && (
                       <button
@@ -577,6 +601,8 @@ type MySubscription = {
   delivery: boolean;
   status: string;
   conversationId: string | null;
+  customerAgreedAt: string | null;
+  contractId: string | null;
   defaults: Partial<Record<MealId, string>>;
   overrides: { day: string; meal: MealId; itemId: string }[];
   menu: MenuItem[];
@@ -677,9 +703,55 @@ export function MySubscriptions() {
                 </>
               )}
             </p>
+            {sub.contractId && (
+              <p>
+                <Link href={`/contracts/${encodeURIComponent(sub.contractId)}`}>
+                  عقد الاشتراك ←
+                </Link>
+              </p>
+            )}
+            {sub.status === "new" &&
+              (sub.customerAgreedAt ? (
+                <p className={s.notice}>
+                  ضغطت «تم الاتفاق مع الأسرة» ✓ بانتظار موافقة الأسرة، فيُحفظ
+                  عقد الاشتراك.
+                </p>
+              ) : (
+                <div className={s.actions}>
+                  <button
+                    type="button"
+                    className={s.button}
+                    onClick={async () => {
+                      setError("");
+                      try {
+                        setData(
+                          await api<NonNullable<typeof data>>(
+                            "/api/subscriptions/agree",
+                            {
+                              method: "POST",
+                              body: JSON.stringify({ id: sub.id }),
+                            },
+                          ),
+                        );
+                        setSaved(
+                          "تم ✓ أُرسلت للأسرة لتوافق، فيُحفظ عقد الاشتراك.",
+                        );
+                      } catch (err) {
+                        setError((err as Error).message);
+                      }
+                    }}
+                  >
+                    تم الاتفاق مع الأسرة
+                  </button>
+                  <small className={s.muted}>
+                    اضغطه بعد اتفاقكما في المحادثة؛ موافقة الأسرة تحفظ عقدًا لا
+                    يُعدَّل ولا يُحذف.
+                  </small>
+                </div>
+              ))}
             {sub.status !== "agreed" ? (
               <p className={s.muted}>
-                تختار أطباقك بعد أن تؤكد الأسرة الاتفاق في المحادثة.
+                تختار أطباقك بعد أن توافق الأسرة على الاتفاق.
               </p>
             ) : (
               <>
@@ -784,5 +856,176 @@ export function MySubscriptions() {
         );
       })}
     </AccountShell>
+  );
+}
+
+type ContractView = {
+  id: string;
+  number: number;
+  familyName: string;
+  customerName: string;
+  terms: {
+    planLabel: string;
+    startDate: string;
+    endDate: string | null;
+    days: number | null;
+    mealLabels: string[];
+    delivery: boolean;
+    location: string | null;
+    notes: string;
+  };
+  transcript: { side: string; sender: string; body: string; at: string }[];
+  customerAgreedAt: string;
+  familyAgreedAt: string;
+  contentHash: string;
+};
+const when = (at: string) =>
+  new Intl.DateTimeFormat("ar-SA-u-ca-gregory-nu-latn", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Asia/Riyadh",
+  }).format(new Date(at));
+
+/** عقد الاشتراك: ثابت للطرفين والإدارة، للاطلاع والطباعة فقط. */
+export function ContractPage({ id }: { id: string }) {
+  const session = useSession();
+  const [contract, setContract] = useState<ContractView | null>(null);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    if (!session.user) return;
+    api<{ contract: ContractView }>(
+      `/api/subscriptions/contracts/${encodeURIComponent(id)}`,
+    )
+      .then((d) => setContract(d.contract))
+      .catch((e) => setError((e as Error).message));
+  }, [session.user?.id, id]);
+  return (
+    <AccountShell navigation={false}>
+      <Guard {...session} />
+      <Message error={error} />
+      {contract && (
+        <article className="contract" aria-label="عقد الاشتراك">
+          <h1>عقد اشتراك رقم {contract.number}</h1>
+          <p className="contract-lock">
+            🔒 عقد محفوظ: لا يمكن تعديله ولا حذفه.
+          </p>
+          <dl>
+            <dt>الأسرة المنتجة</dt>
+            <dd>{contract.familyName}</dd>
+            <dt>العميل</dt>
+            <dd>{contract.customerName}</dd>
+            <dt>نوع الاشتراك</dt>
+            <dd>
+              {contract.terms.planLabel}
+              {contract.terms.days ? ` (${contract.terms.days} يوم)` : ""}
+            </dd>
+            <dt>المدة</dt>
+            <dd>
+              من <bdi>{contract.terms.startDate}</bdi>
+              {contract.terms.endDate ? (
+                <>
+                  {" "}
+                  إلى <bdi>{contract.terms.endDate}</bdi>
+                </>
+              ) : (
+                " (مستمر)"
+              )}
+            </dd>
+            <dt>الوجبات</dt>
+            <dd>{contract.terms.mealLabels.join("، ")}</dd>
+            <dt>التسليم</dt>
+            <dd>
+              {contract.terms.delivery
+                ? `توصيل${contract.terms.location ? ` إلى: ${contract.terms.location}` : ""}`
+                : "استلام من الأسرة"}
+            </dd>
+            {contract.terms.notes && (
+              <>
+                <dt>ملاحظات</dt>
+                <dd>{contract.terms.notes}</dd>
+              </>
+            )}
+            <dt>موافقة العميل</dt>
+            <dd>{when(contract.customerAgreedAt)}</dd>
+            <dt>موافقة الأسرة</dt>
+            <dd>{when(contract.familyAgreedAt)}</dd>
+          </dl>
+          <h2>نسخة المحادثة عند الاتفاق</h2>
+          <ol className="contract-transcript">
+            {contract.transcript.map((m, i) => (
+              <li key={i} className={m.side}>
+                <strong>{m.sender}</strong> <small>{when(m.at)}</small>
+                <p>{m.body}</p>
+              </li>
+            ))}
+          </ol>
+          <p className="contract-hash">
+            بصمة العقد: <bdi dir="ltr">{contract.contentHash}</bdi>
+          </p>
+          <button
+            type="button"
+            className="button secondary no-print"
+            onClick={() => window.print()}
+          >
+            طباعة العقد
+          </button>
+        </article>
+      )}
+    </AccountShell>
+  );
+}
+
+/** الإدارة ← «عقود الاشتراكات»: كل العقود الثابتة، ولكل عقد صفحته. */
+export function ContractsAdmin() {
+  const [list, setList] = useState<
+    | {
+        id: string;
+        number: number;
+        familyName: string;
+        customerName: string;
+        plan: string;
+        startDate: string;
+        familyAgreedAt: string;
+      }[]
+    | null
+  >(null);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    api<{ contracts: NonNullable<typeof list> }>("/api/admin/contracts")
+      .then((d) => setList(d.contracts))
+      .catch((e) => setError((e as Error).message));
+  }, []);
+  return (
+    <section aria-label="عقود الاشتراكات">
+      <h2>عقود الاشتراكات</h2>
+      <p className={s.muted}>
+        يُحفظ العقد حين يضغط العميل «تم الاتفاق مع الأسرة» وتوافق الأسرة، ومعه
+        نسخة المحادثة. العقود ثابتة: لا تُعدَّل ولا تُحذف.
+      </p>
+      <Message error={error} />
+      {list === null && !error ? (
+        <p role="status">جارٍ تحميل العقود…</p>
+      ) : list?.length ? (
+        <ul className={s.courierList}>
+          {list.map((k) => (
+            <li key={k.id} className={s.card}>
+              <h3>عقد رقم {k.number}</h3>
+              <p>
+                {k.familyName} ← {k.customerName}
+              </p>
+              <p>
+                {k.plan} · يبدأ <bdi>{k.startDate}</bdi> · وُقّع{" "}
+                {when(k.familyAgreedAt)}
+              </p>
+              <Link href={`/contracts/${encodeURIComponent(k.id)}`}>
+                عرض العقد ←
+              </Link>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className={s.notice}>لا توجد عقود اشتراك بعد.</p>
+      )}
+    </section>
   );
 }

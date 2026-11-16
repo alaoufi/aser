@@ -207,6 +207,8 @@ test("the family sets which subscriptions it offers and sees incoming requests",
         status: "new",
         conversationId: "conv-9",
         customerName: "سالم",
+        customerAgreedAt: "2099-01-01T08:00:00.000Z",
+        contractId: null,
       },
     ],
   };
@@ -264,7 +266,8 @@ test("the family sets which subscriptions it offers and sees incoming requests",
     decided = r.request().postDataJSON();
     return r.fulfill({ json: {} });
   });
-  await requests.getByRole("button", { name: "تم الاتفاق" }).click();
+  await expect(requests).toContainText("ضغط العميل «تم الاتفاق مع الأسرة»");
+  await requests.getByRole("button", { name: "أوافق على الاتفاق" }).click();
   await expect.poll(() => decided).toEqual({ id: "r1", status: "agreed" });
 });
 
@@ -301,6 +304,8 @@ test("the customer picks a default dish per meal and changes one coming day", as
         delivery: true,
         status: "agreed",
         conversationId: "conv-1",
+        customerAgreedAt: "2099-01-01T08:00:00.000Z",
+        contractId: "k1",
         defaults: {},
         overrides: [],
         menu: [
@@ -333,4 +338,174 @@ test("the customer picks a default dish per meal and changes one coming day", as
     { kind: "day", id: "s1", day: "2099-01-02", meal: "lunch", itemId: "m" },
   ]);
   await expect(card).toContainText("لا يُعدَّل");
+  await expect(
+    card.getByRole("link", { name: "عقد الاشتراك ←" }),
+  ).toHaveAttribute("href", "/contracts/k1");
+});
+
+// العميل يضغط «تم الاتفاق مع الأسرة» ثم يرى العقد الثابت بعد موافقة الأسرة.
+test("the customer agrees, then views the locked subscription contract", async ({
+  page,
+}) => {
+  await page.route("**/api/session", (r) =>
+    r.fulfill({
+      json: {
+        user: {
+          id: "c",
+          name: "سالم",
+          phone: "+966500000055",
+          role: "customer",
+        },
+        registrationOpen: true,
+      },
+    }),
+  );
+  const sub = {
+    id: "s1",
+    familyName: "أكلات نجدية",
+    slug: "najdi",
+    plan: "weekly",
+    startDate: "2099-01-01",
+    endDate: "2099-01-07",
+    days: null,
+    meals: ["lunch"],
+    delivery: true,
+    status: "new",
+    conversationId: "conv-1",
+    customerAgreedAt: null as string | null,
+    contractId: null,
+    defaults: {},
+    overrides: [],
+    menu: [],
+    itemNames: {},
+    upcoming: [],
+  };
+  const view = () => ({
+    today: "2099-01-01",
+    firstEditable: "2099-01-02",
+    subscriptions: [sub],
+  });
+  await page.route("**/api/subscriptions/mine", (r) =>
+    r.fulfill({ json: view() }),
+  );
+  let agreed: unknown;
+  await page.route("**/api/subscriptions/agree", (r) => {
+    agreed = r.request().postDataJSON();
+    sub.customerAgreedAt = "2099-01-01T08:00:00.000Z";
+    return r.fulfill({ json: view() });
+  });
+  await page.goto("/my-subscriptions");
+  const card = page.getByRole("region", { name: "اشتراك أكلات نجدية" });
+  await card.getByRole("button", { name: "تم الاتفاق مع الأسرة" }).click();
+  await expect.poll(() => agreed).toEqual({ id: "s1" });
+  await expect(card).toContainText("بانتظار موافقة الأسرة");
+  await expect(
+    card.getByRole("button", { name: "تم الاتفاق مع الأسرة" }),
+  ).toHaveCount(0);
+
+  await page.route("**/api/subscriptions/contracts/k1", (r) =>
+    r.fulfill({
+      json: {
+        contract: {
+          id: "k1",
+          number: 7,
+          familyName: "أكلات نجدية",
+          customerName: "سالم",
+          terms: {
+            plan: "weekly",
+            planLabel: "أسبوعي",
+            startDate: "2099-01-01",
+            endDate: "2099-01-07",
+            days: null,
+            mealLabels: ["غداء"],
+            delivery: true,
+            location: "حي النرجس",
+            notes: "",
+          },
+          transcript: [
+            {
+              side: "customer",
+              sender: "سالم",
+              body: "طلب اشتراك جديد",
+              at: "2099-01-01T07:00:00.000Z",
+            },
+            {
+              side: "family",
+              sender: "أكلات نجدية",
+              body: "موافقين، الغداء الساعة ١",
+              at: "2099-01-01T07:30:00.000Z",
+            },
+          ],
+          customerAgreedAt: "2099-01-01T08:00:00.000Z",
+          familyAgreedAt: "2099-01-01T09:00:00.000Z",
+          contentHash: "a".repeat(64),
+        },
+      },
+    }),
+  );
+  await page.goto("/contracts/k1");
+  const contract = page.getByRole("article", { name: "عقد الاشتراك" });
+  await expect(
+    contract.getByRole("heading", { level: 1, name: "عقد اشتراك رقم 7" }),
+  ).toBeVisible();
+  await expect(contract).toContainText("لا يمكن تعديله ولا حذفه");
+  await expect(contract).toContainText("توصيل إلى: حي النرجس");
+  await expect(contract).toContainText("موافقين، الغداء الساعة ١");
+  await expect(contract).toContainText("a".repeat(64));
+  await expect(
+    contract.getByRole("button", { name: "طباعة العقد" }),
+  ).toBeVisible();
+  // لا أزرار تعديل أو حذف في العقد.
+  await expect(contract.getByRole("button", { name: /تعديل|حذف/ })).toHaveCount(
+    0,
+  );
+});
+
+// الإدارة ← «عقود الاشتراكات»: قائمة العقود الثابتة ولكل عقد صفحته.
+test("the admin sees subscription contracts in their own tab", async ({
+  page,
+}) => {
+  await page.route("**/api/session", (r) =>
+    r.fulfill({
+      json: {
+        user: { id: "a", name: "مدير", phone: "+966500000009", role: "admin" },
+        registrationOpen: true,
+      },
+    }),
+  );
+  await page.route("**/api/admin/summary", (r) =>
+    r.fulfill({ json: { summary: {} } }),
+  );
+  await page.route("**/api/admin/producers", (r) =>
+    r.fulfill({ json: { producers: [] } }),
+  );
+  await page.route("**/api/admin/contracts", (r) =>
+    r.fulfill({
+      json: {
+        contracts: [
+          {
+            id: "k1",
+            number: 7,
+            familyName: "أكلات نجدية",
+            customerName: "سالم",
+            plan: "أسبوعي",
+            startDate: "2099-01-01",
+            familyAgreedAt: "2099-01-01T09:00:00.000Z",
+          },
+        ],
+      },
+    }),
+  );
+  await page.goto("/admin");
+  await page
+    .getByRole("button", { name: "عقود الاشتراكات", exact: true })
+    .click();
+  const list = page.getByRole("region", { name: "عقود الاشتراكات" });
+  await expect(list).toContainText("عقد رقم 7");
+  await expect(list).toContainText("أكلات نجدية ← سالم");
+  await expect(list).toContainText("لا تُعدَّل ولا تُحذف");
+  await expect(list.getByRole("link", { name: "عرض العقد ←" })).toHaveAttribute(
+    "href",
+    "/contracts/k1",
+  );
 });
