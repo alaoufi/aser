@@ -700,7 +700,9 @@ export async function reviewProducer(
       )
     ).rows[0];
     if (!producer) throw new HttpError(404, "الأسرة المنتجة غير موجودة");
-    if (producer.user_id === user.id)
+    // المدير الكامل صلاحياته مطلقة (قرار المالك 2026-11-16): يعتمد أسرته بنفسه.
+    // المشرف بصلاحية محدودة لا يراجع ملف أسرته.
+    if (producer.user_id === user.id && user.role !== "admin")
       throw new HttpError(403, "لا يمكن مراجعة ملف أسرتك بنفسك");
     const verification = (
       await client.query(

@@ -105,9 +105,10 @@ test(
       assert.equal(alert?.url, "/admin?tab=approvals");
       assert.ok((await pendingApprovals(admin)).count >= 1);
       await assert.rejects(pendingApprovals(user), { status: 403 });
+      // المشرف بصلاحية الأسر لا يعتمد أسرته؛ المدير الكامل صلاحياته مطلقة (قرار المالك 2026-11-16).
       await assert.rejects(
         () =>
-          reviewProducer({ ...user, role: "admin" }, p.id, {
+          reviewProducer({ ...user, permissions: ["producers"] }, p.id, {
             decision: "approved",
             reason: "تم التفعيل، نرجو إرفاق الشهادة",
             eligibilityConfirmed: true,
@@ -178,6 +179,25 @@ test(
       assert.equal(
         audit.details.reason,
         "تم التفعيل. نرجو إرفاق شهادة الأسرة المنتجة",
+      );
+      // المدير الكامل صاحب الأسرة يعتمدها بنفسه (صلاحيات مطلقة).
+      await db().query(
+        "UPDATE jdatna.producer_profiles SET status='pending' WHERE id=$1",
+        [p.id],
+      );
+      await reviewProducer({ ...user, role: "admin" }, p.id, {
+        decision: "approved",
+        reason: "اعتماد المدير لأسرته",
+        eligibilityConfirmed: true,
+      });
+      assert.equal(
+        (
+          await db().query(
+            "SELECT status FROM jdatna.producer_profiles WHERE id=$1",
+            [p.id],
+          )
+        ).rows[0].status,
+        "approved",
       );
     } finally {
       setPushTransport(null);

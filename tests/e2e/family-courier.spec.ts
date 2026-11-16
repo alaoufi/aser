@@ -35,7 +35,11 @@ test("a family registers its own courier with a pledge and sees the private badg
           userId: "u1",
           name: posted!.name,
           phone: "+966511111111",
-          carType: posted!.carType,
+          carType:
+            posted!.vehicle === "car"
+              ? `سيارة ${posted!.carModel} · ${posted!.carColor}`
+              : "دباب",
+          vehicle: posted!.vehicle,
           status: "approved",
           active: true,
           stoppedByAdmin: false,
@@ -94,7 +98,12 @@ test("a family registers its own courier with a pledge and sees the private badg
 
   await section.getByLabel("اسم المندوب").fill("سالم");
   await section.getByLabel("جوال المندوب").fill("0511111111");
+  // المركبة: سيارة (نوعها ولونها) أو دباب (بلا نوع ولون).
+  await section.getByLabel("🛵 دباب").check();
+  await expect(section.getByLabel("نوع السيارة")).toHaveCount(0);
+  await section.getByLabel("🚗 سيارة").check();
   await section.getByLabel("نوع السيارة").fill("سوناتا");
+  await section.getByLabel("لون السيارة").fill("أبيض");
   // الضغط على نص التعهد يحدد الخانة.
   await section.getByText("أتعهد بأنني أعرف هذا المندوب").click();
   await section.getByRole("button", { name: "تسجيل المندوب الخاص" }).click();
@@ -102,9 +111,12 @@ test("a family registers its own courier with a pledge and sees the private badg
   expect(posted).toEqual({
     name: "سالم",
     phone: "0511111111",
-    carType: "سوناتا",
+    vehicle: "car",
+    carModel: "سوناتا",
+    carColor: "أبيض",
     pledge: true,
   });
+  await expect(section).toContainText("🚗 سيارة سوناتا · أبيض");
   const card = section.getByRole("listitem").filter({ hasText: "سالم" });
   await expect(card.getByText("مندوب خاص لـ مطبخ أم سعد")).toBeVisible();
   await expect(card).toContainText("لم يدخل بعد");
@@ -407,4 +419,24 @@ test("admin and personal accounts stay separate, with a way back from admin", as
   await expect(
     page.getByRole("navigation", { name: "حسابي", exact: true }),
   ).toHaveCount(0);
+});
+
+// أسرة لم تُعتمد بعد: يُشرح لها متى تضيف مندوبها بدل إخفاء القسم.
+test("a family not yet approved is told it adds its private courier after approval", async ({
+  page,
+}) => {
+  await page.addInitScript(() =>
+    sessionStorage.setItem("jdatna:family-welcome", "1"),
+  );
+  await page.route("**/api/session", (r) => r.fulfill({ json: familySession }));
+  await page.route("**/api/producer/couriers", (r) =>
+    r.fulfill({
+      status: 403,
+      json: { error: "المندوب الخاص للأسر المنتجة المعتمدة فقط" },
+    }),
+  );
+  await page.goto("/dashboard/couriers");
+  const section = page.getByRole("region", { name: "مندوبي الخاص" });
+  await expect(section).toContainText("للأسر المنتجة المعتمدة فقط");
+  await expect(section).toContainText("بعد اعتماد أسرتك");
 });
