@@ -153,7 +153,11 @@ test("a family with admin permissions keeps its own account and gets an admin ac
   ).toHaveAttribute("href", "/admin");
   await page.goto("/admin");
   const nav = page.getByRole("navigation", { name: "أقسام الإدارة" });
-  await expect(nav.getByRole("button")).toHaveText(["الطلبات"]);
+  // صلاحية الطلبات تشمل «عقود الاشتراكات».
+  await expect(nav.getByRole("button")).toHaveText([
+    "الطلبات",
+    "عقود الاشتراكات",
+  ]);
   await expect(page.getByRole("button", { name: "الطلبات" })).toHaveAttribute(
     "aria-pressed",
     "true",
