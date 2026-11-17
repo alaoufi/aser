@@ -107,9 +107,19 @@ export async function deleteAccount(user: SessionUser, input: unknown) {
         await del(`DELETE FROM jdatna.${table} WHERE producer_id=$1`, [
           family.id,
         ]);
+      // مندوبو الأسرة الخاصون يتوقفون بحذفها (حساباتهم ومحادثاتهم تبقى كما هي).
+      await del(
+        `UPDATE jdatna.courier_profiles SET status='suspended',active=false,review_reason='حُذف حساب الأسرة',updated_at=now()
+         WHERE family_id=$1`,
+        [family.id],
+      );
+      // يبقى سطر الأسرة إن ارتبط به ما لا يُحذف: محادثات، بلاغات، مندوب خاص، أو عقد اشتراك (لا يُحذف أبدًا).
       const kept = (
         await client.query(
-          "SELECT EXISTS(SELECT 1 FROM jdatna.conversations WHERE producer_id=$1) OR EXISTS(SELECT 1 FROM jdatna.reports WHERE producer_id=$1) AS kept",
+          `SELECT EXISTS(SELECT 1 FROM jdatna.conversations WHERE producer_id=$1)
+             OR EXISTS(SELECT 1 FROM jdatna.reports WHERE producer_id=$1)
+             OR EXISTS(SELECT 1 FROM jdatna.courier_profiles WHERE family_id=$1)
+             OR EXISTS(SELECT 1 FROM jdatna.subscription_contracts WHERE producer_id=$1) AS kept`,
           [family.id],
         )
       ).rows[0].kept as boolean;

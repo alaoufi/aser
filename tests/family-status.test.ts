@@ -68,7 +68,7 @@ test("family account state covers review, active, incomplete and trusted", () =>
     ).label,
     "نشط",
   );
-  // تفعيل الإدارة دون مستند: «نشط» لا «موثوق»، وملاحظتها بالنواقص تظهر للأسرة.
+  // تفعيل الإدارة دون مستند: «نشط» لا «موثوق»، ولا مطالبة بالنواقص بعد الاعتماد.
   const activeNoDocument = familyAccountState(
     {
       ...base,
@@ -80,7 +80,8 @@ test("family account state covers review, active, incomplete and trusted", () =>
     today,
   );
   assert.equal(activeNoDocument.key, "active");
-  assert.equal(activeNoDocument.reason, "نرجو إرفاق الشهادة");
+  assert.equal(activeNoDocument.reason, undefined);
+  assert.doesNotMatch(activeNoDocument.detail, /أرفق|حدّث|منتهي/);
   assert.equal(
     familyAccountState({ ...base, status: "suspended" }, today).label,
     "موقوف",

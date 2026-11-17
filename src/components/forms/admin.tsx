@@ -113,6 +113,10 @@ const today = () =>
   new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Riyadh" }).format(
     new Date(),
   );
+/** معتمدة لكن الإدارة كتبت لها نواقص عند الاعتماد (لا تُطالَب بها الأسرة؛ للمتابعة هنا). */
+function hasMissing(p: Application) {
+  return p.status === "approved" && Boolean(p.reviewReason?.trim());
+}
 function stateOf(p: Application): FamilyState {
   return familyAccountState(
     {
@@ -204,6 +208,11 @@ function Review({
       )}
       {producer.documentType === "exception" && (
         <p>تفاصيل طلب الاستثناء: {producer.reviewReason || "دون تفاصيل"}</p>
+      )}
+      {hasMissing(producer) && producer.documentType !== "exception" && (
+        <p className={s.notice}>
+          النواقص المكتوبة عند الاعتماد: {producer.reviewReason}
+        </p>
       )}
       <p>
         رقم المستند: {producer.documentNumber || "غير مسجل"} · تاريخ الانتهاء:{" "}
@@ -501,6 +510,7 @@ export function Admin() {
                     ["active", "نشط"],
                     ["trusted", "موثوق"],
                     ["suspended", "موقوف"],
+                    ["missing", "من لديهم نواقص"],
                     ["all", "الكل"],
                   ] as const
                 ).map(([id, label]) => (
@@ -514,7 +524,11 @@ export function Admin() {
                     {label} (
                     {id === "all"
                       ? producers.length
-                      : producers.filter((p) => stateOf(p).key === id).length}
+                      : producers.filter((p) =>
+                          id === "missing"
+                            ? hasMissing(p)
+                            : stateOf(p).key === id,
+                        ).length}
                     )
                   </button>
                 ))}
@@ -534,7 +548,10 @@ export function Admin() {
                   const q = query.trim().toLowerCase();
                   const shown = producers.filter(
                     (p) =>
-                      (filter === "all" || stateOf(p).key === filter) &&
+                      (filter === "all" ||
+                        (filter === "missing"
+                          ? hasMissing(p)
+                          : stateOf(p).key === filter)) &&
                       (!q ||
                         [p.name, p.tradeName, p.ownerName, p.phone, p.cityName]
                           .filter(Boolean)
