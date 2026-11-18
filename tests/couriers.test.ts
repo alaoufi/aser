@@ -172,7 +172,7 @@ test(
         reason: "اعتماد بعد التحديث",
       });
 
-      // محادثة سريعة: الأسرة تفتحها مع المندوب، وغير الأسرة لا تستطيع.
+      // محادثة سريعة: الأسرة تفتحها مع المندوب، والعميل كذلك من «تجمع المندوبين» (محادثة منفصلة).
       const conversation = await startConversation(family, {
         courier: courier.id,
       });
@@ -182,11 +182,27 @@ test(
         conversation.id,
         "same conversation reopened",
       );
-      await assert.rejects(
-        startConversation(stranger, { courier: courier.id }),
-        { status: 404 },
+      const withCustomer = await startConversation(stranger, {
+        courier: courier.id,
+      });
+      assert.notEqual(withCustomer.id, conversation.id);
+      assert.equal(
+        (
+          await pool.query(
+            "SELECT courier_id,producer_id FROM jdatna.conversations WHERE id=$1",
+            [withCustomer.id],
+          )
+        ).rows[0].courier_id,
+        courier.id,
       );
+      // المندوب لا يبدأ محادثة من «التجمع»؛ يراسل العميل من طلب التوصيل.
+      await assert.rejects(startConversation(after, { courier: courier.id }), {
+        status: 403,
+      });
     } finally {
+      await pool.query("DELETE FROM jdatna.conversations WHERE courier_id=$1", [
+        courier.id,
+      ]);
       await pool.query(
         "DELETE FROM jdatna.messages WHERE conversation_id IN (SELECT id FROM jdatna.conversations WHERE producer_id=$1)",
         [familyId],

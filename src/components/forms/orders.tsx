@@ -1116,6 +1116,14 @@ function CustomerCourier({ order }: { order: Order }) {
             </>
           )}
         </p>
+      ) : null}
+      {order.courierName ? (
+        <OrderChatButton
+          orderId={order.id}
+          courier
+          label="مراسلة المندوب"
+          className={s.buttonSecondary}
+        />
       ) : (
         <p className={s.muted}>
           لم يُحدَّد مندوب لتوصيل طلبك. اتفق مع الأسرة على التوصيل، أو اختر

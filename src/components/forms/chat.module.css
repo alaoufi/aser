@@ -31,6 +31,35 @@
   font-weight: 700;
   color: #fff;
 }
+/* تبويبات أنواع المحادثات تحت الرأس */
+.tabs {
+  display: flex;
+  gap: 6px;
+  padding: 8px 10px;
+  border-bottom: 1px solid #e9edef;
+  background: #fff;
+  overflow-x: auto;
+}
+.tab {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: #f0f2f5;
+  color: #54656f;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.tab[aria-selected="true"] {
+  background: #d9fdd3;
+  color: #008069;
+}
 .item {
   width: 100%;
   display: flex;
