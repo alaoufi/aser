@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { SessionUser } from "@/lib/types";
@@ -19,6 +19,7 @@ export async function api<T>(url: string, options?: RequestInit): Promise<T> {
   });
   const data = await r.json().catch(() => ({}));
   // الدخول والخروج وحذف الحساب تغيّر الجلسة، و401 يعني انتهاءها: تُنسى الجلسة المحفوظة.
+  const signedIn = Boolean(known?.user);
   if (
     r.status === 401 ||
     (options?.method &&
@@ -26,6 +27,9 @@ export async function api<T>(url: string, options?: RequestInit): Promise<T> {
       SESSION_CHANGERS.some((p) => url.startsWith(p)))
   )
     forgetSession();
+  // جلسة انتهت والصفحة مفتوحة: تُسأل من جديد فتظهر دعوة تسجيل الدخول.
+  if (r.status === 401 && signedIn && !url.startsWith("/api/auth"))
+    void loadSession(true).catch(() => {});
   if (!r.ok)
     // البيانات مع الخطأ: الخادم قد يطلب تأكيدًا (confirm) قبل إجراء له أثر.
     throw Object.assign(
@@ -80,7 +84,15 @@ function recall(): SessionData | null {
   return known;
 }
 function remember(d: SessionData) {
+  // الكائن نفسه يبقى إن لم يتغير شيء، فلا تُعاد تحميلات تعتمد عليه.
+  if (
+    known &&
+    known.registrationOpen === d.registrationOpen &&
+    sameUser(known.user, d.user)
+  )
+    return;
   known = d;
+  for (const notify of sessionListeners) notify();
   try {
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(d));
   } catch {
@@ -88,8 +100,10 @@ function remember(d: SessionData) {
   }
 }
 export function forgetSession() {
+  const had = Boolean(known);
   known = null;
   sessionRequest = null;
+  if (had) for (const notify of sessionListeners) notify();
   try {
     sessionStorage.removeItem(SESSION_KEY);
   } catch {
@@ -124,32 +138,43 @@ export function loadSession(fresh = false) {
 }
 const sameUser = (a: SessionUser | null, b: SessionUser | null) =>
   JSON.stringify(a) === JSON.stringify(b);
+/** مكوّنات الصفحة تتابع «آخر جلسة معروفة»؛ تتحدث كلها معًا عند تغيّرها. */
+const sessionListeners = new Set<() => void>();
+const subscribeSession = (notify: () => void) => {
+  sessionListeners.add(notify);
+  return () => {
+    sessionListeners.delete(notify);
+  };
+};
 export function useSession() {
-  // في التنقل داخل الموقع الجلسة معروفة من الصفحة السابقة: تُعرض من أول رسم.
-  const [user, setUser] = useState<SessionUser | null>(known?.user ?? null);
-  const [ready, setReady] = useState(Boolean(known));
-  const [open, setOpen] = useState(known?.registrationOpen ?? false);
+  // أثناء ربط صفحة الخادم (hydration) تُعامل الجلسة كغير معروفة ليطابق الرسم ما أرسله الخادم،
+  // ثم تظهر الجلسة المعروفة مباشرة. في التنقل داخل الموقع تُعرض من أول رسم.
+  const snapshot = useSyncExternalStore(
+    subscribeSession,
+    () => known,
+    () => null,
+  );
   const [error, setError] = useState("");
+  const [failed, setFailed] = useState(false);
   useEffect(() => {
     let active = true;
-    const show = (d: SessionData) => {
-      // الكائن نفسه يبقى إن لم يتغير شيء، فلا تُعاد تحميلات تعتمد عليه.
-      setUser((old) => (sameUser(old, d.user) ? old : d.user));
-      setOpen(d.registrationOpen);
-      setReady(true);
-    };
     // بعد تحميل كامل للصفحة: الجلسة المحفوظة في التبويب تُعرض قبل رد الخادم.
-    const cached = recall();
-    if (cached) show(cached);
-    loadSession()
-      .then((d) => active && show(d))
-      .catch((e) => active && setError(e.message))
-      .finally(() => active && setReady(true));
+    if (!known && recall()) for (const notify of sessionListeners) notify();
+    loadSession().catch((e) => {
+      if (!active) return;
+      setError(e.message);
+      setFailed(true);
+    });
     return () => {
       active = false;
     };
   }, []);
-  return { user, setUser, ready, open, error };
+  return {
+    user: snapshot?.user ?? null,
+    ready: Boolean(snapshot) || failed,
+    open: snapshot?.registrationOpen ?? false,
+    error,
+  };
 }
 export function Message({
   error,
