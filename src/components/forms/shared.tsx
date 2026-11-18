@@ -142,8 +142,16 @@ export function loadSession(fresh = false) {
   }
   return sessionRequest.p;
 }
+/** مقارنة بالقيم لا بترتيب الحقول، والحقل الفارغ كالغائب (رد الدخول ورد الجلسة يختلفان شكلًا). */
+const canonical = (u: SessionUser | null) =>
+  u &&
+  JSON.stringify(
+    Object.entries(u)
+      .filter(([, v]) => v !== null && v !== undefined)
+      .sort(([a], [b]) => (a < b ? -1 : 1)),
+  );
 const sameUser = (a: SessionUser | null, b: SessionUser | null) =>
-  JSON.stringify(a) === JSON.stringify(b);
+  canonical(a) === canonical(b);
 /** مكوّنات الصفحة تتابع «آخر جلسة معروفة»؛ تتحدث كلها معًا عند تغيّرها. */
 const sessionListeners = new Set<() => void>();
 const subscribeSession = (notify: () => void) => {

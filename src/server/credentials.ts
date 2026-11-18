@@ -124,7 +124,9 @@ export async function passwordLogin(input: unknown) {
     const row = validIdentifier
       ? (
           await client.query(
-            `SELECT id,name,phone,role,username,permissions,password_hash,suspended_at,failed_logins,login_locked_at FROM jdatna.users WHERE ${phone ? "phone" : "username"}=$1 AND phone_verified_at IS NOT NULL FOR UPDATE`,
+            `SELECT id,name,phone,role,username,permissions,password_hash,suspended_at,failed_logins,login_locked_at,
+               (SELECT COALESCE(p.trade_name,p.name) FROM jdatna.producer_profiles p WHERE p.user_id=users.id) AS "familyName"
+             FROM jdatna.users WHERE ${phone ? "phone" : "username"}=$1 AND phone_verified_at IS NOT NULL FOR UPDATE`,
             [identifier],
           )
         ).rows[0]
