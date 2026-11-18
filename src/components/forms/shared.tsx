@@ -18,18 +18,24 @@ export async function api<T>(url: string, options?: RequestInit): Promise<T> {
         : { "Content-Type": "application/json", ...options?.headers },
   });
   const data = await r.json().catch(() => ({}));
-  // الدخول والخروج وحذف الحساب تغيّر الجلسة، و401 يعني انتهاءها: تُنسى الجلسة المحفوظة.
-  const signedIn = Boolean(known?.user);
+  // الدخول والخروج وحذف الحساب تغيّر الجلسة: تُنسى الجلسة المحفوظة.
   if (
-    r.status === 401 ||
-    (options?.method &&
-      options.method !== "GET" &&
-      SESSION_CHANGERS.some((p) => url.startsWith(p)))
+    options?.method &&
+    options.method !== "GET" &&
+    SESSION_CHANGERS.some((p) => url.startsWith(p))
   )
     forgetSession();
-  // جلسة انتهت والصفحة مفتوحة: تُسأل من جديد فتظهر دعوة تسجيل الدخول.
-  if (r.status === 401 && signedIn && !url.startsWith("/api/auth"))
+  // 401 والحساب معروض كمسجَّل: قد تكون الجلسة انتهت. يُسأل الخادم (مرة كل 10 ثوانٍ على الأكثر)
+  // وجوابه يحسم؛ لا تُنسى الجلسة هنا حتى لا تتقلب الصفحة بين مسجَّل وغير مسجَّل.
+  else if (
+    r.status === 401 &&
+    known?.user &&
+    !url.startsWith("/api/session") &&
+    Date.now() - lastRecheck > 10_000
+  ) {
+    lastRecheck = Date.now();
     void loadSession(true).catch(() => {});
+  }
   if (!r.ok)
     // البيانات مع الخطأ: الخادم قد يطلب تأكيدًا (confirm) قبل إجراء له أثر.
     throw Object.assign(
@@ -71,6 +77,7 @@ const SESSION_CHANGERS = ["/api/auth", "/api/logout", "/api/account/delete"];
  * تُحفظ في تبويب المتصفح (sessionStorage) وتُنسى عند الدخول والخروج وانتهاء الجلسة.
  */
 const SESSION_KEY = "jdatna:session";
+let lastRecheck = 0;
 let known: SessionData | null = null;
 function recall(): SessionData | null {
   if (known) return known;
@@ -100,10 +107,9 @@ function remember(d: SessionData) {
   }
 }
 export function forgetSession() {
-  const had = Boolean(known);
-  known = null;
+  // المعروض في الصفحة الحالية يبقى كما هو (يتبعه تحميل كامل: رسالة «حُذف حسابك» أو الانتقال)،
+  // والمنسي هو المحفوظ للصفحات التالية.
   sessionRequest = null;
-  if (had) for (const notify of sessionListeners) notify();
   try {
     sessionStorage.removeItem(SESSION_KEY);
   } catch {
