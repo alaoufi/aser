@@ -18,6 +18,14 @@ export async function api<T>(url: string, options?: RequestInit): Promise<T> {
         : { "Content-Type": "application/json", ...options?.headers },
   });
   const data = await r.json().catch(() => ({}));
+  // الدخول والخروج وحذف الحساب تغيّر الجلسة، و401 يعني انتهاءها: تُنسى الجلسة المحفوظة.
+  if (
+    r.status === 401 ||
+    (options?.method &&
+      options.method !== "GET" &&
+      SESSION_CHANGERS.some((p) => url.startsWith(p)))
+  )
+    forgetSession();
   if (!r.ok)
     // البيانات مع الخطأ: الخادم قد يطلب تأكيدًا (confirm) قبل إجراء له أثر.
     throw Object.assign(
@@ -52,6 +60,46 @@ function announceSaved(url: string, method = "GET") {
   );
 }
 type SessionData = { user: SessionUser | null; registrationOpen: boolean };
+const SESSION_CHANGERS = ["/api/auth", "/api/logout", "/api/account/delete"];
+/**
+ * آخر جلسة معروفة: تُعرض فورًا عند فتح أي صفحة (بلا انتظار «جارٍ التحقق من الحساب»)، ثم
+ * تُحدَّث من الخادم في الخلفية. للعرض فقط؛ الصلاحيات يفرضها الخادم في كل طلب.
+ * تُحفظ في تبويب المتصفح (sessionStorage) وتُنسى عند الدخول والخروج وانتهاء الجلسة.
+ */
+const SESSION_KEY = "jdatna:session";
+let known: SessionData | null = null;
+function recall(): SessionData | null {
+  if (known) return known;
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    const d = raw ? (JSON.parse(raw) as SessionData) : null;
+    if (d && typeof d === "object" && "user" in d) known = d;
+  } catch {
+    // التخزين محجوب (تصفح خاص): تعمل الصفحة بطلب الجلسة كالمعتاد.
+  }
+  return known;
+}
+function remember(d: SessionData) {
+  known = d;
+  try {
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(d));
+  } catch {
+    // لا تخزين: تبقى في ذاكرة الصفحة فقط.
+  }
+}
+export function forgetSession() {
+  known = null;
+  sessionRequest = null;
+  try {
+    sessionStorage.removeItem(SESSION_KEY);
+  } catch {
+    // لا تخزين.
+  }
+}
+/** بعد دخول ناجح: الصفحة التالية تعرض الحساب فورًا ثم تتحقق منه في الخلفية. */
+export function primeSession(user: SessionUser) {
+  remember({ user, registrationOpen: known?.registrationOpen ?? true });
+}
 /**
  * طلب الجلسة مشترك بين كل مكوّنات الصفحة: كانت صفحة الإدارة وحدها تطلبه 11 مرة.
  * يُعاد استخدام الطلب نفسه لثوانٍ قليلة ثم يُطلب من جديد، فلا تبقى جلسة قديمة بعد الدخول أو الخروج.
@@ -60,26 +108,46 @@ let sessionRequest: { at: number; p: Promise<SessionData> } | null = null;
 export function loadSession(fresh = false) {
   if (fresh || !sessionRequest || Date.now() - sessionRequest.at > 4000) {
     const p = api<SessionData>("/api/session");
-    sessionRequest = { at: Date.now(), p };
-    p.catch(() => {
-      sessionRequest = null;
-    });
+    const mine = { at: Date.now(), p };
+    sessionRequest = mine;
+    p.then(
+      (d) => {
+        // رد طلب أُلغي بدخول أو خروج بعده لا يُحفظ.
+        if (sessionRequest === mine) remember(d);
+      },
+      () => {
+        if (sessionRequest === mine) sessionRequest = null;
+      },
+    );
   }
   return sessionRequest.p;
 }
+const sameUser = (a: SessionUser | null, b: SessionUser | null) =>
+  JSON.stringify(a) === JSON.stringify(b);
 export function useSession() {
-  const [user, setUser] = useState<SessionUser | null>(null);
-  const [ready, setReady] = useState(false);
-  const [open, setOpen] = useState(false);
+  // في التنقل داخل الموقع الجلسة معروفة من الصفحة السابقة: تُعرض من أول رسم.
+  const [user, setUser] = useState<SessionUser | null>(known?.user ?? null);
+  const [ready, setReady] = useState(Boolean(known));
+  const [open, setOpen] = useState(known?.registrationOpen ?? false);
   const [error, setError] = useState("");
   useEffect(() => {
+    let active = true;
+    const show = (d: SessionData) => {
+      // الكائن نفسه يبقى إن لم يتغير شيء، فلا تُعاد تحميلات تعتمد عليه.
+      setUser((old) => (sameUser(old, d.user) ? old : d.user));
+      setOpen(d.registrationOpen);
+      setReady(true);
+    };
+    // بعد تحميل كامل للصفحة: الجلسة المحفوظة في التبويب تُعرض قبل رد الخادم.
+    const cached = recall();
+    if (cached) show(cached);
     loadSession()
-      .then((d) => {
-        setUser(d.user);
-        setOpen(d.registrationOpen);
-      })
-      .catch((e) => setError(e.message))
-      .finally(() => setReady(true));
+      .then((d) => active && show(d))
+      .catch((e) => active && setError(e.message))
+      .finally(() => active && setReady(true));
+    return () => {
+      active = false;
+    };
   }, []);
   return { user, setUser, ready, open, error };
 }
@@ -377,6 +445,8 @@ export function LoginForm({
       window.location.assign("/courier");
       return;
     }
+    // الصفحة التالية تعرض الحساب فورًا دون انتظار فحص الجلسة.
+    primeSession(user);
     window.location.assign(next === destination ? next : destination);
   }
   async function submit(e: React.FormEvent<HTMLFormElement>) {

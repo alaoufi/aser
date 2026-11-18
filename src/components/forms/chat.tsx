@@ -42,6 +42,23 @@ type Message = {
 /** آخر ما عُرض من كل محادثة ومن القائمة: يفتح فورًا ثم يتحدّث في الخلفية. */
 const threadCache = new Map<string, Thread>();
 let listCache: Summary[] | null = null;
+/**
+ * أحدث المحادثات تُحمَّل مسبقًا في الخلفية (دون تعليمها مقروءة)، فتفتح فورًا عند الضغط
+ * ثم تُحدَّث وتُعلَّم مقروءة كالمعتاد. مرة واحدة لكل محادثة.
+ */
+const preloading = new Set<string>();
+function preloadThreads(list: Summary[]) {
+  for (const x of list.slice(0, 4)) {
+    if (threadCache.has(x.id) || preloading.has(x.id)) continue;
+    preloading.add(x.id);
+    api<Thread>(`/api/conversations/${encodeURIComponent(x.id)}?read=0`)
+      .then((d) => {
+        if (!threadCache.has(x.id)) threadCache.set(x.id, d);
+      })
+      .catch(() => {})
+      .finally(() => preloading.delete(x.id));
+  }
+}
 /** يجمع تحديثات متقاربة (رسالة وقراءة معًا) في طلب واحد. */
 function debounce(fn: () => void, ms = 250) {
   let t: ReturnType<typeof setTimeout> | null = null;
@@ -142,6 +159,7 @@ export function Messages() {
           if (!active) return;
           listCache = d.conversations;
           setList(d.conversations);
+          preloadThreads(d.conversations);
         })
         .catch((e) => {
           if (active && session.ready) setError((e as Error).message);
