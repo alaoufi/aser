@@ -3,17 +3,51 @@ import { useEffect, useState } from "react";
 import { Message, api, s } from "./shared";
 import r from "./security-report.module.css";
 
+type Kind = "full" | "media" | "codedb";
+const kinds: [Kind, string, string][] = [
+  [
+    "codedb",
+    "الكود مع قاعدة البيانات",
+    "مصدر الإصدار المنشور وقاعدة البيانات كاملة",
+  ],
+  ["media", "الصور والمستندات", "صور المنتجات والمستندات والتسجيلات الصوتية"],
+  [
+    "full",
+    "نسخة كاملة",
+    "قاعدة البيانات والإعدادات والصور معًا، كالنسخة اليومية",
+  ],
+];
+const kindLabel: Record<Kind, string> = {
+  full: "كاملة",
+  media: "صور ومستندات",
+  codedb: "كود وقاعدة بيانات",
+};
 type Backup = {
   file: string;
+  kind: Kind;
   createdAt: string;
   sizeBytes: number;
   databaseBytes: number;
   mediaBytes: number;
+  codeBytes: number;
   sha256: string | null;
+  remote: boolean;
+  onServer: boolean;
   downloadable: boolean;
+};
+type Request = {
+  id: string;
+  kind: Kind;
+  status: "pending" | "running" | "done" | "failed";
+  requestedAt: string;
+  finishedAt: string | null;
+  file: string | null;
+  error: string | null;
 };
 type Data = {
   backups: Backup[];
+  requests: Request[];
+  remoteReady: boolean;
   downloadEnabled: boolean;
   latestAt: string | null;
 };
@@ -37,11 +71,44 @@ const when = (at: string) =>
 export function BackupsAdmin() {
   const [data, setData] = useState<Data | null>(null);
   const [error, setError] = useState("");
-  useEffect(() => {
+  const [kind, setKind] = useState<Kind>("codedb");
+  const [busy, setBusy] = useState(false);
+  const load = () =>
     api<Data>("/api/admin/backups")
-      .then(setData)
+      .then((d) => {
+        setData(d);
+        setError("");
+      })
       .catch((e) => setError((e as Error).message));
+  useEffect(() => {
+    void load();
   }, []);
+  const open = data?.requests.find(
+    (q) => q.status === "pending" || q.status === "running",
+  );
+  // أثناء تنفيذ نسخة: يتحدّث التقرير كل 10 ثوانٍ حتى تنتهي.
+  useEffect(() => {
+    if (!open) return;
+    const timer = setInterval(load, 10_000);
+    return () => clearInterval(timer);
+  }, [open?.id]);
+  async function take() {
+    setBusy(true);
+    setError("");
+    try {
+      setData(
+        await api<Data>("/api/admin/backups", {
+          method: "POST",
+          body: JSON.stringify({ kind }),
+        }),
+      );
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  const last = data?.requests[0];
   const hoursSince = data?.latestAt
     ? (Date.now() - Date.parse(data.latestAt)) / 3600_000
     : null;
@@ -57,6 +124,60 @@ export function BackupsAdmin() {
       {!data && !error && <p role="status">جارٍ تحميل النسخ…</p>}
       {data && (
         <>
+          <form
+            className={r.panel}
+            aria-label="خذ نسخة الآن"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void take();
+            }}
+          >
+            <fieldset className={s.lookChoices}>
+              <legend>
+                <strong>خذ نسخة الآن</strong>
+              </legend>
+              {kinds.map(([id, label, hint]) => (
+                <label key={id}>
+                  <input
+                    type="radio"
+                    name="kind"
+                    checked={kind === id}
+                    onChange={() => setKind(id)}
+                  />{" "}
+                  <strong>{label}</strong>
+                  <small className={r.muted}> — {hint}</small>
+                </label>
+              ))}
+            </fieldset>
+            <button
+              type="submit"
+              className={s.button}
+              disabled={busy || Boolean(open)}
+            >
+              {open ? "جارٍ أخذ النسخة…" : "خذ نسخة الآن"}
+            </button>
+            {open && (
+              <p role="status" className={s.notice}>
+                طلبك «{kindLabel[open.kind]}»{" "}
+                {open.status === "pending"
+                  ? "بانتظار الخادم (يبدأ خلال دقيقة)."
+                  : "قيد التنفيذ على الخادم."}{" "}
+                تظهر النسخة في الجدول عند اكتمالها.
+              </p>
+            )}
+            {!open && last?.status === "done" && (
+              <p role="status" className={s.notice}>
+                تم ✓ آخر نسخة طلبتها «{kindLabel[last.kind]}» اكتملت{" "}
+                {last.finishedAt ? when(last.finishedAt) : ""}.
+              </p>
+            )}
+            {!open && last?.status === "failed" && (
+              <p role="alert" className={s.error}>
+                تعذّر أخذ آخر نسخة طلبتها «{kindLabel[last.kind]}»
+                {last.error ? `: ${last.error}` : "."}
+              </p>
+            )}
+          </form>
           <ul className={r.cards} aria-label="ملخص النسخ">
             <li
               className={
@@ -99,12 +220,23 @@ export function BackupsAdmin() {
                     <tr key={b.file}>
                       <td>{when(b.createdAt)}</td>
                       <td>
-                        <span className={`${r.badge} ${r.success}`}>
-                          بيانات: {size(b.databaseBytes)}
-                        </span>{" "}
-                        <span className={`${r.badge} ${r.failed}`}>
-                          ميديا: {size(b.mediaBytes)}
-                        </span>
+                        <strong>{kindLabel[b.kind]}</strong>
+                        <br />
+                        {b.codeBytes > 0 && (
+                          <span className={`${r.badge} ${r.blocked}`}>
+                            كود: {size(b.codeBytes)}
+                          </span>
+                        )}{" "}
+                        {b.databaseBytes > 0 && (
+                          <span className={`${r.badge} ${r.success}`}>
+                            بيانات: {size(b.databaseBytes)}
+                          </span>
+                        )}{" "}
+                        {b.mediaBytes > 0 && (
+                          <span className={`${r.badge} ${r.failed}`}>
+                            ميديا: {size(b.mediaBytes)}
+                          </span>
+                        )}
                       </td>
                       <td className={r.count}>{size(b.sizeBytes)}</td>
                       <td dir="ltr" className={r.mono}>
@@ -126,6 +258,9 @@ export function BackupsAdmin() {
                               : "من الخادم فقط"}
                           </span>
                         )}
+                        <small className={r.muted}>
+                          {b.remote ? "مرفوعة إلى R2 ✓" : "على الخادم فقط"}
+                        </small>
                       </td>
                     </tr>
                   ))}
@@ -139,13 +274,13 @@ export function BackupsAdmin() {
             </p>
           )}
           <p className={r.note}>
-            <strong>الكود:</strong> ليس ضمن هذه النسخ؛ محفوظ كاملًا في GitHub،
-            ويُنشأ فرع احتياطي (backup/before-…) قبل كل نشر.{" "}
-            <strong>التشفير:</strong> الملف مشفّر (AES-256) ولا يُفتح إلا بمفتاح
-            محفوظ على الخادم وحده، فاحتفظ بنسخة من المفتاح خارج الخادم. كل تحميل
-            يُسجَّل في سجل الإدارة.
-            {!data.downloadEnabled &&
-              " التحميل من الموقع غير مفعّل بعد: يحتاج ربط مجلد النسخ بالتطبيق للقراءة على الخادم."}
+            <strong>التشفير:</strong> كل ملف مشفّر (AES-256) ولا يُفتح إلا
+            بمفتاح محفوظ على الخادم وحده، فاحتفظ بنسخة من المفتاح خارج الخادم؛
+            بدونه لا تُسترجع أي نسخة. <strong>الكود</strong> محفوظ كذلك في
+            GitHub مع فرع احتياطي قبل كل نشر. كل طلب نسخة وكل تحميل يُسجَّل في
+            سجل الإدارة.
+            {!data.remoteReady &&
+              " التخزين الخارجي (R2) غير مهيأ في الموقع بعد، فالتحميل منه غير متاح."}
           </p>
         </>
       )}

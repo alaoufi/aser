@@ -1,11 +1,15 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { db } from "../src/server/db";
-import { backupDownload, backupReport } from "../src/server/backups";
+import {
+  backupDownload,
+  backupReport,
+  requestBackup,
+} from "../src/server/backups";
 import type { SessionUser } from "../src/lib/types";
 
 test(
@@ -29,6 +33,7 @@ test(
       customer = mk("customer");
     const file = "jdatna-20990101T000000Z.tar.gpg",
       gone = "jdatna-20990102T000000Z.tar.gpg";
+    const extra: string[] = [];
     const dir = mkdtempSync(path.join(tmpdir(), "jdatna-backups-"));
     const before = process.env.BACKUP_DIR;
     try {
@@ -58,6 +63,7 @@ test(
       await assert.rejects(backupDownload(customer, file), { status: 403 });
       // بلا ربط مجلد النسخ: القائمة تظهر والتحميل معطّل.
       delete process.env.BACKUP_DIR;
+      delete process.env.R2_ENDPOINT;
       const off = await backupReport(admin);
       assert.equal(off.downloadEnabled, false);
       assert.ok(off.backups.every((b) => !b.downloadable));
@@ -90,6 +96,54 @@ test(
         "..%2Fsecret.txt",
       ])
         await assert.rejects(backupDownload(admin, bad), { status: 404 });
+      // نسخة يدوية (صور) في مجلد manual تُحمَّل كذلك، ونوعها ظاهر.
+      const media = "jdatna-media-20990103T000000Z.tar.gpg";
+      mkdirSync(path.join(dir, "manual"));
+      writeFileSync(path.join(dir, "manual", media), "MEDIA");
+      await pool.query(
+        "INSERT INTO jdatna.backup_runs(file,kind,size_bytes,media_bytes) VALUES($1,'media',5,99)",
+        [media],
+      );
+      extra.push(media);
+      const withMedia = (await backupReport(admin)).backups.find(
+        (b) => b.file === media,
+      );
+      assert.deepEqual(
+        [withMedia?.kind, withMedia?.downloadable, withMedia?.mediaBytes],
+        ["media", true, 99],
+      );
+      assert.equal(
+        await new Response((await backupDownload(admin, media)).stream).text(),
+        "MEDIA",
+      );
+      // ملف بالنمط الصحيح لكنه غير مسجّل لا يُحمَّل.
+      writeFileSync(path.join(dir, "jdatna-20990109T000000Z.tar.gpg"), "X");
+      await assert.rejects(
+        backupDownload(admin, "jdatna-20990109T000000Z.tar.gpg"),
+        { status: 404 },
+      );
+      // «خذ نسخة الآن»: للمدير فقط، بنوع معروف، وطلب واحد قائم في الوقت نفسه.
+      await assert.rejects(requestBackup(customer, { kind: "media" }), {
+        status: 403,
+      });
+      await assert.rejects(requestBackup(admin, { kind: "everything" }));
+      const asked = await requestBackup(admin, { kind: "codedb" });
+      assert.deepEqual(
+        [asked.requests[0].kind, asked.requests[0].status],
+        ["codedb", "pending"],
+      );
+      await assert.rejects(requestBackup(admin, { kind: "media" }), {
+        status: 409,
+      });
+      // بعد أن ينهيه الخادم يُقبل طلب جديد.
+      await pool.query(
+        "UPDATE jdatna.backup_requests SET status='done',finished_at=now() WHERE requested_by=$1",
+        [admin.id],
+      );
+      assert.equal(
+        (await requestBackup(admin, { kind: "media" })).requests[0].kind,
+        "media",
+      );
       // كل تحميل يُسجَّل.
       assert.equal(
         (
@@ -98,15 +152,19 @@ test(
             [admin.id],
           )
         ).rows[0].n,
-        1,
+        2,
       );
     } finally {
       if (before === undefined) delete process.env.BACKUP_DIR;
       else process.env.BACKUP_DIR = before;
       rmSync(dir, { recursive: true, force: true });
       await pool.query("DELETE FROM jdatna.backup_runs WHERE file=ANY($1)", [
-        [file, gone],
+        [file, gone, ...extra],
       ]);
+      await pool.query(
+        "DELETE FROM jdatna.backup_requests WHERE requested_by=$1",
+        [admin.id],
+      );
       await pool.query(
         "DELETE FROM jdatna.admin_audit_logs WHERE actor_id=$1",
         [admin.id],

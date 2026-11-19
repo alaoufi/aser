@@ -12,7 +12,7 @@ export const GET = api(async (request, context: Context) => {
   return new Response(stream, {
     headers: {
       "Content-Type": "application/octet-stream",
-      "Content-Length": String(size),
+      ...(size ? { "Content-Length": String(size) } : {}),
       "Content-Disposition": `attachment; filename="${file}"`,
       "Cache-Control": "no-store",
       "X-Content-Type-Options": "nosniff",
