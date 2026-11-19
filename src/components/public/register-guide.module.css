@@ -1,0 +1,27 @@
+/* دليل التسجيل أعلى نموذج الدخول والتسجيل */
+.guide {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 18px;
+  min-width: 0;
+}
+.toggle {
+  justify-self: stretch;
+  min-height: 52px;
+  padding: 10px 18px;
+  border: 2px solid var(--gold, #d6a35c);
+  border-radius: 14px;
+  background: #fff8e8;
+  color: var(--ink, #2e1d12);
+  font: inherit;
+  font-size: 1.05rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.toggle:hover,
+.toggle[aria-expanded="true"] {
+  background: #fdeecb;
+}
+.book {
+  min-width: 0;
+}

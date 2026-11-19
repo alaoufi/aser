@@ -333,6 +333,17 @@
   border-radius: 20px;
   background: radial-gradient(circle, #f6ecda, transparent 72%);
 }
+/* لقطة شاشة للخطوة (دليل التسجيل): واضحة بحجم يُقرأ نصها */
+.shot {
+  justify-self: center;
+  display: block;
+  width: min(320px, 100%);
+  height: auto;
+  border: 1px solid #e2cfa9;
+  border-radius: 14px;
+  box-shadow: 0 6px 18px rgb(46 29 18 / 0.16);
+  background: #fbf4e6;
+}
 .art svg {
   display: block;
   width: 100%;

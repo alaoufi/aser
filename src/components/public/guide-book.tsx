@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GuideArt } from "./guide-art";
 import { GUIDE_CHAPTERS, type GuideChapter } from "./guide-content";
 import b from "./guide-book.module.css";
@@ -12,28 +12,66 @@ type Page =
   | { kind: "blank" }
   | { kind: "back" };
 
-const pages: Page[] = [
-  { kind: "cover" },
-  { kind: "toc" },
-  ...GUIDE_CHAPTERS.map((chapter, i) => ({
-    kind: "chapter" as const,
-    chapter,
-    number: i + 1,
-  })),
-];
-// الغلاف الخلفي على ظهر آخر ورقة: عدد الصفحات زوجي دائمًا.
-if (pages.length % 2 === 0) pages.push({ kind: "blank" });
-pages.push({ kind: "back" });
-
-const chapterPage = (id: string) =>
+/** صفحات الكتاب من فصوله: غلاف، فهرس، الفصول، ثم الغلاف الخلفي. */
+function buildPages(chapters: GuideChapter[]): Page[] {
+  const pages: Page[] = [
+    { kind: "cover" },
+    { kind: "toc" },
+    ...chapters.map((chapter, i) => ({
+      kind: "chapter" as const,
+      chapter,
+      number: i + 1,
+    })),
+  ];
+  // الغلاف الخلفي على ظهر آخر ورقة: عدد الصفحات زوجي دائمًا.
+  if (pages.length % 2 === 0) pages.push({ kind: "blank" });
+  pages.push({ kind: "back" });
+  return pages;
+}
+const chapterIndex = (pages: Page[], id: string) =>
   pages.findIndex((p) => p.kind === "chapter" && p.chapter.id === id);
+
+/** نصوص الغلافين واسم الكتاب؛ الافتراضي دليل المستخدم. */
+export type GuideCopy = {
+  label: string;
+  title: string;
+  lead: string;
+  backTitle: string;
+  backLead: string;
+  backLink?: { href: string; label: string };
+};
+const USER_GUIDE: GuideCopy = {
+  label: "دليل المستخدم",
+  title: "دليل المستخدم",
+  lead: "كل ما تحتاجه لتطلب وتطبخ وتشترك، خطوة بخطوة",
+  backTitle: "شكرًا لك",
+  backLead: "أكل بيت من أسر بلدك، بيد جدتنا وطعمها.",
+  backLink: { href: "/", label: "إلى الصفحة الرئيسية" },
+};
 
 /**
  * دليل المستخدم على هيئة كتاب ثلاثي الأبعاد يُقلَّب من اليمين إلى اليسار كالكتاب العربي:
  * صفحتان متقابلتان على الشاشة الواسعة، وصفحة واحدة على الجوال. النص كله في الصفحة
  * (لمحركات البحث وقارئ الشاشة)، والصفحات المطوية خاملة (inert) حتى تُفتح.
  */
-export function GuideBook({ version }: { version: string }) {
+export function GuideBook({
+  version,
+  chapters = GUIDE_CHAPTERS,
+  copy = USER_GUIDE,
+  hash = true,
+}: {
+  version: string;
+  /** فصول الكتاب؛ الافتراضي دليل المستخدم كاملًا. */
+  chapters?: GuideChapter[];
+  copy?: GuideCopy;
+  /** ربط الفصل بعنوان الصفحة (#) — يُعطَّل للكتاب المضمَّن داخل صفحة أخرى. */
+  hash?: boolean;
+}) {
+  const pages = useMemo(() => buildPages(chapters), [chapters]);
+  const chapterPage = useCallback(
+    (id: string) => chapterIndex(pages, id),
+    [pages],
+  );
   const [narrow, setNarrow] = useState(false);
   const [flat, setFlat] = useState(false);
   // الصفحة الحالية: أول صفحة ظاهرة (يمنى في العرض المزدوج).
@@ -46,10 +84,12 @@ export function GuideBook({ version }: { version: string }) {
     const sync = () => setNarrow(q.matches);
     sync();
     q.addEventListener("change", sync);
-    const fromHash = chapterPage(decodeURIComponent(location.hash.slice(1)));
+    const fromHash = hash
+      ? chapterPage(decodeURIComponent(location.hash.slice(1)))
+      : -1;
     if (fromHash > 0) setPage(fromHash);
     return () => q.removeEventListener("change", sync);
-  }, []);
+  }, [hash, chapterPage]);
 
   // المزدوج: عدد الأوراق المقلوبة f يُظهر الصفحتين 2f-1 (يمين) و2f (يسار).
   const flipped = narrow ? page : Math.floor((page + 1) / 2);
@@ -57,16 +97,21 @@ export function GuideBook({ version }: { version: string }) {
   const last = leaves - (narrow ? 1 : 0);
   const visible = narrow ? [page] : [flipped * 2 - 1, flipped * 2];
 
-  const go = useCallback((to: number, hash?: string) => {
-    const target = Math.max(0, Math.min(pages.length - 1, to));
-    setPage(target);
-    const p = pages[target];
-    history.replaceState(
-      null,
-      "",
-      hash ?? (p.kind === "chapter" ? `#${p.chapter.id}` : location.pathname),
-    );
-  }, []);
+  const go = useCallback(
+    (to: number, target?: string) => {
+      const index = Math.max(0, Math.min(pages.length - 1, to));
+      setPage(index);
+      if (!hash) return;
+      const p = pages[index];
+      history.replaceState(
+        null,
+        "",
+        target ??
+          (p.kind === "chapter" ? `#${p.chapter.id}` : location.pathname),
+      );
+    },
+    [pages, hash],
+  );
   const step = (dir: 1 | -1) => {
     const f = Math.max(0, Math.min(last, flipped + dir));
     go(narrow ? f : Math.max(0, f * 2 - 1));
@@ -100,7 +145,17 @@ export function GuideBook({ version }: { version: string }) {
   const face = (index: number) => {
     const p = pages[index];
     if (!p) return <div className={b.blankFace} />;
-    return <PageFace page={p} index={index} version={version} go={go} />;
+    return (
+      <PageFace
+        page={p}
+        index={index}
+        version={version}
+        go={go}
+        chapters={chapters}
+        chapterPage={chapterPage}
+        copy={copy}
+      />
+    );
   };
 
   return (
@@ -129,7 +184,16 @@ export function GuideBook({ version }: { version: string }) {
           {pages.map((p, i) =>
             p.kind === "blank" ? null : (
               <section key={i} className={b.flatPage}>
-                <PageFace page={p} index={i} version={version} go={go} flat />
+                <PageFace
+                  page={p}
+                  index={i}
+                  version={version}
+                  go={go}
+                  chapters={chapters}
+                  chapterPage={chapterPage}
+                  copy={copy}
+                  flat
+                />
               </section>
             ),
           )}
@@ -138,7 +202,7 @@ export function GuideBook({ version }: { version: string }) {
         <section
           className={b.stage}
           aria-roledescription="كتاب"
-          aria-label="دليل المستخدم"
+          aria-label={copy.label}
           onTouchStart={(e) => (touch.current = e.touches[0].clientX)}
           onTouchEnd={(e) => {
             if (touch.current === null) return;
@@ -213,12 +277,18 @@ function PageFace({
   index,
   version,
   go,
+  chapters,
+  chapterPage,
+  copy,
   flat = false,
 }: {
   page: Page;
   index: number;
   version: string;
   go: (to: number, hash?: string) => void;
+  chapters: GuideChapter[];
+  chapterPage: (id: string) => number;
+  copy: GuideCopy;
   flat?: boolean;
 }) {
   if (page.kind === "cover")
@@ -233,10 +303,8 @@ function PageFace({
           height={200}
           className={b.coverLogo}
         />
-        <p className={b.coverTitle}>دليل المستخدم</p>
-        <p className={b.coverLead}>
-          كل ما تحتاجه لتطلب وتطبخ وتشترك، خطوة بخطوة
-        </p>
+        <p className={b.coverTitle}>{copy.title}</p>
+        <p className={b.coverLead}>{copy.lead}</p>
         <p className={b.coverVersion}>الإصدار {version}</p>
         {!flat && (
           <button type="button" className={b.openButton} onClick={() => go(1)}>
@@ -248,13 +316,15 @@ function PageFace({
   if (page.kind === "back")
     return (
       <div className={`${b.cover} ${b.backCover}`}>
-        <p className={b.coverTitle}>شكرًا لك</p>
-        <p className={b.coverLead}>أكل بيت من أسر بلدك، بيد جدتنا وطعمها.</p>
-        <p>
-          <Link href="/" className={b.coverLink}>
-            إلى الصفحة الرئيسية
-          </Link>
-        </p>
+        <p className={b.coverTitle}>{copy.backTitle}</p>
+        <p className={b.coverLead}>{copy.backLead}</p>
+        {copy.backLink && (
+          <p>
+            <Link href={copy.backLink.href} className={b.coverLink}>
+              {copy.backLink.label}
+            </Link>
+          </p>
+        )}
         {!flat && (
           <button type="button" className={b.openButton} onClick={() => go(1)}>
             العودة للفهرس
@@ -275,7 +345,7 @@ function PageFace({
           الفهرس
         </h2>
         <ol className={b.toc} aria-labelledby="guide-toc">
-          {GUIDE_CHAPTERS.map((c, i) => (
+          {chapters.map((c, i) => (
             <li key={c.id}>
               <a
                 href={`#${c.id}`}
@@ -317,9 +387,21 @@ function PageFace({
       <h2 id={`guide-${c.id}`} className={b.chapterTitle}>
         {c.title}
       </h2>
-      <div className={b.art}>
-        <GuideArt name={c.art} />
-      </div>
+      {c.image ? (
+        // biome-ignore lint/performance/noImgElement: لقطة شاشة ثابتة توضّح الخطوة
+        <img
+          className={b.shot}
+          src={c.image.src}
+          alt={c.image.alt}
+          width={c.image.width}
+          height={c.image.height}
+          loading="lazy"
+        />
+      ) : (
+        <div className={b.art}>
+          <GuideArt name={c.art} />
+        </div>
+      )}
       <p className={b.intro}>{c.intro}</p>
       <ol className={b.steps}>
         {c.steps.map((s) => (

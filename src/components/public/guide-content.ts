@@ -7,6 +7,8 @@ export type GuideChapter = {
   audience: "الجميع" | "العملاء" | "الأسر المنتجة" | "المندوبون";
   title: string;
   art: ArtName;
+  /** لقطة شاشة توضّح الخطوة بدل الرسم (دليل التسجيل). */
+  image?: { src: string; alt: string; width: number; height: number };
   /** لون شريط الفصل. */
   tone: "olive" | "rust" | "gold" | "sage";
   intro: string;
