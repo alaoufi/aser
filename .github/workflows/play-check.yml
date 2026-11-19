@@ -27,3 +27,8 @@ jobs:
         env:
           PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
           PLAY_PACKAGE: com.jdatna.app
+      # تجربة فقط: رفع لقطات التابلت داخل edit وتحقق قوقل منها، ثم حذف الـ edit. لا يتغير شيء.
+      - run: node android/play/tablet-screens.cjs
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          PLAY_PACKAGE: com.jdatna.app
