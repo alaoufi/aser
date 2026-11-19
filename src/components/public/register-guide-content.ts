@@ -30,7 +30,7 @@ export const REGISTER_CHAPTERS: GuideChapter[] = [
   {
     id: "type",
     audience: "الجميع",
-    title: "الخطوة 2: نوع الحساب ورقم الجوال",
+    title: "الخطوة 2: نوع الحساب والجوال",
     art: "account",
     image: shot(
       2,
@@ -49,7 +49,7 @@ export const REGISTER_CHAPTERS: GuideChapter[] = [
   {
     id: "code",
     audience: "الجميع",
-    title: "الخطوة 3: اسمك ورمز التحقق",
+    title: "الخطوة 3: اسمك والرمز",
     art: "account",
     image: shot(3, "كتابة اسم صاحب الحساب ورمز التحقق ثم زر تحقق ومتابعة", 560),
     tone: "rust",
@@ -65,7 +65,7 @@ export const REGISTER_CHAPTERS: GuideChapter[] = [
   {
     id: "password",
     audience: "الجميع",
-    title: "الخطوة 4: كلمة المرور",
+    title: "الخطوة 4: حفظ بيانات الدخول",
     art: "privacy",
     image: shot(
       4,
