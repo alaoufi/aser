@@ -1,9 +1,8 @@
-# ترقية إصدار إلى الإنتاج في Google Play. يغيّر المتجر ويرسل للمراجعة، فلا يعمل إلا عند تعديل
-# ملف الطلب android/play/promote-request.json (كل طلب بموافقة المالك الصريحة).
+# ترقية إصدار إلى الإنتاج في Google Play. يغيّر المتجر ويرسل للمراجعة، فلا يعمل تلقائيًا أبدًا:
+# يشغّله المالك يدويًا من Actions بعد إضافة ملف الطلب android/play/promote-request.json.
 name: Google Play promote
 on:
-  push:
-    paths: ["android/play/promote-request.json"]
+  workflow_dispatch:
 permissions:
   contents: read
 concurrency:
