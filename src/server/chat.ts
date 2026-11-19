@@ -8,9 +8,12 @@ import { notifyUser } from "./push";
 import { publishLive } from "./live";
 import { can } from "../lib/permissions";
 
+/** الطرف الآخر في المحادثة: أسرة منتجة، أو مندوب، أو عميل (تبويبات صفحة المحادثات). */
+export type Counterpart = "family" | "courier" | "customer";
 export type ConversationSummary = {
   id: string;
   side: "customer" | "producer";
+  kind: Counterpart;
   title: string;
   preview: string | null;
   lastAt: string;
@@ -28,36 +31,89 @@ export type ChatMessage = {
 /** حدود الرسالة الصوتية: دقيقتان، وحجم أقصى 2 ميجابايت. */
 export const VOICE_MAX_MS = 120_000;
 export const VOICE_MAX_BYTES = 2 * 1024 * 1024;
+/**
+ * الطرف الآخر: محادثة العميل مع أسرة (producer_id) أو مع مندوب (courier_id، طرف «الأسرة» نفسه).
+ * $1 = المستخدم الحالي.
+ */
+const COUNTERPART_JOINS = `LEFT JOIN jdatna.producer_profiles p ON p.id=c.producer_id
+       LEFT JOIN jdatna.courier_profiles kp ON kp.user_id=c.courier_id
+       JOIN jdatna.users u ON u.id=c.customer_id`;
+const KIND_SQL = `CASE WHEN c.courier_id=$1 THEN 'customer'
+        WHEN c.customer_id=$1 AND c.courier_id IS NOT NULL THEN 'courier'
+        WHEN c.customer_id=$1 THEN 'family'
+        WHEN u.role='courier' THEN 'courier' ELSE 'customer' END`;
+const TITLE_SQL = `CASE WHEN c.customer_id=$1 THEN COALESCE(p.trade_name,p.name,kp.name) ELSE u.name END`;
 const VOICE_COLUMNS = `m.id,m.body,m.sender_id=$2 AS mine,m.created_at AS "createdAt",v.duration_ms AS "voiceMs"`;
 
 /**
- * يبدأ محادثة العضو مع أسرة معتمدة، أو يعيد محادثتهما القائمة.
- * ويمكن بدؤها من طلب: صاحب الطلب يراسل الأسرة، والأسرة تراسل صاحب الطلب.
+ * يبدأ محادثة أو يعيد القائمة:
+ * - العميل مع أسرة معتمدة (من صفحتها أو من طلبه)، والأسرة مع صاحب الطلب.
+ * - الأسرة مع مندوب معتمد للاتفاق على التوصيل (المندوب في طرف «العميل»).
+ * - العميل مع مندوب عام معتمد نشط من «تجمع المندوبين» (المندوب الخاص لأسرته فقط).
+ * - مندوب الطلب مع عميله، والعميل مع مندوب طلبه (عام أو خاص) من الطلب: { delivery }.
  */
 export async function startConversation(user: SessionUser, input: unknown) {
   const parsed = z
     .union([
       z.object({ producer: z.string().min(1).max(200) }).strict(),
       z.object({ order: z.uuid() }).strict(),
-      // الأسرة تراسل مندوبًا معتمدًا لتتفق معه على التوصيل (المندوب في طرف «العميل»).
       z.object({ courier: z.uuid() }).strict(),
+      z.object({ delivery: z.uuid() }).strict(),
     ])
     .parse(input);
-  let customerId: string, producerId: string;
-  if ("courier" in parsed) {
-    const pair = (
+  let customerId: string,
+    producerId: string | null = null,
+    courierId: string | null = null;
+  if ("delivery" in parsed) {
+    // مندوب الطلب وعميله فقط، ما دام التوصيل لم يكتمل أو اكتمل حديثًا.
+    const row = (
       await db().query(
-        `SELECT p.id AS producer_id,k.user_id AS courier_user
-         FROM jdatna.producer_profiles p, jdatna.courier_profiles k JOIN jdatna.users u ON u.id=k.user_id
-         WHERE p.user_id=$1 AND p.status='approved' AND k.user_id=$2 AND k.status='approved'
-           AND u.suspended_at IS NULL AND u.deleted_at IS NULL`,
-        [user.id, parsed.courier],
+        `SELECT o.user_id,oc.courier_user_id FROM jdatna.order_couriers oc
+         JOIN jdatna.order_requests o ON o.id=oc.order_id
+         WHERE oc.order_id=$1 AND (o.user_id=$2 OR oc.courier_user_id=$2)
+           AND o.status NOT IN ('declined','cancelled')`,
+        [parsed.delivery, user.id],
       )
     ).rows[0];
-    if (!pair)
-      throw new HttpError(404, "المندوب غير متاح، أو أسرتك غير معتمدة بعد");
-    customerId = pair.courier_user;
-    producerId = pair.producer_id;
+    if (!row) throw new HttpError(404, "لا يوجد مندوب لهذا الطلب");
+    if (!row.user_id)
+      throw new HttpError(400, "طلب الضيف بلا حساب؛ تواصل معه بالجوال");
+    if (row.user_id === row.courier_user_id)
+      throw new HttpError(400, "لا يمكنك مراسلة نفسك");
+    customerId = row.user_id;
+    courierId = row.courier_user_id;
+  } else if ("courier" in parsed) {
+    const family = (
+      await db().query(
+        "SELECT id FROM jdatna.producer_profiles WHERE user_id=$1 AND status='approved'",
+        [user.id],
+      )
+    ).rows[0] as { id: string } | undefined;
+    const courier = (
+      await db().query(
+        `SELECT k.user_id,k.family_id,k.active FROM jdatna.courier_profiles k JOIN jdatna.users u ON u.id=k.user_id
+         WHERE k.user_id=$1 AND k.status='approved' AND u.suspended_at IS NULL AND u.deleted_at IS NULL`,
+        [parsed.courier],
+      )
+    ).rows[0] as
+      | { user_id: string; family_id: string | null; active: boolean }
+      | undefined;
+    if (family) {
+      if (!courier) throw new HttpError(404, "المندوب غير متاح");
+      // الأسرة مع المندوب: المندوب في طرف «العميل».
+      customerId = courier.user_id;
+      producerId = family.id;
+    } else {
+      if (user.role === "courier")
+        throw new HttpError(403, "المندوب يراسل العميل من طلب التوصيل");
+      // العميل مع مندوب عام نشط؛ المندوب الخاص لأسرته فقط.
+      if (!courier || courier.family_id || !courier.active)
+        throw new HttpError(404, "المندوب غير متاح");
+      if (courier.user_id === user.id)
+        throw new HttpError(400, "لا يمكنك مراسلة نفسك");
+      customerId = user.id;
+      courierId = courier.user_id;
+    }
   } else if ("order" in parsed) {
     const order = (
       await db().query(
@@ -93,15 +149,20 @@ export async function startConversation(user: SessionUser, input: unknown) {
     customerId = user.id;
     producerId = family.id;
   }
+  // محادثة حُذفت ثم بدأها أحدهما من جديد: تعود فارغة للطرفين (السابق للإدارة فقط).
+  const reopen = `customer_id=EXCLUDED.customer_id,
+         visible_from=CASE WHEN jdatna.conversations.deleted_at IS NOT NULL THEN now() ELSE jdatna.conversations.visible_from END,
+         deleted_at=NULL,deleted_by=NULL`;
   const row = (
     await db().query(
-      // محادثة حُذفت ثم بدأها أحدهما من جديد: تعود فارغة للطرفين (السابق للإدارة فقط).
-      `INSERT INTO jdatna.conversations(id,customer_id,producer_id) VALUES($1,$2,$3)
-       ON CONFLICT(customer_id,producer_id) DO UPDATE SET customer_id=EXCLUDED.customer_id,
-         visible_from=CASE WHEN jdatna.conversations.deleted_at IS NOT NULL THEN now() ELSE jdatna.conversations.visible_from END,
-         deleted_at=NULL,deleted_by=NULL
-       RETURNING id`,
-      [randomUUID(), customerId, producerId],
+      courierId
+        ? `INSERT INTO jdatna.conversations(id,customer_id,courier_id) VALUES($1,$2,$3)
+           ON CONFLICT(customer_id,courier_id) WHERE courier_id IS NOT NULL DO UPDATE SET ${reopen}
+           RETURNING id`
+        : `INSERT INTO jdatna.conversations(id,customer_id,producer_id) VALUES($1,$2,$3)
+           ON CONFLICT(customer_id,producer_id) DO UPDATE SET ${reopen}
+           RETURNING id`,
+      [randomUUID(), customerId, courierId ?? producerId],
     )
   ).rows[0];
   return { id: row.id as string };
@@ -119,10 +180,13 @@ export async function listConversations(
          UNION
          SELECT c.id FROM jdatna.conversations c JOIN jdatna.producer_profiles p ON p.id=c.producer_id
           WHERE p.user_id=$1 AND c.deleted_at IS NULL
+         UNION
+         SELECT c.id FROM jdatna.conversations c WHERE c.courier_id=$1 AND c.deleted_at IS NULL
        )
        SELECT c.id,
         CASE WHEN c.customer_id=$1 THEN 'customer' ELSE 'producer' END AS side,
-        CASE WHEN c.customer_id=$1 THEN COALESCE(p.trade_name,p.name) ELSE u.name END AS title,
+        ${KIND_SQL} AS kind,
+        ${TITLE_SQL} AS title,
         (SELECT m.body FROM jdatna.messages m WHERE m.conversation_id=c.id
           AND m.created_at>=COALESCE(c.visible_from,'-infinity') ORDER BY m.created_at DESC LIMIT 1) AS preview,
         c.last_message_at AS "lastAt",
@@ -130,8 +194,7 @@ export async function listConversations(
           AND m.created_at>=COALESCE(c.visible_from,'-infinity')
           AND m.created_at > CASE WHEN c.customer_id=$1 THEN c.customer_read_at ELSE c.producer_read_at END) AS unread
        FROM mine JOIN jdatna.conversations c ON c.id=mine.id
-       JOIN jdatna.producer_profiles p ON p.id=c.producer_id
-       JOIN jdatna.users u ON u.id=c.customer_id
+       ${COUNTERPART_JOINS}
        ORDER BY c.last_message_at DESC LIMIT 100`,
       [user.id],
     )
@@ -152,6 +215,11 @@ export async function markDelivered(user: SessionUser) {
     db().query(
       `UPDATE jdatna.conversations c SET producer_delivered_at=now()
        FROM jdatna.producer_profiles p WHERE p.id=c.producer_id AND p.user_id=$1 AND c.producer_delivered_at<c.last_message_at`,
+      [user.id],
+    ),
+    // المندوب في طرف «الأسرة» من محادثة العميل معه.
+    db().query(
+      "UPDATE jdatna.conversations SET producer_delivered_at=now() WHERE courier_id=$1 AND producer_delivered_at<last_message_at",
       [user.id],
     ),
   ]);
@@ -187,14 +255,13 @@ async function participant(
     throw new HttpError(404, "المحادثة غير موجودة");
   const row = (
     await client.query(
-      `SELECT c.id,c.customer_id,p.user_id AS producer_user,c.blocked_by,c.producer_id,
+      `SELECT c.id,c.customer_id,COALESCE(p.user_id,c.courier_id) AS producer_user,c.blocked_by,c.producer_id,
         c.customer_read_at,c.producer_read_at,c.customer_delivered_at,c.producer_delivered_at,
-        CASE WHEN c.customer_id=$1 THEN COALESCE(p.trade_name,p.name) ELSE u.name END AS title,
+        ${TITLE_SQL} AS title,${KIND_SQL} AS kind,
         p.slug AS "producerSlug",COALESCE(c.visible_from,'-infinity') AS visible_from
        FROM jdatna.conversations c
-       JOIN jdatna.producer_profiles p ON p.id=c.producer_id
-       JOIN jdatna.users u ON u.id=c.customer_id
-       WHERE c.id=$2 AND c.deleted_at IS NULL AND (c.customer_id=$1 OR p.user_id=$1)${lock ? " FOR UPDATE OF c" : ""}`,
+       ${COUNTERPART_JOINS}
+       WHERE c.id=$2 AND c.deleted_at IS NULL AND (c.customer_id=$1 OR p.user_id=$1 OR c.courier_id=$1)${lock ? " FOR UPDATE OF c" : ""}`,
       [user.id, id],
     )
   ).rows[0];
@@ -206,10 +273,11 @@ async function participant(
     customer_id: string;
     producer_user: string;
     title: string;
-    producerSlug: string;
+    kind: Counterpart;
+    producerSlug: string | null;
     side: "customer" | "producer";
     blocked_by: string | null;
-    producer_id: string;
+    producer_id: string | null;
     customer_read_at: Date;
     producer_read_at: Date;
     customer_delivered_at: Date;
@@ -275,6 +343,7 @@ export async function conversationMessages(
         id: c.id,
         title: c.title,
         side: c.side,
+        kind: c.kind,
         producerSlug: c.producerSlug,
         blocked: Boolean(c.blocked_by),
         blockedByMe: c.blocked_by === user.id,
@@ -462,7 +531,7 @@ export async function moderateConversation(
           randomUUID(),
           user.id,
           c.producer_id,
-          `بلاغ محادثة (${c.id}) من ${c.side === "customer" ? "العميل" : "الأسرة"}: ${value.reason}`,
+          `بلاغ محادثة (${c.id}) مع ${c.kind === "family" ? "أسرة" : c.kind === "courier" ? "مندوب" : "عميل"}: ${value.reason}`,
           c.side === "customer" ? c.producer_user : c.customer_id,
         ],
       );
@@ -526,12 +595,14 @@ export async function adminDeletedConversations(user: SessionUser) {
   return (
     await db().query(
       `SELECT d.id,d.conversation_id AS "conversationId",d.deleted_at AS "deletedAt",
-         du.name AS "deletedBy",u.name AS "customerName",COALESCE(p.trade_name,p.name) AS "familyName",
+         du.name AS "deletedBy",u.name AS "customerName",
+         COALESCE(p.trade_name,p.name,'المندوب: '||kp.name) AS "familyName",
          (SELECT count(*)::int FROM jdatna.messages m WHERE m.conversation_id=c.id
            AND m.created_at>=COALESCE(d.visible_from,'-infinity') AND m.created_at<=d.deleted_at) AS messages
        FROM jdatna.conversation_deletions d
        JOIN jdatna.conversations c ON c.id=d.conversation_id
-       JOIN jdatna.producer_profiles p ON p.id=c.producer_id
+       LEFT JOIN jdatna.producer_profiles p ON p.id=c.producer_id
+       LEFT JOIN jdatna.courier_profiles kp ON kp.user_id=c.courier_id
        JOIN jdatna.users u ON u.id=c.customer_id
        LEFT JOIN jdatna.users du ON du.id=d.deleted_by
        ORDER BY d.deleted_at DESC LIMIT 200`,

@@ -2,14 +2,28 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { AccountShell, Guard, api, useSession } from "./shared";
+import {
+  AccountShell,
+  Guard,
+  api,
+  isFamilyAccount,
+  useSession,
+} from "./shared";
 import c from "./chat.module.css";
 import { UNREAD_REFRESH } from "@/components/public/message-alert";
 import { onLive } from "./live";
 
+/** الطرف الآخر في المحادثة، ويحدد تبويبها. */
+type Kind = "family" | "courier" | "customer";
+const kindLabels: Record<Kind, string> = {
+  family: "الأسر المنتجة",
+  courier: "المندوبين",
+  customer: "العملاء",
+};
 type Summary = {
   id: string;
   side: "customer" | "producer";
+  kind?: Kind;
   title: string;
   preview: string | null;
   lastAt: string;
@@ -28,6 +42,23 @@ type Message = {
 /** آخر ما عُرض من كل محادثة ومن القائمة: يفتح فورًا ثم يتحدّث في الخلفية. */
 const threadCache = new Map<string, Thread>();
 let listCache: Summary[] | null = null;
+/**
+ * أحدث المحادثات تُحمَّل مسبقًا في الخلفية (دون تعليمها مقروءة)، فتفتح فورًا عند الضغط
+ * ثم تُحدَّث وتُعلَّم مقروءة كالمعتاد. مرة واحدة لكل محادثة.
+ */
+const preloading = new Set<string>();
+function preloadThreads(list: Summary[]) {
+  for (const x of list.slice(0, 4)) {
+    if (threadCache.has(x.id) || preloading.has(x.id)) continue;
+    preloading.add(x.id);
+    api<Thread>(`/api/conversations/${encodeURIComponent(x.id)}?read=0`)
+      .then((d) => {
+        if (!threadCache.has(x.id)) threadCache.set(x.id, d);
+      })
+      .catch(() => {})
+      .finally(() => preloading.delete(x.id));
+  }
+}
 /** يجمع تحديثات متقاربة (رسالة وقراءة معًا) في طلب واحد. */
 function debounce(fn: () => void, ms = 250) {
   let t: ReturnType<typeof setTimeout> | null = null;
@@ -49,7 +80,8 @@ type Thread = {
     id: string;
     title: string;
     side: "customer" | "producer";
-    producerSlug: string;
+    kind?: Kind;
+    producerSlug: string | null;
     blocked?: boolean;
     blockedByMe?: boolean;
     otherReadAt?: string;
@@ -85,6 +117,35 @@ export function Messages() {
   const router = useRouter();
   const openId = params.get("c") ?? "";
   const [list, setList] = useState<Summary[] | null>(() => listCache);
+  // تبويبات المحادثات بحسب الحساب: العميل (الأسر والمندوبين)، والأسرة (العملاء والمندوبين)،
+  // والمندوب (الأسر والعملاء).
+  const tabs: Kind[] =
+    session.user?.role === "courier"
+      ? ["family", "customer"]
+      : isFamilyAccount(session.user)
+        ? ["customer", "courier"]
+        : ["family", "courier"];
+  const [chosenTab, setTab] = useState<Kind | null>(null);
+  const openKind = list?.find((x) => x.id === openId)?.kind;
+  const tab: Kind =
+    chosenTab ??
+    (openKind && tabs.includes(openKind) ? openKind : undefined) ??
+    // يبدأ بالتبويب الذي فيه رسائل جديدة، وإلا بأول تبويب فيه محادثات.
+    tabs.find((k) =>
+      list?.some((x) => (x.kind ?? "family") === k && x.unread > 0),
+    ) ??
+    tabs.find((k) => list?.some((x) => (x.kind ?? "family") === k)) ??
+    tabs[0];
+  const kindOf = (x: Summary): Kind => {
+    const k = x.kind ?? "family";
+    // نوع لا تبويب له في هذا الحساب يظهر في التبويب الأول.
+    return tabs.includes(k) ? k : tabs[0];
+  };
+  const shown = list?.filter((x) => kindOf(x) === tab) ?? null;
+  // فتح محادثة من رابط أو تنبيه ينقل لتبويبها.
+  useEffect(() => {
+    if (openId) setTab(null);
+  }, [openId]);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   // تحميل القائمة يبدأ فورًا مع فحص الجلسة لا بعده، فلا ينتظر المستخدم طلبين متتاليين.
@@ -98,6 +159,7 @@ export function Messages() {
           if (!active) return;
           listCache = d.conversations;
           setList(d.conversations);
+          preloadThreads(d.conversations);
         })
         .catch((e) => {
           if (active && session.ready) setError((e as Error).message);
@@ -139,24 +201,60 @@ export function Messages() {
             <div className={c.listHead}>
               <h1>المحادثات</h1>
             </div>
+            <div className={c.tabs} role="tablist" aria-label="أنواع المحادثات">
+              {tabs.map((k) => {
+                const unread = (list ?? [])
+                  .filter((x) => kindOf(x) === k)
+                  .reduce((n, x) => n + x.unread, 0);
+                return (
+                  <button
+                    key={k}
+                    type="button"
+                    role="tab"
+                    aria-selected={tab === k}
+                    className={c.tab}
+                    onClick={() => setTab(k)}
+                  >
+                    {kindLabels[k]}
+                    {unread > 0 && (
+                      <span className={c.unread}>
+                        {unread}
+                        <span className="sr-only"> غير مقروءة</span>
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
             {error && <p className={c.error}>{error}</p>}
             {notice && (
               <p role="status" className={c.safetyNotice}>
                 {notice}
               </p>
             )}
-            {list === null ? (
+            {shown === null ? (
               <p role="status" className={c.empty}>
                 جارٍ تحميل المحادثات…
               </p>
-            ) : list.length === 0 ? (
+            ) : shown.length === 0 ? (
               <p className={c.empty}>
-                لا توجد محادثات بعد. افتح صفحة أسرة منتجة أو منتج واضغط «مراسلة
-                الأسرة المنتجة»، أو «مراسلة» من أي طلب في «طلباتي».{" "}
-                <Link href="/producers">تصفح الأسر المنتجة ←</Link>
+                {tab === "family" ? (
+                  <>
+                    لا توجد محادثات مع الأسر بعد. افتح صفحة أسرة منتجة أو منتج
+                    واضغط «مراسلة الأسرة المنتجة».{" "}
+                    <Link href="/producers">تصفح الأسر المنتجة ←</Link>
+                  </>
+                ) : tab === "courier" ? (
+                  <>
+                    لا توجد محادثات مع المندوبين بعد. اختر مندوبًا واضغط
+                    «محادثة». <Link href="/couriers">تصفح المندوبين ←</Link>
+                  </>
+                ) : (
+                  "لا توجد محادثات مع العملاء بعد. تبدأ من الطلبات."
+                )}
               </p>
             ) : (
-              list.map((x) => (
+              shown.map((x) => (
                 <button
                   key={x.id}
                   type="button"
@@ -442,9 +540,10 @@ function Conversation({
           {initials(thread.conversation.title)}
         </span>
         <h2>
-          {thread.conversation.side === "customer" ? (
+          {thread.conversation.side === "customer" &&
+          thread.conversation.producerSlug ? (
             <Link
-              href={`/producers/${encodeURIComponent(thread.conversation.producerSlug)}`}
+              href={`/producers/${encodeURIComponent(thread.conversation.producerSlug ?? "")}`}
               style={{ color: "inherit" }}
             >
               {thread.conversation.title}
@@ -961,10 +1060,13 @@ export function OrderChatButton({
   orderId,
   label,
   className = "button",
+  courier = false,
 }: {
   orderId: string;
   label: string;
   className?: string;
+  /** محادثة التوصيل: العميل مع مندوب طلبه، أو المندوب مع عميل الطلب. */
+  courier?: boolean;
 }) {
   const router = useRouter();
   const [error, setError] = useState("");
@@ -981,7 +1083,9 @@ export function OrderChatButton({
           try {
             const d = await api<{ id: string }>("/api/conversations", {
               method: "POST",
-              body: JSON.stringify({ order: orderId }),
+              body: JSON.stringify(
+                courier ? { delivery: orderId } : { order: orderId },
+              ),
             });
             router.push(`/messages?c=${encodeURIComponent(d.id)}`);
           } catch (e) {

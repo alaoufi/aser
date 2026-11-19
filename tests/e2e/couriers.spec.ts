@@ -448,12 +448,12 @@ test("a customer picks a courier for an accepted delivery order from the courier
     return r.fulfill({ json: { orderId, courierName: "سعد المندوب" } });
   });
   await page.goto(`/couriers?order=${orderId}`);
-  // العميل لا يرى قسم «مندوبي الخاص» ولا زر المحادثة الخاص بالأسر.
+  // العميل لا يرى قسم «مندوبي الخاص»، ويراسل المندوب أو يختاره لطلبه.
   await expect(page.getByRole("region", { name: "مندوبي الخاص" })).toHaveCount(
     0,
   );
   const list = page.getByRole("list", { name: "قائمة المندوبين" });
-  await expect(list.getByRole("button", { name: "محادثة" })).toHaveCount(0);
+  await expect(list.getByRole("button", { name: "محادثة" })).toBeVisible();
   await list.getByRole("button", { name: "اختره لتوصيل طلبي" }).click();
   await expect(page.getByRole("status")).toContainText(
     "اخترت سعد المندوب لتوصيل طلبك",

@@ -1,4 +1,6 @@
 import { AccountShell, LoginForm } from "@/components/forms/shared";
+import { RegisterGuide } from "@/components/public/register-guide";
+import { SITE_VERSION } from "@/lib/version";
 export const metadata = {
   title: "تسجيل الدخول",
   description:
@@ -7,6 +9,8 @@ export const metadata = {
 export default function Login() {
   return (
     <AccountShell navigation={false}>
+      {/* أول زيارة: دليل التسجيل مفتوح أعلى النموذج، ثم يبقى زرًّا ظاهرًا. */}
+      <RegisterGuide version={SITE_VERSION} autoOpen />
       <LoginForm />
     </AccountShell>
   );

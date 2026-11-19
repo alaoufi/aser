@@ -111,17 +111,22 @@ export async function passwordLogin(input: unknown) {
       validIdentifier = false;
     }
   }
-  await rateLimit("password-login-global", 600, 3600);
-  await rateLimit("password-login:" + hash(identifier), 10, 900);
-  // سقف يومي لكل حساب: كلمات المرور القصيرة (أربع خانات) لا تُخمَّن بالمحاولات المتواصلة.
+  // الحدود الثلاثة تُحسب معًا (كلها تُعدّ دائمًا)، لا واحدًا بعد الآخر.
+  // السقف اليومي لكل حساب: كلمات المرور القصيرة (أربع خانات) لا تُخمَّن بالمحاولات المتواصلة.
   // صاحب الحساب يعود في اليوم التالي أو يستعيد كلمة المرور برمز الجوال.
-  await rateLimit("password-login-day:" + hash(identifier), 30, 86400);
+  await Promise.all([
+    rateLimit("password-login-global", 600, 3600),
+    rateLimit("password-login:" + hash(identifier), 10, 900),
+    rateLimit("password-login-day:" + hash(identifier), 30, 86400),
+  ]);
   // المحاولة الخاطئة تُحفظ (لا تتراجع مع الخطأ)، ثم يُرمى الخطأ بعد إنهاء المعاملة.
   const outcome = await transaction(async (client) => {
     const row = validIdentifier
       ? (
           await client.query(
-            `SELECT id,name,phone,role,username,permissions,password_hash,suspended_at,failed_logins,login_locked_at FROM jdatna.users WHERE ${phone ? "phone" : "username"}=$1 AND phone_verified_at IS NOT NULL FOR UPDATE`,
+            `SELECT id,name,phone,role,username,permissions,password_hash,suspended_at,failed_logins,login_locked_at,
+               (SELECT COALESCE(p.trade_name,p.name) FROM jdatna.producer_profiles p WHERE p.user_id=users.id) AS "familyName"
+             FROM jdatna.users WHERE ${phone ? "phone" : "username"}=$1 AND phone_verified_at IS NOT NULL FOR UPDATE`,
             [identifier],
           )
         ).rows[0]

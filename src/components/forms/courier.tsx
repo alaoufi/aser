@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { City } from "@/lib/types";
 import { LocationFields } from "@/components/public/location-fields";
 import { LocationLink } from "./location-share";
+import { OrderChatButton } from "./chat";
 import { collectIssues, FormIssues, type FormIssue } from "./form-issues";
 import { Stars } from "@/components/public/stars";
 import {
@@ -856,16 +857,14 @@ export function CouriersDirectory() {
                     اختره لتوصيل طلبي
                   </button>
                 )}
-                {family && (
-                  <button
-                    type="button"
-                    className={s.button}
-                    disabled={busy === k.id}
-                    onClick={() => chat(k)}
-                  >
-                    محادثة
-                  </button>
-                )}
+                <button
+                  type="button"
+                  className={family || !orderId ? s.button : s.buttonSecondary}
+                  disabled={busy === k.id}
+                  onClick={() => chat(k)}
+                >
+                  محادثة
+                </button>
                 {k.phone && (
                   <a className={s.contact} href={`tel:+${intl(k.phone)}`}>
                     اتصال
@@ -1075,7 +1074,13 @@ function CourierDeliveries() {
               العميل: {d.customerName}{" "}
               <a className={s.contact} href={`tel:${d.customerPhone}`}>
                 اتصال بالعميل
-              </a>
+              </a>{" "}
+              <OrderChatButton
+                orderId={d.orderId}
+                courier
+                label="مراسلة العميل"
+                className={s.contact}
+              />
             </p>
             {d.deliveryLocation ? (
               <LocationLink

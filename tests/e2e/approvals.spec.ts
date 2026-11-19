@@ -116,3 +116,50 @@ test("site texts can be searched by place, label or wording", async ({
   await search.fill("كلمة غير موجودة");
   await expect(page.getByText("لا توجد نصوص مطابقة.")).toBeVisible();
 });
+
+// المعتمدة لا تُطالَب بالنواقص؛ الإدارة تتابعها من «من لديهم نواقص».
+test("admin follows approved families with missing items from a dedicated filter", async ({
+  page,
+}) => {
+  await asAdmin(page);
+  await page.route("**/api/admin/producers**", (r) =>
+    r.fulfill({
+      json: {
+        producers: [
+          {
+            id: "00000000-0000-4000-8000-000000000021",
+            name: "أسرة بنواقص",
+            cityName: "الرياض",
+            status: "approved",
+            verified: true,
+            documentId: null,
+            reviewReason: "إرفاق شهادة الأسرة المنتجة",
+          },
+          {
+            id: "00000000-0000-4000-8000-000000000022",
+            name: "أسرة مكتملة",
+            cityName: "الرياض",
+            status: "approved",
+            verified: true,
+            documentType: "producer_certificate",
+            documentId: "00000000-0000-4000-8000-000000000023",
+          },
+        ],
+      },
+    }),
+  );
+  await page.goto("/admin?tab=producers");
+  const filters = page.getByRole("group", { name: "تصفية الأسر" });
+  const missing = filters.getByRole("button", { name: /من لديهم نواقص/ });
+  await expect(missing).toContainText("(1)");
+  await missing.click();
+  await expect(
+    page.getByRole("heading", { name: "أسرة بنواقص" }),
+  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "أسرة مكتملة" })).toHaveCount(
+    0,
+  );
+  await expect(
+    page.getByText("النواقص المكتوبة عند الاعتماد: إرفاق شهادة الأسرة المنتجة"),
+  ).toBeVisible();
+});
