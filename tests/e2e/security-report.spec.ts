@@ -102,3 +102,76 @@ test("the security report shows period cards, daily chart, top countries and IPs
     ),
   ).toBe(true);
 });
+
+// الإدارة ← مجموعة «التقارير»: التقرير الأمني والنسخ الاحتياطية، وتقرير النسخ يعرض النوع والحجم والتحميل.
+test("reports group lists the security and backups reports, and the backups report shows contents and download", async ({
+  page,
+}) => {
+  await page.route("**/api/session", (r) =>
+    r.fulfill({
+      json: {
+        user: { id: "a", name: "مدير", phone: "+966500000009", role: "admin" },
+        registrationOpen: true,
+      },
+    }),
+  );
+  await page.route("**/api/admin/summary", (r) =>
+    r.fulfill({ json: { summary: {} } }),
+  );
+  await page.route("**/api/admin/backups", (r) =>
+    r.fulfill({
+      json: {
+        downloadEnabled: true,
+        latestAt: new Date().toISOString(),
+        backups: [
+          {
+            file: "jdatna-20261119T020000Z.tar.gpg",
+            createdAt: new Date().toISOString(),
+            sizeBytes: 210 * 1024 * 1024,
+            databaseBytes: 6 * 1024 * 1024,
+            mediaBytes: 204 * 1024 * 1024,
+            sha256: "a".repeat(64),
+            downloadable: true,
+          },
+          {
+            file: "jdatna-20261118T020000Z.tar.gpg",
+            createdAt: new Date(Date.now() - 864e5).toISOString(),
+            sizeBytes: 200 * 1024 * 1024,
+            databaseBytes: 5 * 1024 * 1024,
+            mediaBytes: 195 * 1024 * 1024,
+            sha256: null,
+            downloadable: false,
+          },
+        ],
+      },
+    }),
+  );
+  await page.setViewportSize({ width: 360, height: 760 });
+  await page.goto("/admin?tab=backups");
+  const nav = page.getByRole("navigation", { name: "أقسام الإدارة" });
+  await nav.locator("summary").click();
+  const reports = nav.getByRole("group", { name: "التقارير" });
+  await expect(reports.getByRole("button")).toHaveText([
+    "التقرير الأمني",
+    "النسخ الاحتياطية",
+  ]);
+  await page.keyboard.press("Escape");
+  const report = page.getByRole("region", { name: "النسخ الاحتياطية" });
+  const rows = report.getByRole("table", { name: "النسخ" }).locator("tbody tr");
+  await expect(rows).toHaveCount(2);
+  await expect(rows.first()).toContainText("بيانات: 6.0 م.ب");
+  await expect(rows.first()).toContainText("ميديا: 204.0 م.ب");
+  await expect(
+    rows.first().getByRole("link", { name: "تحميل" }),
+  ).toHaveAttribute(
+    "href",
+    "/api/admin/backups/jdatna-20261119T020000Z.tar.gpg",
+  );
+  await expect(rows.nth(1)).toContainText("حُذفت من الخادم");
+  await expect(report).toContainText("الكود: ليس ضمن هذه النسخ");
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+});

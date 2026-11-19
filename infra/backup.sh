@@ -51,5 +51,20 @@ gpg --batch --quiet --pinentry-mode loopback --passphrase-file /etc/jdatna/secre
 final=${partial%.partial}
 mv -- "$partial" "$final"
 sha256sum "$final" > "$final.sha256"
+# أحجام مكوّنات النسخة لتقرير الإدارة: البيانات (القاعدة والإعدادات) والميديا (الصور والمستندات).
+database_bytes=$(du -sb "$stage" | cut -f1)
+media_bytes=0
+for media in /srv/jdatna/data/uploads /srv/jdatna/data/object-storage; do
+  [[ ! -d "$media" ]] || media_bytes=$((media_bytes + $(du -sb "$media" | cut -f1)))
+done
 python3 /opt/jdatna/infra/rotate-backups.py
+# سجل النسخ في القاعدة (الإدارة ← التقارير ← النسخ الاحتياطية): يضاف الجديد ويُحذف ما حذفه التدوير.
+# فشل التسجيل لا يُفشل النسخة نفسها (الجدول قد لا يكون موجودًا قبل أول نشر يحمله).
+{
+  printf "INSERT INTO jdatna.backup_runs(file,size_bytes,database_bytes,media_bytes,sha256) VALUES('%s',%s,%s,%s,'%s') ON CONFLICT(file) DO NOTHING;\n" \
+    "$(basename "$final")" "$(stat -c %s "$final")" "$database_bytes" "$media_bytes" "$(cut -d' ' -f1 "$final.sha256")"
+  kept=$(find /var/backups/jdatna -maxdepth 1 -name 'jdatna-*.tar.gpg' -printf "'%f'," | sed 's/,$//')
+  printf "DELETE FROM jdatna.backup_runs WHERE file NOT IN (%s);\n" "${kept:-''}"
+} | docker exec -i jdatna-db psql -X -q -v ON_ERROR_STOP=1 -U jdatna_admin -d jdatna >/dev/null 2>&1 \
+  || echo "Backup log not recorded (backup itself is fine)"
 echo "Backup verified: $final"
