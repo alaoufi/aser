@@ -10,7 +10,7 @@ const { accessToken, withEdit } = require('./play-api.cjs');
   await withEdit(token, packageName, async edit => {
     const read = async (label, path, show) => {
       try {
-        show(await edit.call('GET', path));
+        show(await edit.call(path.startsWith(':') ? 'POST' : 'GET', path));
       } catch (err) {
         console.log(`${label}: (${err.status || '?'}) ${String(err.message).slice(0, 160)}`);
       }
@@ -37,6 +37,16 @@ const { accessToken, withEdit } = require('./play-api.cjs');
     });
     for (const type of ['icon', 'featureGraphic', 'phoneScreenshots', 'sevenInchScreenshots', 'tenInchScreenshots'])
       await read(`images ${type}`, `/listings/ar/${type}`, d => console.log(`images ar/${type}: ${(d.images || []).length}`));
+    await read('listing texts', '/listings/ar', l => {
+      const limits = { title: 30, shortDescription: 80, fullDescription: 4000 };
+      for (const [field, max] of Object.entries(limits)) {
+        const length = [...(l[field] || '')].length;
+        console.log(`listing ar ${field}: ${length}/${max} ${length === 0 ? 'EMPTY' : length > max ? 'TOO LONG' : 'ok'}`);
+      }
+      console.log(`listing ar short text: ${l.shortDescription}`);
+    });
+    // فحص قوقل نفسه للإعدادات الحالية دون أي تغيير: يرفض إن كان في المسارات أو البطاقة خطأ.
+    await read('validate', ':validate', () => console.log('validate: Google accepts the current settings (no errors)'));
     return false; // قراءة فقط: يُحذف الـ edit
   });
   console.log('OK: read only, nothing was changed');
