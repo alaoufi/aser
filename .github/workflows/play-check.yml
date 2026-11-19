@@ -22,3 +22,8 @@ jobs:
         env:
           PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
           PLAY_PACKAGE: com.jdatna.app
+      # قراءة فقط كذلك: ما ينقص التطبيق في المتجر (بلدان، مختبرون، بطاقة المتجر).
+      - run: node android/play/inspect.cjs
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          PLAY_PACKAGE: com.jdatna.app
