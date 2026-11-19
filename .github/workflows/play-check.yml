@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
   # ويعمل تلقائيًا عند تعديل ملفات الفحص نفسها.
   push:
-    paths: ["android/play/**", ".github/workflows/play-check.yml"]
+    paths: ["android/play/*.cjs",".github/workflows/play-check.yml"]
 permissions:
   contents: read
 jobs:
