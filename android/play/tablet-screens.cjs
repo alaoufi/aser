@@ -1,6 +1,8 @@
 // لقطات التابلت (7 و10 بوصة) لبطاقة المتجر العربية من store/assets/screens/tablet7-*.png وtablet10-*.png.
 // الوضع الافتراضي تجربة: يرفع اللقطات داخل edit، يطلب تحقق قوقل، ثم يحذف الـ edit فلا يتغير شيء.
 // الحفظ الفعلي (يرسل التغيير للمراجعة) يحتاج PLAY_APPLY=tablet-screens، ولا يُشغَّل إلا بموافقة المالك.
+// نتيجة 2026-11-19: قوقل قبل اللقطات العشر، لكن المفتاح بلا صلاحية تعديل بطاقة المتجر (403 عند التحقق)،
+// فيرفعها المالك من Play Console أو يمنح المفتاح صلاحية «إدارة بطاقة المتجر».
 // Usage: PLAY_PACKAGE=com.jdatna.app node android/play/tablet-screens.cjs
 const fs = require('fs');
 const path = require('path');
