@@ -52,20 +52,31 @@ test("the home page carries search keywords, share image and site schema", async
   expect(site["@graph"][1].potentialAction["@type"]).toBe("SearchAction");
   // «يبحث الناس عن»: روابط بحث حقيقية تفتح نتائج البحث.
   const searches = page.getByRole("navigation", { name: "عمليات بحث شائعة" });
+  // الكلمة التي لها صفحة في دليل الأكلات تفتح صفحتها.
   await expect(searches.getByRole("link", { name: "جريش" })).toHaveAttribute(
     "href",
-    "/browse?q=" + encodeURIComponent("جريش"),
+    "/akalat/" + encodeURIComponent("جريش"),
   );
+  await expect(
+    searches.getByRole("link", { name: "كل الأكلات الشعبية" }),
+  ).toHaveAttribute("href", "/akalat");
 });
 
 test("search pages get their own title, description and canonical", async ({
   page,
 }) => {
+  await page.goto("/browse?q=" + encodeURIComponent("لقيمات"));
+  await expect(page).toHaveTitle(/لقيمات — أكل بيت من الأسر المنتجة/);
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+    "href",
+    "https://jdatna.com/browse?q=" + encodeURIComponent("لقيمات"),
+  );
+  // البحث باسم أكلة لها صفحة في الدليل: الرابط المعتمد صفحتها.
   await page.goto("/browse?q=" + encodeURIComponent("جريش"));
   await expect(page).toHaveTitle(/جريش — أكل بيت من الأسر المنتجة/);
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     "href",
-    "https://jdatna.com/browse?q=" + encodeURIComponent("جريش"),
+    "https://jdatna.com/akalat/" + encodeURIComponent("جريش"),
   );
   // صورة المشاركة الافتراضية تبقى للصفحات التي بلا صورة.
   expect(

@@ -3,6 +3,7 @@ import { categoryLabel } from "@/lib/category-label";
 import { LocationFields } from "@/components/public/location-fields";
 import type { Metadata } from "next";
 import { openGraph } from "@/lib/seo";
+import { dishPath, findDish } from "@/lib/dishes";
 import { cookies } from "next/headers";
 import { RegionPicker } from "@/components/public/region-picker";
 import { regionsOf } from "@/components/public/today-table";
@@ -67,12 +68,15 @@ export async function generateMetadata({
         `/browse?region=${encodeURIComponent(region)}`,
       );
   }
-  if (q)
+  if (q) {
+    // البحث باسم أكلة لها صفحة في الدليل: الرابط المعتمد صفحتها، فلا تتنافس صفحتان على الكلمة نفسها.
+    const dish = findDish(q);
     return page(
       `${q} — أكل بيت من الأسر المنتجة`,
       `اطلب ${q} أكل بيت من الأسر المنتجة السعودية في أكلات جدتنا، بالتوصيل أو الاستلام من الأسرة مباشرة.`,
-      `/browse?q=${encodeURIComponent(q)}`,
+      dish ? dishPath(dish) : `/browse?q=${encodeURIComponent(q)}`,
     );
+  }
   return page(
     "طبخات اليوم — أكلات شعبية وطبخ بيت",
     "طبخات اليوم من الأسر المنتجة السعودية: أكلات شعبية وطبخ بيت متاح الآن قريب منك، تطلبه من الأسرة مباشرة.",
