@@ -200,3 +200,54 @@ test("inside the iPhone app the browser-only add-to-home-screen notifications ba
   await expect(app.locator(".push-bar")).toHaveCount(0);
   await context.close();
 });
+
+// تطبيق الآيفون: شريط «فعّل الإشعارات» نفسه كما في أندرويد، والإذن والرمز من إضافة إشعارات Apple
+// في التطبيق (Capacitor PushNotifications)، والرمز يُربط بالحساب.
+test("inside the iPhone app the notifications bar asks once and links the device to the account", async ({
+  browser,
+}) => {
+  const context = await browser.newContext({
+    userAgent:
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
+  });
+  await context.addInitScript(() => {
+    const listeners: Record<string, (d: unknown) => void> = {};
+    const state = { receive: "prompt" };
+    (window as unknown as { Capacitor: unknown }).Capacitor = {
+      isNativePlatform: () => true,
+      Plugins: {
+        PushNotifications: {
+          checkPermissions: async () => ({ ...state }),
+          requestPermissions: async () => {
+            state.receive = "granted";
+            return { ...state };
+          },
+          register: async () => {
+            setTimeout(
+              () => listeners.registration?.({ value: "c".repeat(64) }),
+              10,
+            );
+          },
+          addListener: async (event: string, fn: (d: unknown) => void) => {
+            listeners[event] = fn;
+            return { remove: async () => {} };
+          },
+        },
+      },
+    };
+  });
+  const page = await context.newPage();
+  await signedIn(page);
+  const tokens: string[] = [];
+  await page.route("**/api/push/apns", async (r) => {
+    tokens.push(JSON.parse(r.request().postData() || "{}").token);
+    await r.fulfill({ json: { registered: true } });
+  });
+  await page.goto("/orders");
+  const bar = page.locator(".push-bar");
+  await expect(bar).toBeVisible();
+  await bar.getByRole("button").first().click();
+  await expect(bar).toHaveCount(0);
+  await expect.poll(() => tokens).toEqual(["c".repeat(64)]);
+  await context.close();
+});
