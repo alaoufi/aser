@@ -26,6 +26,7 @@ import {
   visitorTemplate,
 } from "@/server/settings";
 import { StoreBadges } from "@/components/public/store-badges";
+import { dishPath, findDish } from "@/lib/dishes";
 import { TemplateSwitcher } from "@/components/public/template-switcher";
 import { VisitStats } from "@/components/public/visit-stats";
 import { JsonLd } from "@/components/public/json-ld";
@@ -245,6 +246,7 @@ export default async function RootLayout({
               <h3>اكتشف</h3>
               <Link href="/browse">الأكلات والمنتجات</Link>
               <Link href="/producers">الأسر المنتجة</Link>
+              <Link href="/akalat">الأكلات الشعبية</Link>
               <Link href="/offers">العروض الخاصة</Link>
               <Link href="/subscriptions">الاشتراكات</Link>
               <Link href="/orders">طلباتي</Link>
@@ -262,15 +264,26 @@ export default async function RootLayout({
           <nav className="footer-searches" aria-label="عمليات بحث شائعة">
             <h3>يبحث الناس عن</h3>
             <p>
-              {POPULAR_SEARCHES.map((q) => (
-                <Link
-                  key={q}
-                  href={`/browse?q=${encodeURIComponent(q)}`}
-                  prefetch={false}
-                >
-                  {q}
-                </Link>
-              ))}
+              {/* كل كلمة تفتح صفحة أكلتها في الدليل (محتوى حقيقي)، وما لا صفحة له يفتح البحث. */}
+              {POPULAR_SEARCHES.map((q) => {
+                const dish = findDish(q);
+                return (
+                  <Link
+                    key={q}
+                    href={
+                      dish
+                        ? dishPath(dish)
+                        : `/browse?q=${encodeURIComponent(q)}`
+                    }
+                    prefetch={false}
+                  >
+                    {q}
+                  </Link>
+                );
+              })}
+              <Link href="/akalat" prefetch={false}>
+                كل الأكلات الشعبية
+              </Link>
             </p>
           </nav>
           <StoreBadges

@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { db, databaseConfigured } from "@/server/db";
 import { SITE_URL } from "@/lib/seo";
+import { DISHES, dishPath } from "@/lib/dishes";
 export const dynamic = "force-dynamic";
 type Entry = MetadataRoute.Sitemap[number];
 /**
@@ -13,6 +14,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: url("/"), changeFrequency: "daily", priority: 1 },
     { url: url("/browse"), changeFrequency: "hourly", priority: 0.9 },
     { url: url("/producers"), changeFrequency: "daily", priority: 0.9 },
+    // دليل الأكلات الشعبية: صفحة جامعة وصفحة لكل أكلة (جريش، مرقوق، قرصان…).
+    { url: url("/akalat"), changeFrequency: "weekly", priority: 0.9 },
+    ...DISHES.map((d): Entry => ({
+      url: url(dishPath(d)),
+      changeFrequency: "weekly",
+      priority: 0.8,
+    })),
     { url: url("/offers"), changeFrequency: "daily", priority: 0.7 },
     { url: url("/subscriptions"), changeFrequency: "daily", priority: 0.7 },
     { url: url("/about"), changeFrequency: "monthly", priority: 0.5 },
