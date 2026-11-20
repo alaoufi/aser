@@ -23,9 +23,18 @@ openssl pkey -in "$KEY_FILE" -noout -text 2>/dev/null | grep -q -E "prime256v1|P
   || { echo "NOT OK: the file is not an Apple .p8 key (EC P-256)"; exit 2; }
 echo "Key file: EC P-256 ok"
 
-APP=$(docker ps --filter label=com.docker.compose.project=jdatna-application \
-  --filter label=com.docker.compose.service=app --format '{{.Names}}' | head -1)
-[[ -n "$APP" ]] || { echo "NOT OK: the jdatna application container is not running"; exit 3; }
+# فحص Apple يعمل بـ node من صورة تطبيق جدتنا نفسها: الحاوية العاملة إن وُجدت، وإلا حاوية مؤقتة
+# من آخر صورة jdatna-application (تُحذف بعد الفحص). لا يُلمس أي موقع آخر.
+APP=$(docker ps --format '{{.Names}} {{.Image}}' \
+  | awk '$2 ~ /^jdatna-application(:|$)/ && $2 !~ /migrat/ && $1 !~ /guard/ {print $1; exit}')
+if [[ -n "$APP" ]]; then
+  RUN=(docker exec -i -e K="$KEY_ID" -e T="$TEAM_ID" "$APP" node)
+else
+  IMAGE=$(docker images --format '{{.Repository}}:{{.Tag}}' | grep -E '^jdatna-application:' | grep -v migrat | head -1)
+  [[ -n "$IMAGE" ]] || { echo "NOT OK: no jdatna-application image on this server"; docker ps --format '{{.Names}} {{.Image}}' | grep -i jdatna; exit 3; }
+  RUN=(docker run --rm -i --read-only --cap-drop ALL --security-opt no-new-privileges:true \
+    --memory 128m --pids-limit 32 -e K="$KEY_ID" -e T="$TEAM_ID" --entrypoint node "$IMAGE")
+fi
 
 CHECK=$(cat <<'JS'
 const crypto = require("crypto"), http2 = require("http2");
@@ -56,7 +65,7 @@ process.stdin.on("data", (d) => (pem += d)).on("end", () => {
 });
 JS
 )
-if ! docker exec -i -e K="$KEY_ID" -e T="$TEAM_ID" "$APP" node -e "$CHECK" < "$KEY_FILE"; then
+if ! "${RUN[@]}" -e "$CHECK" < "$KEY_FILE"; then
   echo "NOT OK: Apple did not accept this key for com.jdatna.app. Nothing was saved."
   exit 4
 fi
