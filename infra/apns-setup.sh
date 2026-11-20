@@ -26,7 +26,7 @@ echo "Key file: EC P-256 ok"
 # فحص Apple يعمل بـ node من صورة تطبيق جدتنا نفسها: الحاوية العاملة إن وُجدت، وإلا حاوية مؤقتة
 # من آخر صورة jdatna-application (تُحذف بعد الفحص). لا يُلمس أي موقع آخر.
 APP=$(docker ps --format '{{.Names}} {{.Image}}' \
-  | awk '$2 ~ /^jdatna-application(:|$)/ && $2 !~ /migrat/ {print $1; exit}')
+  | awk '$2 ~ /^jdatna-application(:|$)/ && $2 !~ /migrat/ && $1 !~ /guard/ {print $1; exit}')
 if [[ -n "$APP" ]]; then
   RUN=(docker exec -i -e K="$KEY_ID" -e T="$TEAM_ID" "$APP" node)
 else
