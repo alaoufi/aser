@@ -228,19 +228,9 @@ export default async function RootLayout({
         <SaveToast />
         <footer className="site-footer">
           <div className="footer-top">
-            {/* الشعار صغير بجانب الاسم، وتحتهما أزرار تحميل التطبيق: لا فراغ فوق الاسم ولا تحته. */}
+            {/* اسم الموقع وتحته أزرار تحميل التطبيق، بلا شعار (شعار الترويسة يكفي) ولا فراغ. */}
             <div className="footer-brand-col">
               <Link className="footer-brand" href="/">
-                {/* biome-ignore lint/performance/noImgElement: شعار ثابت صغير (9 ك.ب) بمقاسه، بلا محسّن الصور */}
-                <img
-                  className="footer-logo"
-                  src="/brand/jdatna-white-128.webp"
-                  alt=""
-                  width={56}
-                  height={70}
-                  loading="lazy"
-                  decoding="async"
-                />
                 <span>أكلات جدتنا</span>
               </Link>
               <StoreBadges
