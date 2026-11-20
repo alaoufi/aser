@@ -15,8 +15,8 @@ const { accessToken, withEdit } = require('./play-api.cjs');
   if (!['alpha', 'beta', 'internal'].includes(from) || to !== 'production' || !/^\d+$/.test(versionCode))
     throw new Error('request must be {from: alpha|beta|internal, to: production, versionCode}');
 
-  const { token, email } = await accessToken();
-  console.log(`Signed in as ${email}`);
+  const { token } = await accessToken();
+  console.log("Signed in with the service account");
   await withEdit(token, packageName, async edit => {
     const source = await edit.call('GET', `/tracks/${from}`);
     const release = (source.releases || []).find(r => (r.versionCodes || []).map(String).includes(versionCode));

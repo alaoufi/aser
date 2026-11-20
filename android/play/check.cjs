@@ -5,8 +5,8 @@ const { accessToken, withEdit } = require('./play-api.cjs');
 
 (async () => {
   const packageName = process.env.PLAY_PACKAGE || 'com.jdatna.app';
-  const { token, email } = await accessToken();
-  console.log(`Signed in to Google as ${email}`);
+  const { token } = await accessToken();
+  console.log("Signed in to Google with the service account");
   await withEdit(token, packageName, async edit => {
     const { tracks = [] } = await edit.call('GET', '/tracks');
     console.log(`App ${packageName}: ${tracks.length} tracks`);

@@ -15,8 +15,8 @@ const SETS = [['sevenInchScreenshots', 'tablet7-'], ['tenInchScreenshots', 'tabl
 (async () => {
   const packageName = process.env.PLAY_PACKAGE || 'com.jdatna.app';
   const apply = process.env.PLAY_APPLY === 'tablet-screens';
-  const { token, email } = await accessToken();
-  console.log(`Signed in as ${email}. Mode: ${apply ? 'APPLY' : 'dry run'}`);
+  const { token } = await accessToken();
+  console.log(`Signed in with the service account. Mode: ${apply ? 'APPLY' : 'dry run'}`);
   await withEdit(token, packageName, async edit => {
     for (const [type, prefix] of SETS) {
       const files = fs.readdirSync(DIR).filter(f => f.startsWith(prefix) && f.endsWith('.png')).sort();

@@ -28,7 +28,7 @@ async function accessToken(key = serviceAccount()) {
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok || !data.access_token) throw new Error(`Google refused the key (${res.status} ${data.error || ''} ${data.error_description || ''})`.trim());
-  return { token: data.access_token, email: key.client_email };
+  return { token: data.access_token };
 }
 
 async function call(token, method, url, body) {
