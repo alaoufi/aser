@@ -3382,3 +3382,19 @@ main {
 .prose .dish-more a:focus-visible {
   border-color: var(--olive);
 }
+/* عنوان «أسر منتجة تغطي منطقتك» في الرئيسية: يملأ الفراغ بعد أزرار التوفر بلا مسافة زائدة. */
+.home-producers {
+  padding-top: 40px;
+}
+.home-producers .section-heading {
+  margin-bottom: 18px;
+  align-items: center;
+}
+@media (max-width: 600px) {
+  .home-producers {
+    padding-top: 28px;
+  }
+  .home-producers .section-heading h2 {
+    font-size: 22px;
+  }
+}
