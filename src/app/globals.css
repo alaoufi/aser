@@ -741,16 +741,21 @@ img {
   font-size: 12px;
   min-height: 24px;
 }
+/* عمود الاسم في التذييل: الشعار والاسم ثم أزرار تحميل التطبيق تحتهما مباشرة. */
+.footer-brand-col {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+  justify-items: start;
+}
 .store-badges {
   display: grid;
   gap: 10px;
   justify-items: start;
-  padding: 18px 0 6px;
-  border-top: 1px solid rgb(255 255 255 / 12%);
 }
 .store-badges h3 {
   margin: 0;
-  font-size: 1rem;
+  font-size: 14px;
 }
 .store-badges-row {
   display: flex;
@@ -2246,7 +2251,7 @@ label:has(> select) {
   line-height: 1.5;
 }
 .footer-logo {
-  width: 112px;
+  width: 56px;
   height: auto;
 }
 .about-brand-logo {
@@ -2268,10 +2273,6 @@ label:has(> select) {
   }
 }
 @media (max-width: 600px) {
-  .footer-logo {
-    width: 96px;
-    height: auto;
-  }
   .footer-brand {
     gap: 10px;
   }

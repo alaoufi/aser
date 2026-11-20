@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { Pool } from "pg";
 
-// أزرار المتجرين أسفل الموقع: تظهر بعد تفعيلها من «الإدارة ← تطبيق الجوال»، وتختفي داخل التطبيقين.
+// أزرار المتجرين أسفل الموقع: App Store دائمًا، وGoogle Play بالتفعيل أو عند نشر التطبيق، ولا شيء داخل التطبيقين.
 test.describe("store download buttons in the footer", () => {
   test.skip(
     process.env.JDATNA_TEST_DB !== "true" || !process.env.DATABASE_URL,
@@ -44,7 +44,7 @@ test.describe("store download buttons in the footer", () => {
     await pool?.end();
   });
 
-  test("hidden until enabled, then both stores show on the website but not inside the apps", async ({
+  test("App Store always shows, Google Play once enabled, and none inside the apps", async ({
     browser,
   }) => {
     const base = {
@@ -52,16 +52,26 @@ test.describe("store download buttons in the footer", () => {
       androidFingerprints: [],
       iosAppIds: [],
     };
+    // تطبيق الآيفون منشور: زره ظاهر دائمًا، حتى لو لم يُفعَّل. وزر Google Play مخفي قبل تفعيله
+    // (صفحة التطبيق في المتجر غير منشورة بعد، فلا يظهر تلقائيًا).
     await save({ ...base, showAppStore: false, showPlayStore: false });
     const context = await browser.newContext();
     const page = await context.newPage();
     await page.goto("/");
-    await expect(page.locator("footer")).toBeVisible();
-    await expect(page.getByTestId("store-badges")).toHaveCount(0);
+    const badges = page.getByTestId("store-badges");
+    await expect(
+      badges.getByRole("link", { name: "حمّل من App Store" }),
+    ).toHaveAttribute("href", "https://apps.apple.com/app/id6833382132");
+    await expect(
+      badges.getByRole("link", { name: "احصل عليه من Google Play" }),
+    ).toHaveCount(0);
+    // الأزرار في عمود اسم الموقع، تحت الاسم مباشرة.
+    await expect(
+      page.locator(".footer-brand-col").getByTestId("store-badges"),
+    ).toBeVisible();
 
     await save({ ...base, showAppStore: true, showPlayStore: true });
     await page.goto("/");
-    const badges = page.getByTestId("store-badges");
     await expect(
       badges.getByRole("link", { name: "حمّل من App Store" }),
     ).toHaveAttribute("href", "https://apps.apple.com/app/id6833382132");

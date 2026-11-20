@@ -228,19 +228,31 @@ export default async function RootLayout({
         <SaveToast />
         <footer className="site-footer">
           <div className="footer-top">
-            <div>
+            {/* الشعار صغير بجانب الاسم، وتحتهما أزرار تحميل التطبيق: لا فراغ فوق الاسم ولا تحته. */}
+            <div className="footer-brand-col">
               <Link className="footer-brand" href="/">
-                <Image
+                {/* biome-ignore lint/performance/noImgElement: شعار ثابت صغير (9 ك.ب) بمقاسه، بلا محسّن الصور */}
+                <img
                   className="footer-logo"
-                  src="/brand/jdatna-white.webp"
+                  src="/brand/jdatna-white-128.webp"
                   alt=""
-                  width={320}
-                  height={400}
-                  sizes="112px"
+                  width={56}
+                  height={70}
                   loading="lazy"
+                  decoding="async"
                 />
                 <span>أكلات جدتنا</span>
               </Link>
+              <StoreBadges
+                appStore={appLinks.showAppStore ? APP_STORE_URL : null}
+                playStore={appLinks.showPlayStore ? PLAY_STORE_URL : null}
+                texts={{
+                  title: texts["store.title"] || "حمّل تطبيق أكلات جدتنا",
+                  appStore: texts["store.appStore"] || "حمّل من App Store",
+                  googlePlay:
+                    texts["store.googlePlay"] || "احصل عليه من Google Play",
+                }}
+              />
             </div>
             <div>
               <h3>اكتشف</h3>
@@ -286,16 +298,6 @@ export default async function RootLayout({
               </Link>
             </p>
           </nav>
-          <StoreBadges
-            appStore={appLinks.showAppStore ? APP_STORE_URL : null}
-            playStore={appLinks.showPlayStore ? PLAY_STORE_URL : null}
-            texts={{
-              title: texts["store.title"] || "حمّل تطبيق أكلات جدتنا",
-              appStore: texts["store.appStore"] || "حمّل من App Store",
-              googlePlay:
-                texts["store.googlePlay"] || "احصل عليه من Google Play",
-            }}
-          />
           <VisitStats />
           <div className="footer-bottom">
             <span>

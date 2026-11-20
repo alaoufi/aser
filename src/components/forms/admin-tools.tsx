@@ -1354,17 +1354,11 @@ export function AppLinksAdmin() {
           <fieldset className={s.field}>
             <legend>أزرار تحميل التطبيق أسفل الموقع</legend>
             <p className={s.muted}>
-              فعّل كل زر بعد موافقة المتجر ونشر التطبيق فيه؛ قبل ذلك يفتح الرابط
-              صفحة «غير موجود». لا تظهر الأزرار داخل التطبيقين نفسيهما.
+              زر «حمّل من App Store» ظاهر دائمًا (تطبيق الآيفون منشور). وزر
+              Google Play يظهر وحده عند نشر التطبيق في المتجر، أو بتفعيله هنا.
+              لا تظهر الأزرار داخل التطبيقين نفسيهما.
             </p>
-            <label className={s.checks}>
-              <input
-                type="checkbox"
-                name="showAppStore"
-                defaultChecked={links.showAppStore}
-              />
-              زر «حمّل من App Store» (آيفون)
-            </label>
+            <input type="hidden" name="showAppStore" value="on" />
             <label className={s.checks}>
               <input
                 type="checkbox"
