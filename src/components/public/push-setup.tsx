@@ -19,7 +19,7 @@ const isIos = () =>
   /iPhone|iPad|iPod/.test(navigator.userAgent);
 /**
  * داخل تطبيق الآيفون (غلاف Capacitor يعرض jdatna.com): تعليمات «أضف إلى الشاشة الرئيسية»
- * خاصة بالمتصفح ولا تنطبق هنا، فلا يُعرض الشريط (مراجعة Apple 2.1).
+ * خاصة بالمتصفح ولا تنطبق هنا (مراجعة Apple 2.1). الإشعارات فيه بإضافة التطبيق (nativePush).
  */
 const SOURCE = "jdatna:app-source";
 export function inNativeApp() {
@@ -35,6 +35,58 @@ export function inNativeApp() {
   } catch {
     return false;
   }
+}
+/**
+ * إضافة الإشعارات في تطبيق الآيفون (Capacitor PushNotifications): موجودة في التطبيق المنشور،
+ * والموقع يصلها عبر window.Capacitor. بها يصير شريط «فعّل الإشعارات» في الآيفون كما في أندرويد.
+ */
+type NativePush = {
+  checkPermissions(): Promise<{ receive: string }>;
+  requestPermissions(): Promise<{ receive: string }>;
+  register(): Promise<void>;
+  addListener(
+    event: string,
+    listener: (data: never) => void,
+  ): Promise<{ remove(): Promise<void> }> | { remove(): Promise<void> };
+};
+function nativePush(): NativePush | null {
+  if (typeof window === "undefined") return null;
+  const cap = (
+    window as unknown as {
+      Capacitor?: {
+        isNativePlatform?: () => boolean;
+        Plugins?: { PushNotifications?: NativePush };
+      };
+    }
+  ).Capacitor;
+  return cap?.isNativePlatform?.() && cap.Plugins?.PushNotifications
+    ? cap.Plugins.PushNotifications
+    : null;
+}
+const APNS_TOKEN = "jdatna:apns-token";
+let nativeListening = false;
+/** يسجّل الجهاز عند Apple؛ الرمز يصل في حدث registration فيُربط بالحساب. */
+async function registerNative(push: NativePush) {
+  if (!nativeListening) {
+    nativeListening = true;
+    await push.addListener("registration", ((t: { value: string }) => {
+      try {
+        localStorage.setItem(APNS_TOKEN, t.value);
+      } catch {}
+      api("/api/push/apns", {
+        method: "POST",
+        body: JSON.stringify({ token: t.value }),
+      }).catch(() => {});
+    }) as (data: never) => void);
+    // الضغط على الإشعار يفتح رابطه (المحادثة أو الطلب) داخل التطبيق.
+    await push.addListener("pushNotificationActionPerformed", ((a: {
+      notification?: { data?: { url?: string } };
+    }) => {
+      const url = a.notification?.data?.url;
+      if (url?.startsWith("/")) window.location.assign(url);
+    }) as (data: never) => void);
+  }
+  await push.register();
 }
 const installed = () =>
   typeof window !== "undefined" &&
@@ -65,6 +117,17 @@ async function subscribe() {
 
 /** عند الخروج: يوقف إشعارات الحساب على هذا الجهاز. */
 export async function stopPushOnLogout() {
+  try {
+    const token = localStorage.getItem(APNS_TOKEN);
+    if (token)
+      await api("/api/push/apns", {
+        method: "DELETE",
+        body: JSON.stringify({ token }),
+      }).catch(() => {});
+    localStorage.removeItem(APNS_TOKEN);
+  } catch {
+    // الخروج يكمل حتى لو تعذر الإلغاء.
+  }
   try {
     if (!supported()) return;
     const reg = await navigator.serviceWorker.getRegistration("/");
@@ -112,6 +175,20 @@ export function PushSetup({ texts }: { texts: Texts }) {
     try {
       later = Boolean(sessionStorage.getItem(LATER));
     } catch {}
+    const push = nativePush();
+    if (push) {
+      // تطبيق الآيفون: الشريط نفسه كما في أندرويد، والإذن والرمز من Apple.
+      push
+        .checkPermissions()
+        .then(({ receive }) => {
+          if (receive === "granted") {
+            registerNative(push).catch(() => {});
+            setShow("");
+          } else setShow(receive === "denied" || later ? "" : "ask");
+        })
+        .catch(() => setShow(""));
+      return;
+    }
     if (inNativeApp()) {
       setShow("");
       return;
@@ -165,6 +242,15 @@ export function PushSetup({ texts }: { texts: Texts }) {
               setBusy(true);
               setError("");
               try {
+                const push = nativePush();
+                if (push) {
+                  const { receive } = await push.requestPermissions();
+                  if (receive === "granted") {
+                    await registerNative(push);
+                    setShow("");
+                  } else dismiss();
+                  return;
+                }
                 const permission = await Notification.requestPermission();
                 if (permission === "granted") {
                   await subscribe();

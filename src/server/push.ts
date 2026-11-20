@@ -2,6 +2,7 @@ import webpush from "web-push";
 import { z } from "zod";
 import type { SessionUser } from "../lib/types";
 import { databaseConfigured, db } from "./db";
+import { notifyApns } from "./apns";
 
 /** محتوى إشعار الجوال: يظهر خارج الموقع ويفتح الرابط عند الضغط. */
 export type PushPayload = {
@@ -93,6 +94,14 @@ export function setPushTransport(t: Transport | null) {
  * والاشتراك المنتهي (404/410) يُحذف.
  */
 export async function notifyUser(userId: string, payload: PushPayload) {
+  // الويب وأندرويد (Web Push) والآيفون (Apple) معًا: الإشعار نفسه لكل أجهزة الحساب.
+  const [web, iphone] = await Promise.all([
+    notifyWeb(userId, payload),
+    notifyApns(userId, payload),
+  ]);
+  return web + iphone;
+}
+async function notifyWeb(userId: string, payload: PushPayload) {
   try {
     if (!databaseConfigured()) return 0;
     const subs = (
