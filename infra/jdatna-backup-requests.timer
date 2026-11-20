@@ -1,0 +1,9 @@
+[Unit]
+Description=Check for admin-requested Jdatna backups every minute
+
+[Timer]
+OnCalendar=*-*-* *:*:20
+AccuracySec=5s
+
+[Install]
+WantedBy=timers.target

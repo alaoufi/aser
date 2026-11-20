@@ -22,7 +22,7 @@ export function FoodPhotos() {
           src={`/food/${main[0]}-floating-v2.webp`}
           alt={main[1]}
           fill
-          sizes="(max-width:600px) 85vw, (max-width:850px) 40vw, 480px"
+          sizes="(max-width:600px) 55vw, (max-width:850px) 40vw, 400px"
           preload={main[0] === "rice-plate"}
         />
       </div>
@@ -46,7 +46,7 @@ export function FoodPhotos() {
                   src={`/food/${id}-floating-v2.webp`}
                   alt=""
                   fill
-                  sizes="(max-width:600px) 20vw, 110px"
+                  sizes="(max-width:600px) 18vw, 110px"
                 />
               </span>
             </button>

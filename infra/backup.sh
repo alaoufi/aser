@@ -51,5 +51,24 @@ gpg --batch --quiet --pinentry-mode loopback --passphrase-file /etc/jdatna/secre
 final=${partial%.partial}
 mv -- "$partial" "$final"
 sha256sum "$final" > "$final.sha256"
+# أحجام مكوّنات النسخة لتقرير الإدارة: البيانات (القاعدة والإعدادات) والميديا (الصور والمستندات).
+database_bytes=$(du -sb "$stage" | cut -f1)
+media_bytes=0
+for media in /srv/jdatna/data/uploads /srv/jdatna/data/object-storage; do
+  [[ ! -d "$media" ]] || media_bytes=$((media_bytes + $(du -sb "$media" | cut -f1)))
+done
 python3 /opt/jdatna/infra/rotate-backups.py
+# رفع النسخة إلى التخزين الخارجي (R2) إن هُيّئ؛ تعذّر الرفع لا يُفشل النسخة.
+remote=false
+if bash /opt/jdatna/infra/backup-upload.sh "$final"; then remote=true; else echo "Backup not uploaded to remote storage"; fi
+# سجل النسخ في القاعدة (الإدارة ← التقارير ← النسخ الاحتياطية): يضاف الجديد، وما حذفه التدوير يُعلَّم
+# «ليس على الخادم» (يبقى إن كان مرفوعًا). فشل التسجيل لا يُفشل النسخة (الجدول قد لا يوجد قبل أول نشر يحمله).
+{
+  printf "INSERT INTO jdatna.backup_runs(file,kind,size_bytes,database_bytes,media_bytes,sha256,remote) VALUES('%s','full',%s,%s,%s,'%s',%s) ON CONFLICT(file) DO NOTHING;\n" \
+    "$(basename "$final")" "$(stat -c %s "$final")" "$database_bytes" "$media_bytes" "$(cut -d' ' -f1 "$final.sha256")" "$remote"
+  kept=$(find /var/backups/jdatna -maxdepth 1 -name 'jdatna-*.tar.gpg' -printf "'%f'," | sed 's/,$//')
+  printf "UPDATE jdatna.backup_runs SET on_server=false WHERE kind='full' AND file NOT IN (%s);\n" "${kept:-''}"
+  printf "DELETE FROM jdatna.backup_runs WHERE NOT on_server AND NOT remote;\n"
+} | docker exec -i jdatna-db psql -X -q -v ON_ERROR_STOP=1 -U jdatna_admin -d jdatna >/dev/null 2>&1 \
+  || echo "Backup log not recorded (backup itself is fine)"
 echo "Backup verified: $final"

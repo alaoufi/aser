@@ -1,0 +1,28 @@
+# ترقية إصدار إلى الإنتاج في Google Play. يغيّر المتجر ويرسل للمراجعة، فلا يعمل تلقائيًا أبدًا:
+# يشغّله المالك يدويًا من Actions بعد إضافة ملف الطلب android/play/promote-request.json.
+name: Google Play promote
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: play-promote
+  cancel-in-progress: false
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node android/play/promote.cjs
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          PLAY_PACKAGE: com.jdatna.app
+      - if: always()
+        run: node android/play/inspect.cjs
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          PLAY_PACKAGE: com.jdatna.app

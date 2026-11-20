@@ -54,7 +54,7 @@ test("the admin summary is grouped, and sections live in a dropdown that names t
   await expect(nav.getByRole("button", { name: "الطلبات" })).toBeHidden();
   await menu.click();
   // الأقسام بمجموعاتها، والمنتظر اعتماده بشارة.
-  await expect(nav.locator("div[role=group]")).toHaveCount(4);
+  await expect(nav.locator("div[role=group]")).toHaveCount(5);
   await expect(
     nav.getByRole("button", { name: /اعتماد الأسر والمندوبين/ }),
   ).toContainText("1");

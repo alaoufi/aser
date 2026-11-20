@@ -102,3 +102,122 @@ test("the security report shows period cards, daily chart, top countries and IPs
     ),
   ).toBe(true);
 });
+
+// الإدارة ← مجموعة «التقارير»: التقرير الأمني والنسخ الاحتياطية، وتقرير النسخ يعرض النوع والحجم والتحميل.
+test("reports group lists the security and backups reports, and the backups report shows contents and download", async ({
+  page,
+}) => {
+  await page.route("**/api/session", (r) =>
+    r.fulfill({
+      json: {
+        user: { id: "a", name: "مدير", phone: "+966500000009", role: "admin" },
+        registrationOpen: true,
+      },
+    }),
+  );
+  await page.route("**/api/admin/summary", (r) =>
+    r.fulfill({ json: { summary: {} } }),
+  );
+  await page.route("**/api/admin/backups", (r) =>
+    r.fulfill({
+      json: {
+        downloadEnabled: true,
+        remoteReady: true,
+        requests: [],
+        latestAt: new Date().toISOString(),
+        backups: [
+          {
+            file: "jdatna-20261119T020000Z.tar.gpg",
+            createdAt: new Date().toISOString(),
+            kind: "full",
+            sizeBytes: 210 * 1024 * 1024,
+            databaseBytes: 6 * 1024 * 1024,
+            mediaBytes: 204 * 1024 * 1024,
+            codeBytes: 0,
+            sha256: "a".repeat(64),
+            remote: true,
+            onServer: true,
+            downloadable: true,
+          },
+          {
+            file: "jdatna-20261118T020000Z.tar.gpg",
+            createdAt: new Date(Date.now() - 864e5).toISOString(),
+            kind: "codedb",
+            sizeBytes: 9 * 1024 * 1024,
+            databaseBytes: 5 * 1024 * 1024,
+            mediaBytes: 0,
+            codeBytes: 4 * 1024 * 1024,
+            sha256: null,
+            remote: false,
+            onServer: false,
+            downloadable: false,
+          },
+        ],
+      },
+    }),
+  );
+  await page.setViewportSize({ width: 360, height: 760 });
+  await page.goto("/admin?tab=backups");
+  const nav = page.getByRole("navigation", { name: "أقسام الإدارة" });
+  await nav.locator("summary").click();
+  const reports = nav.getByRole("group", { name: "التقارير" });
+  await expect(reports.getByRole("button")).toHaveText([
+    "التقرير الأمني",
+    "النسخ الاحتياطية",
+  ]);
+  await page.keyboard.press("Escape");
+  const report = page.getByRole("region", { name: "النسخ الاحتياطية" });
+  const rows = report.getByRole("table", { name: "النسخ" }).locator("tbody tr");
+  await expect(rows).toHaveCount(2);
+  await expect(rows.first()).toContainText("بيانات: 6.0 م.ب");
+  await expect(rows.first()).toContainText("ميديا: 204.0 م.ب");
+  await expect(
+    rows.first().getByRole("link", { name: "تحميل" }),
+  ).toHaveAttribute(
+    "href",
+    "/api/admin/backups/jdatna-20261119T020000Z.tar.gpg",
+  );
+  await expect(rows.first()).toContainText("مرفوعة إلى R2");
+  await expect(rows.nth(1)).toContainText("كود وقاعدة بيانات");
+  await expect(rows.nth(1)).toContainText("كود: 4.0 م.ب");
+  await expect(rows.nth(1)).toContainText("حُذفت من الخادم");
+  // «خذ نسخة الآن» بنوع يختاره المدير.
+  let asked: unknown;
+  await page.route("**/api/admin/backups", async (r) => {
+    if (r.request().method() !== "POST") return r.fallback();
+    asked = r.request().postDataJSON();
+    return r.fulfill({
+      status: 201,
+      json: {
+        downloadEnabled: true,
+        remoteReady: true,
+        latestAt: null,
+        backups: [],
+        requests: [
+          {
+            id: "q1",
+            kind: "media",
+            status: "pending",
+            requestedAt: new Date().toISOString(),
+            finishedAt: null,
+            file: null,
+            error: null,
+          },
+        ],
+      },
+    });
+  });
+  const take = report.getByRole("form", { name: "خذ نسخة الآن" });
+  await take.getByRole("radio", { name: /الصور والمستندات/ }).check();
+  await take.getByRole("button", { name: "خذ نسخة الآن" }).click();
+  await expect(take.getByRole("status")).toContainText("بانتظار الخادم");
+  await expect(
+    take.getByRole("button", { name: "جارٍ أخذ النسخة…" }),
+  ).toBeDisabled();
+  expect(asked).toEqual({ kind: "media" });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+});

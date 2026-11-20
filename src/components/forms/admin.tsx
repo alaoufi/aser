@@ -27,6 +27,7 @@ import { APPROVALS_CHANGED } from "@/components/public/approval-alert";
 import { AdminCouriers } from "./courier";
 import { ContractsAdmin } from "./subscriptions";
 import { SecurityLog } from "./security-log";
+import { BackupsAdmin } from "./backups-admin";
 import { DeletedChatsAdmin } from "./deleted-chats";
 import { ViewsAdmin } from "./views-admin";
 
@@ -44,6 +45,7 @@ const tabData: Record<string, string[]> = {
   review: ["/api/admin/store-review"],
   members: ["/api/admin/members?q="],
   security: ["/api/admin/security"],
+  backups: ["/api/admin/backups"],
   "deleted-chats": ["/api/admin/conversations"],
   views: ["/api/admin/views"],
 };
@@ -70,11 +72,13 @@ const adminTabs: [
   ["members", "الأعضاء والصلاحيات", "owner"],
   ["suggestions", "الاقتراحات", "owner"],
   ["security", "التقرير الأمني", "owner"],
+  ["backups", "النسخ الاحتياطية", "owner"],
 ];
 /** تجميع الأقسام في شاشة الإدارة (الأسماء للقارئ الآلي فقط). */
 const adminGroups: [group: string, ids: string[]][] = [
-  // الأمان قسم مستقل أول القائمة: التقرير الأمني والمحادثات المحذوفة.
-  ["الأمان", ["security", "deleted-chats"]],
+  // التقارير أول القائمة: الأمني، والنسخ الاحتياطية، وأي تقرير لاحق يضاف هنا.
+  ["التقارير", ["security", "backups"]],
+  ["الأمان", ["deleted-chats"]],
   [
     "الأسر والطلبات",
     ["approvals", "producers", "orders", "products", "reports", "contracts"],
@@ -444,6 +448,8 @@ export function Admin() {
             <ContractsAdmin />
           ) : active === "security" ? (
             <SecurityLog />
+          ) : active === "backups" ? (
+            <BackupsAdmin />
           ) : active === "deleted-chats" ? (
             <DeletedChatsAdmin />
           ) : active === "views" ? (

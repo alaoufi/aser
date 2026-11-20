@@ -9,7 +9,40 @@ import { LogoutButton } from "@/components/public/logout-button";
 import { PasswordField } from "./password-field";
 import { FolderTabs, type FolderTab } from "./folder-tabs";
 export { s };
-export async function api<T>(url: string, options?: RequestInit): Promise<T> {
+/**
+ * قراءات تُطلب مبكرًا (warmApi) ويتشاركها من يطلب العنوان نفسه خلال ثوانٍ: شارة حالة الأسرة وزر
+ * المشاركة كانا يطلبان الحالة مرتين، وبطاقات لوحة الأسرة كانت تبدأ بعد وصول الملف لا معه.
+ * للعناوين المطلوبة صراحة فقط، وأي حفظ (طلب غير GET) يمسحها فلا تُعرض قراءة قديمة بعده.
+ */
+const WARM_MS = 5000;
+const warm = new Map<string, { at: number; p: Promise<unknown> }>();
+const warmed = (url: string) => {
+  const w = warm.get(url);
+  return w && Date.now() - w.at < WARM_MS ? w.p : null;
+};
+export function warmApi(...urls: string[]) {
+  for (const url of urls) {
+    if (warmed(url)) continue;
+    const p = request<unknown>(url);
+    warm.set(url, { at: Date.now(), p });
+    // فشل القراءة المبكرة لا يُحفظ: الطالب التالي يطلبها من جديد ويعرض خطأه هو.
+    p.catch(() => {
+      if (warm.get(url)?.p === p) warm.delete(url);
+    });
+  }
+}
+/** قراءة تغيّرت بغير api (حدث من الصفحة): تُطلب من الخادم في المرة التالية. */
+export function dropWarm(url: string) {
+  warm.delete(url);
+}
+export function api<T>(url: string, options?: RequestInit): Promise<T> {
+  if (!options) {
+    const p = warmed(url);
+    if (p) return p as Promise<T>;
+  } else if (options.method && options.method !== "GET") warm.clear();
+  return request<T>(url, options);
+}
+async function request<T>(url: string, options?: RequestInit): Promise<T> {
   const r = await fetch(url, {
     ...options,
     headers:
@@ -74,17 +107,27 @@ const SESSION_CHANGERS = ["/api/auth", "/api/logout", "/api/account/delete"];
 /**
  * آخر جلسة معروفة: تُعرض فورًا عند فتح أي صفحة (بلا انتظار «جارٍ التحقق من الحساب»)، ثم
  * تُحدَّث من الخادم في الخلفية. للعرض فقط؛ الصلاحيات يفرضها الخادم في كل طلب.
- * تُحفظ في تبويب المتصفح (sessionStorage) وتُنسى عند الدخول والخروج وانتهاء الجلسة.
+ * تُحفظ في الجهاز (localStorage) فتُعرض أيضًا عند فتح التطبيق من جديد، فتبدأ طلبات بيانات الصفحة
+ * فورًا بدل انتظار رد الجلسة. تُنسى عند الخروج وانتهاء الجلسة، ولا تُعتمد بعد 30 يومًا.
  */
 const SESSION_KEY = "jdatna:session";
+const SESSION_MAX_AGE = 30 * 24 * 60 * 60 * 1000;
 let lastRecheck = 0;
 let known: SessionData | null = null;
 function recall(): SessionData | null {
   if (known) return known;
   try {
-    const raw = sessionStorage.getItem(SESSION_KEY);
-    const d = raw ? (JSON.parse(raw) as SessionData) : null;
-    if (d && typeof d === "object" && "user" in d) known = d;
+    const raw = localStorage.getItem(SESSION_KEY);
+    const d = raw
+      ? (JSON.parse(raw) as SessionData & { savedAt?: number })
+      : null;
+    if (
+      d &&
+      typeof d === "object" &&
+      "user" in d &&
+      Date.now() - (d.savedAt ?? 0) < SESSION_MAX_AGE
+    )
+      known = { user: d.user, registrationOpen: d.registrationOpen };
   } catch {
     // التخزين محجوب (تصفح خاص): تعمل الصفحة بطلب الجلسة كالمعتاد.
   }
@@ -101,7 +144,10 @@ function remember(d: SessionData) {
   known = d;
   for (const notify of sessionListeners) notify();
   try {
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify(d));
+    localStorage.setItem(
+      SESSION_KEY,
+      JSON.stringify({ ...d, savedAt: Date.now() }),
+    );
   } catch {
     // لا تخزين: تبقى في ذاكرة الصفحة فقط.
   }
@@ -111,10 +157,14 @@ export function forgetSession() {
   // والمنسي هو المحفوظ للصفحات التالية.
   sessionRequest = null;
   try {
-    sessionStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem(SESSION_KEY);
   } catch {
     // لا تخزين.
   }
+}
+/** آخر جلسة معروفة في الجهاز إن وُجدت (للعرض وبدء القراءات مبكرًا؛ الخادم يحسم الصلاحية). */
+export function knownSession() {
+  return recall();
 }
 /** بعد دخول ناجح: الصفحة التالية تعرض الحساب فورًا ثم تتحقق منه في الخلفية. */
 export function primeSession(user: SessionUser) {
@@ -172,7 +222,7 @@ export function useSession() {
   const [failed, setFailed] = useState(false);
   useEffect(() => {
     let active = true;
-    // بعد تحميل كامل للصفحة: الجلسة المحفوظة في التبويب تُعرض قبل رد الخادم.
+    // بعد تحميل كامل للصفحة أو فتح التطبيق: الجلسة المحفوظة في الجهاز تُعرض قبل رد الخادم.
     if (!known && recall()) for (const notify of sessionListeners) notify();
     loadSession().catch((e) => {
       if (!active) return;

@@ -1,0 +1,29 @@
+# فحص مفتاح رفع Google Play للقراءة فقط (المصدر: alaoufi/server-edge playbooks/code/stores).
+# يدخل بحساب الخدمة ويطبع مسارات com.jdatna.app وإصداراتها، ولا يغيّر شيئًا في المتجر.
+# يدويًا: Actions ← «Google Play key check» ← Run workflow (بعد وصول الملف للفرع الافتراضي).
+name: Google Play key check
+on:
+  workflow_dispatch:
+  # ويعمل تلقائيًا عند تعديل ملفات الفحص نفسها.
+  push:
+    paths: ["android/play/*.cjs",".github/workflows/play-check.yml"]
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node android/play/check.cjs
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          PLAY_PACKAGE: com.jdatna.app
+      # قراءة فقط كذلك: ما ينقص التطبيق في المتجر (بلدان، مختبرون، بطاقة المتجر).
+      - run: node android/play/inspect.cjs
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          PLAY_PACKAGE: com.jdatna.app
