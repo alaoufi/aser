@@ -25,8 +25,30 @@ const csp = [
 const config: NextConfig = {
   output: "standalone",
   poweredByHeader: false,
+  // الصور المصغّرة (/_next/image) تبقى في متصفح الزائر شهرًا بدل 4 ساعات: روابطها تتغير بتغيّر الملف.
+  images: { minimumCacheTTL: 2678400 },
   async headers() {
     return [
+      // ملفات public كانت تُرسل بـ max-age=0 فيسأل المتصفح عنها في كل صفحة. الخطوط لا تتغير (سنة)،
+      // وصور الشعار والأطباق والدليل شهر، ويُستعمل المخزَّن أثناء التحقق في الخلفية بعده.
+      {
+        source: "/fonts/:file*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
+      {
+        source: "/:dir(brand|food|guide)/:file*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=2592000, stale-while-revalidate=31536000",
+          },
+        ],
+      },
       {
         source: "/(.*)",
         headers: [

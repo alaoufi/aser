@@ -28,6 +28,7 @@ import {
   isFamilyAccount,
   s,
   useSession,
+  warmApi,
 } from "./shared";
 import { FAMILY_STATUS_CHANGED, FamilyStatusBanner } from "./family-status";
 import { DeliveryScopeFields, readDeliveryScope } from "./delivery-scope";
@@ -598,6 +599,8 @@ function FamilyShareTop({ name }: { name: string }) {
   );
   useEffect(() => {
     let active = true;
+    // القراءة نفسها تطلبها شارة الحالة: تُرسل مرة واحدة.
+    warmApi("/api/producer/status");
     api<{ slug: string | null }>("/api/producer/status")
       .then(async (d) => {
         if (!d.slug) return;
@@ -626,6 +629,18 @@ function FamilyShareTop({ name }: { name: string }) {
 /** أقسام لوحة الأسرة المنتجة: مربعات صغيرة بدل أسطر الروابط. */
 export function Dashboard() {
   const session = useSession();
+  // بطاقات لوحة الأسرة تظهر بعد وصول الملف: قراءاتها تبدأ معه لا بعده.
+  const family = Boolean(session.user && isFamilyAccount(session.user));
+  useEffect(() => {
+    if (family)
+      warmApi(
+        "/api/producer/status",
+        "/api/producer/availability",
+        "/api/producer/fulfillment",
+        "/api/producer/contact",
+        "/api/producer/brand",
+      );
+  }, [family]);
   return (
     <AccountShell>
       <Guard {...session} />

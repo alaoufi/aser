@@ -297,7 +297,7 @@ function PageFace({
         <p className={b.coverEyebrow}>أكلات جدتنا</p>
         {/* biome-ignore lint/performance/noImgElement: صورة الشعار الثابتة على الغلاف */}
         <img
-          src="/brand/jdatna-main.webp"
+          src="/brand/jdatna-main-264.webp"
           alt=""
           width={160}
           height={200}

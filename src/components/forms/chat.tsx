@@ -42,6 +42,19 @@ type Message = {
 /** آخر ما عُرض من كل محادثة ومن القائمة: يفتح فورًا ثم يتحدّث في الخلفية. */
 const threadCache = new Map<string, Thread>();
 let listCache: Summary[] | null = null;
+/** طلب القائمة الجاري يتشاركه من يطلبها معه: عند فتح الصفحة كان يُرسل مرتين (قبل معرفة الحساب وبعدها). */
+let listRequest: Promise<{ conversations: Summary[] }> | null = null;
+const fetchList = () => {
+  if (!listRequest) {
+    const p = api<{ conversations: Summary[] }>("/api/conversations");
+    listRequest = p;
+    const done = () => {
+      if (listRequest === p) listRequest = null;
+    };
+    p.then(done, done);
+  }
+  return listRequest;
+};
 /**
  * أحدث المحادثات تُحمَّل مسبقًا في الخلفية (دون تعليمها مقروءة)، فتفتح فورًا عند الضغط
  * ثم تُحدَّث وتُعلَّم مقروءة كالمعتاد. مرة واحدة لكل محادثة.
@@ -154,7 +167,7 @@ export function Messages() {
     if (signedOut) return;
     let active = true;
     const load = () =>
-      api<{ conversations: Summary[] }>("/api/conversations")
+      fetchList()
         .then((d) => {
           if (!active) return;
           listCache = d.conversations;

@@ -12,6 +12,7 @@ import { SITE_VERSION } from "@/lib/version";
 import { FamilyStatusChip } from "@/components/forms/family-status";
 import "./fonts.css";
 import type { Metadata, Viewport } from "next";
+import { preload } from "react-dom";
 import Link from "next/link";
 import Image from "next/image";
 import "./globals.css";
@@ -112,6 +113,12 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // الخط العربي الأساسي يُطلب مع أول الصفحة، لا بعد قراءة ملف التنسيق، فيظهر النص بخطه أسرع.
+  preload("/fonts/noto-sans-arabic-arabic.woff2", {
+    as: "font",
+    type: "font/woff2",
+    crossOrigin: "anonymous",
+  });
   const [template, texts, appLinks] = await Promise.all([
     visitorTemplate(),
     getSiteTexts(),

@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import type { FamilyState } from "@/lib/family-status";
 import s from "./account.module.css";
-import { loadSession } from "./shared";
+import { api, dropWarm, knownSession, loadSession, warmApi } from "./shared";
 
 export const FAMILY_STATUS_CHANGED = "jdatna:family-status";
 const steps: FamilyState["key"][] = [
@@ -14,18 +14,29 @@ const steps: FamilyState["key"][] = [
 
 // طلب واحد مشترك لكل مكونات الصفحة (الترويسة، القائمة، الشريط)، ويُعاد عند تغيّر الحالة.
 let shared: Promise<FamilyState | null> | null = null;
+const STATUS_URL = "/api/producer/status";
+// القراءة نفسها يستعملها زر المشاركة في لوحة الأسرة، فتُطلب مرة واحدة.
+function readState() {
+  warmApi(STATUS_URL);
+  return api<{ state: FamilyState | null }>(STATUS_URL).then(
+    (x) => x.state,
+    () => null,
+  );
+}
 function fetchState(force = false) {
+  if (force) dropWarm(STATUS_URL);
   if (!shared || force)
     // الزوار والعملاء لا يطلبون حالة الأسرة المنتجة أصلًا: نتحقق من دور الجلسة أولًا.
     // عند تغيّر الحالة (مثل التسجيل كأسرة) يُطلب دور الجلسة من جديد لا من الذاكرة.
-    shared = loadSession(force)
+    // الدور المعروف في الجهاز يكفي لبدء الطلب فورًا؛ بلا جلسة معروفة، أو عند تغيّر الحالة، يُسأل الخادم.
+    shared = (
+      !force && knownSession()
+        ? Promise.resolve(knownSession() as { user: { role?: string } | null })
+        : loadSession(force)
+    )
       .catch(() => ({ user: null }))
       .then((d: { user: { role?: string } | null }) =>
-        d.user?.role === "producer"
-          ? fetch("/api/producer/status")
-              .then((r) => (r.ok ? r.json() : { state: null }))
-              .then((x: { state: FamilyState | null }) => x.state)
-          : null,
+        d.user?.role === "producer" ? readState() : null,
       )
       .catch(() => null);
   return shared;
