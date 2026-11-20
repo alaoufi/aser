@@ -694,7 +694,7 @@ img {
 .site-footer {
   background: var(--footer);
   color: #fff8e9;
-  padding: 36px max(48px, calc((100% - 1240px) / 2)) 0;
+  padding: 26px max(48px, calc((100% - 1240px) / 2)) 0;
 }
 .footer-top {
   display: grid;
@@ -744,7 +744,7 @@ img {
 /* عمود الاسم في التذييل: الشعار والاسم ثم أزرار تحميل التطبيق تحتهما مباشرة. */
 .footer-brand-col {
   display: grid;
-  gap: 16px;
+  gap: 10px;
   align-content: start;
   justify-items: start;
 }
@@ -1544,12 +1544,12 @@ hr {
     min-height: 48px;
   }
   .site-footer {
-    padding: 35px 22px 0;
+    padding: 22px 22px 0;
   }
   .footer-top {
     grid-template-columns: 1fr 1fr;
-    gap: 25px 18px;
-    padding-bottom: 25px;
+    gap: 18px 18px;
+    padding-bottom: 18px;
   }
   .footer-top > div:first-child {
     grid-column: 1/-1;
@@ -2233,8 +2233,7 @@ label:has(> select) {
   margin-top: 0;
 }
 
-.brand-logo,
-.footer-logo {
+.brand-logo {
   flex-shrink: 0;
   object-fit: contain;
   background: transparent;
@@ -2249,10 +2248,6 @@ label:has(> select) {
   align-items: center;
   gap: 14px;
   line-height: 1.5;
-}
-.footer-logo {
-  width: 56px;
-  height: auto;
 }
 .about-brand-logo {
   display: block;
