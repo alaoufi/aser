@@ -206,7 +206,41 @@ const PLAY_ANDROID_FINGERPRINTS = [
 ];
 /** تطبيق الآيفون في App Store: رقم فريق آبل ومعرّف الحزمة (ملف apple-app-site-association). */
 const APP_STORE_IOS_ID = "F6RN596WCX.com.jdatna.app";
-function withPlayApp(links: AppLinks): AppLinks {
+/**
+ * هل صفحة التطبيق في Google Play منشورة؟ يُفحص من الخادم مرة كل ساعة على الأكثر وفي الخلفية
+ * (لا ينتظره أي طلب)، فيظهر زر Google Play أسفل الموقع وحده فور موافقة Google ونشر التطبيق.
+ * قبل أول نتيجة، أو عند تعذّر الفحص، يُعدّ غير منشور (الرابط قبل النشر يفتح «غير موجود»).
+ */
+const playListing = { live: false, checkedAt: 0, checking: false };
+export function playStoreLive(): boolean {
+  const stale = Date.now() - playListing.checkedAt > 60 * 60 * 1000;
+  if (stale && !playListing.checking) {
+    playListing.checking = true;
+    fetch(PLAY_STORE_URL + "&hl=ar&gl=SA", {
+      method: "GET",
+      redirect: "follow",
+      signal: AbortSignal.timeout(5000),
+    })
+      .then((r) => {
+        playListing.live = r.status === 200;
+        return r.body?.cancel();
+      })
+      .catch(() => {})
+      .finally(() => {
+        playListing.checkedAt = Date.now();
+        playListing.checking = false;
+      });
+  }
+  return playListing.live;
+}
+function withPlayApp(saved: AppLinks): AppLinks {
+  // تطبيق الآيفون منشور في App Store منذ 2026-11-14: زره ظاهر دائمًا. وزر Google Play بتفعيل
+  // المالك أو تلقائيًا حين تُنشر صفحة التطبيق في المتجر.
+  const links = {
+    ...saved,
+    showAppStore: true,
+    showPlayStore: saved.showPlayStore || playStoreLive(),
+  };
   const iosAppIds = links.iosAppIds.includes(APP_STORE_IOS_ID)
     ? links.iosAppIds
     : [...links.iosAppIds, APP_STORE_IOS_ID];

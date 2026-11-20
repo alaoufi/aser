@@ -191,7 +191,17 @@ export default async function Home({
         </Link>
       </section>
       {homeProducers.length > 0 && (
-        <section className="section wrap" aria-label="الأسر المنتجة">
+        <section
+          className="section wrap home-producers"
+          aria-labelledby="home-producers-title"
+        >
+          {/* عنوان في الفراغ بين أزرار التوفر وبطاقات الأسر: أسر المنطقة أولًا ثم من يشحن للمملكة. */}
+          <div className="section-heading">
+            <h2 id="home-producers-title">أسر منتجة تغطي منطقتك</h2>
+            <Link className="text-link" href="/producers">
+              كل الأسر المنتجة ←
+            </Link>
+          </div>
           <div className="producer-grid compact">
             {homeProducers.map((p) => (
               <ProducerCard key={p.id} producer={p} />

@@ -124,7 +124,9 @@ test.describe("today's dishes are scoped to the visitor's region", () => {
   }) => {
     // الرئيسية: الأسر والمنتجات تتبع المنطقة.
     await page.goto(`/?region=${encodeURIComponent(region)}`);
-    const families = page.getByRole("region", { name: "الأسر المنتجة" });
+    const families = page.getByRole("region", {
+      name: "أسر منتجة تغطي منطقتك",
+    });
     await expect(families).toContainText("أسرة 0 " + tag);
     await expect(families).toContainText("أسرة 1 " + tag);
     await expect(families).not.toContainText("أسرة 2 " + tag);
@@ -150,7 +152,22 @@ test.describe("today's dishes are scoped to the visitor's region", () => {
     await page.getByLabel("منطقة المائدة").selectOption(other!);
     await expect(page).toHaveURL(new RegExp(`region=${other}`));
     await expect(
-      page.getByRole("region", { name: "الأسر المنتجة" }),
+      page.getByRole("region", { name: "أسر منتجة تغطي منطقتك" }),
     ).not.toContainText("أسرة 0 " + tag);
   });
+});
+
+// عنوان قسم الأسر في الرئيسية فوق بطاقاتها، ورابط لكل الأسر.
+test("the home families section has its heading and a link to all families", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const families = page.getByRole("region", { name: "أسر منتجة تغطي منطقتك" });
+  if ((await families.count()) === 0) test.skip(true, "No approved families");
+  await expect(
+    families.getByRole("heading", { level: 2, name: "أسر منتجة تغطي منطقتك" }),
+  ).toBeVisible();
+  await expect(
+    families.getByRole("link", { name: /كل الأسر المنتجة/ }),
+  ).toHaveAttribute("href", "/producers");
 });
