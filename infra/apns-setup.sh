@@ -47,6 +47,7 @@ process.stdin.on("data", (d) => (pem += d)).on("end", () => {
     b(JSON.stringify({ iss: process.env.T, iat: Math.floor(Date.now() / 1000) }));
   const jwt = head + "." + b(crypto.sign("sha256", Buffer.from(head), { key, dsaEncoding: "ieee-p1363" }));
   const s = http2.connect("https://api.push.apple.com");
+  s.setTimeout(20000, () => { console.log("NOT OK: Apple did not answer in 20s"); process.exit(3); });
   s.on("error", (e) => { console.log("NOT OK: cannot reach Apple (" + e.code + ")"); process.exit(3); });
   const r = s.request({ ":method": "POST", ":path": "/3/device/" + "0".repeat(64),
     authorization: "bearer " + jwt, "apns-topic": "com.jdatna.app", "apns-push-type": "alert" });
@@ -65,8 +66,15 @@ process.stdin.on("data", (d) => (pem += d)).on("end", () => {
 });
 JS
 )
-if ! "${RUN[@]}" -e "$CHECK" < "$KEY_FILE"; then
-  echo "NOT OK: Apple did not accept this key for com.jdatna.app. Nothing was saved."
+echo "Checking with Apple from: ${APP:-temporary container from $IMAGE}"
+set +e
+out=$(timeout 60 "${RUN[@]}" -e "$CHECK" < "$KEY_FILE" 2>&1)
+code=$?
+set -e
+# الناتج رد Apple أو رسالة الخطأ فقط (المفتاح لا يُطبع أبدًا).
+printf '%s\n' "$out" | tail -n 8
+if [[ $code -ne 0 ]]; then
+  echo "NOT OK (exit $code): Apple did not accept this key for com.jdatna.app. Nothing was saved."
   exit 4
 fi
 echo "Apple accepted the key for com.jdatna.app"

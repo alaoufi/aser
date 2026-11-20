@@ -1,4 +1,5 @@
 import { SITE_VERSION } from "@/lib/version";
+import { apnsConfigured } from "@/server/apns";
 import { db, databaseConfigured } from "@/server/db";
 import {
   registrationOpen,
@@ -23,6 +24,8 @@ export async function GET() {
       registrationOpen: registrationOpen() && database,
       smsConfigured: smsConfigured(),
       privateStorageConfigured: storageConfigured(),
+      // مفتاح إشعارات تطبيق الآيفون (Apple) مضبوط على الخادم: نعم/لا فقط، بلا أي تفصيل.
+      iphonePushConfigured: apnsConfigured(),
     },
     { status: database ? 200 : 503, headers: { "Cache-Control": "no-store" } },
   );
