@@ -24,7 +24,7 @@ test.describe("domain verification meta tag", () => {
     await pool?.end();
   });
 
-  test("the saved code appears in the home page head, and disappears when cleared", async ({
+  test("the saved code appears in the home page head, and the jdatna.com code returns when cleared", async ({
     request,
   }) => {
     await pool!.query(
@@ -40,8 +40,12 @@ test.describe("domain verification meta tag", () => {
     await pool!.query(
       "DELETE FROM jdatna.site_settings WHERE key='verify:domain'",
     );
+    // بلا رمز محفوظ: رمز jdatna.com الثابت في الكود (نفسه في سجل DNS TXT).
     const after = await (await request.get("/")).text();
-    expect(after).not.toContain("domain-verification");
+    expect(after.slice(0, after.indexOf("</head>"))).toContain(
+      '<meta name="domain-verification" content="d4a837f6686cda77b144d674d0ab82e4fba5136cc3f8e09d1a511a20f0e36c3a"/>',
+    );
+    expect(after).not.toContain(code);
   });
 });
 
