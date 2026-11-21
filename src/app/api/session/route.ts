@@ -1,5 +1,6 @@
 import { api, json } from "@/server/http";
 import {
+  adminArea,
   registrationOpen,
   renewSession,
   sessionCookie,
@@ -15,7 +16,8 @@ export const GET = api(async (request) => {
     canSetCredentials: info?.canSetCredentials ?? false,
   });
   // الجلسة النشطة تتجدد سنة من آخر زيارة، فلا يُطلب الدخول مرة أخرى.
-  if (info && (await renewSession(request)))
+  // جلسة الإدارة لا تتجدد (12 ساعة)، فالتجديد للجلسة الشخصية من صفحات الموقع فقط.
+  if (info && !adminArea(request) && (await renewSession(request)))
     response.headers.append(
       "Set-Cookie",
       sessionCookie(sessionToken(request)!),

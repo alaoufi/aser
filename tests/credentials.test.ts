@@ -377,8 +377,10 @@ test(
       assert.equal(otpResponse.status, 200);
       const otpBody = await otpResponse.json();
       assert.equal(otpBody.canSetCredentials, true);
-      assert.equal(otpBody.next, "/admin");
-      assert.equal(otpBody.user.role, "admin");
+      // الدخول للحساب الشخصي دائمًا؛ «لوحة الإدارة» تُفتح منه بجلسة مستقلة.
+      assert.equal(otpBody.next, "/orders");
+      assert.equal(otpBody.user.role, "customer");
+      assert.equal(otpBody.user.adminAccess, true);
       assert.match(
         otpResponse.headers.get("set-cookie") ?? "",
         /HttpOnly; SameSite=Lax/,

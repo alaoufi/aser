@@ -1,11 +1,13 @@
 import { api, jsonBody } from "@/server/http";
-import { setCredentials } from "@/server/credentials";
-import { sessionCookie } from "@/server/auth";
+import { roleDestination, setCredentials } from "@/server/credentials";
+import { personal, sessionCookie } from "@/server/auth";
 export const POST = api(async (request) => {
-  const { user, token, next } = await setCredentials(
-    request,
-    await jsonBody(request),
-  );
+  const result = await setCredentials(request, await jsonBody(request));
+  const { token } = result;
+  // الحساب الشخصي دائمًا؛ «لوحة الإدارة» تُفتح منه بجلسة مستقلة.
+  const user = personal(result.user);
+  const next =
+    user.role === result.user.role ? result.next : roleDestination(user.role);
   return Response.json(
     { user, next },
     {

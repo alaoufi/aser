@@ -977,7 +977,7 @@ export function AdminCouriers({
               <a
                 href={`/api/documents/${encodeURIComponent(k.documentId)}`}
                 target="_blank"
-                rel="noopener noreferrer"
+                rel="noopener"
               >
                 عرض صورة الهوية
               </a>

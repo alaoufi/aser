@@ -112,10 +112,20 @@ const SESSION_CHANGERS = ["/api/auth", "/api/logout", "/api/account/delete"];
  */
 const SESSION_KEY = "jdatna:session";
 const SESSION_MAX_AGE = 30 * 24 * 60 * 60 * 1000;
+/**
+ * داخل «لوحة الإدارة» (/admin): الجلسة هي جلسة اللوحة (الخادم يميّزها من الصفحة)، ولا تُحفظ في الجهاز
+ * ولا تختلط بالجلسة الشخصية المحفوظة. الدخول للوحة والخروج منها تحميل كامل للصفحة.
+ */
+export function inAdminArea() {
+  if (typeof window === "undefined") return false;
+  const p = window.location.pathname;
+  return p === "/admin" || p.startsWith("/admin/");
+}
 let lastRecheck = 0;
 let known: SessionData | null = null;
 function recall(): SessionData | null {
   if (known) return known;
+  if (inAdminArea()) return null;
   try {
     const raw = localStorage.getItem(SESSION_KEY);
     const d = raw
@@ -143,6 +153,7 @@ function remember(d: SessionData) {
     return;
   known = d;
   for (const notify of sessionListeners) notify();
+  if (inAdminArea()) return;
   try {
     localStorage.setItem(
       SESSION_KEY,

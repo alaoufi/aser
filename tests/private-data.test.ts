@@ -94,10 +94,16 @@ test(
       role: i === 2 ? "admin" : "customer",
     }));
     const tokens = users.map(() => randomBytes(32).toString("hex"));
+    // مسارات الإدارة بجلسة «لوحة الإدارة» المستقلة (ملف jdatna_admin)، لا بالجلسة الشخصية.
+    const panels = users.map(() => randomBytes(32).toString("hex"));
     const location = "private-work-location-" + randomUUID();
     const req = (path: string, i: number) =>
       new Request("http://localhost" + path, {
-        headers: { cookie: "jdatna_session=" + tokens[i] },
+        headers: {
+          cookie: path.startsWith("/api/admin")
+            ? "jdatna_admin=" + panels[i]
+            : "jdatna_session=" + tokens[i],
+        },
       });
     try {
       const city = (
@@ -112,6 +118,10 @@ test(
         await pool.query(
           "INSERT INTO jdatna.sessions(token_hash,user_id,expires_at) VALUES($1,$2,now()+interval '1 hour')",
           [hash(tokens[i]), user.id],
+        );
+        await pool.query(
+          "INSERT INTO jdatna.sessions(token_hash,user_id,expires_at,scope) VALUES($1,$2,now()+interval '1 hour','admin')",
+          [hash(panels[i]), user.id],
         );
         if (i < 2)
           await pool.query(
@@ -202,8 +212,9 @@ test(
       );
       assert.equal((await other.json()).profile, null);
       await assert.rejects(adminProducers(users[1]), { status: 403 });
+      // جلسة لوحة لغير صاحب صلاحية لا تُقبل أصلًا.
       const denied = await adminRoute(req("/api/admin/producers", 1), {});
-      assert.equal(denied.status, 403);
+      assert.equal(denied.status, 401);
       const admin = await adminRoute(req("/api/admin/producers", 2), {});
       assert.equal(admin.status, 200);
       const adminEntry = (await admin.json()).producers.find(

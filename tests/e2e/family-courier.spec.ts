@@ -302,8 +302,8 @@ test("the family dashboard shares the family page from the top", async ({
   );
 });
 
-// المدير الكامل الذي له أسرة: حسابه حساب أسرة، فيرى «مندوبي الخاص» في القائمة واللوحة،
-// و«حسابي الخاص» يفتح لوحة الأسرة، ونوع الحساب تحت الاسم مباشرة.
+// المدير الكامل الذي له أسرة: حسابه الشخصي حساب أسرة، فيرى «مندوبي الخاص» في القائمة واللوحة،
+// و«حسابي» يفتح لوحة الأسرة، ونوع الحساب تحت الاسم مباشرة.
 test("an admin who owns a family sees the family sections and «my private courier»", async ({
   page,
 }) => {
@@ -317,8 +317,10 @@ test("an admin who owns a family sees the family sections and «my private couri
           id: "a",
           name: "المالك",
           phone: "+966500000099",
-          role: "admin",
+          // في الموقع: حسابه الشخصي حساب أسرة، بلا صلاحيات (الإدارة بجلسة مستقلة).
+          role: "producer",
           permissions: [],
+          adminAccess: true,
           familyName: "أكلات نجدية",
         },
         registrationOpen: true,
@@ -350,7 +352,7 @@ test("an admin who owns a family sees the family sections and «my private couri
   ).toBeVisible();
   await expect(
     page
-      .getByRole("link", { name: "حسابي الخاص", includeHidden: true })
+      .getByRole("link", { name: "حسابي", exact: true, includeHidden: true })
       .first(),
   ).toHaveAttribute("href", "/dashboard");
 });
@@ -377,48 +379,62 @@ test("account type is written under the name: customer and courier", async ({
   }
 });
 
-// حساب الإدارة منفصل عن الحساب الخاص: فيه «الرجوع لحسابي الخاص» فقط، ولوحة الأسرة بلا رابط للإدارة.
-test("admin and personal accounts stay separate, with a way back from admin", async ({
+// اللوحة منفصلة عن الحساب الشخصي: إطار خاص بلا ترويسة الموقع وروابط الحساب، و«الموقع» يعيد إليه.
+test("admin panel and personal account stay separate, with a way back to the site", async ({
   page,
 }) => {
   await page.addInitScript(() =>
     sessionStorage.setItem("jdatna:family-welcome", "1"),
   );
-  await page.route("**/api/session", (r) =>
-    r.fulfill({
+  const owner = {
+    id: "a",
+    name: "المالك",
+    phone: "+966500000099",
+    familyName: "أكلات نجدية",
+  };
+  // الخادم يميّز اللوحة من الصفحة؛ هنا نحاكيه بمسار الصفحة التي طلبت الجلسة.
+  await page.route("**/api/session", (r) => {
+    const from = new URL(r.request().headers().referer ?? "http://x/").pathname;
+    const panel = from === "/admin" || from.startsWith("/admin/");
+    return r.fulfill({
       json: {
-        user: {
-          id: "a",
-          name: "المالك",
-          phone: "+966500000099",
-          role: "admin",
-          permissions: [],
-          familyName: "أكلات نجدية",
-        },
+        user: panel
+          ? { ...owner, role: "admin", permissions: [] }
+          : { ...owner, role: "producer", permissions: [], adminAccess: true },
         registrationOpen: true,
       },
-    }),
-  );
+    });
+  });
   await page.route("**/api/producer/profile", (r) =>
     r.fulfill({ json: { cities: [], categories: [], profile: null } }),
   );
+  await page.route("**/api/admin/summary", (r) =>
+    r.fulfill({ json: { summary: {} } }),
+  );
+  await page.route("**/api/admin/producers**", (r) =>
+    r.fulfill({ json: { producers: [], count: 0 } }),
+  );
   await page.goto("/dashboard");
   await expect(
-    page
-      .locator("main")
-      .getByRole("link", { name: /لوحة الإدارة|حساب الإدارة/ }),
+    page.locator("main").getByRole("link", { name: /لوحة الإدارة/ }),
   ).toHaveCount(0);
   await page.goto("/admin");
   await expect(
-    page.getByRole("heading", { level: 1, name: "حساب الإدارة" }),
+    page.getByRole("heading", { level: 1, name: "لوحة التحكم" }),
   ).toBeVisible();
-  await expect(
-    page.locator("main").getByRole("link", { name: "← الرجوع لحسابي الخاص" }),
-  ).toHaveAttribute("href", "/dashboard");
-  // لا روابط الحساب الخاص داخل حساب الإدارة.
+  // لا ترويسة الموقع ولا روابط الحساب الشخصي داخل اللوحة.
+  await expect(page.locator("header.site-header")).toHaveCount(0);
   await expect(
     page.getByRole("navigation", { name: "حسابي", exact: true }),
   ).toHaveCount(0);
+  // على الجوال القائمة تُفتح بزر ☰.
+  if ((page.viewportSize()?.width ?? 1280) < 1024)
+    await page.getByRole("button", { name: "أقسام الإدارة" }).click();
+  await expect(
+    page
+      .getByRole("complementary", { name: "أقسام الإدارة" })
+      .getByRole("link", { name: "الموقع", exact: true }),
+  ).toHaveAttribute("href", "/");
 });
 
 // أسرة لم تُعتمد بعد: يُشرح لها متى تضيف مندوبها بدل إخفاء القسم.

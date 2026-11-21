@@ -69,13 +69,8 @@ test("admin edits, deletes and restores visible site texts", async ({
     }
     return r.fulfill({ json: { texts } });
   });
-  await page.goto("/admin");
-  // أقسام الإدارة قائمة منسدلة: تُفتح ثم يُختار القسم.
-  await page
-    .getByRole("navigation", { name: "أقسام الإدارة" })
-    .locator("summary")
-    .click();
-  await page.getByRole("button", { name: "نصوص الموقع", exact: true }).click();
+  // كل قسم بمساره في القائمة الجانبية (src/lib/admin-nav.ts).
+  await page.goto("/admin/texts");
   const empty = page.getByLabel("المائدة الفارغة");
   await expect(empty).toHaveValue("بانتظار العروض");
   await expect(

@@ -2,7 +2,12 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { db } from "../src/server/db";
-import { hash, sessionToken } from "../src/server/auth";
+import {
+  createAdminSession,
+  hash,
+  renewSession,
+  sessionToken,
+} from "../src/server/auth";
 import {
   hashPassword,
   passwordLogin,
@@ -79,7 +84,7 @@ test(
 );
 
 test(
-  "admin and supervisor sessions last 12 hours and are not renewed; members keep a year",
+  "the admin panel session lasts 12 hours and is not renewed; personal sessions keep a year for everyone",
   { skip: process.env.JDATNA_TEST_DB !== "true" },
   async () => {
     const pool = db();
@@ -102,10 +107,44 @@ test(
           )
         ).rows[0].h as number;
       };
-      const admin = await hours(phones[0], ids[0]);
-      assert.ok(admin > 11.9 && admin <= 12, String(admin));
+      // قرار المالك 2026-11-21: الجلسة الشخصية سنة للجميع، والإدارة بجلسة مستقلة 12 ساعة.
+      const personal = await hours(phones[0], ids[0]);
+      assert.ok(personal > 364 * 24, String(personal));
       const member = await hours(phones[1], ids[1]);
       assert.ok(member > 364 * 24, String(member));
+      const token = (
+        await passwordLogin({ identifier: phones[0], password: "2468" })
+      ).token!;
+      const site = new Request("http://127.0.0.1:3000/api/session", {
+        headers: { cookie: "jdatna_session=" + token },
+      });
+      const panel = await createAdminSession(site);
+      const panelHours = (
+        await pool.query(
+          "SELECT extract(epoch FROM expires_at-now())/3600 AS h FROM jdatna.sessions WHERE token_hash=$1 AND scope='admin'",
+          [hash(panel.token)],
+        )
+      ).rows[0].h as number;
+      assert.ok(panelHours > 11.9 && panelHours <= 12, String(panelHours));
+      // التجديد للجلسة الشخصية وحدها: ملف اللوحة في خانة الموقع لا يُجدَّد.
+      const renewed = await renewSession(
+        new Request("http://127.0.0.1:3000/api/session", {
+          headers: { cookie: "jdatna_session=" + panel.token },
+        }),
+      );
+      assert.equal(renewed, false);
+      // العميل لا يحصل على جلسة لوحة.
+      const customerToken = (
+        await passwordLogin({ identifier: phones[1], password: "2468" })
+      ).token!;
+      await assert.rejects(
+        createAdminSession(
+          new Request("http://127.0.0.1:3000/api/session", {
+            headers: { cookie: "jdatna_session=" + customerToken },
+          }),
+        ),
+        { status: 403 },
+      );
     } finally {
       await pool.query(
         "DELETE FROM jdatna.rate_limits WHERE key LIKE 'password-login%'",

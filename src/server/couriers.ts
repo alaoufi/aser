@@ -85,7 +85,8 @@ export async function setCourierActive(user: SessionUser, input: unknown) {
 export async function saveCourier(user: SessionUser, input: unknown) {
   const value = courierSchema.parse(input);
   const nationalId = normalizeNationalId(value.nationalId);
-  if (user.role !== "customer" && user.role !== "courier")
+  // صاحب الصلاحيات الإدارية يظهر في حسابه الشخصي «عميلًا»، ولا يصير مندوبًا بحسابه نفسه.
+  if ((user.role !== "customer" && user.role !== "courier") || user.adminAccess)
     throw new HttpError(
       409,
       "هذا الحساب أسرة منتجة أو إدارة؛ سجّل المندوب بجوال آخر",

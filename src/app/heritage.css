@@ -460,33 +460,6 @@ main::before {
     0 0 0 4px var(--gold);
 }
 
-/* رسالة «لديك طلب جديد» للأسرة المنتجة */
-.approval-alert {
-  position: fixed;
-  inset-inline: 16px;
-  bottom: calc(16px + env(safe-area-inset-bottom));
-  z-index: 60;
-  max-width: 440px;
-  margin-inline: auto;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 12px 16px;
-  border-radius: 10px;
-  border-inline-start: 5px solid var(--gold);
-  background: var(--ink);
-  color: var(--sadu-white, #fff8ea);
-  box-shadow: 0 12px 32px #2e1d1259;
-}
-.approval-alert p {
-  margin: 0;
-}
-.approval-alert-actions {
-  display: flex;
-  gap: 8px;
-}
 .order-alert {
   width: min(440px, calc(100% - 32px));
   border: 0;

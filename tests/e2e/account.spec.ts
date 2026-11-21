@@ -120,15 +120,8 @@ test("admin category validates slug before sending and preserves errors from ser
       ? route.fulfill({ json: { categories: [] } })
       : route.fulfill({ status: 409, json: { error: "التصنيف مسجل مسبقًا" } }),
   );
-  await page.goto("/admin");
-  // أقسام الإدارة قائمة منسدلة: تُفتح ثم يُختار القسم.
-  await page
-    .getByRole("navigation", { name: "أقسام الإدارة" })
-    .locator("summary")
-    .click();
-  await page
-    .getByRole("button", { name: "إدارة الأقسام", exact: true })
-    .click();
+  // كل قسم بمساره في القائمة الجانبية (src/lib/admin-nav.ts).
+  await page.goto("/admin/categories");
   await page.getByRole("button", { name: "＋ قسم جديد" }).click();
   await page.getByLabel("اسم القسم").fill("الخبز");
   // الرابط المختصر يُنشأ داخليًا ولا يُعرض.

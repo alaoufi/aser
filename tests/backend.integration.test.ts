@@ -618,13 +618,14 @@ test(
             ),
             /صلاحية/,
           );
+          // الجلسة الشخصية لا تفتح مسارات الإدارة (لها جلسة «لوحة الإدارة» المستقلة).
           const denied = await adminCategoriesRoute(
             new Request("https://test.invalid/api/admin/categories", {
               headers: { cookie: "jdatna_session=" + sessionTokens[0] },
             }),
             {},
           );
-          assert.equal(denied.status, 403);
+          assert.equal(denied.status, 401);
           const slug = "test-" + randomUUID();
           const category = await saveCategory(
             users[2],

@@ -1,7 +1,6 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
-import { COVERAGE_URL } from "./admin-cache";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   AdminSummary,
   AppLinksAdmin,
@@ -16,15 +15,13 @@ import {
   ReportsAdmin,
   TemplateAdmin,
   TextsAdmin,
-  prefetchAdmin,
 } from "./admin-tools";
 import { familyAccountState, type FamilyState } from "@/lib/family-status";
-import { AccountShell, Guard, Message, api, s, useSession } from "./shared";
-import { ownAccountHref } from "@/components/public/account-link";
-import { can, isManager, type AdminPermission } from "@/lib/permissions";
+import { Guard, Message, api, s, useSession } from "./shared";
+import { can, isManager } from "@/lib/permissions";
+import { NAV_GROUPS, allowedItem } from "@/lib/admin-nav";
 import { MembersAdmin } from "./members";
-import { SectionIcon as AdminIcon } from "./section-icon";
-import { APPROVALS_CHANGED } from "@/components/public/approval-alert";
+import { APPROVALS_CHANGED } from "@/components/admin/admin-frame";
 import { AdminCouriers } from "./courier";
 import { ContractsAdmin } from "./subscriptions";
 import { SecurityLog } from "./security-log";
@@ -32,75 +29,10 @@ import { BackupsAdmin } from "./backups-admin";
 import { DeletedChatsAdmin } from "./deleted-chats";
 import { ViewsAdmin } from "./views-admin";
 
-/** بيانات كل قسم، تُحمَّل مسبقًا عند المرور على زره أو التركيز عليه. */
-const tabData: Record<string, string[]> = {
-  orders: ["/api/admin/orders"],
-  products: ["/api/admin/products", "/api/admin/categories"],
-  categories: ["/api/admin/categories", "/api/admin/product-fields"],
-  locations: ["/api/admin/locations"],
-  reports: ["/api/admin/reports"],
-  contracts: ["/api/admin/contracts"],
-  template: ["/api/admin/settings"],
-  texts: ["/api/admin/texts"],
-  app: ["/api/admin/app-links"],
-  verification: ["/api/admin/verification"],
-  review: ["/api/admin/store-review"],
-  members: ["/api/admin/members?q="],
-  security: ["/api/admin/security"],
-  backups: ["/api/admin/backups"],
-  "deleted-chats": ["/api/admin/conversations"],
-  views: ["/api/admin/views"],
-};
-/** أقسام الإدارة وصلاحية كل قسم؛ «الأعضاء» للمدير الكامل فقط. */
-const adminTabs: [
-  id: string,
-  label: string,
-  permission: AdminPermission | "owner",
-][] = [
-  ["approvals", "اعتماد الأسر والمندوبين", "producers"],
-  ["producers", "الأسر المنتجة", "producers"],
-  ["orders", "الطلبات", "orders"],
-  ["products", "المنتجات", "products"],
-  ["categories", "إدارة الأقسام", "categories"],
-  ["locations", "المواقع", "locations"],
-  ["reports", "البلاغات", "reports"],
-  ["contracts", "عقود الاشتراكات", "orders"],
-  ["deleted-chats", "المحادثات المحذوفة", "reports"],
-  ["template", "قالب الموقع", "content"],
-  ["texts", "نصوص الموقع", "content"],
-  ["app", "تطبيق الجوال", "content"],
-  ["verification", "إثبات ملكية النطاق", "owner"],
-  ["views", "المشاهدات والزوار", "content"],
-  ["review", "مراجعة المتاجر", "owner"],
-  ["members", "الأعضاء والصلاحيات", "owner"],
-  ["suggestions", "الاقتراحات", "owner"],
-  ["security", "التقرير الأمني", "owner"],
-  ["backups", "النسخ الاحتياطية", "owner"],
-];
-/** تجميع الأقسام في شاشة الإدارة (الأسماء للقارئ الآلي فقط). */
-const adminGroups: [group: string, ids: string[]][] = [
-  // التقارير أول القائمة: الأمني، والنسخ الاحتياطية، وأي تقرير لاحق يضاف هنا.
-  ["التقارير", ["security", "backups"]],
-  ["الأمان", ["deleted-chats"]],
-  [
-    "الأسر والطلبات",
-    ["approvals", "producers", "orders", "products", "reports", "contracts"],
-  ],
-  ["الأقسام والمواقع", ["categories", "locations"]],
-  [
-    "الموقع والأعضاء",
-    [
-      "template",
-      "texts",
-      "app",
-      "verification",
-      "views",
-      "review",
-      "members",
-      "suggestions",
-    ],
-  ],
-];
+/** أقسام اللوحة بحسب القائمة الجانبية (src/lib/admin-nav.ts): /admin/<القسم>. */
+const SECTIONS = NAV_GROUPS.flatMap((g) => g.items).filter((it) =>
+  /^\/admin\/[a-z-]+$/.test(it.to),
+);
 type Application = {
   id: string;
   name: string;
@@ -243,7 +175,8 @@ function Review({
             key={d.id}
             href={`/api/documents/${encodeURIComponent(d.id)}`}
             target="_blank"
-            rel="noopener noreferrer"
+            // بلا noreferrer: الخادم يعرف من الصفحة أن الطلب من اللوحة فيستعمل جلستها.
+            rel="noopener"
           >
             عرض المستند الخاص {("fileName" in d && d.fileName) || ""}
           </a>
@@ -302,50 +235,35 @@ function Review({
     </article>
   );
 }
-export function Admin() {
+/**
+ * لوحة الإدارة: بلا قسم (/admin) لوحة التحكم وملخصها، ومع قسم (/admin/orders…) ذلك القسم.
+ * التنقل بين الأقسام من القائمة الجانبية (AdminFrame)، والصلاحية يفرضها الخادم في كل طلب.
+ */
+export function Admin({ section }: { section?: string } = {}) {
   const session = useSession();
-  const [tab, setTab] = useState("approvals");
+  const router = useRouter();
   const [producers, setProducers] = useState<Application[]>([]);
   const [error, setError] = useState("");
   const [loaded, setLoaded] = useState(false);
   const [success, setSuccess] = useState("");
   const [filter, setFilter] = useState("all");
   const [query, setQuery] = useState("");
-  const menu = useRef<HTMLDetailsElement>(null);
-  // القائمة تُغلق بالضغط خارجها أو بزر Esc.
-  useEffect(() => {
-    const close = (e: Event) => {
-      const d = menu.current;
-      if (!d?.open) return;
-      if (e instanceof KeyboardEvent) {
-        if (e.key !== "Escape") return;
-        d.open = false;
-        d.querySelector("summary")?.focus();
-      } else if (!d.contains(e.target as Node)) d.open = false;
-    };
-    document.addEventListener("pointerdown", close);
-    document.addEventListener("keydown", close);
-    return () => {
-      document.removeEventListener("pointerdown", close);
-      document.removeEventListener("keydown", close);
-    };
-  }, []);
-  const allowed = adminTabs.filter(([, , permission]) =>
-    permission === "owner"
-      ? session.user?.role === "admin"
-      : can(session.user, permission),
-  );
-  // المشرف يبدأ بأول قسم مسموح له.
-  const active = allowed.some(([id]) => id === tab) ? tab : allowed[0]?.[0];
+  const item = section
+    ? SECTIONS.find((it) => it.to === `/admin/${section}`)
+    : undefined;
+  const active = item && allowedItem(session.user, item) ? section : undefined;
+  const open = (tab: string) => router.push(`/admin/${tab}`);
   async function load() {
     const d = await api<{ producers: Application[] }>("/api/admin/producers");
     setProducers(d.producers);
   }
-  // رابط التنبيه «أسرة تنتظر الاعتماد» يفتح التبويب مباشرة: /admin?tab=approvals
+  // الروابط القديمة (إشعار «أسرة تنتظر الاعتماد»: /admin?tab=approvals) تفتح القسم بمساره الجديد.
   useEffect(() => {
+    if (section) return;
     const wanted = new URLSearchParams(window.location.search).get("tab");
-    if (wanted && adminTabs.some(([id]) => id === wanted)) setTab(wanted);
-  }, []);
+    if (wanted && SECTIONS.some((it) => it.to === `/admin/${wanted}`))
+      router.replace(`/admin/${wanted}`);
+  }, [section, router]);
   const waiting = producers.filter((p) => p.status === "pending");
   useEffect(() => {
     if (can(session.user, "producers"))
@@ -354,93 +272,30 @@ export function Admin() {
         .finally(() => setLoaded(true));
   }, [session.user]);
   return (
-    // حساب الإدارة منفصل عن الحساب الخاص: لا روابط «طلباتي» و«معلوماتي» هنا.
-    <AccountShell navigation={false}>
-      <div className={s.actions}>
-        <h1>حساب الإدارة</h1>
-        {/* الرجوع للحساب الخاص: لوحة الأسرة إن كان له أسرة، وإلا طلباته. */}
-        <Link href={ownAccountHref(session.user)} className={s.buttonSecondary}>
-          ← الرجوع لحسابي الخاص
-        </Link>
-      </div>
+    // داخل إطار اللوحة (AdminFrame): القائمة الجانبية تتنقل بين الأقسام.
+    <>
       <Guard {...session} admin />
-      {isManager(session.user) && (
+      {isManager(session.user) && !section && (
         <>
-          <AdminSummary onOpen={setTab} />
-          {/* أقسام الإدارة قائمة منسدلة: زرها يحمل القسم الحالي، وتحتها الأقسام بمجموعاتها. */}
-          <nav className={s.adminMenu} aria-label="أقسام الإدارة">
-            <details className={s.adminMenuDetails} ref={menu}>
-              <summary className={s.adminMenuButton}>
-                <AdminIcon name={active ?? "approvals"} />
-                <span className={s.adminMenuCurrent}>
-                  <small>القسم</small>
-                  {allowed.find(([id]) => id === active)?.[1] ?? "اختر قسمًا"}
-                </span>
-                {waiting.length > 0 && active !== "approvals" && (
-                  <span className={s.adminMenuAlert}>
-                    {waiting.length} تنتظر الاعتماد
-                  </span>
-                )}
-              </summary>
-              <div className={s.adminMenuPanel}>
-                {adminGroups.map(([group, ids]) => {
-                  const items = allowed.filter(([id]) => ids.includes(id));
-                  const coverage =
-                    ids.includes("locations") && can(session.user, "locations");
-                  if (!items.length && !coverage) return null;
-                  return (
-                    <div
-                      key={group}
-                      role="group"
-                      aria-label={group}
-                      className={s.adminMenuGroup}
-                    >
-                      <p className={s.adminMenuGroupTitle} aria-hidden="true">
-                        {group}
-                      </p>
-                      {items.map(([id, label]) => (
-                        <button
-                          type="button"
-                          className={s.adminMenuItem}
-                          key={id}
-                          aria-pressed={active === id}
-                          onClick={() => {
-                            setTab(id);
-                            if (menu.current) menu.current.open = false;
-                          }}
-                          onPointerEnter={() =>
-                            prefetchAdmin(tabData[id] ?? [])
-                          }
-                          onFocus={() => prefetchAdmin(tabData[id] ?? [])}
-                        >
-                          <AdminIcon name={id} />
-                          <span>{label}</span>
-                          {id === "approvals" && waiting.length > 0 && (
-                            <span className={s.adminMenuBadge}>
-                              {waiting.length}
-                              <span className="sr-only"> تنتظر الاعتماد</span>
-                            </span>
-                          )}
-                        </button>
-                      ))}
-                      {coverage && (
-                        // تنقّل داخل الموقع بلا إعادة تحميل، وبياناتها تُحمَّل مسبقًا عند المرور.
-                        <Link
-                          className={s.adminMenuItem}
-                          href="/admin/coverage"
-                          onPointerEnter={() => prefetchAdmin([COVERAGE_URL])}
-                          onFocus={() => prefetchAdmin([COVERAGE_URL])}
-                        >
-                          <AdminIcon name="coverage" />
-                          <span>إدارة التغطية التفصيلية</span>
-                        </Link>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </details>
-          </nav>
+          {/* العنوان ظاهر في رأس اللوحة؛ هنا لقارئ الشاشة فقط. */}
+          <h1 className="sr-only">لوحة التحكم</h1>
+          <AdminSummary onOpen={open} />
+          {waiting.length > 0 && (
+            <p className={s.notice}>
+              {waiting.length} أسرة تنتظر الاعتماد.{" "}
+              <button
+                type="button"
+                className={s.buttonSecondary}
+                onClick={() => open("approvals")}
+              >
+                افتح الاعتماد
+              </button>
+            </p>
+          )}
+        </>
+      )}
+      {isManager(session.user) && section && (
+        <>
           {active === "members" ? (
             <MembersAdmin />
           ) : active === "orders" ? (
@@ -512,7 +367,9 @@ export function Admin() {
             </section>
           ) : active !== "producers" ? (
             <p className={s.notice}>
-              لا توجد أقسام مسموحة لحسابك بعد؛ تواصل مع مدير المنصة.
+              {item
+                ? "هذا القسم ليس ضمن صلاحيات حسابك؛ تواصل مع مدير المنصة."
+                : "هذا القسم غير موجود. اختر قسمًا من القائمة."}
             </p>
           ) : (
             <>
@@ -598,6 +455,6 @@ export function Admin() {
           )}
         </>
       )}
-    </AccountShell>
+    </>
   );
 }
