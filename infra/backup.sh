@@ -1,8 +1,18 @@
 #!/usr/bin/env bash
+# نسخة احتياطية كاملة مشفّرة لأكلات جدتنا (قاعدة البيانات، الإعدادات، الصور والمستندات).
+#   backup.sh daily   النسخة اليومية (05:00 بتوقيت الرياض، jdatna-backup.timer): يُحفظ آخر 10 منها.
+#   backup.sh         نسخة النشر أو «خذ نسخة الآن» (jdatna-backup.service): يُحفظ آخر 5 منها.
 set -euo pipefail
 umask 077
+mode=${1:-deploy}
+[[ "$mode" == daily || "$mode" == deploy ]] || { echo "usage: backup.sh [daily]"; exit 2; }
 exec 9>/run/lock/jdatna-backup.lock
-flock -n 9 || exit 0
+if [[ "$mode" == daily ]]; then
+  # اليومية لا تُتخطى إن صادفت نسخة نشر جارية: تنتظرها حتى ساعة.
+  flock -w 3600 9 || { echo "Daily backup skipped: another backup held the lock for an hour"; exit 1; }
+else
+  flock -n 9 || exit 0
+fi
 mountpoint -q /srv/jdatna/data
 mountpoint -q /var/backups/jdatna
 export GNUPGHOME=/etc/jdatna/gnupg
@@ -51,6 +61,8 @@ gpg --batch --quiet --pinentry-mode loopback --passphrase-file /etc/jdatna/secre
 final=${partial%.partial}
 mv -- "$partial" "$final"
 sha256sum "$final" > "$final.sha256"
+# علامة النسخة اليومية: التدوير يحفظ آخر 10 يومية مستقلة عن نسخ النشر.
+[[ "$mode" != daily ]] || : > "$final.daily"
 # أحجام مكوّنات النسخة لتقرير الإدارة: البيانات (القاعدة والإعدادات) والميديا (الصور والمستندات).
 database_bytes=$(du -sb "$stage" | cut -f1)
 media_bytes=0
@@ -64,10 +76,10 @@ if bash /opt/jdatna/infra/backup-upload.sh "$final"; then remote=true; else echo
 # سجل النسخ في القاعدة (الإدارة ← التقارير ← النسخ الاحتياطية): يضاف الجديد، وما حذفه التدوير يُعلَّم
 # «ليس على الخادم» (يبقى إن كان مرفوعًا). فشل التسجيل لا يُفشل النسخة (الجدول قد لا يوجد قبل أول نشر يحمله).
 {
-  printf "INSERT INTO jdatna.backup_runs(file,kind,size_bytes,database_bytes,media_bytes,sha256,remote) VALUES('%s','full',%s,%s,%s,'%s',%s) ON CONFLICT(file) DO NOTHING;\n" \
-    "$(basename "$final")" "$(stat -c %s "$final")" "$database_bytes" "$media_bytes" "$(cut -d' ' -f1 "$final.sha256")" "$remote"
+  printf "INSERT INTO jdatna.backup_runs(file,kind,size_bytes,database_bytes,media_bytes,sha256,remote) VALUES('%s','%s',%s,%s,%s,'%s',%s) ON CONFLICT(file) DO NOTHING;\n" \
+    "$(basename "$final")" "$([[ "$mode" == daily ]] && echo daily || echo full)" "$(stat -c %s "$final")" "$database_bytes" "$media_bytes" "$(cut -d' ' -f1 "$final.sha256")" "$remote"
   kept=$(find /var/backups/jdatna -maxdepth 1 -name 'jdatna-*.tar.gpg' -printf "'%f'," | sed 's/,$//')
-  printf "UPDATE jdatna.backup_runs SET on_server=false WHERE kind='full' AND file NOT IN (%s);\n" "${kept:-''}"
+  printf "UPDATE jdatna.backup_runs SET on_server=false WHERE kind IN ('full','daily') AND file NOT IN (%s);\n" "${kept:-''}"
   printf "DELETE FROM jdatna.backup_runs WHERE NOT on_server AND NOT remote;\n"
 } | docker exec -i jdatna-db psql -X -q -v ON_ERROR_STOP=1 -U jdatna_admin -d jdatna >/dev/null 2>&1 \
   || echo "Backup log not recorded (backup itself is fine)"

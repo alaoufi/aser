@@ -6,7 +6,8 @@
 
 | النوع | ما يحتويه | أين يُحفظ على الخادم |
 | --- | --- | --- |
-| كاملة `full` | قاعدة البيانات، الإعدادات، الصور والمستندات | `/var/backups/jdatna/jdatna-<وقت>.tar.gpg` (يومية 04:30 وقبل كل نشر) |
+| يومية `daily` | قاعدة البيانات، الإعدادات، الصور والمستندات | `/var/backups/jdatna/jdatna-<وقت>.tar.gpg` مع علامة `.daily`: كل يوم 05:00 بتوقيت الرياض، يُحفظ آخر 10 |
+| كاملة `full` | مثل اليومية | `/var/backups/jdatna/jdatna-<وقت>.tar.gpg`: قبل كل نشر وبعده، و«خذ نسخة الآن»، يُحفظ آخر 5 |
 | صور ومستندات `media` | `uploads` و`object-storage` | `/var/backups/jdatna/manual/jdatna-media-<وقت>.tar.gpg` |
 | كود وقاعدة بيانات `codedb` | مصدر الإصدار المنشور (`git archive`) وقاعدة البيانات | `/var/backups/jdatna/manual/jdatna-codedb-<وقت>.tar.gpg` |
 
@@ -21,7 +22,26 @@
 - `infra/backup-upload.sh <ملف>`: الرفع إلى R2 (يخرج 3 إن لم يُهيأ).
 - `infra/backup-requests.sh` مع `jdatna-backup-requests.service/.timer`: ينفّذ طلبات الإدارة كل دقيقة.
 
-## التفعيل على الخادم (يدوي، مرة واحدة، بموافقة المالك)
+## التركيب على الخادم (مرة واحدة، بموافقة المالك)
+
+أمر واحد يركّب السكربتات والمؤقتات من آخر إصدار (`infra/backup-install.sh`)، ولا يأخذ نسخة ولا يحذف شيئًا:
+
+```
+ssh -t root@84.247.166.216 "git -C /opt/jdatna/deploy-src fetch -q origin codex/jdatna-platform && git -C /opt/jdatna/deploy-src show FETCH_HEAD:infra/backup-install.sh | bash"
+```
+
+## الاستعادة (قرار المالك 2026-11-21: أمر جاهز، لا زر في الموقع)
+
+لكل نسخة يومية أو كاملة على الخادم أمر جاهز في التقرير: `bash /opt/jdatna/infra/backup-restore.sh <الملف>`. السكربت:
+
+1. يتحقق من الملف (sha256) ويعرض تاريخه بتوقيت الرياض، ويطلب كتابة «استعادة».
+2. يأخذ نسخة كاملة من الوضع الحالي أولًا، وهي نسخة التراجع.
+3. يستعيد قاعدة البيانات في معاملة واحدة، فأي خطأ يُرجعها كما كانت.
+4. يعيد الصور العامة الناقصة (`uploads`) دون حذف الأحدث ودون الكتابة فوقها.
+
+لا يستعيد الإعدادات (`runtime.env`) ولا التخزين الخاص (`object-storage`). وبعد استعادة نسخة أقدم من الإصدار الحالي يُشغَّل «نشر مع ترحيلات» من GitHub.
+
+## التفعيل اليدوي القديم (للمرجع)
 
 1. تحديث مجلد `/opt/jdatna/infra` بالملفات أعلاه من الإصدار المنشور.
 2. خدمة الطلبات: نسخ ملفي `jdatna-backup-requests.*` إلى `/etc/systemd/system/` ثم `systemctl daemon-reload && systemctl enable --now jdatna-backup-requests.timer`.

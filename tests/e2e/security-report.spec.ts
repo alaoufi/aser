@@ -129,7 +129,7 @@ test("reports group lists the security and backups reports, and the backups repo
           {
             file: "jdatna-20261119T020000Z.tar.gpg",
             createdAt: new Date().toISOString(),
-            kind: "full",
+            kind: "daily",
             sizeBytes: 210 * 1024 * 1024,
             databaseBytes: 6 * 1024 * 1024,
             mediaBytes: 204 * 1024 * 1024,
@@ -178,6 +178,17 @@ test("reports group lists the security and backups reports, and the backups repo
     "/api/admin/backups/jdatna-20261119T020000Z.tar.gpg",
   );
   await expect(rows.first()).toContainText("مرفوعة إلى R2");
+  // النسخة اليومية: نوعها ومحتواها، وأمر استعادة جاهز للنسخ (قرار المالك: لا زر استعادة في الموقع).
+  await expect(rows.first()).toContainText("يومية (5:00 فجرًا)");
+  await expect(rows.first()).toContainText(
+    "قاعدة البيانات، الإعدادات، الصور والمستندات",
+  );
+  await rows.first().getByText("أمر الاستعادة").click();
+  await expect(rows.first().locator("code")).toHaveText(
+    'ssh -t root@84.247.166.216 "bash /opt/jdatna/infra/backup-restore.sh jdatna-20261119T020000Z.tar.gpg"',
+  );
+  await expect(rows.nth(1).getByText("أمر الاستعادة")).toHaveCount(0);
+  await expect(report).toContainText("آخر 10");
   await expect(rows.nth(1)).toContainText("كود وقاعدة بيانات");
   await expect(rows.nth(1)).toContainText("كود: 4.0 م.ب");
   await expect(rows.nth(1)).toContainText("حُذفت من الخادم");

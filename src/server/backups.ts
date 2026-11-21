@@ -42,7 +42,8 @@ const r2 = () =>
 
 export type BackupRow = {
   file: string;
-  kind: BackupKind;
+  /** daily: النسخة اليومية 05:00 بتوقيت الرياض (آخر 10). full: قبل النشر أو «خذ نسخة الآن». */
+  kind: BackupKind | "daily";
   createdAt: string;
   sizeBytes: number;
   databaseBytes: number;
