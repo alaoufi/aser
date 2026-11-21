@@ -194,6 +194,44 @@ test("reports group lists the security and backups reports, and the backups repo
   await expect(rows.nth(1)).toContainText("كود وقاعدة بيانات");
   await expect(rows.nth(1)).toContainText("كود: 4.0 م.ب");
   await expect(rows.nth(1)).toContainText("حُذفت من الخادم");
+  // «حذف»: أحدث نسخة كاملة لا تُحذف، وغيرها يُطلب حذفه بعد التأكيد (طلب المالك 2026-11-22).
+  await expect(rows.first()).toContainText("أحدث نسخة، لا تُحذف");
+  let removed = "";
+  await page.route("**/api/admin/backups/*", async (r) => {
+    if (r.request().method() !== "DELETE") return r.fallback();
+    removed = decodeURIComponent(new URL(r.request().url()).pathname);
+    return r.fulfill({
+      json: {
+        downloadEnabled: true,
+        remoteReady: true,
+        latestAt: null,
+        backups: [],
+        requests: [
+          {
+            id: "d1",
+            kind: "delete",
+            target: "jdatna-codedb-20261118T020000Z.tar.gpg",
+            status: "pending",
+            requestedAt: new Date().toISOString(),
+            finishedAt: null,
+            file: null,
+            error: null,
+          },
+        ],
+      },
+    });
+  });
+  page.once("dialog", (d) => {
+    expect(d.message()).toContain("نهائيًا من الخادم والتخزين الخارجي");
+    return d.accept();
+  });
+  await rows
+    .nth(1)
+    .getByRole("button", { name: /^حذف النسخة/ })
+    .click();
+  await expect(report.getByRole("status").first()).toContainText("«حذف نسخة»");
+  expect(removed).toMatch(/\/api\/admin\/backups\/jdatna-/);
+  await page.reload();
   // «خذ نسخة الآن» بنوع يختاره المدير.
   let asked: unknown;
   await page.route("**/api/admin/backups", async (r) => {

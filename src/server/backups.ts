@@ -57,7 +57,9 @@ export type BackupRow = {
 };
 export type BackupRequest = {
   id: string;
-  kind: BackupKind;
+  /** delete: حذف النسخة target من الخادم والتخزين الخارجي. */
+  kind: BackupKind | "delete";
+  target: string | null;
   status: "pending" | "running" | "done" | "failed";
   requestedAt: string;
   finishedAt: string | null;
@@ -86,7 +88,7 @@ export async function backupReport(user: SessionUser) {
        FROM jdatna.backup_runs ORDER BY created_at DESC LIMIT 60`,
     ),
     db().query(
-      `SELECT id,kind,status,requested_at AS "requestedAt",finished_at AS "finishedAt",file,error
+      `SELECT id,kind,target,status,requested_at AS "requestedAt",finished_at AS "finishedAt",file,error
        FROM jdatna.backup_requests ORDER BY requested_at DESC LIMIT 5`,
     ),
   ]);
@@ -126,6 +128,52 @@ export async function requestBackup(user: SessionUser, input: unknown) {
   await db().query(
     "INSERT INTO jdatna.admin_audit_logs(id,actor_id,action,details) VALUES($1,$2,'backup.request',$3)",
     [randomUUID(), user.id, JSON.stringify({ kind })],
+  );
+  return backupReport(user);
+}
+
+/**
+ * «حذف» نسخة (طلب المالك 2026-11-22): يكتب طلبًا ينفّذه الخادم خلال دقيقة، فيحذف الملف من الخادم ومن
+ * التخزين الخارجي (R2). لا تُحذف آخر نسخة كاملة أو يومية على الخادم أبدًا (يتحقق منها الخادم أيضًا).
+ */
+export async function requestBackupDelete(user: SessionUser, input: unknown) {
+  owner(user);
+  const { file } = z
+    .object({ file: z.string().regex(FILE) })
+    .strict()
+    .parse(input);
+  const row = (
+    await db().query<{ kind: string; onServer: boolean; remote: boolean }>(
+      `SELECT kind,on_server AS "onServer",remote FROM jdatna.backup_runs WHERE file=$1`,
+      [file],
+    )
+  ).rows[0];
+  if (!row || (!row.onServer && !row.remote))
+    throw new HttpError(404, "النسخة غير موجودة");
+  const newest = (
+    await db().query<{ file: string }>(
+      `SELECT file FROM jdatna.backup_runs WHERE kind IN ('full','daily') AND on_server
+       ORDER BY created_at DESC, file DESC LIMIT 1`,
+    )
+  ).rows[0]?.file;
+  if (file === newest)
+    throw new HttpError(
+      409,
+      "هذه أحدث نسخة كاملة على الخادم، ولا تُحذف حتى تُؤخذ نسخة أحدث منها",
+    );
+  const inserted = await db().query(
+    `INSERT INTO jdatna.backup_requests(id,kind,target,requested_by) VALUES($1,'delete',$2,$3)
+     ON CONFLICT DO NOTHING RETURNING id`,
+    [randomUUID(), file, user.id],
+  );
+  if (!inserted.rowCount)
+    throw new HttpError(
+      409,
+      "هناك عملية نسخ أو حذف قيد التنفيذ الآن. انتظر انتهاءها",
+    );
+  await db().query(
+    "INSERT INTO jdatna.admin_audit_logs(id,actor_id,action,details) VALUES($1,$2,'backup.delete',$3)",
+    [randomUUID(), user.id, JSON.stringify({ file })],
   );
   return backupReport(user);
 }
