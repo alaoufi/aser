@@ -33,7 +33,13 @@ export function api(
         );
       if (error instanceof ZodError)
         return Response.json(
-          { error: error.issues[0]?.message ?? "بيانات غير صحيحة" },
+          {
+            error: error.issues[0]?.message ?? "بيانات غير صحيحة",
+            // اسم الخانة المانعة، فتعلّمها الواجهة بإطار أحمر وتنتقل إليها.
+            ...(typeof error.issues[0]?.path?.[0] === "string"
+              ? { field: error.issues[0].path[0] }
+              : {}),
+          },
           { status: 400 },
         );
       if (error instanceof SyntaxError)

@@ -1,4 +1,5 @@
 import { productStatusLabels } from "@/lib/site-texts";
+import { AdSlot } from "@/components/public/ad-slot";
 import { identityProps } from "@/lib/brand";
 import { ReportButton } from "@/components/public/report-button";
 import { getPublicCoverage } from "@/server/coverage";
@@ -189,6 +190,7 @@ export default async function ProducerDetail({
             <p className="profile-description">{p.description}</p>
           </div>
         </section>
+        <AdSlot placement="producer_page" />
         <div className="detail-grid">
           <section>
             <h2>من مائدة الأسرة المنتجة</h2>

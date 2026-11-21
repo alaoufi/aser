@@ -87,7 +87,8 @@ test("the saved order moves groups and pages, hides pages, and never loses a new
   );
   assert.deepEqual(
     laid[1].items.map((it) => it.to),
-    ["/admin", "/admin/views"],
+    // «الإعلانات الترويجية» أُضيفت بعد حفظ الترتيب: تظهر في مجموعتها الأصلية.
+    ["/admin", "/admin/views", "/admin/ads"],
   );
   // المجموعات التي لا يعرفها الترتيب تظهر كاملة بعده، بترتيبها الأصلي.
   assert.deepEqual(

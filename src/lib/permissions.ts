@@ -7,6 +7,7 @@ export const adminPermissions = {
   locations: "المواقع والتغطية",
   reports: "البلاغات",
   content: "قالب الموقع ونصوصه",
+  ads: "الإعلانات الترويجية",
 } as const;
 export type AdminPermission = keyof typeof adminPermissions;
 type Who = { role: string; permissions?: string[] | null } | null | undefined;
