@@ -1,6 +1,6 @@
 import { api, jsonBody } from "@/server/http";
-import { passwordLogin } from "@/server/credentials";
-import { rateLimit, sessionCookie } from "@/server/auth";
+import { passwordLogin, roleDestination } from "@/server/credentials";
+import { personal, rateLimit, sessionCookie } from "@/server/auth";
 import { HttpError } from "@/server/security";
 import {
   identifierHint,
@@ -54,8 +54,10 @@ export const POST = api(async (request) => {
       request,
       userId: result.user.id,
     });
+  // الدخول للحساب الشخصي دائمًا؛ «لوحة الإدارة» تُفتح منه بجلسة مستقلة.
+  const user = personal(result.user!);
   return Response.json(
-    { user: result.user, next: result.next },
+    { user, next: roleDestination(user.role) },
     {
       headers: {
         "Set-Cookie": sessionCookie(result.token!),

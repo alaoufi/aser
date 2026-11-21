@@ -1,15 +1,16 @@
 import { test, expect } from "@playwright/test";
 
-test("the admin summary is grouped, and sections live in a dropdown that names the current one", async ({
+test("the dashboard summary is grouped, and the sidebar lists the sections allowed for each manager", async ({
   page,
 }) => {
+  let user: Record<string, unknown> = {
+    id: "a",
+    name: "مدير",
+    phone: "+966500000009",
+    role: "admin",
+  };
   await page.route("**/api/session", (r) =>
-    r.fulfill({
-      json: {
-        user: { id: "a", name: "مدير", phone: "+966500000009", role: "admin" },
-        registrationOpen: true,
-      },
-    }),
+    r.fulfill({ json: { user, registrationOpen: true } }),
   );
   await page.route("**/api/admin/summary", (r) =>
     r.fulfill({
@@ -25,6 +26,9 @@ test("the admin summary is grouped, and sections live in a dropdown that names t
         },
       },
     }),
+  );
+  await page.route("**/api/admin/producers/pending", (r) =>
+    r.fulfill({ json: { count: 1 } }),
   );
   await page.route("**/api/admin/producers", (r) =>
     r.fulfill({
@@ -48,33 +52,41 @@ test("the admin summary is grouped, and sections live in a dropdown that names t
     "3بانتظار الاستكمال",
     "4نشطة",
   ]);
-  const nav = page.getByRole("navigation", { name: "أقسام الإدارة" });
-  const menu = nav.locator("summary");
-  await expect(menu).toContainText("اعتماد الأسر والمندوبين");
-  await expect(nav.getByRole("button", { name: "الطلبات" })).toBeHidden();
-  await menu.click();
-  // الأقسام بمجموعاتها، والمنتظر اعتماده بشارة.
-  await expect(nav.locator("div[role=group]")).toHaveCount(5);
-  await expect(
-    nav.getByRole("button", { name: /اعتماد الأسر والمندوبين/ }),
-  ).toContainText("1");
-  await nav.getByRole("button", { name: "الطلبات", exact: true }).click();
-  await expect(nav.getByRole("button", { name: "الطلبات" })).toBeHidden();
-  await expect(menu).toContainText("الطلبات");
-  // من خارج قسم الاعتماد يظهر تنبيه الأسر المنتظرة على زر القائمة.
-  await expect(menu).toContainText("1 تنتظر الاعتماد");
-  await expect(
-    page.getByRole("heading", { name: "متابعة الطلبات" }),
-  ).toBeVisible();
-  // رقم في الملخص يفتح قسمه، وEsc يغلق القائمة.
+  // المدير الكامل يرى كل الأقسام في سبع مجموعات (21 بندًا). على الجوال تُفتح القائمة بزر ☰.
+  const mobile = (page.viewportSize()?.width ?? 1280) < 1024;
+  const openMenu = async () => {
+    if (mobile)
+      await page.getByRole("button", { name: "أقسام الإدارة" }).click();
+  };
+  await openMenu();
+  const menu = page.getByRole("complementary", { name: "أقسام الإدارة" });
+  await expect(menu.locator("[role=group]")).toHaveCount(7);
+  await expect(menu.getByRole("navigation").getByRole("link")).toHaveCount(21);
+  // رقم في الملخص يفتح قسمه بمساره.
+  if (mobile) await page.keyboard.press("Escape");
   await families.getByRole("button", { name: /تنتظر الاعتماد/ }).click();
-  await expect(menu).toContainText("اعتماد الأسر والمندوبين");
-  await menu.click();
-  await page.keyboard.press("Escape");
-  await expect(nav.getByRole("button", { name: "الطلبات" })).toBeHidden();
+  await expect(page).toHaveURL(/\/admin\/approvals$/);
+  await openMenu();
+  await expect(
+    menu.getByRole("link", { name: /اعتماد الأسر والمندوبين/ }),
+  ).toHaveAttribute("aria-current", "page");
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,
     ),
   ).toBe(true);
+
+  // مشرف الطلبات: لوحة التحكم وقسماه فقط، وقسم غيره يُرفض بوضوح.
+  user = { ...user, role: "customer", permissions: ["orders"] };
+  await page.goto("/admin/orders");
+  await openMenu();
+  await expect(menu.getByRole("navigation").getByRole("link")).toHaveText([
+    "لوحة التحكم",
+    "الطلبات",
+    "عقود الاشتراكات",
+  ]);
+  await page.goto("/admin/members");
+  await expect(page.locator("main")).toContainText(
+    "هذا القسم ليس ضمن صلاحيات حسابك",
+  );
 });

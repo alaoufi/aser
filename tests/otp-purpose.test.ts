@@ -219,10 +219,10 @@ test(
         password: "Recovered admin password!",
       });
       issuedTokens.push(recovered.token);
-      assert.equal(
-        (await requireUser(cookie(recovered.token), ["admin"])).id,
-        knownId,
-      );
+      // الجلسة الجديدة شخصية: المدير فيها عضو، و«لوحة الإدارة» تُفتح منها بجلسة مستقلة.
+      const recoveredUser = await requireUser(cookie(recovered.token));
+      assert.equal(recoveredUser.id, knownId);
+      assert.equal(recoveredUser.adminAccess, true);
       assert.equal(
         await sessionUser(cookie(ordinaryToken)),
         null,

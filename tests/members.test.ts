@@ -135,9 +135,11 @@ test(
       );
       await assert.rejects(listMembers(granted), { status: 403 });
       await session();
+      // في الموقع حسابه الشخصي بلا صلاحيات؛ الصلاحيات في جلسة «لوحة الإدارة» وحدها.
       const seen = await sessionUser(asRequest());
       assert.equal(seen?.role, "customer");
-      assert.deepEqual(seen?.permissions, ["orders"]);
+      assert.deepEqual(seen?.permissions, []);
+      assert.equal(seen?.adminAccess, true);
       // الإيقاف: يحذف الجلسات ويمنع أي جلسة لاحقة.
       await updateMember(admin, { action: "suspend", id: member.id });
       assert.equal(await sessionUser(asRequest()), null);

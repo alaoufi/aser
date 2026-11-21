@@ -61,14 +61,7 @@ test("admin adds a member and grants permissions to members and families", async
     }
     return r.fulfill({ json: { members } });
   });
-  await page.goto("/admin");
-  await page
-    .getByRole("navigation", { name: "أقسام الإدارة" })
-    .locator("summary")
-    .click();
-  await page
-    .getByRole("button", { name: "الأعضاء والصلاحيات", exact: true })
-    .click();
+  await page.goto("/admin/members");
   // إضافة عضو جديد برقم جواله وصلاحيات محددة.
   await page.getByRole("button", { name: "＋ إضافة عضو أو مشرف" }).click();
   const add = page.getByRole("form", { name: "إضافة عضو" });
@@ -122,7 +115,7 @@ test("admin adds a member and grants permissions to members and families", async
   expect(sent[3]).toEqual({ action: "suspend", id: "f" });
 });
 
-test("a family with admin permissions keeps its own account and gets an admin account", async ({
+test("a family with admin permissions keeps its own account and opens the panel with one tap", async ({
   page,
 }) => {
   await page.addInitScript(() => {
@@ -130,12 +123,22 @@ test("a family with admin permissions keeps its own account and gets an admin ac
       sessionStorage.setItem("jdatna:family-welcome", "1");
     } catch {}
   });
-  await as(page, {
-    id: "s",
-    name: "أم محمد",
-    phone: "+966500000012",
-    role: "producer",
-    permissions: ["orders"],
+  // الخادم يميّز اللوحة من الصفحة التي طلبت الجلسة (Referer)، فنحاكيه هنا:
+  // في الموقع حسابها الشخصي (أسرة) بلا صلاحيات، وفي اللوحة صلاحية الطلبات فقط.
+  await as(page, {});
+  await page.unroute("**/api/session");
+  const family = { id: "s", name: "أم محمد", phone: "+966500000012" };
+  await page.route("**/api/session", (r) => {
+    const from = new URL(r.request().headers().referer ?? "http://x/").pathname;
+    const panel = from === "/admin" || from.startsWith("/admin/");
+    return r.fulfill({
+      json: {
+        user: panel
+          ? { ...family, role: "producer", permissions: ["orders"] }
+          : { ...family, role: "producer", permissions: [], adminAccess: true },
+        registrationOpen: true,
+      },
+    });
   });
   await page.route("**/api/producer/status", (r) =>
     r.fulfill({ json: { state: null } }),
@@ -143,32 +146,32 @@ test("a family with admin permissions keeps its own account and gets an admin ac
   await page.route("**/api/producer/orders**", (r) =>
     r.fulfill({ json: { orders: [], alerts: [], pending: 0 } }),
   );
+  let entered = 0;
+  await page.route("**/api/auth/admin-session", (r) => {
+    entered++;
+    return r.fulfill({ json: { ok: true, next: "/admin" } });
+  });
   await page.goto("/");
   const mobile = (page.viewportSize()?.width ?? 1280) <= 850;
   if (mobile) await page.locator(".mobile-nav summary").click();
   const scope = mobile
     ? page.getByRole("navigation", { name: "التنقل للجوال" })
     : page.locator(".site-header .header-actions");
-  await expect(
-    scope.getByRole("link", { name: "حسابي الخاص" }),
-  ).toHaveAttribute("href", "/dashboard");
-  await expect(
-    scope.getByRole("link", { name: "حساب الإدارة" }),
-  ).toHaveAttribute("href", "/admin");
-  await page.goto("/admin");
-  const nav = page.getByRole("navigation", { name: "أقسام الإدارة" });
-  // القائمة المنسدلة تحمل القسم الحالي، وفيها ما يسمح به للمشرف فقط.
-  await expect(nav.locator("summary")).toContainText("الطلبات");
-  await nav.locator("summary").click();
-  // صلاحية الطلبات تشمل «عقود الاشتراكات».
-  await expect(nav.getByRole("button")).toHaveText([
+  await expect(scope.getByRole("link", { name: "حسابي" })).toHaveAttribute(
+    "href",
+    "/dashboard",
+  );
+  // جلسة اللوحة: صلاحية الطلبات فقط (تشمل «عقود الاشتراكات»).
+  await scope.getByRole("button", { name: "لوحة الإدارة" }).click();
+  await expect(page).toHaveURL(/\/admin$/);
+  expect(entered).toBe(1);
+  const menu = page.getByRole("complementary", { name: "أقسام الإدارة" });
+  if (mobile) await page.getByRole("button", { name: "أقسام الإدارة" }).click();
+  await expect(menu.getByRole("navigation").getByRole("link")).toHaveText([
+    "لوحة التحكم",
     "الطلبات",
     "عقود الاشتراكات",
   ]);
-  await expect(page.getByRole("button", { name: "الطلبات" })).toHaveAttribute(
-    "aria-pressed",
-    "true",
-  );
 });
 
 test("visitors pick the site look themselves and it is remembered", async ({

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { api, jsonBody } from "@/server/http";
 import {
   ADMIN_SESSION_SECONDS,
+  personal,
   rateLimit,
   sessionCookie,
   verifyAdminLogin,
@@ -10,6 +11,7 @@ import {
 import { recordSecurityEvent, sourceKey } from "@/server/security-events";
 import { otpCodePattern } from "@/server/otp";
 import { HttpError } from "@/server/security";
+import { roleDestination } from "@/server/credentials";
 export const POST = api(async (request) => {
   const source = sourceKey(request);
   if (source) await rateLimit("verify-ip:" + source, 40, 900);
@@ -30,7 +32,10 @@ export const POST = api(async (request) => {
   }
   await recordSecurityEvent("login.admin", { request, userId: result.user.id });
   return Response.json(
-    { user: result.user, next: "/admin" },
+    {
+      user: personal(result.user),
+      next: roleDestination(personal(result.user).role),
+    },
     {
       headers: {
         "Set-Cookie": sessionCookie(result.token, ADMIN_SESSION_SECONDS),

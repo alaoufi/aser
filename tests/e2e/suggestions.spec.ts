@@ -123,17 +123,13 @@ test("the admin reads suggestions, and site-text fields grow with their text", a
       },
     }),
   );
-  await page.goto("/admin?tab=suggestions");
+  await page.goto("/admin/suggestions");
   await expect(
     page.getByText("أقترح إضافة قسم للحلويات الموسمية"),
   ).toBeVisible();
   await expect(page.getByText(/جديدة: 1/)).toBeVisible();
-  // أقسام الإدارة قائمة منسدلة: تُفتح ثم يُختار القسم.
-  await page
-    .getByRole("navigation", { name: "أقسام الإدارة" })
-    .locator("summary")
-    .click();
-  await page.getByRole("button", { name: "نصوص الموقع", exact: true }).click();
+  // كل قسم بمساره في القائمة الجانبية (src/lib/admin-nav.ts).
+  await page.goto("/admin/texts");
   const short = page.getByLabel("زر البحث");
   const long = page.getByLabel("إرشاد الآيفون");
   const height = (l: typeof short) =>

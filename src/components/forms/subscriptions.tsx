@@ -1017,7 +1017,8 @@ export function ContractsAdmin() {
                 {k.plan} · يبدأ <bdi>{k.startDate}</bdi> · وُقّع{" "}
                 {when(k.familyAgreedAt)}
               </p>
-              <Link href={`/contracts/${encodeURIComponent(k.id)}`}>
+              {/* داخل اللوحة وبجلستها، لا صفحة العقد في الموقع. */}
+              <Link href={`/admin/contracts/${encodeURIComponent(k.id)}`}>
                 عرض العقد ←
               </Link>
             </li>

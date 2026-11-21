@@ -47,15 +47,8 @@ test("the admin hides, deletes and restores product form fields from category ma
     }
     await r.fulfill({ json: { fields } });
   });
-  await page.goto("/admin");
-  // أقسام الإدارة قائمة منسدلة: تُفتح ثم يُختار القسم.
-  await page
-    .getByRole("navigation", { name: "أقسام الإدارة" })
-    .locator("summary")
-    .click();
-  await page
-    .getByRole("button", { name: "إدارة الأقسام", exact: true })
-    .click();
+  // كل قسم بمساره في القائمة الجانبية (src/lib/admin-nav.ts).
+  await page.goto("/admin/categories");
   const box = page.getByRole("region", { name: "حقول إضافة المنتج" });
   await box.getByRole("button", { name: "إخفاء حقل المكونات" }).click();
   await expect(box.getByText("· مخفي")).toBeVisible();

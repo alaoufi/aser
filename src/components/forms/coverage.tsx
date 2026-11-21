@@ -545,7 +545,8 @@ export function CoverageAdmin() {
           : n.kind === "city" && !n.legacy,
   );
   return (
-    <AccountShell>
+    // داخل إطار اللوحة: بلا روابط الحساب الشخصي.
+    <AccountShell navigation={false}>
       <h1>التصنيف الإداري للتغطية</h1>
       <Guard {...session} admin />
       <Message error={error} success={success} />

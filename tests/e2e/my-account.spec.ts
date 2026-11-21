@@ -45,9 +45,9 @@ test("admin's personal account is separate from the admin account and edits name
   await personal.getByText("قائمة حسابي").click();
   await expect(personal.getByRole("link", { name: "طلباتي" })).toBeVisible();
   await expect(personal.getByRole("link", { name: "معلوماتي" })).toBeVisible();
-  // الحساب الخاص منفصل: لا يدخل منه على حساب الإدارة (التبديل من أعلى الموقع فقط).
+  // الحساب الشخصي منفصل: «لوحة الإدارة» في قائمة الحساب أعلى الموقع فقط.
   await expect(
-    page.locator("main").getByRole("link", { name: "حساب الإدارة" }),
+    page.locator("main").getByRole("button", { name: "لوحة الإدارة" }),
   ).toHaveCount(0);
   await expect(page.getByLabel("رقم الجوال")).toHaveValue("+966500000099");
   await page.getByLabel("الاسم", { exact: true }).fill("أبو محمد");

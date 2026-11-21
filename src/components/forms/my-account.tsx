@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { FolderTabs } from "./folder-tabs";
 import { AccountShell, Guard, Message, api, s, useSession } from "./shared";
-import { isManager } from "@/lib/permissions";
 import type { SessionUser } from "@/lib/types";
 
 const TABS = [
@@ -70,7 +69,8 @@ export function MyAccount() {
           <p className={s.muted}>
             حسابك الشخصي: طلباتك ومحادثاتك وبياناتك
             {me.role === "producer" ? " ولوحة أسرتك" : ""}.
-            {isManager(me) && " إدارة المنصة في «حساب الإدارة» منفصلة عنه."}
+            {me.adminAccess &&
+              " إدارة المنصة في «لوحة الإدارة» منفصلة عنه بجلستها."}
           </p>
           <Message error={error} success={success} />
           <FolderTabs

@@ -183,7 +183,7 @@ test("admin activates a document-free application with a note listing what is mi
     body = r.request().postDataJSON();
     await r.fulfill({ json: { status: "approved" } });
   });
-  await page.goto("/admin");
+  await page.goto("/admin/approvals");
   await expect(page.getByText("لم ترفق مستندات بعد")).toBeVisible();
   await page
     .getByRole("combobox", { name: "القرار", exact: true })

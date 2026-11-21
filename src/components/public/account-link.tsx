@@ -5,11 +5,11 @@ import {
   isFamilyAccount,
   useSession,
 } from "@/components/forms/shared";
-import { isManager } from "@/lib/permissions";
+import { AdminPanelLink } from "./admin-panel-link";
 
 /**
- * «حسابي الخاص»: لوحة الأسرة أو طلبات العضو. المدير الكامل كذلك له حسابه الخاص
- * (طلباته ومحادثاته ومعلوماته)، و«حساب الإدارة» منفصل عنه.
+ * «حسابي»: لوحة الأسرة أو طلبات العضو. صاحب الصلاحيات الإدارية كذلك له حسابه الشخصي
+ * (طلباته ومحادثاته ومعلوماته)، و«لوحة الإدارة» منفصلة عنه بجلستها.
  */
 export function ownAccountHref(
   user: { role: string; familyName?: string | null } | null | undefined,
@@ -26,18 +26,13 @@ export function ownAccountHref(
 
 export function AccountLink({ className }: { className?: string }) {
   const { user } = useSession();
-  // من لديه صلاحيات إدارية (والمدير الكامل) يرى حسابين: حسابه الخاص، وحساب الإدارة.
-  const both = isManager(user);
+  // من لديه صلاحيات إدارية يرى «لوحة الإدارة» بجانب حسابه، وتفتح بضغطة (جلسة مستقلة).
   return (
     <>
       <Link href={ownAccountHref(user)} className={className}>
-        {user ? (both ? "حسابي الخاص" : "حسابي") : "تسجيل الدخول"}
+        {user ? "حسابي" : "تسجيل الدخول"}
       </Link>
-      {both && (
-        <Link href="/admin" className={className}>
-          حساب الإدارة
-        </Link>
-      )}
+      <AdminPanelLink className={className} />
     </>
   );
 }

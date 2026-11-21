@@ -496,21 +496,14 @@ test("the admin sees subscription contracts in their own tab", async ({
       },
     }),
   );
-  await page.goto("/admin");
-  // أقسام الإدارة قائمة منسدلة: تُفتح ثم يُختار القسم.
-  await page
-    .getByRole("navigation", { name: "أقسام الإدارة" })
-    .locator("summary")
-    .click();
-  await page
-    .getByRole("button", { name: "عقود الاشتراكات", exact: true })
-    .click();
+  // كل قسم بمساره في القائمة الجانبية (src/lib/admin-nav.ts).
+  await page.goto("/admin/contracts");
   const list = page.getByRole("region", { name: "عقود الاشتراكات" });
   await expect(list).toContainText("عقد رقم 7");
   await expect(list).toContainText("أكلات نجدية ← سالم");
   await expect(list).toContainText("لا تُعدَّل ولا تُحذف");
   await expect(list.getByRole("link", { name: "عرض العقد ←" })).toHaveAttribute(
     "href",
-    "/contracts/k1",
+    "/admin/contracts/k1",
   );
 });

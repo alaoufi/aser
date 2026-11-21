@@ -10,8 +10,8 @@ async function asAdmin(page: import("@playwright/test").Page) {
   );
 }
 
-// كل أسرة تنتظر الاعتماد: تنبيه للمشرف في الموقع، وتبويب خاص بعدّاد.
-test("admin is alerted to families waiting for approval and opens the approvals tab", async ({
+// كل أسرة تنتظر الاعتماد: عدّاد بجانب قسمها في قائمة اللوحة، والموقع شخصي بلا تنبيهات إدارية.
+test("families waiting for approval show as a count in the panel menu, not on the site", async ({
   page,
 }) => {
   await asAdmin(page);
@@ -47,25 +47,26 @@ test("admin is alerted to families waiting for approval and opens the approvals 
     }),
   );
   await page.goto("/");
-  const alert = page.locator(".approval-alert");
-  await expect(alert).toContainText("أسرة منتجة تنتظر الاعتماد");
-  await alert.getByRole("link", { name: "فتح اعتماد الأسر" }).click();
-  await expect(page).toHaveURL(/\/admin\?tab=approvals$/);
-  // القسم المفتوح ظاهر على زر قائمة الأقسام، وشارة الانتظار داخل القائمة.
-  const nav = page.getByRole("navigation", { name: "أقسام الإدارة" });
-  await expect(nav.locator("summary")).toContainText("اعتماد الأسر والمندوبين");
-  await nav.locator("summary").click();
-  const tab = nav.getByRole("button", { name: /اعتماد الأسر والمندوبين/ });
-  await expect(tab).toHaveAttribute("aria-pressed", "true");
-  await expect(tab).toContainText("1");
-  await page.keyboard.press("Escape");
+  // الموقع شخصي: لا تنبيه إداري فيه.
+  await expect(page.getByText("أسرة منتجة تنتظر الاعتماد")).toHaveCount(0);
+  await page.goto("/admin");
+  // على الجوال القائمة تُفتح بزر ☰.
+  if ((page.viewportSize()?.width ?? 1280) < 1024)
+    await page.getByRole("button", { name: "أقسام الإدارة" }).click();
+  const menu = page.getByRole("complementary", { name: "أقسام الإدارة" });
+  const item = menu.getByRole("link", { name: /اعتماد الأسر والمندوبين/ });
+  await expect(item).toContainText("1");
+  await item.click();
+  await expect(page).toHaveURL(/\/admin\/approvals$/);
+  // على الجوال تُغلق القائمة بعد الاختيار.
+  if ((page.viewportSize()?.width ?? 1280) < 1024)
+    await page.getByRole("button", { name: "أقسام الإدارة" }).click();
+  await expect(item).toHaveAttribute("aria-current", "page");
   const panel = page.getByRole("region", { name: "اعتماد الأسر المنتجة" });
   await expect(
     panel.getByRole("heading", { name: "أسرة تنتظر" }),
   ).toBeVisible();
   await expect(panel.getByText("أسرة معتمدة")).toHaveCount(0);
-  // داخل الإدارة لا يتكرر التنبيه، فالعدّاد ظاهر على التبويب.
-  await expect(page.locator(".approval-alert")).toHaveCount(0);
 });
 
 test("site texts can be searched by place, label or wording", async ({
@@ -96,13 +97,8 @@ test("site texts can be searched by place, label or wording", async ({
       },
     }),
   );
-  await page.goto("/admin");
-  // أقسام الإدارة قائمة منسدلة: تُفتح ثم يُختار القسم.
-  await page
-    .getByRole("navigation", { name: "أقسام الإدارة" })
-    .locator("summary")
-    .click();
-  await page.getByRole("button", { name: "نصوص الموقع", exact: true }).click();
+  // كل قسم بمساره في القائمة الجانبية (src/lib/admin-nav.ts).
+  await page.goto("/admin/texts");
   const search = page.getByLabel("بحث في النصوص");
   // بالهمزة أو دونها.
   await search.fill("إعتماد");
@@ -148,7 +144,7 @@ test("admin follows approved families with missing items from a dedicated filter
       },
     }),
   );
-  await page.goto("/admin?tab=producers");
+  await page.goto("/admin/producers");
   const filters = page.getByRole("group", { name: "تصفية الأسر" });
   const missing = filters.getByRole("button", { name: /من لديهم نواقص/ });
   await expect(missing).toContainText("(1)");

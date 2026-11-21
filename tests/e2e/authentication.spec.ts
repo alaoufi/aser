@@ -302,7 +302,8 @@ test("account navigation recognizes customer and producer identity", async ({
 for (const [role, destination] of [
   ["customer", "/orders"],
   ["producer", "/dashboard"],
-  ["admin", "/admin"],
+  // صاحب الصلاحيات الإدارية: في الموقع حسابه الشخصي (عميل) ويرى «لوحة الإدارة» فقط.
+  ["admin", "/orders"],
 ]) {
   test(`existing ${role} session keeps account entry after reload without signup`, async ({
     page,
@@ -311,7 +312,16 @@ for (const [role, destination] of [
     await page.route("**/api/session", (r) =>
       r.fulfill({
         json: {
-          user: active ? { ...user, role } : null,
+          user: active
+            ? role === "admin"
+              ? {
+                  ...user,
+                  role: "customer",
+                  permissions: [],
+                  adminAccess: true,
+                }
+              : { ...user, role }
+            : null,
           registrationOpen: true,
         },
       }),
@@ -329,15 +339,15 @@ for (const [role, destination] of [
     await expect(page.getByText("أنت مسجل الدخول بالفعل.")).toBeVisible();
     const links = page.locator("header .header-actions a:not(.messages-link)");
     if (role === "admin") {
-      // المدير الكامل: حسابه الخاص (طلباته ومعلوماته) منفصل عن حساب الإدارة.
-      await expect(links).toHaveText(["حسابي الخاص", "حساب الإدارة"]);
-      await expect(links.nth(0)).toHaveAttribute("href", "/orders");
-      await expect(links.nth(1)).toHaveAttribute("href", "/admin");
+      // حسابه الشخصي (طلباته ومعلوماته)، و«لوحة الإدارة» زر يفتحها بجلسة مستقلة.
+      await expect(links).toHaveText("حسابي");
+      await expect(links).toHaveAttribute("href", "/orders");
       await expect(
-        page
-          .locator(".mobile-nav")
-          .getByRole("link", { name: "حساب الإدارة", includeHidden: true }),
-      ).toHaveAttribute("href", "/admin");
+        page.locator("header .header-actions").getByTestId("open-admin-panel"),
+      ).toHaveText("لوحة الإدارة");
+      await expect(
+        page.locator(".mobile-nav").getByTestId("open-admin-panel"),
+      ).toBeAttached();
     } else {
       await expect(links).toHaveText("حسابي");
       await expect(links).toHaveAttribute("href", destination);

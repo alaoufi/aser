@@ -65,7 +65,7 @@ test("the security report shows period cards, daily chart, top countries and IPs
       },
     });
   });
-  await page.goto("/admin?tab=security");
+  await page.goto("/admin/security");
   const report = page.getByRole("region", { name: "التقرير الأمني" });
   await expect(
     report.getByRole("heading", { name: "التقرير الأمني" }),
@@ -157,11 +157,13 @@ test("reports group lists the security and backups reports, and the backups repo
     }),
   );
   await page.setViewportSize({ width: 360, height: 760 });
-  await page.goto("/admin?tab=backups");
-  const nav = page.getByRole("navigation", { name: "أقسام الإدارة" });
-  await nav.locator("summary").click();
-  const reports = nav.getByRole("group", { name: "التقارير" });
-  await expect(reports.getByRole("button")).toHaveText([
+  await page.goto("/admin/backups");
+  // مجموعة «التقارير» في القائمة الجانبية (على الجوال تُفتح بزر ☰).
+  await page.getByRole("button", { name: "أقسام الإدارة" }).click();
+  const reports = page
+    .getByRole("complementary", { name: "أقسام الإدارة" })
+    .getByRole("group", { name: "التقارير" });
+  await expect(reports.getByRole("link")).toHaveText([
     "التقرير الأمني",
     "النسخ الاحتياطية",
   ]);

@@ -3,6 +3,7 @@ import { otpCodePattern } from "@/server/otp";
 import { z } from "zod";
 import { api, jsonBody } from "@/server/http";
 import {
+  personal,
   rateLimit,
   verifyOtp,
   sessionCookie,
@@ -41,10 +42,11 @@ export const POST = api(async (request) => {
     await recordSecurityEvent("otp.failed", { request, detail: body.purpose });
     throw new HttpError(400, "رمز التحقق غير صحيح أو منتهي الصلاحية");
   }
+  const user = personal(result.user);
   return Response.json(
     {
-      user: result.user,
-      next: roleDestination(result.user.role),
+      user,
+      next: roleDestination(user.role),
       canSetCredentials: true,
     },
     {

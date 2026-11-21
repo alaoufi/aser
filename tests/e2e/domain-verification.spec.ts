@@ -76,7 +76,7 @@ test("the owner pastes the full tag in the admin tab and saves the code", async 
     }
     return r.fulfill({ json: { code: stored } });
   });
-  await page.goto("/admin?tab=verification");
+  await page.goto("/admin/verification");
   const section = page.getByRole("heading", { name: "إثبات ملكية النطاق" });
   await expect(section).toBeVisible();
   await page

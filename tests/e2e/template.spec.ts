@@ -27,13 +27,8 @@ test("admin switches the site template between the Najdi door and the classic lo
     }
     return r.fulfill({ json: { template } });
   });
-  await page.goto("/admin");
-  // أقسام الإدارة قائمة منسدلة: تُفتح ثم يُختار القسم.
-  await page
-    .getByRole("navigation", { name: "أقسام الإدارة" })
-    .locator("summary")
-    .click();
-  await page.getByRole("button", { name: "قالب الموقع", exact: true }).click();
+  // كل قسم بمساره في القائمة الجانبية (src/lib/admin-nav.ts).
+  await page.goto("/admin/template");
   const najdi = page.getByRole("radio", { name: /الباب النجدي/ });
   const classic = page.getByRole("radio", { name: /الكلاسيكي/ });
   await expect(najdi).toBeChecked();

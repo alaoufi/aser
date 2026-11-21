@@ -57,15 +57,8 @@ test("tapping a category opens it right below for editing, and it is deleted onl
     sent.push({ method, body: r.request().postDataJSON() });
     return r.fulfill({ json: { ok: true } });
   });
-  await page.goto("/admin");
-  // أقسام الإدارة قائمة منسدلة: تُفتح ثم يُختار القسم.
-  await page
-    .getByRole("navigation", { name: "أقسام الإدارة" })
-    .locator("summary")
-    .click();
-  await page
-    .getByRole("button", { name: "إدارة الأقسام", exact: true })
-    .click();
+  // كل قسم بمساره في القائمة الجانبية (src/lib/admin-nav.ts).
+  await page.goto("/admin/categories");
   const row = (name: string) =>
     page.getByRole("button", { name: new RegExp(name) }).first();
   await expect(page.getByRole("button", { name: "حذف القسم" })).toHaveCount(0);

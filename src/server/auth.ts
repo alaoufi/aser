@@ -12,6 +12,10 @@ import type { SessionUser } from "../lib/types";
 import { db, transaction, databaseConfigured } from "./db";
 import { HttpError, normalizePhone } from "./security";
 export const cookieName = "jdatna_session";
+/** ملف دخول «لوحة الإدارة»: مستقل عن الجلسة الشخصية (مثل «أي خدمة»، قرار المالك 2026-11-21). */
+export const adminCookieName = "jdatna_admin";
+/** جلسة الإدارة 12 ساعة ولا تتجدد (الحماية أولًا، قرار المالك 2026-11-17). */
+export const ADMIN_AREA_SECONDS = 12 * 60 * 60;
 export const otpPurposeSchema = z.enum(["signup", "reset"]);
 export type OtpPurpose = z.infer<typeof otpPurposeSchema>;
 export const hash = (value: string) =>
@@ -45,14 +49,63 @@ export async function sessionUser(
 ): Promise<SessionUser | null> {
   return (await sessionInfo(request))?.user ?? null;
 }
-export function sessionToken(request: Request) {
+function cookieToken(request: Request, name: string) {
   const token = request.headers
     .get("cookie")
     ?.split(";")
     .map((s) => s.trim())
-    .find((s) => s.startsWith(cookieName + "="))
-    ?.slice(cookieName.length + 1);
+    .find((s) => s.startsWith(name + "="))
+    ?.slice(name.length + 1);
   return token && /^[a-f0-9]{64}$/.test(token) ? token : null;
+}
+/** رمز الجلسة الشخصية (الموقع). */
+export function sessionToken(request: Request) {
+  return cookieToken(request, cookieName);
+}
+/** رمز جلسة لوحة الإدارة. */
+export function adminToken(request: Request) {
+  return cookieToken(request, adminCookieName);
+}
+const underAdmin = (path: string) =>
+  path === "/admin" || path.startsWith("/admin/");
+/**
+ * هل الطلب من «لوحة الإدارة»؟ مسارات /api/admin كلها، أو طلب صادر من صفحة تحت /admin في الموقع نفسه
+ * (صور المنتجات والمستندات والعقود التي تعرضها اللوحة). المتصفح يكتب Referer ولا يستطيع موقع آخر
+ * أن يجعله صفحة من صفحاتنا، فطلب الموقع العادي لا يصل لصلاحيات الإدارة أبدًا، وطلب اللوحة لا يستعمل
+ * الجلسة الشخصية.
+ */
+export function adminArea(request: Request) {
+  const url = new URL(request.url);
+  if (url.pathname === "/api/admin" || url.pathname.startsWith("/api/admin/"))
+    return true;
+  const referer = request.headers.get("referer");
+  if (!referer) return false;
+  try {
+    const from = new URL(referer);
+    const origin = process.env.APP_ORIGIN || url.origin;
+    return from.origin === origin && underAdmin(from.pathname);
+  } catch {
+    return false;
+  }
+}
+/**
+ * الحساب الشخصي لمن له صلاحيات إدارية: عضو كغيره (عميل، أو أسرة إن كان له ملف أسرة)،
+ * بلا أي صلاحية إدارية. يبقى «adminAccess» ليظهر له رابط «لوحة الإدارة» فقط.
+ */
+export function personal(user: SessionUser): SessionUser {
+  const manager = user.role === "admin" || Boolean(user.permissions?.length);
+  if (!manager) return user;
+  return {
+    ...user,
+    role:
+      user.role === "admin"
+        ? user.familyName
+          ? "producer"
+          : "customer"
+        : user.role,
+    permissions: [],
+    adminAccess: true,
+  };
 }
 export async function sessionInfo(request: Request): Promise<{
   user: SessionUser;
@@ -60,19 +113,26 @@ export async function sessionInfo(request: Request): Promise<{
   canSetCredentials: boolean;
 } | null> {
   if (!databaseConfigured()) return null;
-  const token = sessionToken(request);
+  // لوحة الإدارة بجلستها هي فقط، والموقع بالجلسة الشخصية فقط.
+  const admin = adminArea(request);
+  const token = admin ? adminToken(request) : sessionToken(request);
   if (!token) return null;
   const row = (
     await db().query(
       `SELECT u.id,u.name,u.phone,u.role,u.username,u.permissions,(u.password_hash IS NOT NULL) AS "hasPassword",false AS "canSetCredentials",
         (SELECT COALESCE(p.trade_name,p.name) FROM jdatna.producer_profiles p WHERE p.user_id=u.id) AS "familyName"
-       FROM jdatna.sessions s JOIN jdatna.users u ON u.id=s.user_id WHERE s.token_hash=$1 AND s.expires_at>now() AND NOT s.setup_only AND u.suspended_at IS NULL`,
-      [hash(token)],
+       FROM jdatna.sessions s JOIN jdatna.users u ON u.id=s.user_id WHERE s.token_hash=$1 AND s.expires_at>now() AND NOT s.setup_only AND u.suspended_at IS NULL
+         AND s.scope=$2 AND ($2='site' OR u.role='admin' OR cardinality(u.permissions)>0)`,
+      [hash(token), admin ? "admin" : "site"],
     )
   ).rows[0];
   if (!row) return null;
   const { hasPassword, canSetCredentials, ...user } = row;
-  return { user, hasPassword, canSetCredentials };
+  return {
+    user: admin ? user : personal(user),
+    hasPassword,
+    canSetCredentials,
+  };
 }
 export async function requireUser(request: Request, roles?: string[]) {
   const user = await sessionUser(request);
@@ -245,17 +305,16 @@ export function adminOtpRequired() {
 /** الدخول يبقى سنة كاملة، ويتجدد مع كل زيارة فلا يُطلب مرة أخرى. */
 export const SESSION_SECONDS = 60 * 60 * 24 * 365;
 /**
- * انتهاء الجلسة الجديدة ($2 = المستخدم): حساب المدير أو المشرف 12 ساعة ولا يتجدد
- * (الحماية أولًا، قرار المالك 2026-11-17)، وغيره سنة تتجدد مع كل زيارة.
+ * انتهاء الجلسة الشخصية الجديدة: سنة تتجدد مع كل زيارة، للجميع. صاحب الصلاحيات الإدارية مثل غيره هنا،
+ * لأن الإدارة صارت بجلسة مستقلة 12 ساعة (createAdminSession، قرار المالك 2026-11-21).
  */
-export const SESSION_EXPIRY = `now()+CASE WHEN EXISTS(SELECT 1 FROM jdatna.users WHERE id=$2 AND (role='admin' OR cardinality(permissions)>0)) THEN interval '12 hours' ELSE interval '365 days' END`;
+export const SESSION_EXPIRY = `now()+interval '365 days'`;
 /** يمدد الجلسة النشطة سنة من آخر زيارة (مرة كل يوم على الأكثر). */
 export async function renewSession(request: Request) {
   const token = sessionToken(request);
   if (!token || !databaseConfigured()) return false;
   const r = await db().query(
-    `UPDATE jdatna.sessions s SET expires_at=now()+interval '365 days' WHERE s.token_hash=$1 AND s.expires_at>now() AND NOT s.setup_only AND s.expires_at<now()+interval '364 days'
-       AND NOT EXISTS(SELECT 1 FROM jdatna.users u WHERE u.id=s.user_id AND (u.role='admin' OR cardinality(u.permissions)>0))`,
+    `UPDATE jdatna.sessions s SET expires_at=now()+interval '365 days' WHERE s.token_hash=$1 AND s.expires_at>now() AND NOT s.setup_only AND s.scope='site' AND s.expires_at<now()+interval '364 days'`,
     [hash(token)],
   );
   return (r.rowCount ?? 0) > 0;
@@ -327,18 +386,50 @@ export async function verifyAdminLogin(id: string, code: string) {
   );
 }
 export const ADMIN_SESSION_SECONDS = SESSION_SECONDS;
+const secure = () => (process.env.NODE_ENV === "production" ? "; Secure" : "");
 export function sessionCookie(token: string, maxAge = SESSION_SECONDS) {
-  return `${cookieName}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${process.env.NODE_ENV === "production" ? "; Secure" : ""}`;
+  return `${cookieName}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secure()}`;
 }
+/** ملف دخول اللوحة: SameSite=Strict، فلا يُرسل مع طلب يبدأ من موقع آخر. */
+export function adminCookie(token: string, maxAge = ADMIN_AREA_SECONDS) {
+  return `${adminCookieName}=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${maxAge}${secure()}`;
+}
+/**
+ * «لوحة الإدارة» من الحساب الشخصي بضغطة (مثل «أي خدمة»): جلسة إدارة مستقلة 12 ساعة لا تتجدد،
+ * لصاحب صلاحيات إدارية فقط. لا تغيّر الجلسة الشخصية.
+ */
+export async function createAdminSession(request: Request) {
+  const token = sessionToken(request);
+  if (!token || !databaseConfigured())
+    throw new HttpError(401, "يرجى تسجيل الدخول");
+  const owner = (
+    await db().query(
+      `SELECT u.id FROM jdatna.sessions s JOIN jdatna.users u ON u.id=s.user_id
+       WHERE s.token_hash=$1 AND s.expires_at>now() AND NOT s.setup_only AND s.scope='site'
+         AND u.suspended_at IS NULL AND (u.role='admin' OR cardinality(u.permissions)>0)`,
+      [hash(token)],
+    )
+  ).rows[0] as { id: string } | undefined;
+  if (!owner) throw new HttpError(403, "لا تملك صلاحية الإدارة");
+  const admin = randomBytes(32).toString("hex");
+  await db().query(
+    `INSERT INTO jdatna.sessions(token_hash,user_id,expires_at,scope) VALUES($1,$2,now()+interval '12 hours','admin')`,
+    [hash(admin), owner.id],
+  );
+  return { token: admin, userId: owner.id };
+}
+/**
+ * الخروج: من اللوحة يُغلق جلسة الإدارة وحدها ويبقى الحساب الشخصي.
+ * ومن الموقع يُغلق الجلسة الشخصية وجلسة الإدارة في هذا الجهاز معًا.
+ */
 export async function logout(request: Request) {
-  const token = request.headers
-    .get("cookie")
-    ?.split(";")
-    .map((s) => s.trim())
-    .find((s) => s.startsWith(cookieName + "="))
-    ?.slice(cookieName.length + 1);
-  if (token && databaseConfigured())
-    await db().query("DELETE FROM jdatna.sessions WHERE token_hash=$1", [
-      hash(token),
-    ]);
+  if (!databaseConfigured()) return;
+  const tokens = adminArea(request)
+    ? [adminToken(request)]
+    : [sessionToken(request), adminToken(request)];
+  for (const token of tokens)
+    if (token)
+      await db().query("DELETE FROM jdatna.sessions WHERE token_hash=$1", [
+        hash(token),
+      ]);
 }
