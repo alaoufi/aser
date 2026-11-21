@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { AdSlot } from "@/components/public/ad-slot";
 import { Offers } from "@/components/forms/offers";
 import { RegionPicker } from "@/components/public/region-picker";
 import { regionsOf } from "@/components/public/today-table";
@@ -28,10 +29,13 @@ export default async function Page({
     <Offers
       region={region}
       scope={
-        <div className="browse-scope">
-          <span>نطاقك:</span>
-          <RegionPicker regions={regions} value={region} path="/offers" />
-        </div>
+        <>
+          <div className="browse-scope">
+            <span>نطاقك:</span>
+            <RegionPicker regions={regions} value={region} path="/offers" />
+          </div>
+          <AdSlot placement="offers_top" />
+        </>
       }
     />
   );

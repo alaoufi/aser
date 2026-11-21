@@ -1,4 +1,5 @@
 import { productStatusLabels } from "@/lib/site-texts";
+import { AdSlot } from "@/components/public/ad-slot";
 import { ReportButton } from "@/components/public/report-button";
 import { OrderRequestForm } from "@/components/forms/orders";
 import { ChatButton } from "@/components/forms/chat";
@@ -306,6 +307,7 @@ export default async function ProductDetail({
           </div>
         )}
       </section>
+      <AdSlot placement="product_page" />
     </div>
   );
 }

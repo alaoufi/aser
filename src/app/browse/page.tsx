@@ -1,4 +1,5 @@
 import { productStatusLabels } from "@/lib/site-texts";
+import { AdSlot } from "@/components/public/ad-slot";
 import { categoryLabel } from "@/lib/category-label";
 import { LocationFields } from "@/components/public/location-fields";
 import type { Metadata } from "next";
@@ -300,6 +301,7 @@ export default async function Browse({
           {texts["browse.subtitle"] && <p>{texts["browse.subtitle"]}</p>}
         </div>
       )}
+      <AdSlot placement="browse_top" />
       {request && (
         <UnderstoodRequest
           intent={request}
@@ -639,6 +641,7 @@ export default async function Browse({
           )}
         </>
       )}
+      <AdSlot placement="browse_bottom" />
     </div>
   );
 }

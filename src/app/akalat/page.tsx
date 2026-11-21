@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AdSlot } from "@/components/public/ad-slot";
 import Link from "next/link";
 import { DISHES, dishPath } from "@/lib/dishes";
 import { absoluteUrl, openGraph } from "@/lib/seo";
@@ -40,6 +41,7 @@ export default async function Dishes() {
         أكلات شعبية وطبخ بيت كما تطبخه الجدات: اختر الأكلة لتعرف مكوناتها
         ومناسبتها، واطلبها من الأسر المنتجة مباشرة.
       </p>
+      <AdSlot placement="akalat_top" />
       <ul className="dish-list">
         {DISHES.map((d) => (
           <li key={d.slug}>

@@ -1,4 +1,5 @@
 import { LocationFields } from "@/components/public/location-fields";
+import { AdSlot } from "@/components/public/ad-slot";
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { getCities, regionalProducers } from "@/server/catalog";
@@ -36,6 +37,7 @@ export default async function Producers({
         <h1>الأسر المنتجة</h1>
         <p>تعرّف على أهل الصنعة، واكتشف حكاية كل نكهة.</p>
       </div>
+      <AdSlot placement="producers_top" />
       <form
         className="filter-bar compact"
         action="/producers"

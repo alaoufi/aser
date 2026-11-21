@@ -37,6 +37,14 @@ export const NAV_GROUPS: AdminNavGroup[] = [
         perm: "content",
         data: ["/api/admin/views"],
       },
+      {
+        // «الإعلانات الترويجية» (من «أي خدمة»): مع المشاهدات، فالتسويق في مكان واحد.
+        to: "/admin/ads",
+        icon: "ads",
+        labelKey: "الإعلانات الترويجية",
+        perm: "ads",
+        data: ["/api/admin/ads"],
+      },
     ],
   },
   {

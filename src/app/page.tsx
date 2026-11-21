@@ -1,4 +1,5 @@
 import { productStatusLabels } from "@/lib/site-texts";
+import { AdSlot } from "@/components/public/ad-slot";
 import { identityProps } from "@/lib/brand";
 import { FoodPhotos } from "@/components/public/food-photos";
 import { NajdiDoor } from "@/components/public/najdi-door";
@@ -96,6 +97,7 @@ export default async function Home({
           {template === "najdi" ? <NajdiDoor /> : <FoodPhotos />}
         </div>
       </section>
+      <AdSlot placement="home_top" className="wrap" />
       <TodayTable
         products={today}
         regions={regions}
@@ -192,6 +194,7 @@ export default async function Home({
         </Link>
       </section>
       {/* مقترح لك: للعضو المسجّل، حسب ذوقه (يُحمَّل بعد الصفحة ولا يؤخرها). */}
+      <AdSlot placement="home_middle" className="wrap" />
       <ForYou region={region} labels={productStatusLabels(texts)} />
       {homeProducers.length > 0 && (
         <section
@@ -225,6 +228,7 @@ export default async function Home({
           </div>
         </section>
       )}
+      <AdSlot placement="home_bottom" className="wrap" />
     </>
   );
 }
