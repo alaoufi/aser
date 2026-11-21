@@ -52,7 +52,7 @@ test("the dashboard summary is grouped, and the sidebar lists the sections allow
     "3بانتظار الاستكمال",
     "4نشطة",
   ]);
-  // المدير الكامل يرى كل الأقسام في سبع مجموعات (22 بندًا). على الجوال تُفتح القائمة بزر ☰.
+  // المدير الكامل يرى كل الأقسام في ثماني مجموعات (25 بندًا). على الجوال تُفتح القائمة بزر ☰.
   const mobile = (page.viewportSize()?.width ?? 1280) < 1024;
   const openMenu = async () => {
     if (mobile)
@@ -60,8 +60,8 @@ test("the dashboard summary is grouped, and the sidebar lists the sections allow
   };
   await openMenu();
   const menu = page.getByRole("complementary", { name: "أقسام الإدارة" });
-  await expect(menu.locator("[role=group]")).toHaveCount(7);
-  await expect(menu.getByRole("navigation").getByRole("link")).toHaveCount(22);
+  await expect(menu.locator("[role=group]")).toHaveCount(8);
+  await expect(menu.getByRole("navigation").getByRole("link")).toHaveCount(25);
   // رقم في الملخص يفتح قسمه بمساره.
   if (mobile) await page.keyboard.press("Escape");
   await families.getByRole("button", { name: /تنتظر الاعتماد/ }).click();

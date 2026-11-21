@@ -303,10 +303,9 @@ export function Admin({ section }: { section?: string } = {}) {
           ) : active === "products" ? (
             <ProductsAdmin />
           ) : active === "categories" ? (
-            <>
-              <CategoriesAdmin />
-              <ProductFieldsAdmin />
-            </>
+            <CategoriesAdmin />
+          ) : active === "product-fields" ? (
+            <ProductFieldsAdmin />
           ) : active === "locations" ? (
             <LocationsAdmin />
           ) : active === "reports" ? (

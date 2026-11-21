@@ -166,6 +166,7 @@ test("reports group lists the security and backups reports, and the backups repo
   await expect(reports.getByRole("link")).toHaveText([
     "التقرير الأمني",
     "النسخ الاحتياطية",
+    "سجل النشاطات",
   ]);
   await page.keyboard.press("Escape");
   const report = page.getByRole("region", { name: "النسخ الاحتياطية" });

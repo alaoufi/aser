@@ -60,7 +60,12 @@ test("the owner reorders the admin menu and the sidebar follows at once", async 
   expect(body.groups[0]).toEqual({
     key: "التقارير",
     title: "تقارير ومتابعة",
-    items: ["/admin/security", "/admin/backups", "/admin/orders"],
+    items: [
+      "/admin/security",
+      "/admin/backups",
+      "/admin/activity",
+      "/admin/orders",
+    ],
   });
   expect(body.hidden).toEqual(["/admin/suggestions"]);
   // القائمة الجانبية تتبع الترتيب الجديد بلا تحديث للصفحة.
@@ -72,6 +77,7 @@ test("the owner reorders the admin menu and the sidebar follows at once", async 
   await expect(groups.first().getByRole("link")).toHaveText([
     "التقرير الأمني",
     "النسخ الاحتياطية",
+    "سجل النشاطات",
     "الطلبات",
   ]);
   await expect(menu.getByRole("link", { name: "الاقتراحات" })).toHaveCount(0);
