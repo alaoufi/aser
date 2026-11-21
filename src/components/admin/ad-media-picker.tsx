@@ -18,9 +18,33 @@ type Pending = {
   name: string;
 };
 
-function readImage(file: File) {
+// نوع الملف من قائمة ثابتة، لا من اسمه أو ما يدّعيه.
+const KNOWN_TYPES: Record<string, string> = {
+  "image/jpeg": "image/jpeg",
+  "image/png": "image/png",
+  "image/webp": "image/webp",
+  "video/mp4": "video/mp4",
+  "video/webm": "video/webm",
+};
+/**
+ * عنوان معاينة محلي (blob:) من بايتات الملف بنوع من القائمة الثابتة. لا يُستعمل نص من الملف أو من
+ * الصفحة في عنوان، ويُرفض كل عنوان لا يبدأ بـ blob:.
+ */
+async function previewUrl(file: File) {
+  const type = KNOWN_TYPES[file.type];
+  if (!type) throw new Error("نوع الملف غير مقبول");
+  const url = URL.createObjectURL(
+    new Blob([await file.arrayBuffer()], { type }),
+  );
+  if (!url.startsWith("blob:")) {
+    URL.revokeObjectURL(url);
+    throw new Error("تعذّر قراءة الملف");
+  }
+  return url;
+}
+async function readImage(file: File) {
+  const url = await previewUrl(file);
   return new Promise<Pending>((resolve, reject) => {
-    const url = URL.createObjectURL(file);
     const img = new Image();
     img.onload = () =>
       resolve({
@@ -37,9 +61,9 @@ function readImage(file: File) {
     img.src = url;
   });
 }
-function readVideo(file: File) {
+async function readVideo(file: File) {
+  const url = await previewUrl(file);
   return new Promise<{ duration: number }>((resolve, reject) => {
-    const url = URL.createObjectURL(file);
     const video = document.createElement("video");
     video.preload = "metadata";
     video.muted = true;
