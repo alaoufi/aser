@@ -37,6 +37,10 @@ test.describe("domain verification meta tag", () => {
     expect(head).toContain(
       `<meta name="domain-verification" content="${code}"/>`,
     );
+    // وحرفيًا كما تكتبه المنصة، بلا «/» (داخل noscript لفاحصات بلا JavaScript).
+    expect(head).toContain(
+      `<meta name="domain-verification" content="${code}">`,
+    );
     await pool!.query(
       "DELETE FROM jdatna.site_settings WHERE key='verify:domain'",
     );

@@ -139,10 +139,11 @@ export default async function RootLayout({
     type: "font/woff2",
     crossOrigin: "anonymous",
   });
-  const [template, texts, appLinks] = await Promise.all([
+  const [template, texts, appLinks, domainCode] = await Promise.all([
     visitorTemplate(),
     getSiteTexts(),
     getAppLinks(),
+    getDomainVerification(),
   ]);
   return (
     <html
@@ -151,6 +152,22 @@ export default async function RootLayout({
       data-scroll-behavior="smooth"
       data-template={template}
     >
+      {/*
+        وسم إثبات الملكية حرفيًا كما تكتبه منصة المركز السعودي للأعمال، بلا «/» في آخره
+        (Next.js يكتب وسوم metadata بـ «/>»، وقد يطابق فاحص المنصة النص حرفيًا).
+        داخل noscript: الفاحصات التي لا تشغّل JavaScript تقرؤه وسمًا في <head>، والمتصفح يتجاهله.
+        الرمز حروف وأرقام فقط (parseDomainVerification)، فلا يُحقن به شيء.
+      */}
+      {domainCode && /^[A-Za-z0-9._:-]+$/.test(domainCode) && (
+        <head>
+          <noscript
+            // biome-ignore lint/security/noDangerouslySetInnerHtml: الرمز مقيّد بحروف وأرقام، والوسم يجب أن يُكتب حرفيًا
+            dangerouslySetInnerHTML={{
+              __html: `<meta name="domain-verification" content="${domainCode}">`,
+            }}
+          />
+        </head>
+      )}
       <body>
         <StarDefs />
         <JsonLd
