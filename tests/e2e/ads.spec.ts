@@ -38,6 +38,11 @@ test.describe("promotional ads on the site", () => {
     await expect(slot).toContainText("عرض الجمعة من جدتنا");
     await expect(slot.getByText("إعلان", { exact: true })).toHaveCount(0);
     await expect(slot.getByRole("link")).toHaveAttribute("href", "/offers");
+    // الإعلان داخل عرض الشاشة كاملًا (لا يُقص ولا يخرج عن الصفحة).
+    const box = (await slot.boundingBox())!;
+    const width = page.viewportSize()!.width;
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(width);
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,
