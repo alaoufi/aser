@@ -109,13 +109,14 @@ test(
         password,
       });
       assert.ok(login.token);
-      const row = (
+      // الجلسة من القاعدة بحساب صاحبها، لا من نتيجة الدخول، فلا تمر نتيجة كلمة المرور إلى دوال التجزئة.
+      const long = (
         await pool.query(
-          "SELECT scope, expires_at > now()+interval '360 days' AS long FROM jdatna.sessions WHERE token_hash=$1",
-          [sha(login.token!)],
+          "SELECT scope FROM jdatna.sessions WHERE user_id=$1 AND expires_at > now()+interval '360 days'",
+          [people.admin.id],
         )
-      ).rows[0];
-      assert.deepEqual(row, { scope: "site", long: true });
+      ).rows;
+      assert.deepEqual(long, [{ scope: "site" }]);
 
       // في الموقع: المدير عضو كغيره، بلا صلاحيات، ويظهر له رابط اللوحة فقط.
       const mine = await sessionInfo(

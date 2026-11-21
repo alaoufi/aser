@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { db } from "../src/server/db";
 import {
   createAdminSession,
@@ -112,9 +112,16 @@ test(
       assert.ok(personal > 364 * 24, String(personal));
       const member = await hours(phones[1], ids[1]);
       assert.ok(member > 364 * 24, String(member));
-      const token = (
-        await passwordLogin({ identifier: phones[0], password: "2468" })
-      ).token!;
+      // جلسة شخصية بملف دخول عشوائي من الاختبار نفسه، لا من نتيجة الدخول بكلمة المرور.
+      const signIn = async (userId: string) => {
+        const t = randomBytes(32).toString("hex");
+        await pool.query(
+          "INSERT INTO jdatna.sessions(token_hash,user_id,expires_at) VALUES($1,$2,now()+interval '1 hour')",
+          [hash(t), userId],
+        );
+        return t;
+      };
+      const token = await signIn(ids[0]);
       const site = new Request("http://127.0.0.1:3000/api/session", {
         headers: { cookie: "jdatna_session=" + token },
       });
@@ -134,9 +141,7 @@ test(
       );
       assert.equal(renewed, false);
       // العميل لا يحصل على جلسة لوحة.
-      const customerToken = (
-        await passwordLogin({ identifier: phones[1], password: "2468" })
-      ).token!;
+      const customerToken = await signIn(ids[1]);
       await assert.rejects(
         createAdminSession(
           new Request("http://127.0.0.1:3000/api/session", {
