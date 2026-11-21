@@ -3393,3 +3393,28 @@ main {
     font-size: 22px;
   }
 }
+/* مقترح لك: سبب كل اقتراح فوق بطاقته */
+.for-you .section-heading {
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+}
+.for-you-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+.for-you-item {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+}
+.for-you-reason {
+  justify-self: start;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: rgb(82 98 71 / 12%);
+  color: var(--olive);
+  font-size: 13px;
+  font-weight: 700;
+}

@@ -4,6 +4,7 @@ import { LocationInput } from "./location-share";
 import { categoryLabel } from "@/lib/category-label";
 import { LocationFields } from "@/components/public/location-fields";
 import { useEffect, useRef, useState } from "react";
+import { FamilyInsightsCard } from "./family-insights";
 import Link from "next/link";
 import type { Category, City, SessionUser } from "@/lib/types";
 import {
@@ -673,6 +674,7 @@ export function Dashboard() {
               مدينتك في <Link href="/couriers">صفحة المندوبين</Link>.
             </p>
           )}
+          {isFamilyAccount(session.user) && <FamilyInsightsCard />}
           {isFamilyAccount(session.user) && <CertificateCard />}
           <ProfileForm />
           <DeleteAccountSection />
