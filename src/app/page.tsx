@@ -28,6 +28,7 @@ import {
   regionalProducers,
 } from "@/server/catalog";
 import { ProductCard, ProducerCard } from "@/components/public/ui";
+import { ForYou } from "@/components/public/for-you";
 import { recentCertificates } from "@/server/certificates";
 export const dynamic = "force-dynamic";
 export default async function Home({
@@ -190,6 +191,8 @@ export default async function Home({
           <h3>{texts["avail.order"] || "اطلب الآن"}</h3>
         </Link>
       </section>
+      {/* مقترح لك: للعضو المسجّل، حسب ذوقه (يُحمَّل بعد الصفحة ولا يؤخرها). */}
+      <ForYou region={region} labels={productStatusLabels(texts)} />
       {homeProducers.length > 0 && (
         <section
           className="section wrap home-producers"

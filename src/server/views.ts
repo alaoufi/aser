@@ -64,6 +64,15 @@ export async function recordView(
       [kind, id, visitor],
     );
   }
+  // مقترح لك: ما فتحه العضو المسجّل من منتجات (لا الزوار، ولا صاحب المنتج نفسه).
+  if (kind === "product" && user && target.owner !== user.id)
+    await db()
+      .query(
+        `INSERT INTO jdatna.member_product_views(user_id,product_id) VALUES($1,$2)
+         ON CONFLICT(user_id,product_id) DO UPDATE SET views=jdatna.member_product_views.views+1,last_at=now()`,
+        [user.id, id],
+      )
+      .catch(() => {});
   const views = Number(
     (
       await db().query(

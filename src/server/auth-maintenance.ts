@@ -27,6 +27,12 @@ export async function cleanupAuthRows(batchSize = 1000) {
        DELETE FROM jdatna.view_seen s USING old o WHERE s.kind=o.kind AND s.target_id=o.target_id AND s.visitor=o.visitor AND s.day=o.day`,
       [batchSize],
     );
+    // «مقترح لك»: ما فتحه العضو يُنسى بعد 90 يومًا (سياسة الخصوصية).
+    await client.query(
+      `WITH old AS (SELECT user_id,product_id FROM jdatna.member_product_views WHERE last_at<now()-interval '90 days' LIMIT $1 FOR UPDATE SKIP LOCKED)
+       DELETE FROM jdatna.member_product_views v USING old o WHERE v.user_id=o.user_id AND v.product_id=o.product_id`,
+      [batchSize],
+    );
     return {
       securityEvents: events.rowCount ?? 0,
       rateLimits: limits.rowCount ?? 0,
