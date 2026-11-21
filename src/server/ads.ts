@@ -121,9 +121,11 @@ export async function liveAds(
 export async function trackAd(id: string, kind: "view" | "click") {
   if (!z.uuid().safeParse(id).success) return;
   await transaction(async (client) => {
+    // جملتان ثابتتان، لا نص يُبنى من الطلب.
     const r = await client.query(
-      `UPDATE jdatna.ads SET ${kind === "view" ? "views_count=views_count+1" : "clicks_count=clicks_count+1"}
-       WHERE id=$1 AND status='active' RETURNING id`,
+      kind === "view"
+        ? "UPDATE jdatna.ads SET views_count=views_count+1 WHERE id=$1 AND status='active' RETURNING id"
+        : "UPDATE jdatna.ads SET clicks_count=clicks_count+1 WHERE id=$1 AND status='active' RETURNING id",
       [id],
     );
     if (!r.rowCount) return;
@@ -686,7 +688,8 @@ export async function adsReport(user: SessionUser, input: unknown) {
       [v.from, v.to, v.campaignId],
     )
   ).rows;
-  return { rows, days };
+  // المدة بعد التحقق منها (اسم ملف CSV منها، لا من الطلب).
+  return { rows, days, from: v.from, to: v.to };
 }
 /** التقرير ملف CSV يفتح في Excel بالعربية (BOM). */
 export function reportCsv(rows: Awaited<ReturnType<typeof adsReport>>["rows"]) {

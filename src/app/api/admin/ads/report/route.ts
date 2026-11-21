@@ -13,7 +13,8 @@ export const GET = api(async (request) => {
   return new Response(reportCsv(report.rows), {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="ads-${q.get("from")}-${q.get("to")}.csv"`,
+      // تاريخان تحقق منهما الخادم (yyyy-mm-dd)، لا نص من الطلب.
+      "Content-Disposition": `attachment; filename="ads-${report.from.replace(/[^0-9-]/g, "")}-${report.to.replace(/[^0-9-]/g, "")}.csv"`,
       "Cache-Control": "no-store",
     },
   });
