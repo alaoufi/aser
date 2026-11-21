@@ -6,7 +6,8 @@ import { api, s as forms, useSession } from "@/components/forms/shared";
 import { SectionIcon } from "@/components/forms/section-icon";
 import { prefetchAdmin } from "@/components/forms/admin-cache";
 import { can, isManager } from "@/lib/permissions";
-import { currentLabel, visibleGroups } from "@/lib/admin-nav";
+import { currentLabel, groupTitle, visibleGroups } from "@/lib/admin-nav";
+import { useMenuLayout } from "./menu-layout-store";
 import css from "./admin-frame.module.css";
 
 /** يُطلق بعد قرار اعتماد، فيتحدّث عدد «تنتظر الاعتماد» في القائمة. */
@@ -26,6 +27,8 @@ export function AdminFrame({ children }: { children: React.ReactNode }) {
   const [pending, setPending] = useState(0);
   const [leaving, setLeaving] = useState(false);
   const reviews = can(user, "producers");
+  // ترتيب «ترتيب القوائم» المحفوظ، لكل أعضاء الإدارة.
+  const layout = useMenuLayout(isManager(user));
 
   const check = useCallback(async () => {
     if (document.visibilityState !== "visible") return;
@@ -85,7 +88,7 @@ export function AdminFrame({ children }: { children: React.ReactNode }) {
       window.location.assign("/");
     }
   }
-  const groups = visibleGroups(user);
+  const groups = visibleGroups(user, layout);
   return (
     <div className={css.frame}>
       <aside
@@ -109,13 +112,9 @@ export function AdminFrame({ children }: { children: React.ReactNode }) {
         </div>
         <nav className={css.nav}>
           {groups.map((g, i) => (
-            <div
-              key={g.label}
-              role="group"
-              aria-labelledby={`admin-group-${i}`}
-            >
+            <div key={g.key} role="group" aria-labelledby={`admin-group-${i}`}>
               <p id={`admin-group-${i}`} className={css.groupTitle}>
-                {g.label}
+                {groupTitle(g)}
               </p>
               {g.items.map((it) => {
                 const active = it.end

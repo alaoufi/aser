@@ -204,6 +204,14 @@ export const NAV_GROUPS: AdminNavGroup[] = [
         perm: "owner",
         data: ["/api/admin/verification"],
       },
+      {
+        // «ترتيب القوائم» (مثل «أي خدمة»، AYK-410): الإدارة ترتّب قائمتها بنفسها.
+        to: "/admin/menu-layout",
+        icon: "menus",
+        labelKey: "ترتيب القوائم",
+        perm: "owner",
+        data: ["/api/admin/menu-layout"],
+      },
     ],
   },
 ];
@@ -218,12 +226,14 @@ export function allowedItem(user: Who, item: AdminNavItem) {
     ? Boolean(user.permissions?.length)
     : Boolean(user.permissions?.includes(item.perm));
 }
-/** المجموعات بما يحق له فقط؛ المجموعة الفارغة لا تظهر. */
-export function visibleGroups(user: Who) {
-  return NAV_GROUPS.map((g) => ({
-    ...g,
-    items: g.items.filter((it) => allowedItem(user, it)),
-  })).filter((g) => g.items.length > 0);
+/** المجموعات بالترتيب المحفوظ وبما يحق له فقط؛ المجموعة الفارغة لا تظهر. */
+export function visibleGroups(user: Who, layout?: MenuLayout | null) {
+  return applyMenuLayout(NAV_GROUPS, layout)
+    .map((g) => ({
+      ...g,
+      items: g.items.filter((it) => allowedItem(user, it)),
+    }))
+    .filter((g) => g.items.length > 0);
 }
 /** القسم من المسار: /admin/orders ← orders، و/admin ← null (لوحة التحكم). */
 export function sectionOf(path: string) {
@@ -243,4 +253,143 @@ export function currentLabel(path: string) {
       )
         best = it;
   return best?.labelKey ?? "لوحة الإدارة";
+}
+
+/**
+ * «ترتيب القوائم» (من «أي خدمة»، AYK-410): ترتيب الإدارة المحفوظ يُطبَّق على القائمة الأصلية أعلاه.
+ * layout = { groups: [{ key, title, items: [to…] }], hidden: [to…] }
+ * - المجموعات بترتيبها المحفوظ، باسمها المحفوظ أو اسمها الأصلي.
+ * - كل صفحة حيث وُضعت. والصفحات التي لا يعرفها الترتيب المحفوظ (أُضيفت لاحقًا) تبقى في مجموعتها
+ *   الأصلية، والمجموعة الجديدة كلها تظهر في آخر القائمة، فلا تضيع صفحة أبدًا.
+ * - المخفية لا تظهر، والمجموعة التي فرغت لا تظهر.
+ */
+export type MenuLayout = {
+  groups: { key: string; title: string | null; items: string[] }[];
+  hidden: string[];
+};
+export type LaidGroup = {
+  key: string;
+  label: string | null;
+  title: string | null;
+  items: AdminNavItem[];
+};
+/** لا تُخفى لوحة التحكم ولا هذه الصفحة، وإلا لم يستطع أحد التراجع. */
+export const LOCKED = new Set(["/admin", "/admin/menu-layout"]);
+
+export function applyMenuLayout(
+  defaults: AdminNavGroup[],
+  layout: MenuLayout | null | undefined,
+  { keepHidden = false } = {},
+): LaidGroup[] {
+  const base = defaults.map((g) => ({
+    key: g.label,
+    label: g.label as string | null,
+    title: null as string | null,
+    items: [...g.items],
+  }));
+  if (!layout || !Array.isArray(layout.groups) || !layout.groups.length)
+    return base;
+  const byTo = new Map(
+    defaults.flatMap((g) => g.items.map((it) => [it.to, it] as const)),
+  );
+  const placed = new Set<string>();
+  const groups: LaidGroup[] = layout.groups.map((g) => {
+    const own = defaults.find((d) => d.label === g.key);
+    const items = (g.items || [])
+      .map((to) => byTo.get(to))
+      .filter((it): it is AdminNavItem => Boolean(it));
+    for (const it of items) placed.add(it.to);
+    return {
+      key: g.key,
+      label: own?.label ?? null,
+      title: g.title || null,
+      items,
+    };
+  });
+  for (const d of defaults)
+    for (const it of d.items) {
+      if (placed.has(it.to)) continue;
+      // مجموعتها الأصلية إن كانت في الترتيب، وإلا تُضاف المجموعة كاملة في آخر القائمة.
+      let home = groups.find((g) => g.key === d.label);
+      if (!home) {
+        home = { key: d.label, label: d.label, title: null, items: [] };
+        groups.push(home);
+      }
+      home.items.push(it);
+    }
+  const hidden = new Set(keepHidden ? [] : layout.hidden || []);
+  return groups
+    .map((g) => ({ ...g, items: g.items.filter((it) => !hidden.has(it.to)) }))
+    .filter((g) => g.items.length);
+}
+
+/** اسم المجموعة كما يظهر: المحفوظ، وإلا الأصلي. */
+export const groupTitle = (g: { title: string | null; label: string | null }) =>
+  g.title || g.label || "";
+
+/** الترتيب كائنًا بسيطًا للحفظ، من مجموعات بشكل نتيجة applyMenuLayout. */
+export function toLayout(
+  groups: LaidGroup[],
+  hidden: Iterable<string>,
+): MenuLayout {
+  return {
+    groups: groups.map((g) => ({
+      key: g.key,
+      title: g.title && g.title !== g.label ? g.title : null,
+      items: g.items.map((it) => it.to),
+    })),
+    hidden: [...hidden],
+  };
+}
+
+const MENU_PATH = /^\/admin(\/[a-z0-9\-/]*)?$/;
+const text = (v: unknown, max: number): v is string =>
+  typeof v === "string" && v.trim().length > 0 && v.length <= max;
+/**
+ * ما يُقبل حفظه (يفحصه الخادم): حتى 20 مجموعة، لكل مجموعة مفتاح واسم قصيران وصفحات من /admin فقط،
+ * ولا تتكرر صفحة. وإلا null.
+ */
+export function cleanMenuLayout(body: unknown): MenuLayout | null {
+  const b = body as { groups?: unknown; hidden?: unknown } | null;
+  if (
+    !b ||
+    typeof b !== "object" ||
+    !Array.isArray(b.groups) ||
+    b.groups.length > 20
+  )
+    return null;
+  const seen = new Set<string>();
+  const groups: MenuLayout["groups"] = [];
+  for (const raw of b.groups) {
+    const g = raw as { key?: unknown; title?: unknown; items?: unknown };
+    if (
+      !g ||
+      !text(g.key, 60) ||
+      !Array.isArray(g.items) ||
+      g.items.length > 100
+    )
+      return null;
+    if (g.title != null && g.title !== "" && !text(g.title, 60)) return null;
+    const items: string[] = [];
+    for (const to of g.items) {
+      if (typeof to !== "string" || !MENU_PATH.test(to) || seen.has(to))
+        return null;
+      seen.add(to);
+      items.push(to);
+    }
+    groups.push({
+      key: g.key.trim(),
+      title:
+        typeof g.title === "string" && g.title.trim() ? g.title.trim() : null,
+      items,
+    });
+  }
+  const hidden = Array.isArray(b.hidden)
+    ? b.hidden
+        .filter(
+          (to): to is string => typeof to === "string" && MENU_PATH.test(to),
+        )
+        .slice(0, 100)
+    : [];
+  return { groups, hidden: hidden.filter((to) => !LOCKED.has(to)) };
 }
