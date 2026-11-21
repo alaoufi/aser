@@ -150,7 +150,9 @@ export function understandFood(
     const k = placeKey(c.name);
     if (k.length >= 3 && joined.includes(` ${k} `)) {
       place = { regionId: c.regionId, cityId: c.id, name: c.name };
-      keys.forEach((w, i) => k.split(" ").includes(w) && placeWords.add(i));
+      keys.forEach((w, i) => {
+        if (k.split(" ").includes(w)) placeWords.add(i);
+      });
       break;
     }
   }
@@ -159,7 +161,9 @@ export function understandFood(
       const k = placeKey(c.regionName);
       if (k.length >= 3 && joined.includes(` ${k} `)) {
         place = { regionId: c.regionId, cityId: null, name: c.regionName };
-        keys.forEach((w, i) => k.split(" ").includes(w) && placeWords.add(i));
+        keys.forEach((w, i) => {
+          if (k.split(" ").includes(w)) placeWords.add(i);
+        });
         break;
       }
     }
