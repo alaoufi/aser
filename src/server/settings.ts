@@ -374,8 +374,14 @@ export async function setProductField(user: SessionUser, input: unknown) {
  * الرمز عام بطبيعته (يظهر في مصدر الصفحة)، فلا سر فيه.
  */
 const DOMAIN_VERIFICATION_KEY = "verify:domain";
+/**
+ * رمز jdatna.com لدى المركز السعودي للأعمال (أرسله المالك 2026-11-21، وهو نفسه في سجل DNS TXT).
+ * يظهر ما لم يحفظ المالك رمزًا آخر من الإدارة.
+ */
+const DOMAIN_VERIFICATION_DEFAULT =
+  "d4a837f6686cda77b144d674d0ab82e4fba5136cc3f8e09d1a511a20f0e36c3a";
 export async function getDomainVerification(): Promise<string> {
-  if (!databaseConfigured()) return "";
+  if (!databaseConfigured()) return DOMAIN_VERIFICATION_DEFAULT;
   try {
     return (
       (
@@ -383,10 +389,10 @@ export async function getDomainVerification(): Promise<string> {
           "SELECT value FROM jdatna.site_settings WHERE key=$1",
           [DOMAIN_VERIFICATION_KEY],
         )
-      ).rows[0]?.value ?? ""
+      ).rows[0]?.value ?? DOMAIN_VERIFICATION_DEFAULT
     );
   } catch {
-    return "";
+    return DOMAIN_VERIFICATION_DEFAULT;
   }
 }
 /** يقبل الرمز وحده أو الوسم كاملًا كما تنسخه المنصة؛ النص الفارغ يحذف الوسم. */
