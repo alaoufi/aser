@@ -82,7 +82,8 @@ test("the saved order moves groups and pages, hides pages, and never loses a new
   assert.equal(laid[0].title, "تقارير ومتابعة");
   assert.deepEqual(
     laid[0].items.map((it) => it.to),
-    ["/admin/orders", "/admin/security", "/admin/backups"],
+    // «سجل النشاطات» أُضيف بعد حفظ الترتيب: يظهر وحده في مجموعته الأصلية.
+    ["/admin/orders", "/admin/security", "/admin/backups", "/admin/activity"],
   );
   assert.deepEqual(
     laid[1].items.map((it) => it.to),

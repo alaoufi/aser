@@ -114,6 +114,7 @@ test("one tap opens the separate panel with a right sidebar, and leaving returns
     "المنتجات والأقسام",
     "الأماكن",
     "إعدادات الموقع",
+    "الربط والتوثيق",
   ])
     await expect(menu.getByRole("group", { name: group })).toBeVisible();
   // عدد «تنتظر الاعتماد» بجانب قسمه.

@@ -48,7 +48,7 @@ test("the admin hides, deletes and restores product form fields from category ma
     await r.fulfill({ json: { fields } });
   });
   // كل قسم بمساره في القائمة الجانبية (src/lib/admin-nav.ts).
-  await page.goto("/admin/categories");
+  await page.goto("/admin/product-fields");
   const box = page.getByRole("region", { name: "حقول إضافة المنتج" });
   await box.getByRole("button", { name: "إخفاء حقل المكونات" }).click();
   await expect(box.getByText("· مخفي")).toBeVisible();

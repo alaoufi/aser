@@ -57,6 +57,13 @@ export const NAV_GROUPS: AdminNavGroup[] = [
         perm: "owner",
         data: ["/api/admin/backups"],
       },
+      {
+        to: "/admin/activity",
+        icon: "activity",
+        labelKey: "سجل النشاطات",
+        perm: "owner",
+        data: ["/api/admin/activity?group=&q="],
+      },
     ],
   },
   {
@@ -184,6 +191,14 @@ export const NAV_GROUPS: AdminNavGroup[] = [
         data: ["/api/admin/texts"],
       },
       {
+        // «حقول النماذج» بندًا مستقلًا كما في «أي خدمة» (كانت داخل «إدارة الأقسام»).
+        to: "/admin/product-fields",
+        icon: "fields",
+        labelKey: "حقول النماذج",
+        perm: "categories",
+        data: ["/api/admin/product-fields"],
+      },
+      {
         to: "/admin/app",
         icon: "app",
         labelKey: "تطبيق الجوال",
@@ -191,11 +206,25 @@ export const NAV_GROUPS: AdminNavGroup[] = [
         data: ["/api/admin/app-links"],
       },
       {
-        to: "/admin/review",
-        icon: "review",
-        labelKey: "مراجعة المتاجر",
+        // «ترتيب القوائم» (مثل «أي خدمة»، AYK-410): الإدارة ترتّب قائمتها بنفسها.
+        to: "/admin/menu-layout",
+        icon: "menus",
+        labelKey: "ترتيب القوائم",
         perm: "owner",
-        data: ["/api/admin/store-review"],
+        data: ["/api/admin/menu-layout"],
+      },
+    ],
+  },
+  {
+    // الخدمات المربوطة وإثبات الملكية ومراجعة المتاجر.
+    label: "الربط والتوثيق",
+    items: [
+      {
+        to: "/admin/integrations",
+        icon: "integrations",
+        labelKey: "تكاملات API",
+        perm: "owner",
+        data: ["/api/admin/integrations"],
       },
       {
         to: "/admin/verification",
@@ -205,12 +234,11 @@ export const NAV_GROUPS: AdminNavGroup[] = [
         data: ["/api/admin/verification"],
       },
       {
-        // «ترتيب القوائم» (مثل «أي خدمة»، AYK-410): الإدارة ترتّب قائمتها بنفسها.
-        to: "/admin/menu-layout",
-        icon: "menus",
-        labelKey: "ترتيب القوائم",
+        to: "/admin/review",
+        icon: "review",
+        labelKey: "مراجعة المتاجر",
         perm: "owner",
-        data: ["/api/admin/menu-layout"],
+        data: ["/api/admin/store-review"],
       },
     ],
   },
