@@ -375,11 +375,11 @@ export async function setProductField(user: SessionUser, input: unknown) {
  */
 const DOMAIN_VERIFICATION_KEY = "verify:domain";
 /**
- * رمز jdatna.com لدى المركز السعودي للأعمال (أرسله المالك 2026-11-21، وهو نفسه في سجل DNS TXT).
+ * رمز jdatna.com لدى المركز السعودي للأعمال (الرمز الثاني الذي أرسله المالك 2026-11-21 بعد تعديل التوثيق في المنصة).
  * يظهر ما لم يحفظ المالك رمزًا آخر من الإدارة.
  */
 const DOMAIN_VERIFICATION_DEFAULT =
-  "d4a837f6686cda77b144d674d0ab82e4fba5136cc3f8e09d1a511a20f0e36c3a";
+  "3007acd4be257a0dc8ad617c6e49eb126d3ca8ea713b6f1f1455050fd8380cf5";
 export async function getDomainVerification(): Promise<string> {
   if (!databaseConfigured()) return DOMAIN_VERIFICATION_DEFAULT;
   try {

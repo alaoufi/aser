@@ -43,7 +43,7 @@ test.describe("domain verification meta tag", () => {
     // بلا رمز محفوظ: رمز jdatna.com الثابت في الكود (نفسه في سجل DNS TXT).
     const after = await (await request.get("/")).text();
     expect(after.slice(0, after.indexOf("</head>"))).toContain(
-      '<meta name="domain-verification" content="d4a837f6686cda77b144d674d0ab82e4fba5136cc3f8e09d1a511a20f0e36c3a"/>',
+      '<meta name="domain-verification" content="3007acd4be257a0dc8ad617c6e49eb126d3ca8ea713b6f1f1455050fd8380cf5"/>',
     );
     expect(after).not.toContain(code);
   });
