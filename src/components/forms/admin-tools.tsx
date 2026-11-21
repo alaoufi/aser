@@ -1735,3 +1735,65 @@ function CategoryFrame({ category }: { category: AdminCategory }) {
     </fieldset>
   );
 }
+
+/**
+ * إثبات ملكية النطاق لدى المركز السعودي للأعمال (طريقة Meta Tag): المالك يلصق الرمز أو الوسم
+ * كاملًا، فيظهر الوسم في <head> كل صفحة بعد الحفظ مباشرة.
+ */
+export function DomainVerificationAdmin() {
+  const r = useResource<{ code: string }>("/api/admin/verification");
+  const code = r.data?.code;
+  return (
+    <section>
+      <h2>إثبات ملكية النطاق</h2>
+      <p className={s.muted}>
+        للمركز السعودي للأعمال بطريقة «وسم Meta». الصق الرمز أو الوسم كاملًا كما
+        يظهر في المنصة، ثم احفظ. يظهر الوسم في الصفحة الرئيسية فورًا، وبعدها
+        اضغط «تحقق من إثبات الملكية» في المنصة. إن مُسحت الخانة يعود رمز
+        jdatna.com المسجّل (نفسه في سجل DNS).
+      </p>
+      <Message error={r.error} success={r.success} />
+      {code === undefined && !r.error ? (
+        <p role="status">جارٍ التحميل…</p>
+      ) : code !== undefined ? (
+        <form
+          key={code}
+          className={`${s.card} ${s.form}`}
+          onSubmit={(e) => {
+            e.preventDefault();
+            const f = new FormData(e.currentTarget);
+            r.write("PUT", { code: String(f.get("code") ?? "") });
+          }}
+        >
+          <div className={s.field}>
+            <label htmlFor="domain-verification">
+              رمز التحقق أو الوسم كاملًا
+            </label>
+            <textarea
+              id="domain-verification"
+              name="code"
+              dir="ltr"
+              rows={3}
+              placeholder='<meta name="domain-verification" content="…">'
+              defaultValue={code}
+            />
+          </div>
+          {code ? (
+            <p className={s.notice}>
+              الوسم الظاهر الآن في الموقع:
+              <br />
+              <code dir="ltr">
+                {`<meta name="domain-verification" content="${code}">`}
+              </code>
+            </p>
+          ) : (
+            <p className={s.muted}>لا يوجد رمز محفوظ.</p>
+          )}
+          <button className={s.button} disabled={r.busy}>
+            {r.busy ? "جارٍ الحفظ…" : "حفظ"}
+          </button>
+        </form>
+      ) : null}
+    </section>
+  );
+}

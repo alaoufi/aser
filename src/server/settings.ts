@@ -366,3 +366,71 @@ export async function setProductField(user: SessionUser, input: unknown) {
     return fields;
   });
 }
+
+/**
+ * إثبات ملكية النطاق لدى المركز السعودي للأعمال (طريقة Meta Tag): رمز يضعه المالك من
+ * «الإدارة ← إثبات ملكية النطاق»، فيظهر في <head> كل صفحة:
+ *   <meta name="domain-verification" content="الرمز">
+ * الرمز عام بطبيعته (يظهر في مصدر الصفحة)، فلا سر فيه.
+ */
+const DOMAIN_VERIFICATION_KEY = "verify:domain";
+/**
+ * رمز jdatna.com لدى المركز السعودي للأعمال (أرسله المالك 2026-11-21، وهو نفسه في سجل DNS TXT).
+ * يظهر ما لم يحفظ المالك رمزًا آخر من الإدارة.
+ */
+const DOMAIN_VERIFICATION_DEFAULT =
+  "d4a837f6686cda77b144d674d0ab82e4fba5136cc3f8e09d1a511a20f0e36c3a";
+export async function getDomainVerification(): Promise<string> {
+  if (!databaseConfigured()) return DOMAIN_VERIFICATION_DEFAULT;
+  try {
+    return (
+      (
+        await db().query(
+          "SELECT value FROM jdatna.site_settings WHERE key=$1",
+          [DOMAIN_VERIFICATION_KEY],
+        )
+      ).rows[0]?.value ?? DOMAIN_VERIFICATION_DEFAULT
+    );
+  } catch {
+    return DOMAIN_VERIFICATION_DEFAULT;
+  }
+}
+/** يقبل الرمز وحده أو الوسم كاملًا كما تنسخه المنصة؛ النص الفارغ يحذف الوسم. */
+export function parseDomainVerification(input: unknown) {
+  const raw = z
+    .object({ code: z.string().max(500) })
+    .strict()
+    .parse(input)
+    .code.trim();
+  // الوسم كاملًا (content="…")، أو صيغة سجل DNS «domain-verification=…»، أو الرمز وحده.
+  const fromTag = raw.match(/content\s*=\s*["']([^"']*)["']/i)?.[1];
+  const fromRecord = raw.match(/^domain-verification\s*=\s*(\S+)$/i)?.[1];
+  const code = (fromTag ?? fromRecord ?? raw).trim();
+  if (code && !/^[A-Za-z0-9._:-]{8,200}$/.test(code))
+    throw new HttpError(
+      400,
+      "الرمز غير صالح: الصق الرمز أو الوسم كما يظهر في منصة المركز السعودي للأعمال",
+    );
+  return code;
+}
+export async function setDomainVerification(user: SessionUser, input: unknown) {
+  if (user.role !== "admin") throw new HttpError(403, "لا تملك صلاحية الوصول");
+  const code = parseDomainVerification(input);
+  return transaction(async (client) => {
+    if (code)
+      await client.query(
+        `INSERT INTO jdatna.site_settings(key,value,updated_at,updated_by) VALUES($1,$2,now(),$3)
+         ON CONFLICT(key) DO UPDATE SET value=EXCLUDED.value,updated_at=now(),updated_by=EXCLUDED.updated_by`,
+        [DOMAIN_VERIFICATION_KEY, code, user.id],
+      );
+    else
+      await client.query("DELETE FROM jdatna.site_settings WHERE key=$1", [
+        DOMAIN_VERIFICATION_KEY,
+      ]);
+    await client.query(
+      "INSERT INTO jdatna.admin_audit_logs(id,actor_id,action,target_id,details) VALUES($1,$2,'site.domain-verification',NULL,$3)",
+      [randomUUID(), user.id, JSON.stringify({ code })],
+    );
+    return { code };
+  });
+}

@@ -5,6 +5,7 @@ import { COVERAGE_URL } from "./admin-cache";
 import {
   AdminSummary,
   AppLinksAdmin,
+  DomainVerificationAdmin,
   StoreReviewAdmin,
   SuggestionsAdmin,
   ProductFieldsAdmin,
@@ -42,6 +43,7 @@ const tabData: Record<string, string[]> = {
   template: ["/api/admin/settings"],
   texts: ["/api/admin/texts"],
   app: ["/api/admin/app-links"],
+  verification: ["/api/admin/verification"],
   review: ["/api/admin/store-review"],
   members: ["/api/admin/members?q="],
   security: ["/api/admin/security"],
@@ -67,6 +69,7 @@ const adminTabs: [
   ["template", "قالب الموقع", "content"],
   ["texts", "نصوص الموقع", "content"],
   ["app", "تطبيق الجوال", "content"],
+  ["verification", "إثبات ملكية النطاق", "owner"],
   ["views", "المشاهدات والزوار", "content"],
   ["review", "مراجعة المتاجر", "owner"],
   ["members", "الأعضاء والصلاحيات", "owner"],
@@ -86,7 +89,16 @@ const adminGroups: [group: string, ids: string[]][] = [
   ["الأقسام والمواقع", ["categories", "locations"]],
   [
     "الموقع والأعضاء",
-    ["template", "texts", "app", "views", "review", "members", "suggestions"],
+    [
+      "template",
+      "texts",
+      "app",
+      "verification",
+      "views",
+      "review",
+      "members",
+      "suggestions",
+    ],
   ],
 ];
 type Application = {
@@ -460,6 +472,8 @@ export function Admin() {
             <TextsAdmin />
           ) : active === "app" ? (
             <AppLinksAdmin />
+          ) : active === "verification" ? (
+            <DomainVerificationAdmin />
           ) : active === "review" ? (
             <StoreReviewAdmin />
           ) : active === "suggestions" ? (
