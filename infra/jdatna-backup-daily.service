@@ -1,0 +1,15 @@
+[Unit]
+Description=Daily encrypted Jdatna backup (05:00 Riyadh)
+Requires=jdatna-stack.service var-backups-jdatna.mount
+After=jdatna-stack.service var-backups-jdatna.mount
+RequiresMountsFor=/srv/jdatna/data /var/backups/jdatna
+
+[Service]
+Type=oneshot
+ExecStart=/opt/jdatna/infra/backup.sh daily
+UMask=0077
+Nice=15
+IOSchedulingClass=idle
+CPUQuota=50%
+MemoryMax=512M
+TimeoutStartSec=90min

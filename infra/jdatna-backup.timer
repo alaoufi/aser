@@ -1,10 +1,12 @@
 [Unit]
-Description=Daily Jdatna backup at 04:30 Riyadh time
+Description=Daily Jdatna backup at 05:00 Riyadh time (keeps the newest 10 daily copies)
 
 [Timer]
-OnCalendar=*-*-* 04:30:00 Asia/Riyadh
-RandomizedDelaySec=10m
+OnCalendar=*-*-* 05:00:00 Asia/Riyadh
+AccuracySec=1min
 Persistent=true
+# اسم المؤقت كما هو (يفحصه verify.py)، ويشغّل الخدمة اليومية لا خدمة النشر.
+Unit=jdatna-backup-daily.service
 
 [Install]
 WantedBy=timers.target

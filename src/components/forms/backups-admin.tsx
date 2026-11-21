@@ -17,14 +17,15 @@ const kinds: [Kind, string, string][] = [
     "قاعدة البيانات والإعدادات والصور معًا، كالنسخة اليومية",
   ],
 ];
-const kindLabel: Record<Kind, string> = {
-  full: "كاملة",
+const kindLabel: Record<Kind | "daily", string> = {
+  daily: "يومية (5:00 فجرًا)",
+  full: "كاملة (نشر أو يدوية)",
   media: "صور ومستندات",
   codedb: "كود وقاعدة بيانات",
 };
 type Backup = {
   file: string;
-  kind: Kind;
+  kind: Kind | "daily";
   createdAt: string;
   sizeBytes: number;
   databaseBytes: number;
@@ -63,6 +64,47 @@ const when = (at: string) =>
     timeStyle: "short",
     timeZone: "Asia/Riyadh",
   }).format(new Date(at));
+
+const contents: Record<Kind | "daily", string> = {
+  daily: "قاعدة البيانات، الإعدادات، الصور والمستندات",
+  full: "قاعدة البيانات، الإعدادات، الصور والمستندات",
+  media: "الصور والمستندات والتسجيلات",
+  codedb: "كود الإصدار المنشور وقاعدة البيانات",
+};
+
+/**
+ * أمر الاستعادة الجاهز لنسخة (قرار المالك 2026-11-21): يُنسخ ويُشغَّل على الخادم. السكربت يأخذ
+ * نسخة من الوضع الحالي أولًا، ويطلب كتابة «استعادة»، ويستعيد القاعدة في معاملة واحدة.
+ * لا زر استعادة في الموقع: الاستعادة تستبدل البيانات الحية.
+ */
+function RestoreCommand({ file }: { file: string }) {
+  const [copied, setCopied] = useState(false);
+  const command = `ssh -t root@84.247.166.216 "bash /opt/jdatna/infra/backup-restore.sh ${file}"`;
+  return (
+    <details className={r.restore}>
+      <summary>أمر الاستعادة</summary>
+      <p className={r.muted}>
+        يأخذ نسخة من الوضع الحالي أولًا، ثم يطلب كتابة «استعادة». كل ما أُضيف
+        بعد تاريخ هذه النسخة يُزال من الموقع (ويبقى في نسخة الأمان).
+      </p>
+      <code dir="ltr" className={r.mono}>
+        {command}
+      </code>
+      <button
+        type="button"
+        className={r.refresh}
+        onClick={() =>
+          navigator.clipboard
+            ?.writeText(command)
+            .then(() => setCopied(true))
+            .catch(() => {})
+        }
+      >
+        {copied ? "نُسخ ✓" : "نسخ الأمر"}
+      </button>
+    </details>
+  );
+}
 
 /**
  * الإدارة ← التقارير ← «النسخ الاحتياطية»: كل نسخة وما تحتويه (قاعدة البيانات والوسائط)
@@ -116,8 +158,10 @@ export function BackupsAdmin() {
     <section aria-label="النسخ الاحتياطية" className={r.report}>
       <h2>النسخ الاحتياطية</h2>
       <p className={s.muted}>
-        يأخذ الخادم نسخة يوميًا وقبل كل نشر، ويتحقق من سلامتها. كل نسخة ملف واحد
-        مشفّر يضم نوعين: <strong>البيانات</strong> (قاعدة البيانات والإعدادات) و
+        يأخذ الخادم نسخة <strong>يومية الساعة 5:00 فجرًا بتوقيت الرياض</strong>{" "}
+        ويحفظ آخر 10 منها (الأحدث تحل محل الأقدم)، ونسخة قبل كل نشر وبعده يحفظ
+        آخر 5 منها. يتحقق من سلامة كل نسخة. كل نسخة ملف واحد مشفّر يضم{" "}
+        <strong>البيانات</strong> (قاعدة البيانات والإعدادات) و
         <strong>الميديا</strong> (الصور والمستندات والتسجيلات).
       </p>
       <Message error={error} />
@@ -222,6 +266,8 @@ export function BackupsAdmin() {
                       <td>
                         <strong>{kindLabel[b.kind]}</strong>
                         <br />
+                        <small className={r.muted}>{contents[b.kind]}</small>
+                        <br />
                         {b.codeBytes > 0 && (
                           <span className={`${r.badge} ${r.blocked}`}>
                             كود: {size(b.codeBytes)}
@@ -261,6 +307,10 @@ export function BackupsAdmin() {
                         <small className={r.muted}>
                           {b.remote ? "مرفوعة إلى R2 ✓" : "على الخادم فقط"}
                         </small>
+                        {b.onServer &&
+                          (b.kind === "daily" || b.kind === "full") && (
+                            <RestoreCommand file={b.file} />
+                          )}
                       </td>
                     </tr>
                   ))}

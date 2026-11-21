@@ -270,3 +270,22 @@
     font-size: 20px;
   }
 }
+/* أمر الاستعادة الجاهز لكل نسخة (النسخ الاحتياطية) */
+.restore {
+  margin-top: 8px;
+}
+.restore summary {
+  cursor: pointer;
+  min-height: 32px;
+  font-weight: 700;
+}
+.restore code {
+  display: block;
+  white-space: pre-wrap;
+  word-break: break-all;
+  margin: 6px 0;
+  padding: 8px;
+  border-radius: 8px;
+  background: rgb(0 0 0 / 5%);
+  font-size: 12px;
+}
