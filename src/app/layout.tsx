@@ -22,6 +22,7 @@ import {
   APP_STORE_URL,
   PLAY_STORE_URL,
   getAppLinks,
+  getDomainVerification,
   getSiteTexts,
   visitorTemplate,
 } from "@/server/settings";
@@ -39,7 +40,7 @@ import {
 } from "@/lib/seo";
 // القالب يُقرأ عند كل طلب حتى يسري اختيار الإدارة فورًا على كل الصفحات.
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = {
+const siteMetadata: Metadata = {
   metadataBase: new URL("https://jdatna.com"),
   title: {
     default: "أكلات جدتنا | من بيوت أهلنا",
@@ -104,6 +105,24 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
   },
 };
+/**
+ * رمز إثبات ملكية النطاق (المركز السعودي للأعمال) من «الإدارة ← إثبات ملكية النطاق»:
+ * <meta name="domain-verification" content="…"> في <head> كل صفحة، ومنها الرئيسية.
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  const domain = await getDomainVerification();
+  if (!domain) return siteMetadata;
+  return {
+    ...siteMetadata,
+    verification: {
+      ...siteMetadata.verification,
+      other: {
+        ...siteMetadata.verification?.other,
+        "domain-verification": domain,
+      },
+    },
+  };
+}
 // viewportFit=cover: داخل تطبيق الآيفون تمتد الصفحة تحت شريط الساعة، فنحجز له مسافته (safe-area) في CSS.
 export const viewport: Viewport = {
   themeColor: "#2e1d12",
