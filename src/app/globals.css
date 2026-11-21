@@ -3418,3 +3418,68 @@ main {
   font-size: 13px;
   font-weight: 700;
 }
+/* التفاهم: «فهمنا طلبك» فوق نتائج البحث */
+.understood {
+  margin: 0 0 22px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgb(82 98 71 / 6%);
+}
+.understood h2 {
+  font-size: 18px;
+  margin: 0 0 4px;
+}
+.understood-asked {
+  overflow-wrap: anywhere;
+  margin: 0 0 10px;
+  color: var(--muted);
+}
+.understood-parts {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.understood-parts li {
+  display: inline-flex;
+  gap: 6px;
+  align-items: baseline;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--card, #fcf8f0);
+  border: 1px solid var(--line);
+  font-size: 14px;
+}
+.understood-parts span {
+  color: var(--muted);
+}
+.understood-ask p {
+  margin: 8px 0;
+}
+.understood-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.understood-choices a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink);
+  text-decoration: none;
+}
+.understood-choices a:hover,
+.understood-choices a:focus-visible {
+  border-color: var(--olive);
+}
+.understood-note {
+  margin: 8px 0 0;
+  font-size: 14px;
+  color: var(--muted);
+}

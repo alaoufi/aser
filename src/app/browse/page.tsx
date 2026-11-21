@@ -20,6 +20,8 @@ import {
   searchWords,
 } from "@/server/catalog";
 import { EmptyState, ProducerCard, ProductCard } from "@/components/public/ui";
+import { understandFood } from "@/lib/food-intent";
+import { UnderstoodRequest } from "@/components/public/understood-request";
 import { getSiteTexts } from "@/server/settings";
 // عنوان التبويب يتبع القسم أو الأسرة المنتجة المفتوحة.
 export async function generateMetadata({
@@ -111,10 +113,25 @@ export default async function Browse({
   // النطاق: المنطقة المختارة في الرابط، وإلا المحفوظة في الجهاز (تُحدَّد تلقائيًا من الموقع).
   const regionParam = typeof raw.region === "string" ? raw.region : undefined;
   const savedRegion = (await cookies()).get("jdatna_region")?.value ?? "";
+  // التفاهم: جملة طلب بكلام العميل («أبي غدا لعشرة بالرياض بميزانية 300») تُفهم قبل البحث:
+  // الأكلة تصير كلمة البحث، والمكان يصير النطاق. الكلمة الواحدة تبقى بحثًا عاديًا.
+  const asked = val("q").trim();
+  const [knownCities, knownCategories] = await Promise.all([
+    getCities(),
+    publicCategories(),
+  ]);
+  const understood =
+    asked && !val("producer") && !val("category")
+      ? understandFood(asked, {
+          cities: knownCities,
+          categories: knownCategories,
+        })
+      : null;
+  const request = understood?.isRequest ? understood : null;
   const filters = {
-    q: val("q").trim(),
-    city: val("city"),
-    region: regionParam ?? savedRegion,
+    q: request ? request.search : asked,
+    city: request?.place?.cityId ?? val("city"),
+    region: request?.place?.regionId ?? regionParam ?? savedRegion,
     category: val("category"),
     status: statusParam === "all" ? "" : statusParam,
     include: statusParam === "all" ? "all" : "",
@@ -144,7 +161,9 @@ export default async function Browse({
     publicCategories(),
     getCities(),
     browseLists({ region: filters.region, city: filters.city }),
-    listProducts ? searchProducts(filters) : Promise.resolve([]),
+    listProducts
+      ? searchProducts(request ? { ...filters, match: "any" } : filters)
+      : Promise.resolve([]),
     by === "word" && filters.q && !filters.producer
       ? searchProducers({
           q: filters.q,
@@ -281,6 +300,13 @@ export default async function Browse({
           {texts["browse.subtitle"] && <p>{texts["browse.subtitle"]}</p>}
         </div>
       )}
+      {request && (
+        <UnderstoodRequest
+          intent={request}
+          asked={asked}
+          regions={regionsOf(knownCities)}
+        />
+      )}
       {/* النطاق: يُحدَّد تلقائيًا من موقع الزائر، ويُغيَّر من القائمة. */}
       {!filters.producer && (
         <div className="browse-scope">
@@ -315,8 +341,8 @@ export default async function Browse({
                 type="search"
                 autoComplete="off"
                 name="q"
-                defaultValue={filters.q}
-                placeholder="جريش، مرقوق، اسم الأسرة المنتجة، قهوة…"
+                defaultValue={asked}
+                placeholder="جريش، مرقوق، أو اكتب طلبك: أبي غدا لعشرة بالرياض"
               />
             </label>
           ) : (
