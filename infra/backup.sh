@@ -1,11 +1,16 @@
 #!/usr/bin/env bash
 # نسخة احتياطية كاملة مشفّرة لأكلات جدتنا (قاعدة البيانات، الإعدادات، الصور والمستندات).
 #   backup.sh daily   النسخة اليومية (05:00 بتوقيت الرياض، jdatna-backup.timer): يُحفظ آخر 10 منها.
-#   backup.sh         نسخة النشر أو «خذ نسخة الآن» (jdatna-backup.service): يُحفظ آخر 5 منها.
+#   backup.sh         «خذ نسخة الآن» (jdatna-backup.service): يُحفظ آخر 5 منها.
+#   نسخة الأمان قبل النشر (طلب المالك 2026-11-22: النسخ نسخة يومية واحدة فقط): يطلبها النشر بوضع العلامة
+#   /run/jdatna-backup-safety قبل تشغيل الخدمة. مؤقتة ومخفية: لا تُرفع ولا تظهر في التقرير، وتحمل علامة
+#   ‎.safety، ويحذفها النشر بعد نجاحه (ويُبقيها عند الفشل للاستعادة منها).
 set -euo pipefail
 umask 077
 mode=${1:-deploy}
 [[ "$mode" == daily || "$mode" == deploy ]] || { echo "usage: backup.sh [daily]"; exit 2; }
+safety=0
+if [[ "$mode" == deploy && -f /run/jdatna-backup-safety ]]; then safety=1; rm -f /run/jdatna-backup-safety; fi
 exec 9>/run/lock/jdatna-backup.lock
 if [[ "$mode" == daily ]]; then
   # اليومية لا تُتخطى إن صادفت نسخة نشر جارية: تنتظرها حتى ساعة.
@@ -63,6 +68,13 @@ mv -- "$partial" "$final"
 sha256sum "$final" > "$final.sha256"
 # علامة النسخة اليومية: التدوير يحفظ آخر 10 يومية مستقلة عن نسخ النشر.
 [[ "$mode" != daily ]] || : > "$final.daily"
+# نسخة الأمان قبل النشر: مؤقتة، لا تُرفع ولا تُسجَّل في التقرير.
+if [[ "$safety" == 1 ]]; then
+  : > "$final.safety"
+  python3 /opt/jdatna/infra/rotate-backups.py
+  echo "Backup verified: $final (temporary pre-deploy copy)"
+  exit 0
+fi
 # أحجام مكوّنات النسخة لتقرير الإدارة: البيانات (القاعدة والإعدادات) والميديا (الصور والمستندات).
 database_bytes=$(du -sb "$stage" | cut -f1)
 media_bytes=0

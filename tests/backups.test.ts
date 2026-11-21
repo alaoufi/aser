@@ -175,3 +175,65 @@ test(
     }
   },
 );
+
+test(
+  "deleting a backup writes a server request for the full admin only, and never for the newest full copy",
+  { skip: process.env.JDATNA_TEST_DB !== "true" },
+  async () => {
+    const { requestBackupDelete } = await import("../src/server/backups");
+    const pool = db();
+    assert.ok(
+      (await pool.query("SELECT current_database() AS n")).rows[0].n.startsWith(
+        "jdatna_test_",
+      ),
+    );
+    const admin: SessionUser = {
+      id: randomUUID(),
+      name: "مدير",
+      phone: "+9665" + String(Math.floor(Math.random() * 1e8)).padStart(8, "0"),
+      role: "admin",
+    };
+    const older = "jdatna-20980101T020000Z.tar.gpg",
+      newest = "jdatna-20990301T020000Z.tar.gpg";
+    await pool.query(
+      "INSERT INTO jdatna.users(id,name,phone,role,phone_verified_at) VALUES($1,$2,$3,'admin',now())",
+      [admin.id, admin.name, admin.phone],
+    );
+    try {
+      await pool.query("DELETE FROM jdatna.backup_requests");
+      await pool.query(
+        `INSERT INTO jdatna.backup_runs(file,kind,size_bytes,remote,created_at)
+         VALUES($1,'daily',1,true,'2098-01-01'),($2,'daily',1,true,'2099-03-01')`,
+        [older, newest],
+      );
+      await assert.rejects(
+        requestBackupDelete({ ...admin, role: "customer" }, { file: older }),
+        { status: 403 },
+      );
+      await assert.rejects(requestBackupDelete(admin, { file: newest }), {
+        status: 409,
+      });
+      await assert.rejects(
+        requestBackupDelete(admin, { file: "../etc/passwd" }),
+      );
+      const report = await requestBackupDelete(admin, { file: older });
+      assert.equal(report.requests[0].kind, "delete");
+      assert.equal(report.requests[0].target, older);
+      assert.equal(report.requests[0].status, "pending");
+      // طلب واحد قائم في الوقت نفسه.
+      await assert.rejects(requestBackupDelete(admin, { file: older }), {
+        status: 409,
+      });
+    } finally {
+      await pool.query("DELETE FROM jdatna.backup_requests");
+      await pool.query("DELETE FROM jdatna.backup_runs WHERE file = ANY($1)", [
+        [older, newest],
+      ]);
+      await pool.query(
+        "DELETE FROM jdatna.admin_audit_logs WHERE actor_id=$1",
+        [admin.id],
+      );
+      await pool.query("DELETE FROM jdatna.users WHERE id=$1", [admin.id]);
+    }
+  },
+);

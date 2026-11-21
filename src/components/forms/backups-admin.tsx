@@ -17,9 +17,10 @@ const kinds: [Kind, string, string][] = [
     "قاعدة البيانات والإعدادات والصور معًا، كالنسخة اليومية",
   ],
 ];
-const kindLabel: Record<Kind | "daily", string> = {
+const kindLabel: Record<Kind | "daily" | "delete", string> = {
   daily: "يومية (5:00 فجرًا)",
-  full: "كاملة (نشر أو يدوية)",
+  full: "كاملة (يدوية)",
+  delete: "حذف نسخة",
   media: "صور ومستندات",
   codedb: "كود وقاعدة بيانات",
 };
@@ -38,7 +39,8 @@ type Backup = {
 };
 type Request = {
   id: string;
-  kind: Kind;
+  kind: Kind | "delete";
+  target: string | null;
   status: "pending" | "running" | "done" | "failed";
   requestedAt: string;
   finishedAt: string | null;
@@ -150,6 +152,31 @@ export function BackupsAdmin() {
       setBusy(false);
     }
   }
+  // أحدث نسخة كاملة أو يومية على الخادم لا تُحذف (الخادم يتحقق أيضًا).
+  const newest = data?.backups.find(
+    (b) => b.onServer && (b.kind === "full" || b.kind === "daily"),
+  )?.file;
+  async function remove(file: string) {
+    if (
+      !window.confirm(
+        `حذف النسخة ${file} نهائيًا من الخادم والتخزين الخارجي (R2)؟ لا تُسترجع بعد حذفها.`,
+      )
+    )
+      return;
+    setBusy(true);
+    setError("");
+    try {
+      setData(
+        await api<Data>(`/api/admin/backups/${encodeURIComponent(file)}`, {
+          method: "DELETE",
+        }),
+      );
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
   const last = data?.requests[0];
   const hoursSince = data?.latestAt
     ? (Date.now() - Date.parse(data.latestAt)) / 3600_000
@@ -158,10 +185,11 @@ export function BackupsAdmin() {
     <section aria-label="النسخ الاحتياطية" className={r.report}>
       <h2>النسخ الاحتياطية</h2>
       <p className={s.muted}>
-        يأخذ الخادم نسخة <strong>يومية الساعة 5:00 فجرًا بتوقيت الرياض</strong>{" "}
-        ويحفظ آخر 10 منها (الأحدث تحل محل الأقدم)، ونسخة قبل كل نشر وبعده يحفظ
-        آخر 5 منها. يتحقق من سلامة كل نسخة. كل نسخة ملف واحد مشفّر يضم{" "}
-        <strong>البيانات</strong> (قاعدة البيانات والإعدادات) و
+        يأخذ الخادم نسخة واحدة{" "}
+        <strong>يومية الساعة 5:00 فجرًا بتوقيت الرياض</strong> ويحفظ آخر 10 منها
+        (الأحدث تحل محل الأقدم). قبل كل نشر يأخذ نسخة أمان مؤقتة لا تظهر هنا،
+        ويحذفها بعد نجاح النشر. يتحقق من سلامة كل نسخة. كل نسخة ملف واحد مشفّر
+        يضم <strong>البيانات</strong> (قاعدة البيانات والإعدادات) و
         <strong>الميديا</strong> (الصور والمستندات والتسجيلات).
       </p>
       <Message error={error} />
@@ -202,22 +230,25 @@ export function BackupsAdmin() {
             </button>
             {open && (
               <p role="status" className={s.notice}>
-                طلبك «{kindLabel[open.kind]}»{" "}
+                طلبك «{kindLabel[open.kind]}»
+                {open.target ? ` ${open.target}` : ""}{" "}
                 {open.status === "pending"
                   ? "بانتظار الخادم (يبدأ خلال دقيقة)."
                   : "قيد التنفيذ على الخادم."}{" "}
-                تظهر النسخة في الجدول عند اكتمالها.
+                {open.kind === "delete"
+                  ? "تختفي النسخة من الجدول عند اكتماله."
+                  : "تظهر النسخة في الجدول عند اكتمالها."}
               </p>
             )}
             {!open && last?.status === "done" && (
               <p role="status" className={s.notice}>
-                تم ✓ آخر نسخة طلبتها «{kindLabel[last.kind]}» اكتملت{" "}
+                تم ✓ آخر طلب «{kindLabel[last.kind]}» اكتمل{" "}
                 {last.finishedAt ? when(last.finishedAt) : ""}.
               </p>
             )}
             {!open && last?.status === "failed" && (
               <p role="alert" className={s.error}>
-                تعذّر أخذ آخر نسخة طلبتها «{kindLabel[last.kind]}»
+                تعذّر تنفيذ آخر طلب «{kindLabel[last.kind]}»
                 {last.error ? `: ${last.error}` : "."}
               </p>
             )}
@@ -257,6 +288,7 @@ export function BackupsAdmin() {
                     <th>الحجم</th>
                     <th>الملف</th>
                     <th>التحميل</th>
+                    <th>حذف</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -311,6 +343,21 @@ export function BackupsAdmin() {
                           (b.kind === "daily" || b.kind === "full") && (
                             <RestoreCommand file={b.file} />
                           )}
+                      </td>
+                      <td>
+                        {b.file === newest ? (
+                          <small className={r.muted}>أحدث نسخة، لا تُحذف</small>
+                        ) : (
+                          <button
+                            type="button"
+                            className={s.buttonSecondary}
+                            onClick={() => void remove(b.file)}
+                            disabled={busy || Boolean(open)}
+                            aria-label={`حذف النسخة ${b.file}`}
+                          >
+                            حذف
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}

@@ -48,16 +48,28 @@ wait_for() {
 
 switch_to() { log "switch -> $1"; $SWITCH_CMD "$1"; }
 
+# نسخة الأمان قبل النشر أو الرجوع (طلب المالك 2026-11-22: النسخ نسخة يومية واحدة فقط): مؤقتة ومخفية
+# من التقرير (علامة .safety، بلا رفع). تُحذف بعد نجاح النشر، وتبقى عند الفشل للاستعادة منها.
+SAFETY_COPY=
 backup() {
   local label=$1 before after
   before=$(ls -1t /var/backups/jdatna/jdatna-*.tar.gpg 2>/dev/null | head -1 || true)
   log "backup ($label) start"
-  systemctl start jdatna-backup.service
+  : > /run/jdatna-backup-safety
+  systemctl start jdatna-backup.service || { rm -f /run/jdatna-backup-safety; return 1; }
+  rm -f /run/jdatna-backup-safety
   after=$(ls -1t /var/backups/jdatna/jdatna-*.tar.gpg 2>/dev/null | head -1 || true)
   [[ -n "$after" && "$after" != "$before" ]] || { log "backup ($label) produced no new archive"; return 1; }
-  log "backup ($label): $after"
+  SAFETY_COPY=$after
+  log "backup ($label): $after (temporary)"
   log "restore verification ($label)"
   $VERIFY_CMD || { log "restore verification ($label) FAILED"; return 1; }
+}
+# بعد النجاح: تُحذف نسخة الأمان المؤقتة (والنسخة اليومية 05:00 هي نسخة اليوم).
+drop_safety() {
+  [[ -n "$SAFETY_COPY" && -f "$SAFETY_COPY.safety" ]] || return 0
+  rm -f -- "$SAFETY_COPY" "$SAFETY_COPY.sha256" "$SAFETY_COPY.safety"
+  log "temporary safety copy removed: $SAFETY_COPY"
 }
 
 guard_up() {
@@ -109,6 +121,7 @@ rollback)
   switch_to "$IMAGE:$prev"
   wait_for "$prev"
   printf '%s\n' "$current" >"$STATE_DIR/previous"
+  drop_safety
   log "rolled back to $prev"
   ;;
 
@@ -159,7 +172,7 @@ deploy|deploy-migrate)
     docker build --pull=false --target migrator -t "$MIGRATOR_IMAGE:$sha" "$dir"
     log "apply migrations: $(echo $new_migrations)"
     if ! $MIGRATE_CMD "$MIGRATOR_IMAGE:$sha"; then
-      log "migration failed — live version unchanged ($current); restore from the pre-deploy backup if needed"
+      log "migration failed — live version unchanged ($current); restore from the pre-deploy backup if needed: $SAFETY_COPY"
       guard_down "$sha"
       exit 7
     fi
@@ -170,10 +183,10 @@ deploy|deploy-migrate)
     printf '%s\n' "$current" >"$STATE_DIR/previous"
     guard_down "$sha"
     if docker image inspect "$IMAGE:$current" >/dev/null 2>&1; then keep_rollback_guard "$current"; fi
-    backup post-deploy || log "warning: post-deploy backup failed; check manually"
+    drop_safety
     log "DEPLOYED $sha (previous $current)"
   else
-    log "deploy failed — rolling back to $current"
+    log "deploy failed — rolling back to $current (pre-deploy copy kept: $SAFETY_COPY)"
     if docker image inspect "$IMAGE:$current" >/dev/null 2>&1; then
       switch_to "$IMAGE:$current" && wait_for "$current" && log "rollback OK"
     fi
