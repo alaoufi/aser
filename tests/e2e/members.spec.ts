@@ -123,14 +123,22 @@ test("a family with admin permissions keeps its own account and opens the panel 
       sessionStorage.setItem("jdatna:family-welcome", "1");
     } catch {}
   });
-  // في الموقع: حسابها الشخصي (أسرة) بلا صلاحيات، و«لوحة الإدارة» فقط.
-  await as(page, {
-    id: "s",
-    name: "أم محمد",
-    phone: "+966500000012",
-    role: "producer",
-    permissions: [],
-    adminAccess: true,
+  // الخادم يميّز اللوحة من الصفحة التي طلبت الجلسة (Referer)، فنحاكيه هنا:
+  // في الموقع حسابها الشخصي (أسرة) بلا صلاحيات، وفي اللوحة صلاحية الطلبات فقط.
+  await as(page, {});
+  await page.unroute("**/api/session");
+  const family = { id: "s", name: "أم محمد", phone: "+966500000012" };
+  await page.route("**/api/session", (r) => {
+    const from = new URL(r.request().headers().referer ?? "http://x/").pathname;
+    const panel = from === "/admin" || from.startsWith("/admin/");
+    return r.fulfill({
+      json: {
+        user: panel
+          ? { ...family, role: "producer", permissions: ["orders"] }
+          : { ...family, role: "producer", permissions: [], adminAccess: true },
+        registrationOpen: true,
+      },
+    });
   });
   await page.route("**/api/producer/status", (r) =>
     r.fulfill({ json: { state: null } }),
@@ -154,14 +162,6 @@ test("a family with admin permissions keeps its own account and opens the panel 
     "/dashboard",
   );
   // جلسة اللوحة: صلاحية الطلبات فقط (تشمل «عقود الاشتراكات»).
-  await page.unroute("**/api/session");
-  await as(page, {
-    id: "s",
-    name: "أم محمد",
-    phone: "+966500000012",
-    role: "producer",
-    permissions: ["orders"],
-  });
   await scope.getByRole("button", { name: "لوحة الإدارة" }).click();
   await expect(page).toHaveURL(/\/admin$/);
   expect(entered).toBe(1);
