@@ -29,23 +29,21 @@ export default async function Page({
     [asked ?? saved].find((r) => r && regions.some((x) => x.id === r)) ?? "";
   const scope = await pageMemberScope(raw.mine);
   return (
-    <Offers
-      region={region}
-      mine={scope.active.join(",")}
-      scope={
-        <>
-          <MineBar
-            scope={scope}
-            path="/offers"
-            query={{ region: asked ?? "" }}
-          />
-          <div className="browse-scope">
-            <span>نطاقك:</span>
-            <RegionPicker regions={regions} value={region} path="/offers" />
-          </div>
-          <AdSlot placement="offers_top" />
-        </>
-      }
-    />
+    <>
+      <MineBar scope={scope} path="/offers" query={{ region: asked ?? "" }} />
+      <Offers
+        region={region}
+        mine={scope.active.join(",")}
+        scope={
+          <>
+            <div className="browse-scope">
+              <span>نطاقك:</span>
+              <RegionPicker regions={regions} value={region} path="/offers" />
+            </div>
+            <AdSlot placement="offers_top" />
+          </>
+        }
+      />
+    </>
   );
 }

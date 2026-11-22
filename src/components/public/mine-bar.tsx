@@ -9,10 +9,13 @@ export function MineBar({
   scope,
   path,
   query = {},
+  inline = false,
 }: {
   scope: MemberScope;
   path: string;
   query?: Record<string, string>;
+  /** داخل حاوية الصفحة نفسها (بلا هامش «wrap» ثانٍ). */
+  inline?: boolean;
 }) {
   if (!scope.kind || !scope.options.length) return null;
   const href = (keys: MineKey[]) => {
@@ -30,28 +33,39 @@ export function MineBar({
       ? scope.active.filter((k) => k !== key)
       : [...scope.active, key];
   return (
-    <nav className="mine-bar wrap" aria-label="اعرض لي">
-      <Link
-        href={href([])}
-        className="mine-chip"
-        aria-current={scope.active.length ? undefined : "true"}
-        scroll={false}
-      >
-        الكل
-      </Link>
-      {scope.options.map((o) => (
-        <Link
-          key={o.key}
-          href={href(toggle(o.key))}
-          className="mine-chip"
-          aria-pressed={scope.active.includes(o.key)}
-          role="button"
-          scroll={false}
-        >
-          {scope.active.includes(o.key) && <span aria-hidden="true">✓ </span>}
-          {o.label}
-        </Link>
-      ))}
+    <nav className={inline ? "mine-bar" : "mine-bar wrap"} aria-label="اعرض لي">
+      <div className="mine-panel">
+        <span className="mine-title" aria-hidden="true">
+          اعرض لي
+        </span>
+        <div className="mine-segments">
+          <Link
+            href={href([])}
+            className="mine-seg"
+            aria-current={scope.active.length ? undefined : "true"}
+            scroll={false}
+          >
+            الكل
+          </Link>
+          {scope.options.map((o) => (
+            <Link
+              key={o.key}
+              href={href(toggle(o.key))}
+              className="mine-seg"
+              aria-pressed={scope.active.includes(o.key)}
+              role="button"
+              scroll={false}
+            >
+              {scope.active.includes(o.key) && (
+                <span className="mine-check" aria-hidden="true">
+                  ✓
+                </span>
+              )}
+              {o.label}
+            </Link>
+          ))}
+        </div>
+      </div>
       {scope.notes.map((n) => (
         <p key={n} className="mine-note" role="status">
           {n}

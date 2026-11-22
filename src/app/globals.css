@@ -3484,35 +3484,106 @@ main {
   color: var(--muted);
 }
 
-/* مفاتيح العضو أعلى الصفحة («مشابه لمنتجاتي»، «منطقتي»…): الافتراضي «الكل». */
+/* مفاتيح العضو أعلى الصفحة («مشابه لمنتجاتي»، «منطقتي»…): لوحة واحدة مجمّعة، والافتراضي «الكل». */
 .mine-bar {
+  margin-block: 12px 16px;
+}
+.mine-panel {
   align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: 0 1px 2px rgb(56 41 31 / 0.06);
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-block: 12px;
+  gap: 6px 10px;
+  padding: 8px;
 }
-.mine-chip {
+.mine-title {
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 700;
+  padding-inline: 6px;
+  white-space: nowrap;
+}
+.mine-segments {
+  background: var(--cream);
+  border-radius: 14px;
+  display: flex;
+  flex: 1 1 260px;
+  gap: 4px;
+  min-width: 0;
+  padding: 4px;
+}
+.mine-seg {
   align-items: center;
-  background: var(--paper, #f4ead9);
-  border: 1px solid currentColor;
-  border-radius: 999px;
-  color: var(--ink, #2e1d12);
-  display: inline-flex;
+  border-radius: 10px;
+  color: var(--ink);
+  display: flex;
+  flex: 1 1 0;
   font-size: 0.95rem;
   font-weight: 700;
+  gap: 4px;
+  justify-content: center;
+  line-height: 1.25;
   min-height: 44px;
-  padding: 6px 14px;
+  min-width: 0;
+  padding: 6px 10px;
+  text-align: center;
   text-decoration: none;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
 }
-.mine-chip[aria-pressed="true"],
-.mine-chip[aria-current="true"] {
-  background: var(--olive, #4f5d36);
-  border-color: var(--olive, #4f5d36);
+/* «الكل» بعرض كلمته، والمساحة الباقية للخيارات الأطول. */
+.mine-seg:first-child {
+  flex: 0 0 auto;
+  padding-inline: 16px;
+}
+.mine-seg:hover {
+  background: rgb(255 255 255 / 0.6);
+}
+.mine-seg[aria-pressed="true"],
+.mine-seg[aria-current="true"] {
+  background: var(--olive);
+  box-shadow: 0 1px 3px rgb(56 41 31 / 0.2);
   color: #fff;
 }
+.mine-seg:focus-visible {
+  outline: 3px solid var(--rust);
+  outline-offset: 2px;
+}
+.mine-check {
+  font-size: 0.85em;
+}
 .mine-note {
-  flex-basis: 100%;
-  font-size: 0.95rem;
-  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin: 8px 6px 0;
+}
+@media (min-width: 640px) {
+  /* الشاشة العريضة: لوحة بعرض محتواها، لا تمتد عبر الصفحة كلها. */
+  .mine-panel {
+    display: inline-flex;
+    max-width: 100%;
+  }
+  .mine-segments {
+    flex: 0 1 auto;
+  }
+  .mine-seg {
+    flex: 0 0 auto;
+    padding-inline: 18px;
+  }
+}
+@media (max-width: 480px) {
+  /* الجوال: «اعرض لي» سطر، والخيارات صف واحد بعرض الشاشة، كل خيار بسطر واحد غالبًا. */
+  .mine-seg {
+    font-size: 0.85rem;
+    padding: 6px 4px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mine-seg {
+    transition: none;
+  }
 }

@@ -249,6 +249,21 @@ export default async function Browse({
   const available = currentCategory ? countOf(currentCategory.id) : 0;
   return (
     <div className="wrap page-space">
+      {!filters.producer && (
+        <MineBar
+          scope={scope}
+          inline
+          path="/browse"
+          query={{
+            by: by === "word" ? "" : by,
+            q: asked,
+            category: filters.category,
+            status: val("status"),
+            delivery: filters.delivery,
+            region: regionParam ?? "",
+          }}
+        />
+      )}
       {focus === "category" && currentCategory ? (
         <div className="page-intro section-intro">
           <p className="eyebrow">
@@ -312,20 +327,6 @@ export default async function Browse({
           intent={request}
           asked={asked}
           regions={regionsOf(knownCities)}
-        />
-      )}
-      {!filters.producer && (
-        <MineBar
-          scope={scope}
-          path="/browse"
-          query={{
-            by: by === "word" ? "" : by,
-            q: asked,
-            category: filters.category,
-            status: val("status"),
-            delivery: filters.delivery,
-            region: regionParam ?? "",
-          }}
         />
       )}
       {/* النطاق: يُحدَّد تلقائيًا من موقع الزائر، ويُغيَّر من القائمة. */}
