@@ -1,4 +1,5 @@
 "use client";
+import { SITE_URL } from "@/lib/seo";
 import { useEffect, useRef, useState } from "react";
 import { ORDERS_CHANGED } from "@/components/public/order-alert";
 import { LocationInput, LocationLink } from "./location-share";
@@ -81,7 +82,7 @@ const groups = [
 ];
 function whatsapp(phone: string, product: string) {
   const digits = phone.replace(/\D/g, "");
-  const text = `السلام عليكم، بخصوص طلبك (${product}) من أكلات جدتنا`;
+  const text = `السلام عليكم، بخصوص طلبك (${product}) من أكلات جدتنا\n${SITE_URL}`;
   return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
 }
 type FulfillmentOptions = {
@@ -379,7 +380,7 @@ export function OrderRequestForm({
         <a
           className={s.contact}
           href={`https://wa.me/${contactWhatsapp}?text=${encodeURIComponent(
-            `السلام عليكم، أرسلت طلب (${productName}) من أكلات جدتنا${receipt ? ` — رقم الطلب ${receipt.slice(0, 8)}` : ""}`,
+            `السلام عليكم، أرسلت طلب (${productName}) من أكلات جدتنا${receipt ? ` — رقم الطلب ${receipt.slice(0, 8)}` : ""}\n${SITE_URL}`,
           )}`}
           target="_blank"
           rel="noopener noreferrer"

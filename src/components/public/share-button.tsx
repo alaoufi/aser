@@ -1,4 +1,5 @@
 "use client";
+import { SITE_URL } from "@/lib/seo";
 import { useState } from "react";
 
 const e = encodeURIComponent;
@@ -82,7 +83,10 @@ export function ShareButton({
 }) {
   const [message, setMessage] = useState("");
   const [qr, setQr] = useState(false);
-  const link = () => url || window.location.href;
+  // بلا رابط مختصر: رابط الصفحة نفسها على العنوان الأساسي، من أي عنوان فُتحت.
+  const link = () =>
+    url ||
+    new URL(window.location.pathname + window.location.search, SITE_URL).href;
   const body = text ?? title;
   const code = url?.split("/s/")[1];
   async function copy(app?: string) {

@@ -1,3 +1,4 @@
+import { SITE_URL } from "@/lib/seo";
 import webpush from "web-push";
 import { z } from "zod";
 import type { SessionUser } from "../lib/types";
@@ -120,7 +121,7 @@ async function notifyWeb(userId: string, payload: PushPayload) {
           TTL: 60 * 60 * 24,
           urgency: "high",
           vapidDetails: {
-            subject: "https://jdatna.com",
+            subject: SITE_URL,
             publicKey: v.publicKey,
             privateKey: v.privateKey,
           },

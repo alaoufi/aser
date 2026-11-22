@@ -230,7 +230,7 @@ export default async function ProducerDetail({
               )}
               {whatsapp && (
                 <a
-                  href={`https://wa.me/${whatsapp}`}
+                  href={`https://wa.me/${whatsapp}?text=${encodeURIComponent(`السلام عليكم، وصلت لكم من أكلات جدتنا\n${share || SITE_URL}`)}`}
                   className="button secondary"
                   target="_blank"
                   rel="noopener noreferrer"
