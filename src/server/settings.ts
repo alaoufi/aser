@@ -46,7 +46,8 @@ export async function visitorTemplate(): Promise<SiteTemplate> {
 }
 
 export async function setSiteTemplate(user: SessionUser, input: unknown) {
-  if (!can(user, "content")) throw new HttpError(403, "لا تملك صلاحية الإدارة");
+  if (!can(user, "template"))
+    throw new HttpError(403, "لا تملك صلاحية الإدارة");
   const { template } = z
     .object({ template: z.enum(siteTemplates) })
     .strict()
@@ -101,7 +102,7 @@ export const getSiteTexts = cache(async (): Promise<SiteTexts> => {
 
 /** قائمة الإدارة: لكل نص قيمته الحالية والأصلية وهل عُدِّل وهل هو مخفي. */
 export async function adminSiteTexts(user: SessionUser) {
-  if (!can(user, "content")) throw new HttpError(403, "لا تملك صلاحية الإدارة");
+  if (!can(user, "texts")) throw new HttpError(403, "لا تملك صلاحية الإدارة");
   const { texts: current, hidden } = await storedSiteTexts();
   return (Object.keys(siteTextDefaults) as (keyof SiteTexts)[]).map((key) => ({
     key,
@@ -114,7 +115,7 @@ export async function adminSiteTexts(user: SessionUser) {
 
 /** تعديل نص أو حذفه («») أو إعادته للأصل (null). */
 export async function setSiteText(user: SessionUser, input: unknown) {
-  if (!can(user, "content")) throw new HttpError(403, "لا تملك صلاحية الإدارة");
+  if (!can(user, "texts")) throw new HttpError(403, "لا تملك صلاحية الإدارة");
   const parsed = z
     .union([
       z
@@ -301,7 +302,7 @@ export async function getAppLinks(): Promise<AppLinks> {
 }
 
 export async function setAppLinks(user: SessionUser, input: unknown) {
-  if (!can(user, "content")) throw new HttpError(403, "لا تملك صلاحية الإدارة");
+  if (!can(user, "app")) throw new HttpError(403, "لا تملك صلاحية الإدارة");
   const value = appLinksSchema.parse(input);
   return transaction(async (client) => {
     await client.query(
@@ -339,7 +340,7 @@ export async function getProductFields(): Promise<ProductFields> {
 
 /** إخفاء حقل من نموذج المنتج أو حذفه أو إعادته. */
 export async function setProductField(user: SessionUser, input: unknown) {
-  if (!can(user, "categories"))
+  if (!can(user, "product-fields"))
     throw new HttpError(403, "لا تملك صلاحية إدارة الأقسام");
   const { key, state } = z
     .object({
@@ -414,7 +415,8 @@ export function parseDomainVerification(input: unknown) {
   return code;
 }
 export async function setDomainVerification(user: SessionUser, input: unknown) {
-  if (user.role !== "admin") throw new HttpError(403, "لا تملك صلاحية الوصول");
+  if (!can(user, "verification"))
+    throw new HttpError(403, "لا تملك صلاحية الوصول");
   const code = parseDomainVerification(input);
   return transaction(async (client) => {
     if (code)

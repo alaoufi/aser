@@ -1,4 +1,5 @@
 import { createReadStream } from "node:fs";
+import { can } from "../lib/permissions";
 import { stat } from "node:fs/promises";
 import path from "node:path";
 import { Readable } from "node:stream";
@@ -19,7 +20,7 @@ const FILE = /^jdatna-((media|codedb)-)?\d{8}T\d{6}Z\.tar\.gpg$/;
 export const BACKUP_KINDS = ["full", "media", "codedb"] as const;
 export type BackupKind = (typeof BACKUP_KINDS)[number];
 const owner = (user: SessionUser) => {
-  if (user.role !== "admin") throw new HttpError(403, "لا تملك صلاحية الوصول");
+  if (!can(user, "backups")) throw new HttpError(403, "لا تملك صلاحية الوصول");
 };
 const dir = () => process.env.BACKUP_DIR?.trim() || "";
 const r2Ready = () =>

@@ -141,7 +141,7 @@ export async function familyViews(user: SessionUser) {
 
 /** الإدارة ← «المشاهدات»: التفعيل للجميع، وأكثر المنتجات والأسر مشاهدة. */
 export async function viewsAdmin(user: SessionUser) {
-  if (!can(user, "content")) throw new HttpError(403, "لا تملك صلاحية الإدارة");
+  if (!can(user, "views")) throw new HttpError(403, "لا تملك صلاحية الإدارة");
   const [open, products, producers] = await Promise.all([
     viewsPublic(),
     db().query(
@@ -173,7 +173,7 @@ export async function viewsAdmin(user: SessionUser) {
 }
 
 export async function setViewsPublic(user: SessionUser, input: unknown) {
-  if (!can(user, "content")) throw new HttpError(403, "لا تملك صلاحية الإدارة");
+  if (!can(user, "views")) throw new HttpError(403, "لا تملك صلاحية الإدارة");
   const { public: open } = z
     .object({ public: z.boolean() })
     .strict()

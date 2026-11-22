@@ -1638,3 +1638,20 @@
 .vehicleChoice input {
   accent-color: #4f5d36;
 }
+/* «مدير مخصص»: الأقسام مجمّعة مثل القائمة الجانبية */
+.permissionGroups {
+  display: grid;
+  gap: 10px;
+}
+.permissionGroup {
+  margin: 0;
+  padding: 8px 12px 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.permissionGroup legend label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+}

@@ -114,7 +114,8 @@ test("the saved order moves groups and pages, hides pages, and never loses a new
   );
   assert.deepEqual(
     staff.map((g) => g.items.map((it) => it.to)),
-    [["/admin/orders"], ["/admin"], ["/admin/contracts"]],
+    // كل قسم صلاحية مستقلة: «عقود الاشتراكات» لا تأتي مع «الطلبات».
+    [["/admin/orders"], ["/admin"]],
   );
 });
 

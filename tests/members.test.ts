@@ -161,7 +161,7 @@ test(
         action: "create",
         name: "مشرفة جديدة",
         phone: "05" + String(Math.floor(Math.random() * 1e8)).padStart(8, "0"),
-        permissions: ["content"],
+        permissions: ["template"],
       })) as unknown as { id: string };
       ids.push(added.id);
       const created = (
@@ -171,7 +171,7 @@ test(
         )
       ).rows[0];
       assert.equal(created.role, "customer");
-      assert.deepEqual(created.permissions, ["content"]);
+      assert.deepEqual(created.permissions, ["template"]);
       await assert.rejects(
         updateMember(admin, {
           action: "create",

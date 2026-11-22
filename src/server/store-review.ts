@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { can } from "../lib/permissions";
 import { z } from "zod";
 import type { PoolClient } from "pg";
 import type { SessionUser } from "../lib/types";
@@ -111,8 +112,8 @@ export async function assertReviewPair(
 }
 
 function owner(user: SessionUser) {
-  if (user.role !== "admin")
-    throw new HttpError(403, "حسابات المراجعة لمدير المنصة فقط");
+  if (!can(user, "review"))
+    throw new HttpError(403, "حسابات المراجعة لمن أُعطي قسمها في الإدارة");
 }
 
 export type ReviewStatus = {

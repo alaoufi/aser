@@ -108,6 +108,6 @@ test("a supervisor cannot open the menu ordering page", async ({ page }) => {
   );
   await page.goto("/admin/menu-layout");
   await expect(page.locator("main")).toContainText(
-    "ترتيب القوائم للمدير الكامل فقط",
+    "ترتيب القوائم ليس ضمن أقسامك في الإدارة",
   );
 });

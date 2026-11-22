@@ -5,7 +5,7 @@ import { can } from "@/lib/permissions";
 import { HttpError } from "@/server/security";
 export const GET = api(async (request) => {
   const user = await requireUser(request);
-  if (!can(user, "categories"))
+  if (!can(user, "product-fields"))
     throw new HttpError(403, "لا تملك صلاحية إدارة الأقسام");
   return json({ fields: await getProductFields() });
 });

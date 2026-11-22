@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { SessionUser } from "../lib/types";
 import { cleanMenuLayout, type MenuLayout } from "../lib/admin-nav";
-import { isManager } from "../lib/permissions";
+import { can, isManager } from "../lib/permissions";
 import { databaseConfigured, db, transaction } from "./db";
 import { HttpError } from "./security";
 
@@ -32,8 +32,8 @@ export async function getMenuLayout(
 }
 
 export async function saveMenuLayout(user: SessionUser, input: unknown) {
-  if (user.role !== "admin")
-    throw new HttpError(403, "ترتيب القوائم للمدير الكامل فقط");
+  if (!can(user, "menu-layout"))
+    throw new HttpError(403, "ترتيب القوائم لمن أُعطي قسمها في الإدارة");
   const reset = (input as { reset?: unknown } | null)?.reset === true;
   const layout = reset ? null : cleanMenuLayout(input);
   if (!reset && !layout)

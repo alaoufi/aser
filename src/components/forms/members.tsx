@@ -3,6 +3,7 @@ import { PasswordField } from "./password-field";
 import { adminCache, fetchAdmin } from "./admin-cache";
 import { useEffect, useState } from "react";
 import { adminPermissions, type AdminPermission } from "@/lib/permissions";
+import { NAV_GROUPS } from "@/lib/admin-nav";
 import { Message, api, s, useSession } from "./shared";
 
 type Member = {
@@ -18,13 +19,16 @@ type Access = { fullAdmin: boolean; permissions: string[] };
 
 function accessLabel(m: Member) {
   const type = m.role === "producer" ? "أسرة منتجة" : "عضو";
-  if (m.role === "admin") return "مدير كامل";
+  if (m.role === "admin") return "مدير عام";
   return m.permissions.length
-    ? `${type} · صلاحيات إدارية (${m.permissions.length})`
+    ? `${type} · مدير مخصص (${m.permissions.length} ${m.permissions.length <= 10 && m.permissions.length >= 3 ? "أقسام" : "قسمًا"})`
     : type;
 }
 
-/** نوع الصلاحية: عضو عادي، أو صلاحيات محددة، أو مدير كامل (لغير الأسر). */
+/**
+ * نوع الصلاحية (قرار المالك 2026-11-22): عضو عادي، أو «مدير مخصص» يُختار له من أقسام القائمة الجانبية
+ * قسمًا قسمًا (مجمّعة مثل القائمة)، أو «مدير عام» له كل الأقسام (لغير الأسر).
+ */
 function AccessFields({
   initial,
   producer,
@@ -54,8 +58,8 @@ function AccessFields({
         {(
           [
             ["none", "عضو عادي (بلا صلاحيات إدارية)"],
-            ["limited", "صلاحيات إدارية محددة"],
-            ["full", "مدير كامل (كل الصلاحيات)"],
+            ["limited", "مدير مخصص (أقسام تختارها له)"],
+            ["full", "مدير عام (كل الأقسام والأعضاء والصلاحيات)"],
           ] as const
         ).map(([id, label]) => (
           <label key={id}>
@@ -73,28 +77,69 @@ function AccessFields({
         ))}
       </div>
       {producer && (
-        <small>حساب الأسرة المنتجة يُعطى صلاحيات محددة ويبقى حساب أسرة.</small>
+        <small>حساب الأسرة المنتجة يكون مديرًا مخصصًا ويبقى حساب أسرة.</small>
       )}
       {mode === "limited" && (
-        <div className={s.checks}>
-          {(
-            Object.entries(adminPermissions) as [AdminPermission, string][]
-          ).map(([id, label]) => (
-            <label key={id}>
-              <input
-                type="checkbox"
-                checked={perms.includes(id)}
-                onChange={(e) => {
-                  const next = e.target.checked
-                    ? [...perms, id]
-                    : perms.filter((x) => x !== id);
-                  setPerms(next);
-                  emit("limited", next);
-                }}
-              />
-              {label}
-            </label>
-          ))}
+        <div className={s.permissionGroups}>
+          <small>
+            يرى في لوحة الإدارة لوحة التحكم والأقسام التي تختارها فقط. «الأعضاء
+            والصلاحيات» للمدير العام وحده.
+          </small>
+          {NAV_GROUPS.map((g) => {
+            const ids = g.items
+              .map((it) => it.perm)
+              .filter(
+                (p): p is AdminPermission =>
+                  typeof p === "string" && p in adminPermissions,
+              );
+            if (!ids.length) return null;
+            const all = ids.every((id) => perms.includes(id));
+            const set = (next: string[]) => {
+              setPerms(next);
+              emit("limited", next);
+            };
+            return (
+              <fieldset key={g.label} className={s.permissionGroup}>
+                <legend>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={all}
+                      aria-label={`${g.label}: المجموعة كلها`}
+                      onChange={(e) =>
+                        set(
+                          e.target.checked
+                            ? [...new Set([...perms, ...ids])]
+                            : perms.filter(
+                                (x) => !ids.includes(x as AdminPermission),
+                              ),
+                        )
+                      }
+                    />
+                    {g.label}
+                  </label>
+                </legend>
+                <div className={s.checks}>
+                  {ids.map((id) => (
+                    <label key={id}>
+                      <input
+                        type="checkbox"
+                        checked={perms.includes(id)}
+                        onChange={(e) =>
+                          set(
+                            e.target.checked
+                              ? [...perms, id]
+                              : perms.filter((x) => x !== id),
+                          )
+                        }
+                      />
+                      {adminPermissions[id]}
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+            );
+          })}
         </div>
       )}
     </fieldset>

@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { api, s as forms, useSession } from "@/components/forms/shared";
 import { SectionIcon } from "@/components/forms/section-icon";
 import { prefetchAdmin } from "@/components/forms/admin-cache";
-import { can, isManager } from "@/lib/permissions";
+import { canAny, isManager } from "@/lib/permissions";
 import { currentLabel, groupTitle, visibleGroups } from "@/lib/admin-nav";
 import { useMenuLayout } from "./menu-layout-store";
 import css from "./admin-frame.module.css";
@@ -26,7 +26,7 @@ export function AdminFrame({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(0);
   const [leaving, setLeaving] = useState(false);
-  const reviews = can(user, "producers");
+  const reviews = canAny(user, "approvals", "producers");
   // ترتيب «ترتيب القوائم» المحفوظ، لكل أعضاء الإدارة.
   const layout = useMenuLayout(isManager(user));
 
@@ -146,7 +146,7 @@ export function AdminFrame({ children }: { children: React.ReactNode }) {
         <div className={css.sideFoot}>
           <p className={css.who}>
             <strong>{user.name}</strong>
-            <small>{user.role === "admin" ? "مدير كامل" : "مشرف"}</small>
+            <small>{user.role === "admin" ? "مدير عام" : "مدير مخصص"}</small>
           </p>
           <div className={css.footActions}>
             {/* رابط عادي (تحميل كامل): الموقع بالجلسة الشخصية، ولوحة الإدارة تبقى مفتوحة 12 ساعة. */}

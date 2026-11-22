@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { api, s as forms, useSession } from "@/components/forms/shared";
 import { SectionIcon } from "@/components/forms/section-icon";
+import { can } from "@/lib/permissions";
 import {
   LOCKED,
   NAV_GROUPS,
@@ -28,7 +29,7 @@ const move = <T,>(list: T[], from: number, to: number) => {
 
 export function MenuLayoutAdmin() {
   const session = useSession();
-  const owner = session.user?.role === "admin";
+  const owner = can(session.user, "menu-layout");
   const [groups, setGroups] = useState<LaidGroup[] | null>(null);
   const [hidden, setHidden] = useState<Set<string>>(new Set());
   const [msg, setMsg] = useState<{ text: string; bad?: boolean } | null>(null);
@@ -49,7 +50,7 @@ export function MenuLayoutAdmin() {
   if (!owner)
     return (
       <p role="alert" className={forms.error}>
-        ترتيب القوائم للمدير الكامل فقط.
+        ترتيب القوائم ليس ضمن أقسامك في الإدارة.
       </p>
     );
   if (!groups) return <p role="status">جارٍ تحميل الترتيب…</p>;

@@ -67,8 +67,10 @@ test("admin adds a member and grants permissions to members and families", async
   const add = page.getByRole("form", { name: "إضافة عضو" });
   await add.getByLabel("اسم العضو").fill("نورة");
   await add.getByLabel("رقم الجوال").fill("0500000099");
-  await add.getByRole("radio", { name: "صلاحيات إدارية محددة" }).check();
-  await add.getByRole("checkbox", { name: "الطلبات" }).check();
+  await add
+    .getByRole("radio", { name: "مدير مخصص (أقسام تختارها له)" })
+    .check();
+  await add.getByRole("checkbox", { name: "الطلبات", exact: true }).check();
   await add.getByRole("button", { name: "إضافة العضو" }).click();
   await expect.poll(() => sent.length).toBe(1);
   expect(sent[0]).toEqual({
@@ -83,9 +85,11 @@ test("admin adds a member and grants permissions to members and families", async
   await expect(page.getByText("لا يمكنك تعديل صلاحيات حسابك")).toBeVisible();
   // عضو عادي يُعطى صلاحيات محددة.
   await page.getByRole("button", { name: /سارة/ }).click();
-  await page.getByRole("radio", { name: "صلاحيات إدارية محددة" }).check();
-  await page.getByRole("checkbox", { name: "الطلبات" }).check();
-  await page.getByRole("checkbox", { name: "البلاغات" }).check();
+  await page
+    .getByRole("radio", { name: "مدير مخصص (أقسام تختارها له)" })
+    .check();
+  await page.getByRole("checkbox", { name: "الطلبات", exact: true }).check();
+  await page.getByRole("checkbox", { name: "البلاغات", exact: true }).check();
   await page.getByRole("button", { name: "حفظ الصلاحيات" }).click();
   await expect.poll(() => sent.length).toBe(2);
   expect(sent[1]).toEqual({
@@ -97,10 +101,14 @@ test("admin adds a member and grants permissions to members and families", async
   // الأسرة المنتجة: صلاحيات محددة متاحة، والمدير الكامل غير متاح، ويمكن إيقافها.
   await page.getByRole("button", { name: /أم محمد/ }).click();
   await expect(
-    page.getByRole("radio", { name: "مدير كامل (كل الصلاحيات)" }),
+    page.getByRole("radio", {
+      name: "مدير عام (كل الأقسام والأعضاء والصلاحيات)",
+    }),
   ).toBeDisabled();
-  await page.getByRole("radio", { name: "صلاحيات إدارية محددة" }).check();
-  await page.getByRole("checkbox", { name: "المنتجات" }).check();
+  await page
+    .getByRole("radio", { name: "مدير مخصص (أقسام تختارها له)" })
+    .check();
+  await page.getByRole("checkbox", { name: "المنتجات", exact: true }).check();
   await page.getByRole("button", { name: "حفظ الصلاحيات" }).click();
   await expect.poll(() => sent.length).toBe(3);
   expect(sent[2]).toEqual({
@@ -134,7 +142,11 @@ test("a family with admin permissions keeps its own account and opens the panel 
     return r.fulfill({
       json: {
         user: panel
-          ? { ...family, role: "producer", permissions: ["orders"] }
+          ? {
+              ...family,
+              role: "producer",
+              permissions: ["orders", "contracts"],
+            }
           : { ...family, role: "producer", permissions: [], adminAccess: true },
         registrationOpen: true,
       },
@@ -161,7 +173,7 @@ test("a family with admin permissions keeps its own account and opens the panel 
     "href",
     "/dashboard",
   );
-  // جلسة اللوحة: صلاحية الطلبات فقط (تشمل «عقود الاشتراكات»).
+  // جلسة اللوحة: قسم الطلبات وعقود الاشتراكات.
   await scope.getByRole("button", { name: "لوحة الإدارة" }).click();
   await expect(page).toHaveURL(/\/admin$/);
   expect(entered).toBe(1);

@@ -591,7 +591,8 @@ export async function reopenConversation(id: string) {
 
 /** الإدارة ← «المحادثات المحذوفة»: لصلاحية البلاغات. */
 export async function adminDeletedConversations(user: SessionUser) {
-  if (!can(user, "reports")) throw new HttpError(403, "لا تملك صلاحية الوصول");
+  if (!can(user, "deleted-chats"))
+    throw new HttpError(403, "لا تملك صلاحية الوصول");
   return (
     await db().query(
       `SELECT d.id,d.conversation_id AS "conversationId",d.deleted_at AS "deletedAt",
@@ -623,7 +624,8 @@ export async function adminDeletedTranscript(
   user: SessionUser,
   deletionId: string,
 ) {
-  if (!can(user, "reports")) throw new HttpError(403, "لا تملك صلاحية الوصول");
+  if (!can(user, "deleted-chats"))
+    throw new HttpError(403, "لا تملك صلاحية الوصول");
   if (!z.uuid().safeParse(deletionId).success)
     throw new HttpError(404, "المحادثة غير موجودة");
   const d = (
@@ -656,7 +658,8 @@ export async function adminDeletedTranscript(
 
 /** صوت رسالة في محادثة محذوفة، للإدارة فقط. */
 export async function adminVoice(user: SessionUser, messageId: string) {
-  if (!can(user, "reports")) throw new HttpError(403, "لا تملك صلاحية الوصول");
+  if (!can(user, "deleted-chats"))
+    throw new HttpError(403, "لا تملك صلاحية الوصول");
   if (!z.uuid().safeParse(messageId).success)
     throw new HttpError(404, "الرسالة غير موجودة");
   const row = (

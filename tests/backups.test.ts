@@ -29,7 +29,7 @@ test(
       role,
     });
     const admin = mk("admin"),
-      supervisor = { ...mk("customer"), permissions: ["content", "reports"] },
+      supervisor = { ...mk("customer"), permissions: ["template", "reports"] },
       customer = mk("customer");
     const file = "jdatna-20990101T000000Z.tar.gpg",
       gone = "jdatna-20990102T000000Z.tar.gpg";

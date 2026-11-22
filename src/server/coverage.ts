@@ -126,7 +126,7 @@ export function requireCoverageAdmin(user: {
   role: string;
   permissions?: string[] | null;
 }) {
-  if (!can(user, "locations"))
+  if (!can(user, "coverage"))
     throw new HttpError(403, "هذه العملية للإدارة فقط");
 }
 export async function getCoverageTree(): Promise<CoverageNode[]> {

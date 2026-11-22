@@ -550,7 +550,7 @@ export function CoverageAdmin() {
       <h1>التصنيف الإداري للتغطية</h1>
       <Guard {...session} admin />
       <Message error={error} success={success} />
-      {can(session.user, "locations") && (
+      {can(session.user, "coverage") && (
         <>
           <p>
             أضف التصنيف بناءً على معلومات معتمدة فقط. ربط المدينة بالمحافظة يحفظ

@@ -5,7 +5,7 @@ import { can } from "@/lib/permissions";
 import { HttpError } from "@/server/security";
 export const GET = api(async (request) => {
   const user = await requireUser(request);
-  if (!can(user, "content")) throw new HttpError(403, "لا تملك صلاحية الإدارة");
+  if (!can(user, "app")) throw new HttpError(403, "لا تملك صلاحية الإدارة");
   return json({ links: await getAppLinks() });
 });
 export const PUT = api(async (request) => {
