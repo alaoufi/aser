@@ -762,18 +762,45 @@ img {
   flex-wrap: wrap;
   gap: 10px;
 }
+/* شارتا المتجرين بشكلهما الرسمي: أسود، شعار يسار، وسطران (صغير ثم كبير). */
 .store-badge {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  min-height: 46px;
-  padding: 8px 16px;
-  border: 1px solid rgb(255 255 255 / 45%);
-  border-radius: 12px;
+  gap: 10px;
+  min-height: 48px;
+  min-width: 160px;
+  padding: 6px 14px 6px 12px;
+  border: 1px solid #a6a6a6;
+  border-radius: 9px;
   background: #000;
   color: #fff;
-  font-weight: 700;
   text-decoration: none;
+}
+.store-badge-text {
+  display: grid;
+  line-height: 1.05;
+  text-align: left;
+}
+.store-badge-text small {
+  font-family:
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.2px;
+}
+.store-badge-text strong {
+  font-family:
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
 }
 .store-badge:hover,
 .store-badge:focus-visible {

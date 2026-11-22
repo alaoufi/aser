@@ -129,7 +129,10 @@ export const siteTextLabels: Record<
   "browse.subtitle": ["صفحة البحث", "السطر تحت العنوان"],
   "footer.made": ["أسفل الموقع", "العبارة الختامية"],
   "footer.affiliation": ["أسفل الموقع", "سطر الانتماء"],
-  "store.title": ["أسفل الموقع", "عنوان أزرار تحميل التطبيق"],
+  "store.title": [
+    "أسفل الموقع",
+    "عنوان أزرار تحميل التطبيق (لا يظهر حاليًا: الشارتان وحدهما)",
+  ],
   "store.appStore": ["أسفل الموقع", "زر App Store"],
   "store.googlePlay": ["أسفل الموقع", "زر Google Play"],
   "table.prev": ["الرئيسية", "سهم الأطباق السابقة"],
