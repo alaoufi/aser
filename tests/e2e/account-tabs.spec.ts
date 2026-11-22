@@ -97,6 +97,7 @@ test("«معلوماتي» opens into tabs: personal data, password, appearance 
   const tablist = page.getByRole("tablist", { name: "أقسام معلوماتي" });
   await expect(tablist.getByRole("tab")).toHaveText([
     "البيانات الشخصية",
+    "ادعُ صديقًا",
     "كلمة المرور",
     "المظهر",
     "حذف الحساب",
@@ -107,6 +108,8 @@ test("«معلوماتي» opens into tabs: personal data, password, appearance 
   await expect(page.getByLabel("رقم الجوال")).toHaveValue("+966500000041");
   // الأسهم تنتقل بين التبويبات (الأيسر للتالي في العربية).
   await tablist.getByRole("tab", { name: "البيانات الشخصية" }).focus();
+  await page.keyboard.press("ArrowLeft");
+  await expect(tablist.getByRole("tab", { name: "ادعُ صديقًا" })).toBeFocused();
   await page.keyboard.press("ArrowLeft");
   await expect(tablist.getByRole("tab", { name: "كلمة المرور" })).toBeFocused();
   await expect(
