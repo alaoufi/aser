@@ -123,7 +123,7 @@ test(
       const customer = as(await mkUser("customer"), "customer");
       const empty = await memberScope(customer, ["similar"]);
       assert.equal(await seen(empty), "", "لم يطلب شيئًا: لا شيء يشبه طلباته");
-      assert.ok(empty.notes.length);
+      assert.match(empty.summary, /^لا يُعرض شيء الآن: لم تطلب شيئًا بعد/);
       await pool.query(
         "INSERT INTO jdatna.order_requests(id,request_key,request_hash,user_id,producer_id,product_id,snapshot,customer_name,phone,quantity,meal,start_date,end_date,status) VALUES($1,$2,'h',$3,$4,$5,'{}','عميل','+966500000000',1,'lunch',current_date+1,current_date+1,'pending')",
         [
@@ -144,7 +144,11 @@ test(
         "AB",
       );
       const noRegion = await memberScope(customer, ["area"], "");
-      assert.ok(noRegion.notes.length, "بلا منطقة محفوظة: يطلب اختيارها");
+      assert.equal(
+        noRegion.summary,
+        "يُعرض الآن الكل، و«منطقتي» لا يعمل حتى تختار منطقتك من «نطاقك».",
+        "بلا منطقة محفوظة: يقول إنه يعرض الكل ولماذا",
+      );
 
       const courierUser = await mkUser("courier");
       await pool.query(

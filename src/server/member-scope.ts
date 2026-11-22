@@ -17,7 +17,7 @@ export type MemberScope = {
   options: { key: MineKey; label: string }[];
   active: MineKey[];
   filters: MineFilters | null;
-  /** سبب ظاهر حين لا يستطيع الفلتر أن يعمل (مثل: لم تطلب شيئًا بعد). */
+  /** حين لا يُعرض شيء بسبب فلتر لا يعمل (مثل: لم تطلب شيئًا بعد)؛ يصير هو سطر الحالة. */
   notes: string[];
   /** سطر الحالة تحت المفاتيح: ما يُعرض الآن بالضبط (الأقسام والمنطقة والمدن بأسمائها). */
   summary: string;
@@ -94,6 +94,7 @@ export async function memberScope(
     };
   const filters: MineFilters = {};
   const notes: string[] = [];
+  let unapplied = "";
   if (who.kind === "family") {
     if (active.includes("similar")) {
       filters.categories = (
@@ -106,7 +107,9 @@ export async function memberScope(
       ).rows.map((r) => r.id);
       filters.excludeProducer = who.producer.id;
       if (!filters.categories.length)
-        notes.push("أضف منتجاتك وأقسامها أولًا ليعمل «مشابه لمنتجاتي».");
+        notes.push(
+          "لا يُعرض شيء الآن: ليس لمنتجاتك أقسام بعد ليُقارن بها. أضف منتجاتك وأقسامها، أو ألغِ «مشابه لمنتجاتي».",
+        );
     }
     if (active.includes("area")) filters.region = who.producer.region;
   } else if (who.kind === "customer") {
@@ -119,11 +122,14 @@ export async function memberScope(
         )
       ).rows.map((r) => r.id);
       if (!filters.categories.length)
-        notes.push("لم تطلب شيئًا بعد، فلا شيء يشبه طلباتك.");
+        notes.push(
+          "لا يُعرض شيء الآن: لم تطلب شيئًا بعد، فلا شيء يشبه طلباتك. ألغِ «مشابه لطلباتي» لترى الكل.",
+        );
     }
     if (active.includes("area")) {
+      // بلا منطقة محفوظة لا يُطبَّق «منطقتي»، ويقول سطر الحالة ذلك صراحة.
       if (savedRegion) filters.region = savedRegion;
-      else notes.push("اختر منطقتك من «نطاقك» ليعمل «منطقتي».");
+      else unapplied = "«منطقتي» لا يعمل حتى تختار منطقتك من «نطاقك»";
     }
   } else {
     // مدينة المندوب، ومدن المراكز التي اختار التوصيل لها (المركز تحت مدينته في شجرة التغطية).
@@ -145,7 +151,9 @@ export async function memberScope(
     active,
     filters,
     notes,
-    summary: notes.length ? "" : await describe(who.kind, filters),
+    summary: notes.length
+      ? notes[0]
+      : await describe(who.kind, filters, unapplied),
   };
 }
 
@@ -154,7 +162,7 @@ const list = (names: string[], max = 4) =>
     ? `${names.slice(0, max).join("، ")} وغيرها`
     : names.join("، ");
 /** يصف ما يُعرض الآن بأسماء الأقسام والمنطقة والمدن، مثل: «ما يشبه منتجاتك (جريش، مرقوق) في منطقة القصيم». */
-async function describe(kind: MemberKind, f: MineFilters) {
+async function describe(kind: MemberKind, f: MineFilters, unapplied = "") {
   const [categories, region, cities] = await Promise.all([
     f.categories?.length
       ? db()
@@ -190,7 +198,10 @@ async function describe(kind: MemberKind, f: MineFilters) {
   const all = categories.length ? "" : "كل ما ";
   if (region) parts.push(`${all}في ${region}`);
   if (cities.length) parts.push(`${all}في تغطيتك: ${list(cities, 6)}`);
-  return parts.length ? `يُعرض الآن ${parts.join(" ")}.` : "";
+  const shown = parts.length
+    ? `يُعرض الآن ${parts.join(" ")}`
+    : "يُعرض الآن الكل";
+  return unapplied ? `${shown}، و${unapplied}.` : `${shown}.`;
 }
 
 /** شروط SQL لفلاتر العضو على المنتجات (x) أو الأسر (p)، تُضاف لشروط البحث. */

@@ -103,7 +103,9 @@ test.describe("member filters at the top of the page", () => {
     await bar.getByRole("checkbox", { name: "مشابه لمنتجاتي" }).click();
     await expect(page).toHaveURL(/mine=area%2Csimilar|mine=area,similar/);
     // بلا أقسام لمنتجاتها: سبب ظاهر بدل قائمة فارغة بلا تفسير.
-    await expect(bar.getByRole("status")).toContainText("أضف منتجاتك");
+    await expect(bar.getByRole("status")).toHaveText(
+      /^لا يُعرض شيء الآن: ليس لمنتجاتك أقسام بعد/,
+    );
     // المفتاح يوقف نفسه، وإلغاء الاثنين يرجع الكل.
     await bar.getByRole("checkbox", { name: "منطقتي" }).click();
     await expect(page).toHaveURL(/mine=similar/);

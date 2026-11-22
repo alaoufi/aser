@@ -65,11 +65,6 @@ export function MineBar({
           {scope.summary}
         </p>
       )}
-      {scope.notes.map((n) => (
-        <p key={n} className="mine-note" role="status">
-          {n}
-        </p>
-      ))}
     </nav>
   );
 }
