@@ -113,15 +113,29 @@ export default async function Home({
         <div className="hero-visual">
           {template === "najdi" ? <NajdiDoor /> : <FoodPhotos />}
         </div>
-        {/* الجوال: بجانب الصورة (نصف السطر) «متوفر الآن» و«اطلب الآن»، فلا يسيطر شيء على الشاشة. */}
+        {/* الجوال (النموذج 1 الذي اختاره المالك): تحت الصورة «متوفر الآن» و«اطلب الآن» متجاورتان. */}
         <div className="hero-side">
           <Link href="/browse?status=available" className="hero-chip">
-            <span className="status-dot" aria-hidden="true" />
-            {texts["avail.now"] || "متوفر الآن"}
+            <span className="hero-chip-icon" aria-hidden="true">
+              <span className="status-dot" />
+            </span>
+            <span className="hero-chip-text">
+              <strong>{texts["avail.now"] || "متوفر الآن"}</strong>
+              {texts["avail.nowHint"] && (
+                <small>{texts["avail.nowHint"]}</small>
+              )}
+            </span>
           </Link>
           <Link href="/browse?status=preorder" className="hero-chip warm">
-            <span aria-hidden="true">◷</span>
-            {texts["avail.order"] || "اطلب الآن"}
+            <span className="hero-chip-icon" aria-hidden="true">
+              ◷
+            </span>
+            <span className="hero-chip-text">
+              <strong>{texts["avail.order"] || "اطلب الآن"}</strong>
+              {texts["avail.orderHint"] && (
+                <small>{texts["avail.orderHint"]}</small>
+              )}
+            </span>
           </Link>
         </div>
       </section>
