@@ -248,11 +248,11 @@ export default async function Browse({
       : null;
   const available = currentCategory ? countOf(currentCategory.id) : 0;
   return (
-    <div className="wrap page-space">
+    <>
+      {/* «اعرض لي» تحت حزام الرأس مباشرة، فوق عنوان الصفحة. */}
       {!filters.producer && (
         <MineBar
           scope={scope}
-          inline
           path="/browse"
           query={{
             by: by === "word" ? "" : by,
@@ -264,393 +264,366 @@ export default async function Browse({
           }}
         />
       )}
-      {focus === "category" && currentCategory ? (
-        <div className="page-intro section-intro">
-          <p className="eyebrow">
-            {parentCategory
-              ? categoryLabel(parentCategory, allCategories)
-              : "قسم من أقسام جدتنا"}
-          </p>
-          <h1>{currentCategory.name}</h1>
-          <p>
-            {available
-              ? `${available} من المنتجات المتاحة من الأسر في هذا القسم${branches.length ? " وفروعه" : ""}.`
-              : "لا توجد منتجات متاحة في هذا القسم حاليًا."}
-          </p>
-          <div className="section-intro-links">
-            {parentCategory && (
+      <div className="wrap page-space">
+        {focus === "category" && currentCategory ? (
+          <div className="page-intro section-intro">
+            <p className="eyebrow">
+              {parentCategory
+                ? categoryLabel(parentCategory, allCategories)
+                : "قسم من أقسام جدتنا"}
+            </p>
+            <h1>{currentCategory.name}</h1>
+            <p>
+              {available
+                ? `${available} من المنتجات المتاحة من الأسر في هذا القسم${branches.length ? " وفروعه" : ""}.`
+                : "لا توجد منتجات متاحة في هذا القسم حاليًا."}
+            </p>
+            <div className="section-intro-links">
+              {parentCategory && (
+                <Link
+                  className="text-link"
+                  href={href({ category: parentCategory.id })}
+                >
+                  → {parentCategory.name}
+                </Link>
+              )}
               <Link
                 className="text-link"
-                href={href({ category: parentCategory.id })}
+                href={href({ by: "category", category: "", q: "" })}
               >
-                → {parentCategory.name}
+                كل الأقسام
               </Link>
-            )}
-            <Link
-              className="text-link"
-              href={href({ by: "category", category: "", q: "" })}
-            >
-              كل الأقسام
-            </Link>
+            </div>
           </div>
-        </div>
-      ) : focus === "family" && family ? (
-        <div className="page-intro section-intro">
-          <p className="eyebrow">أسرة منتجة · {family.cityName}</p>
-          <h1>{family.name}</h1>
-          <p>
-            {filters.include
-              ? "كل منتجات الأسرة المنتجة."
-              : "منتجات الأسرة المنتجة المتاحة الآن وحسب الطلب."}
-          </p>
-          <div className="section-intro-links">
-            <Link className="text-link" href={`/producers/${family.slug}`}>
-              صفحة الأسرة المنتجة والتواصل
-            </Link>
-            <Link
-              className="text-link"
-              href={href({ by: "family", producer: "", q: "" })}
-            >
-              كل الأسر
-            </Link>
-          </div>
-        </div>
-      ) : (
-        <div className="page-intro">
-          <h1>{texts["browse.title"] || "طبخات اليوم"}</h1>
-          {texts["browse.subtitle"] && <p>{texts["browse.subtitle"]}</p>}
-        </div>
-      )}
-      <AdSlot placement="browse_top" />
-      {request && (
-        <UnderstoodRequest
-          intent={request}
-          asked={asked}
-          regions={regionsOf(knownCities)}
-        />
-      )}
-      {/* النطاق: يُحدَّد تلقائيًا من موقع الزائر، ويُغيَّر من القائمة. */}
-      {!filters.producer && (
-        <div className="browse-scope">
-          <span>نطاقك:</span>
-          <RegionPicker
-            regions={regions}
-            value={filters.region}
-            path="/browse"
-            query={{
-              by: by === "word" ? "" : by,
-              q: filters.q,
-              category: filters.category,
-              status: val("status"),
-              delivery: filters.delivery,
-              mine: scope.active.join(","),
-            }}
-          />
-        </div>
-      )}
-      <details
-        className="filter-wrap browse-search"
-        open={Boolean(filters.q) || (by !== "word" && !focus)}
-      >
-        <summary>
-          <span aria-hidden="true">🔍</span> بحث
-        </summary>
-        <form className="filter-bar" action="/browse" autoComplete="off">
-          {by !== "word" && <input type="hidden" name="by" value={by} />}
-          {by === "word" && !focus ? (
-            <label className="search-query">
-              وش تطلب اليوم
-              <input
-                type="search"
-                autoComplete="off"
-                name="q"
-                defaultValue={asked}
-                placeholder="جريش، مرقوق، أو اكتب طلبك: أبي غدا لعشرة بالرياض"
-              />
-            </label>
-          ) : (
-            filters.q && <input type="hidden" name="q" value={filters.q} />
-          )}
-          <LocationFields
-            key={`${filters.region}:${filters.city}`}
-            cities={cities}
-            defaultRegion={filters.region}
-            defaultCity={filters.city}
-          />
-          <label>
-            <span className="sr-only">الأسرة المنتجة</span>
-            <select name="producer" defaultValue={filters.producer}>
-              <option value="">كل الأسر</option>
-              {lists.families.map((f) => (
-                <option key={f.slug} value={f.slug}>
-                  {f.name} ({f.available} متاح)
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            <span className="sr-only">التصنيف</span>
-            <select name="category" defaultValue={filters.category}>
-              <option value="">كل التصنيفات</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {categoryLabel(c, categories)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            <span className="sr-only">التوفر</span>
-            <select name="status" defaultValue={val("status")}>
-              <option value="">
-                {by === "available" ? "متوفر الآن" : "المتاح والطلب المسبق"}
-              </option>
-              {by !== "available" && (
-                <option value="available">متوفر الآن</option>
-              )}
-              <option value="preorder">
-                {productStatusLabels(texts).preorder}
-              </option>
-              <option value="all">
-                يشمل «{productStatusLabels(texts).unavailable}»
-              </option>
-            </select>
-          </label>
-          <label>
-            <span className="sr-only">طريقة الاستلام</span>
-            <select name="delivery" defaultValue={filters.delivery}>
-              <option value="">كل طرق الاستلام</option>
-              <option value="true">توصيل متاح</option>
-              <option value="pickup">استلام شخصي</option>
-            </select>
-          </label>
-          <button className="button" type="submit">
-            بحث
-          </button>
-        </form>
-        {!focus && (
-          <nav className="search-modes" aria-label="طريقة البحث">
-            {modes.map(([key, label]) => (
+        ) : focus === "family" && family ? (
+          <div className="page-intro section-intro">
+            <p className="eyebrow">أسرة منتجة · {family.cityName}</p>
+            <h1>{family.name}</h1>
+            <p>
+              {filters.include
+                ? "كل منتجات الأسرة المنتجة."
+                : "منتجات الأسرة المنتجة المتاحة الآن وحسب الطلب."}
+            </p>
+            <div className="section-intro-links">
+              <Link className="text-link" href={`/producers/${family.slug}`}>
+                صفحة الأسرة المنتجة والتواصل
+              </Link>
               <Link
-                key={key}
-                href={href({
-                  by: key,
-                  ...(key === "family" ? { category: "" } : {}),
-                  ...(key === "category" ? { producer: "" } : {}),
-                  ...(key === "available" ? { status: "" } : {}),
-                })}
-                aria-current={by === key ? "page" : undefined}
+                className="text-link"
+                href={href({ by: "family", producer: "", q: "" })}
               >
-                {label}
+                كل الأسر
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="page-intro">
+            <h1>{texts["browse.title"] || "طبخات اليوم"}</h1>
+            {texts["browse.subtitle"] && <p>{texts["browse.subtitle"]}</p>}
+          </div>
+        )}
+        <AdSlot placement="browse_top" />
+        {request && (
+          <UnderstoodRequest
+            intent={request}
+            asked={asked}
+            regions={regionsOf(knownCities)}
+          />
+        )}
+        {/* النطاق: يُحدَّد تلقائيًا من موقع الزائر، ويُغيَّر من القائمة. */}
+        {!filters.producer && (
+          <div className="browse-scope">
+            <span>نطاقك:</span>
+            <RegionPicker
+              regions={regions}
+              value={filters.region}
+              path="/browse"
+              query={{
+                by: by === "word" ? "" : by,
+                q: filters.q,
+                category: filters.category,
+                status: val("status"),
+                delivery: filters.delivery,
+                mine: scope.active.join(","),
+              }}
+            />
+          </div>
+        )}
+        <details
+          className="filter-wrap browse-search"
+          open={Boolean(filters.q) || (by !== "word" && !focus)}
+        >
+          <summary>
+            <span aria-hidden="true">🔍</span> بحث
+          </summary>
+          <form className="filter-bar" action="/browse" autoComplete="off">
+            {by !== "word" && <input type="hidden" name="by" value={by} />}
+            {by === "word" && !focus ? (
+              <label className="search-query">
+                وش تطلب اليوم
+                <input
+                  type="search"
+                  autoComplete="off"
+                  name="q"
+                  defaultValue={asked}
+                  placeholder="جريش، مرقوق، أو اكتب طلبك: أبي غدا لعشرة بالرياض"
+                />
+              </label>
+            ) : (
+              filters.q && <input type="hidden" name="q" value={filters.q} />
+            )}
+            <LocationFields
+              key={`${filters.region}:${filters.city}`}
+              cities={cities}
+              defaultRegion={filters.region}
+              defaultCity={filters.city}
+            />
+            <label>
+              <span className="sr-only">الأسرة المنتجة</span>
+              <select name="producer" defaultValue={filters.producer}>
+                <option value="">كل الأسر</option>
+                {lists.families.map((f) => (
+                  <option key={f.slug} value={f.slug}>
+                    {f.name} ({f.available} متاح)
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span className="sr-only">التصنيف</span>
+              <select name="category" defaultValue={filters.category}>
+                <option value="">كل التصنيفات</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {categoryLabel(c, categories)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span className="sr-only">التوفر</span>
+              <select name="status" defaultValue={val("status")}>
+                <option value="">
+                  {by === "available" ? "متوفر الآن" : "المتاح والطلب المسبق"}
+                </option>
+                {by !== "available" && (
+                  <option value="available">متوفر الآن</option>
+                )}
+                <option value="preorder">
+                  {productStatusLabels(texts).preorder}
+                </option>
+                <option value="all">
+                  يشمل «{productStatusLabels(texts).unavailable}»
+                </option>
+              </select>
+            </label>
+            <label>
+              <span className="sr-only">طريقة الاستلام</span>
+              <select name="delivery" defaultValue={filters.delivery}>
+                <option value="">كل طرق الاستلام</option>
+                <option value="true">توصيل متاح</option>
+                <option value="pickup">استلام شخصي</option>
+              </select>
+            </label>
+            <button className="button" type="submit">
+              بحث
+            </button>
+          </form>
+          {!focus && (
+            <nav className="search-modes" aria-label="طريقة البحث">
+              {modes.map(([key, label]) => (
+                <Link
+                  key={key}
+                  href={href({
+                    by: key,
+                    ...(key === "family" ? { category: "" } : {}),
+                    ...(key === "category" ? { producer: "" } : {}),
+                    ...(key === "available" ? { status: "" } : {}),
+                  })}
+                  aria-current={by === key ? "page" : undefined}
+                >
+                  {label}
+                </Link>
+              ))}
+            </nav>
+          )}
+        </details>
+        {currentCategory && (branches.length > 0 || parentCategory) && (
+          <nav aria-label="فروع القسم" className="category-branches">
+            <div>
+              {parentCategory && (
+                <Link href={href({ category: parentCategory.id })}>
+                  العودة إلى {parentCategory.name}
+                </Link>
+              )}
+              {branches.map((c) => (
+                <Link key={c.id} href={href({ category: c.id })}>
+                  {c.name}
+                  {countOf(c.id) > 0 ? ` (${countOf(c.id)})` : ""}
+                </Link>
+              ))}
+            </div>
+          </nav>
+        )}
+
+        {!focus && matchedCategories.length > 0 && (
+          <nav className="search-suggestions" aria-label="أقسام مقترحة">
+            <span>أقسام مطابقة:</span>
+            {matchedCategories.map((c) => (
+              <Link
+                key={c.id}
+                href={href({ by: "category", category: c.id, q: "" })}
+              >
+                {categoryLabel(c, categories)}
               </Link>
             ))}
           </nav>
         )}
-      </details>
-      {currentCategory && (branches.length > 0 || parentCategory) && (
-        <nav aria-label="فروع القسم" className="category-branches">
-          <div>
-            {parentCategory && (
-              <Link href={href({ category: parentCategory.id })}>
-                العودة إلى {parentCategory.name}
+
+        {filters.producer && focus !== "family" && (
+          <div className="family-filter" role="status">
+            <p>
+              {family ? (
+                <>
+                  منتجات <strong>{family.name}</strong>
+                  {filters.include ? "" : " المتاحة"}
+                </>
+              ) : (
+                "الأسرة المنتجة غير موجودة أو غير منشورة"
+              )}
+            </p>
+            <div>
+              {family && (
+                <Link className="text-link" href={`/producers/${family.slug}`}>
+                  صفحة الأسرة المنتجة ←
+                </Link>
+              )}
+              <Link className="text-link" href={href({ producer: "" })}>
+                كل الأسر ×
               </Link>
-            )}
-            {branches.map((c) => (
-              <Link key={c.id} href={href({ category: c.id })}>
-                {c.name}
-                {countOf(c.id) > 0 ? ` (${countOf(c.id)})` : ""}
-              </Link>
-            ))}
+            </div>
           </div>
-        </nav>
-      )}
+        )}
 
-      {!focus && matchedCategories.length > 0 && (
-        <nav className="search-suggestions" aria-label="أقسام مقترحة">
-          <span>أقسام مطابقة:</span>
-          {matchedCategories.map((c) => (
-            <Link
-              key={c.id}
-              href={href({ by: "category", category: c.id, q: "" })}
-            >
-              {categoryLabel(c, categories)}
-            </Link>
-          ))}
-        </nav>
-      )}
-
-      {filters.producer && focus !== "family" && (
-        <div className="family-filter" role="status">
-          <p>
-            {family ? (
-              <>
-                منتجات <strong>{family.name}</strong>
-                {filters.include ? "" : " المتاحة"}
-              </>
+        {showFamilyDirectory && (
+          <section aria-label="الأسر">
+            <div className="results-heading">
+              <h2>{familiesWithProducts.length} أسرة لديها منتجات متاحة</h2>
+            </div>
+            {lists.families.length ? (
+              <ul className="directory-list">
+                {lists.families.map((f) => (
+                  <li key={f.slug}>
+                    <Link
+                      href={href({ producer: f.slug })}
+                      className={f.available ? undefined : "is-empty"}
+                    >
+                      <strong>{f.name}</strong>
+                      <span>{f.cityName}</span>
+                      <em>
+                        {f.available
+                          ? `${f.available} منتج متاح`
+                          : "لا يوجد متاح"}
+                      </em>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
             ) : (
-              "الأسرة المنتجة غير موجودة أو غير منشورة"
+              <EmptyState
+                title="لا توجد أسر في هذا النطاق بعد"
+                text="جرّب منطقة أو مدينة أخرى."
+              />
             )}
-          </p>
-          <div>
-            {family && (
-              <Link className="text-link" href={`/producers/${family.slug}`}>
-                صفحة الأسرة المنتجة ←
-              </Link>
-            )}
-            <Link className="text-link" href={href({ producer: "" })}>
-              كل الأسر ×
-            </Link>
-          </div>
-        </div>
-      )}
+          </section>
+        )}
 
-      {showFamilyDirectory && (
-        <section aria-label="الأسر">
-          <div className="results-heading">
-            <h2>{familiesWithProducts.length} أسرة لديها منتجات متاحة</h2>
-          </div>
-          {lists.families.length ? (
+        {showCategoryDirectory && (
+          <section aria-label="الأقسام">
+            <div className="results-heading">
+              <h2>الأقسام</h2>
+            </div>
+            {topCategories.length === 0 && (
+              <EmptyState
+                title="لا توجد أقسام فيها منتجات بعد"
+                text="تظهر الأقسام هنا عندما تنشر الأسر المنتجة منتجاتها."
+              />
+            )}
             <ul className="directory-list">
-              {lists.families.map((f) => (
-                <li key={f.slug}>
+              {topCategories.map((c) => (
+                <li key={c.id}>
                   <Link
-                    href={href({ producer: f.slug })}
-                    className={f.available ? undefined : "is-empty"}
+                    href={href({ category: c.id })}
+                    className={countOf(c.id) ? undefined : "is-empty"}
                   >
-                    <strong>{f.name}</strong>
-                    <span>{f.cityName}</span>
+                    <strong>{c.name}</strong>
+                    <span>
+                      {categories
+                        .filter((child) => child.parentId === c.id)
+                        .map((child) => child.name)
+                        .join(" · ")}
+                    </span>
                     <em>
-                      {f.available
-                        ? `${f.available} منتج متاح`
-                        : "لا يوجد متاح"}
+                      {countOf(c.id) ? `${countOf(c.id)} متاح` : "لا يوجد متاح"}
                     </em>
                   </Link>
                 </li>
               ))}
             </ul>
-          ) : (
-            <EmptyState
-              title="لا توجد أسر في هذا النطاق بعد"
-              text="جرّب منطقة أو مدينة أخرى."
-            />
-          )}
-        </section>
-      )}
+          </section>
+        )}
 
-      {showCategoryDirectory && (
-        <section aria-label="الأقسام">
-          <div className="results-heading">
-            <h2>الأقسام</h2>
-          </div>
-          {topCategories.length === 0 && (
-            <EmptyState
-              title="لا توجد أقسام فيها منتجات بعد"
-              text="تظهر الأقسام هنا عندما تنشر الأسر المنتجة منتجاتها."
-            />
-          )}
-          <ul className="directory-list">
-            {topCategories.map((c) => (
-              <li key={c.id}>
-                <Link
-                  href={href({ category: c.id })}
-                  className={countOf(c.id) ? undefined : "is-empty"}
-                >
-                  <strong>{c.name}</strong>
-                  <span>
-                    {categories
-                      .filter((child) => child.parentId === c.id)
-                      .map((child) => child.name)
-                      .join(" · ")}
-                  </span>
-                  <em>
-                    {countOf(c.id) ? `${countOf(c.id)} متاح` : "لا يوجد متاح"}
-                  </em>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {families.length > 0 && (
-        <section className="search-families" aria-label="أسر مطابقة">
-          <div className="results-heading">
-            <h2>أسر مطابقة ({families.length})</h2>
-          </div>
-          <div className="producer-grid">
-            {families.slice(0, 4).map((p) => (
-              <div key={p.id} className="search-family">
-                <ProducerCard producer={p} />
-                <Link
-                  className="text-link"
-                  href={href({ by: "family", producer: p.slug, q: "" })}
-                >
-                  منتجاتها المتاحة ←
-                </Link>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {listProducts && (
-        <>
-          <div className="results-heading">
-            <h2>
-              {products.length
-                ? `${products.length} ${filters.include ? "منتج مطابق" : "منتج متاح"}${focus === "category" && currentCategory ? ` في ${currentCategory.name}` : ""}${scoped && regionName ? ` في ${regionName}` : ""}`
-                : widened.length
-                  ? "لا تطابق تام — نتائج قريبة"
-                  : scoped && regionName
-                    ? `لا يوجد متاح في ${regionName} الآن`
-                    : "نتائج المنتجات"}
-            </h2>
-            <Link
-              href={
-                focus === "category" && currentCategory
-                  ? `/browse?category=${encodeURIComponent(currentCategory.id)}`
-                  : focus === "family" && family
-                    ? `/browse?producer=${encodeURIComponent(family.slug)}`
-                    : by === "word"
-                      ? "/browse"
-                      : `/browse?by=${by}`
-              }
-              className="text-link"
-            >
-              مسح فلتر البحث
-            </Link>
-          </div>
-          {products.length || widened.length ? (
-            <div className="product-grid">
-              {(products.length ? products : widened).map((p) => (
-                <ProductCard
-                  key={p.id}
-                  product={p}
-                  labels={productStatusLabels(texts)}
-                />
+        {families.length > 0 && (
+          <section className="search-families" aria-label="أسر مطابقة">
+            <div className="results-heading">
+              <h2>أسر مطابقة ({families.length})</h2>
+            </div>
+            <div className="producer-grid">
+              {families.slice(0, 4).map((p) => (
+                <div key={p.id} className="search-family">
+                  <ProducerCard producer={p} />
+                  <Link
+                    className="text-link"
+                    href={href({ by: "family", producer: p.slug, q: "" })}
+                  >
+                    منتجاتها المتاحة ←
+                  </Link>
+                </div>
               ))}
             </div>
-          ) : (
-            <EmptyState
-              title={
-                scoped && regionName
-                  ? `لا توجد منتجات متاحة في ${regionName} بهذه الخيارات`
-                  : "لم نجد منتجات بهذه الخيارات"
-              }
-              text={
-                scoped
-                  ? "جرّب منطقة أخرى من «نطاقك»، أو انظر ما يُشحن لكل المناطق أدناه."
-                  : "جرّب «حسب القسم» أو «حسب الأسرة المنتجة»، أو كلمة أقصر، أو امسح فلتر البحث. تظهر المنتجات المعتمدة والمنشورة فقط."
-              }
-            />
-          )}
-          {nationwide.length > 0 && (
-            <section aria-label="يُشحن لكل المناطق" className="nationwide">
-              <div className="results-heading">
-                <h2>يُشحن لكل المناطق ({nationwide.length})</h2>
-              </div>
+          </section>
+        )}
+
+        {listProducts && (
+          <>
+            <div className="results-heading">
+              <h2>
+                {products.length
+                  ? `${products.length} ${filters.include ? "منتج مطابق" : "منتج متاح"}${focus === "category" && currentCategory ? ` في ${currentCategory.name}` : ""}${scoped && regionName ? ` في ${regionName}` : ""}`
+                  : widened.length
+                    ? "لا تطابق تام — نتائج قريبة"
+                    : scoped && regionName
+                      ? `لا يوجد متاح في ${regionName} الآن`
+                      : "نتائج المنتجات"}
+              </h2>
+              <Link
+                href={
+                  focus === "category" && currentCategory
+                    ? `/browse?category=${encodeURIComponent(currentCategory.id)}`
+                    : focus === "family" && family
+                      ? `/browse?producer=${encodeURIComponent(family.slug)}`
+                      : by === "word"
+                        ? "/browse"
+                        : `/browse?by=${by}`
+                }
+                className="text-link"
+              >
+                مسح فلتر البحث
+              </Link>
+            </div>
+            {products.length || widened.length ? (
               <div className="product-grid">
-                {nationwide.map((p) => (
+                {(products.length ? products : widened).map((p) => (
                   <ProductCard
                     key={p.id}
                     product={p}
@@ -658,11 +631,40 @@ export default async function Browse({
                   />
                 ))}
               </div>
-            </section>
-          )}
-        </>
-      )}
-      <AdSlot placement="browse_bottom" />
-    </div>
+            ) : (
+              <EmptyState
+                title={
+                  scoped && regionName
+                    ? `لا توجد منتجات متاحة في ${regionName} بهذه الخيارات`
+                    : "لم نجد منتجات بهذه الخيارات"
+                }
+                text={
+                  scoped
+                    ? "جرّب منطقة أخرى من «نطاقك»، أو انظر ما يُشحن لكل المناطق أدناه."
+                    : "جرّب «حسب القسم» أو «حسب الأسرة المنتجة»، أو كلمة أقصر، أو امسح فلتر البحث. تظهر المنتجات المعتمدة والمنشورة فقط."
+                }
+              />
+            )}
+            {nationwide.length > 0 && (
+              <section aria-label="يُشحن لكل المناطق" className="nationwide">
+                <div className="results-heading">
+                  <h2>يُشحن لكل المناطق ({nationwide.length})</h2>
+                </div>
+                <div className="product-grid">
+                  {nationwide.map((p) => (
+                    <ProductCard
+                      key={p.id}
+                      product={p}
+                      labels={productStatusLabels(texts)}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+          </>
+        )}
+        <AdSlot placement="browse_bottom" />
+      </div>
+    </>
   );
 }

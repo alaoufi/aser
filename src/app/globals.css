@@ -3484,36 +3484,32 @@ main {
   color: var(--muted);
 }
 
-/* مفاتيح العضو أعلى الصفحة («مشابه لمنتجاتي»، «منطقتي»…): لوحة واحدة مجمّعة، والافتراضي «الكل». */
+/* مفاتيح العضو («اعرض لي»): سطر واحد منخفض تحت حزام الرأس مباشرة، بألوان خفيفة. */
 .mine-bar {
-  margin-block: 12px 16px;
+  margin-block: 8px;
 }
 .mine-panel {
   align-items: center;
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 18px;
-  box-shadow: 0 1px 2px rgb(56 41 31 / 0.06);
+  border-radius: 14px;
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px 10px;
-  padding: 8px;
+  gap: 8px;
+  padding: 4px 4px 4px 4px;
+  padding-inline-start: 10px;
 }
 .mine-title {
   color: var(--muted);
-  font-size: 0.9rem;
+  flex: 0 0 auto;
+  font-size: 0.85rem;
   font-weight: 700;
-  padding-inline: 6px;
   white-space: nowrap;
 }
 .mine-segments {
-  background: var(--cream);
-  border-radius: 14px;
   display: flex;
-  flex: 1 1 260px;
+  flex: 1 1 auto;
   gap: 4px;
   min-width: 0;
-  padding: 4px;
 }
 .mine-seg {
   align-items: center;
@@ -3521,14 +3517,14 @@ main {
   color: var(--ink);
   display: flex;
   flex: 1 1 0;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 700;
-  gap: 8px;
+  gap: 6px;
   justify-content: center;
-  line-height: 1.25;
-  min-height: 44px;
+  line-height: 1.2;
+  min-height: 36px;
   min-width: 0;
-  padding: 6px 10px;
+  padding: 4px 10px;
   text-align: center;
   text-decoration: none;
   transition:
@@ -3536,12 +3532,13 @@ main {
     color 0.15s ease;
 }
 .mine-seg:hover {
-  background: rgb(255 255 255 / 0.6);
+  background: var(--cream);
 }
+/* المفعّل: لون زيتوني خفيف ونصه زيتوني، بدل تعبئة داكنة. */
 .mine-seg[aria-checked="true"] {
-  background: var(--olive);
-  box-shadow: 0 1px 3px rgb(56 41 31 / 0.2);
-  color: #fff;
+  /* لون ثابت خفيف (القالب التراثي يجعل --sage-panel داكنًا). */
+  background: #e8efde;
+  color: #3f4d2f;
 }
 /* مربع الاختيار: فارغ، أو ✓ حين يُفعَّل. */
 .mine-box {
@@ -3552,19 +3549,19 @@ main {
   color: var(--olive);
   display: inline-flex;
   flex: 0 0 auto;
-  font-size: 0.8rem;
-  height: 20px;
+  font-size: 0.75rem;
+  height: 18px;
   justify-content: center;
   line-height: 1;
-  width: 20px;
+  width: 18px;
 }
 .mine-seg[aria-checked="false"] .mine-box {
   color: var(--muted);
 }
 .mine-seg[aria-checked="true"] .mine-box {
-  background: #fff;
-  border-color: #fff;
-  color: var(--olive);
+  background: var(--olive);
+  border-color: var(--olive);
+  color: #fff;
   font-weight: 900;
 }
 .mine-seg:focus-visible {
@@ -3641,23 +3638,127 @@ main {
     display: inline-flex;
     max-width: 100%;
   }
-  .mine-segments {
-    flex: 0 1 auto;
-  }
   .mine-seg {
     flex: 0 0 auto;
-    padding-inline: 18px;
   }
 }
 @media (max-width: 480px) {
-  /* الجوال: «اعرض لي» سطر، والخيارات صف واحد بعرض الشاشة، كل خيار بسطر واحد غالبًا. */
+  /* الجوال: «اعرض لي» والخيارات في سطر واحد. */
   .mine-seg {
-    font-size: 0.85rem;
-    padding: 6px 4px;
+    font-size: 0.82rem;
+    gap: 5px;
+    padding: 4px 6px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
   .mine-seg {
     transition: none;
+  }
+}
+
+/* الرئيسية على الجوال: الصورة نصف السطر، وبجانبها «متوفر الآن» و«اطلب الآن» والمنطقة. */
+.hero-side {
+  display: none;
+}
+/* المنطقة مع «وش تطلب اليوم»: تحتها على الشاشة العريضة، وبجانبها في السطر نفسه على الجوال. */
+.hero-region {
+  margin-top: 12px;
+  max-width: 280px;
+}
+.hero-region .table-region-wrap,
+.hero-region select {
+  max-width: 100%;
+  min-width: 0;
+  width: 100%;
+}
+@media (max-width: 600px) {
+  .hero {
+    align-items: center;
+    display: grid;
+    gap: 10px 12px;
+    grid-template-areas:
+      "copy copy"
+      "visual side";
+    grid-template-columns: 1fr 1fr;
+    padding-block: 16px 8px;
+  }
+  .hero-copy {
+    grid-area: copy;
+  }
+  .hero-visual {
+    grid-area: visual;
+    margin: 0;
+    max-width: none;
+    width: 100%;
+  }
+  .hero-side {
+    display: grid;
+    gap: 8px;
+    grid-area: side;
+    min-width: 0;
+  }
+  .hero-chip {
+    align-items: center;
+    background: #e8efde;
+    border-radius: 10px;
+    color: var(--ink);
+    display: flex;
+    font-size: 0.95rem;
+    font-weight: 700;
+    gap: 8px;
+    min-height: 44px;
+    padding: 8px 12px;
+    text-decoration: none;
+  }
+  .hero-chip.warm {
+    background: #f5e4d5;
+  }
+  /* «وش تطلب اليوم» والمنطقة في سطر واحد منخفض (44px). */
+  .hero-copy {
+    align-items: center;
+    display: flex;
+    gap: 8px;
+  }
+  .hero-copy .hero-search {
+    flex: 1 1 auto;
+    gap: 4px;
+    height: 44px;
+    margin-top: 0;
+    min-width: 0;
+    padding: 3px;
+  }
+  .hero-copy .hero-search label {
+    border: 0;
+    padding: 0 8px;
+  }
+  .hero-copy .hero-search input {
+    border: 0;
+    font-size: 15px;
+    height: 36px;
+    min-height: 0;
+    padding: 0;
+  }
+  .hero-copy .hero-search .button {
+    height: 36px;
+    min-height: 0;
+    min-width: 0;
+    padding-block: 0;
+    padding-inline: 12px;
+  }
+  .hero-copy .hero-search .button > span[aria-hidden] {
+    display: none;
+  }
+  .hero-region {
+    flex: 0 0 38%;
+    margin-top: 0;
+    max-width: none;
+  }
+  .hero-region select {
+    height: 44px;
+    min-height: 0;
+  }
+  /* نُقلت للأعلى بجانب الصورة، فلا تتكرر أسفل الصفحة. */
+  .availability-section {
+    display: none;
   }
 }

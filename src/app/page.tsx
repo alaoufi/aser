@@ -23,6 +23,7 @@ export const metadata: Metadata = {
 };
 import { cookies } from "next/headers";
 import { TodayTable, regionsOf } from "@/components/public/today-table";
+import { RegionPicker } from "@/components/public/region-picker";
 import {
   getCities,
   publicCategories,
@@ -75,6 +76,8 @@ export default async function Home({
   );
   return (
     <>
+      {/* «اعرض لي» تحت حزام الرأس مباشرة. */}
+      <MineBar scope={scope} path="/" query={{ region: asked ?? "" }} />
       <section className="hero wrap">
         <div className="hero-copy">
           {/* عنوان الصفحة لقارئات الشاشة ومحركات البحث فقط؛ النصوص التعريفية حُذفت بطلب المالك. */}
@@ -96,12 +99,32 @@ export default async function Home({
               <span aria-hidden="true">←</span>
             </button>
           </form>
+          {/* المنطقة بجانب «وش تطلب اليوم» في السطر نفسه (وهي منطقة المائدة تحتها أيضًا). */}
+          <div className="hero-region">
+            <RegionPicker
+              regions={regions}
+              value={region}
+              path="/"
+              autoLabel={texts["region.auto"]}
+              detectingLabel={texts["region.detecting"]}
+            />
+          </div>
         </div>
         <div className="hero-visual">
           {template === "najdi" ? <NajdiDoor /> : <FoodPhotos />}
         </div>
+        {/* الجوال: بجانب الصورة (نصف السطر) «متوفر الآن» و«اطلب الآن»، فلا يسيطر شيء على الشاشة. */}
+        <div className="hero-side">
+          <Link href="/browse?status=available" className="hero-chip">
+            <span className="status-dot" aria-hidden="true" />
+            {texts["avail.now"] || "متوفر الآن"}
+          </Link>
+          <Link href="/browse?status=preorder" className="hero-chip warm">
+            <span aria-hidden="true">◷</span>
+            {texts["avail.order"] || "اطلب الآن"}
+          </Link>
+        </div>
       </section>
-      <MineBar scope={scope} path="/" query={{ region: asked ?? "" }} />
       <AdSlot placement="home_top" className="wrap" />
       <TodayTable
         products={today}
@@ -109,6 +132,7 @@ export default async function Home({
         region={region}
         capacity={12}
         path="/"
+        picker={false}
         texts={texts}
       />
       {certificates.length > 0 && texts["certificate.announce"] && (
