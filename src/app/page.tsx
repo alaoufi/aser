@@ -113,7 +113,7 @@ export default async function Home({
         <div className="hero-visual">
           {template === "najdi" ? <NajdiDoor /> : <FoodPhotos />}
         </div>
-        {/* الجوال: بطاقة واحدة، الصورة نصفها وبجانبها «متوفر الآن» و«اطلب الآن» بارتفاعها نفسه. */}
+        {/* الجوال (النموذج 1 الذي اختاره المالك): تحت الصورة «متوفر الآن» و«اطلب الآن» متجاورتان. */}
         <div className="hero-side">
           <Link href="/browse?status=available" className="hero-chip">
             <span className="hero-chip-icon" aria-hidden="true">

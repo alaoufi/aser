@@ -3799,3 +3799,36 @@ main {
     display: none;
   }
 }
+
+/* النموذج 1 (اختيار المالك 2026-11-22)، الجوال: البحث والمنطقة، ثم الصورة بعرض السطر وأطباقها
+   الصغيرة عمود على يمينها، ثم «متوفر الآن» و«اطلب الآن» متجاورتان تحتها. */
+@media (max-width: 600px) {
+  .hero {
+    grid-template-areas:
+      "copy"
+      "visual"
+      "side";
+    grid-template-columns: 1fr;
+  }
+  .hero .food-showcase {
+    align-items: center;
+    display: grid;
+    gap: 8px;
+    grid-template-columns: 56px minmax(0, 1fr);
+    max-width: none;
+  }
+  .hero .food-showcase-strip {
+    display: grid;
+    gap: 6px;
+    grid-template-columns: 1fr;
+    margin: 0;
+    order: -1;
+  }
+  .hero .food-showcase-main {
+    aspect-ratio: 1.15;
+  }
+  .hero-side {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto;
+  }
+}
