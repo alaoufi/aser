@@ -4169,6 +4169,8 @@ button.mine-seg {
 
 /* رقم العضو فوق الاسم (8.1.0.0). */
 .member-no {
+  white-space: nowrap;
+  flex-wrap: wrap;
   display: inline-flex;
   align-items: baseline;
   gap: 0.3em;
