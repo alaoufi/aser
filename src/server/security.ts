@@ -30,11 +30,25 @@ export function normalizePhone(value: string) {
     throw new HttpError(400, "رقم الجوال السعودي غير صحيح");
   return phone;
 }
+/**
+ * عناوين الموقع الرسمية: jdtna.sa (الأساسي من 2026-11-22) وjdatna.com (يبقى يخدم الموقع نفسه، فالتطبيقات
+ * المنشورة مربوطة به). www.jdtna.sa تحوّله البوابة إلى jdtna.sa، ويُقبل احتياطًا.
+ */
+export const SITE_ORIGINS = [
+  "https://jdtna.sa",
+  "https://www.jdtna.sa",
+  "https://jdatna.com",
+] as const;
+/** هل هذا المصدر هو الموقع نفسه؟ APP_ORIGIN (أو عنوان الطلب في التطوير) وعناوين الموقع الرسمية فقط. */
+export function sameSite(origin: string | null | undefined, request: Request) {
+  if (!origin) return false;
+  const own = process.env.APP_ORIGIN || new URL(request.url).origin;
+  return origin === own || (SITE_ORIGINS as readonly string[]).includes(origin);
+}
 export function assertOrigin(request: Request) {
   if (process.env.NODE_ENV === "production" && !process.env.APP_ORIGIN)
     throw new HttpError(503, "إعداد أمان الموقع غير مكتمل");
-  const expected = process.env.APP_ORIGIN || new URL(request.url).origin;
-  if (request.headers.get("origin") !== expected)
+  if (!sameSite(request.headers.get("origin"), request))
     throw new HttpError(403, "مصدر الطلب غير مسموح");
 }
 export function validateDocument(data: Buffer, mime: string) {

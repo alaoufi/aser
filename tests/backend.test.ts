@@ -25,6 +25,31 @@ test("Saudi phone normalization and invalid rejection", () => {
   assert.throws(() => normalizePhone("ali0532217166"));
   assert.throws(() => normalizePhone("123"));
 });
+test("both site addresses (jdtna.sa and jdatna.com) pass the origin check; look-alikes do not", () => {
+  const previousOrigin = process.env.APP_ORIGIN;
+  process.env.APP_ORIGIN = "https://jdatna.com";
+  const from = (origin: string) =>
+    new Request("https://jdatna.com/api", { headers: { origin } });
+  try {
+    for (const ok of [
+      "https://jdtna.sa",
+      "https://www.jdtna.sa",
+      "https://jdatna.com",
+    ])
+      assert.doesNotThrow(() => assertOrigin(from(ok)), ok);
+    for (const bad of [
+      "http://jdtna.sa",
+      "https://jdtna.sa.evil.test",
+      "https://evil.jdtna.sa",
+      "https://jdatna.sa",
+      "null",
+    ])
+      assert.throws(() => assertOrigin(from(bad)), bad);
+  } finally {
+    if (previousOrigin === undefined) delete process.env.APP_ORIGIN;
+    else process.env.APP_ORIGIN = previousOrigin;
+  }
+});
 test("CSRF rejects absent and foreign origins", () => {
   const previousOrigin = process.env.APP_ORIGIN;
   process.env.APP_ORIGIN = "https://example.com";
