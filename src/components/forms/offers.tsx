@@ -35,9 +35,17 @@ const localTime = (value: string) => {
     .toISOString()
     .slice(0, 16);
 };
+/** معاملات الرابط غير الفارغة فقط («?region=…&mine=…»، أو لا شيء). */
+const query = (values: Record<string, string>) => {
+  const qs = new URLSearchParams(
+    Object.entries(values).filter(([, v]) => v),
+  ).toString();
+  return qs ? `?${qs}` : "";
+};
 export function Offers({
   manage = false,
   region = "",
+  mine = "",
   scope,
 }: {
   manage?: boolean;
@@ -45,6 +53,8 @@ export function Offers({
   region?: string;
   /** اختيار المنطقة (من الصفحة). */
   scope?: React.ReactNode;
+  /** فلاتر العضو المفعّلة (?mine=…). */
+  mine?: string;
 }) {
   const session = useSession();
   const [offers, setOffers] = useState<Offer[]>([]);
@@ -56,9 +66,7 @@ export function Offers({
   const [loaded, setLoaded] = useState(false);
   async function load() {
     const d = await api<{ offers: Offer[] }>(
-      manage
-        ? "/api/producer/offers"
-        : `/api/offers${region ? `?region=${encodeURIComponent(region)}` : ""}`,
+      manage ? "/api/producer/offers" : `/api/offers${query({ region, mine })}`,
     );
     setOffers(d.offers);
     setLoaded(true);
@@ -77,7 +85,7 @@ export function Offers({
       api<{ groups: string[] }>("/api/offers/preferences")
         .then((d) => setGroups(d.groups))
         .catch((e) => setError(e.message));
-  }, [session.ready, session.user, manage, region]);
+  }, [session.ready, session.user, manage, region, mine]);
   async function savePreferences(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);

@@ -1,4 +1,6 @@
 import { productStatusLabels } from "@/lib/site-texts";
+import { MineBar } from "@/components/public/mine-bar";
+import { pageMemberScope } from "@/server/page-member";
 import { AdSlot } from "@/components/public/ad-slot";
 import { categoryLabel } from "@/lib/category-label";
 import { LocationFields } from "@/components/public/location-fields";
@@ -129,6 +131,7 @@ export default async function Browse({
         })
       : null;
   const request = understood?.isRequest ? understood : null;
+  const scope = await pageMemberScope(raw.mine);
   const filters = {
     q: request ? request.search : asked,
     city: request?.place?.cityId ?? val("city"),
@@ -138,6 +141,7 @@ export default async function Browse({
     include: statusParam === "all" ? "all" : "",
     delivery: val("delivery"),
     producer: val("producer"),
+    mine: scope.filters,
   };
   const texts = await getSiteTexts();
   const showFamilyDirectory = by === "family" && !filters.producer;
@@ -228,6 +232,7 @@ export default async function Browse({
         producer: filters.producer,
         delivery: filters.delivery,
         status: val("status"),
+        mine: scope.active.join(","),
         ...patch,
       }).filter(([key, value]) => value && !(key === "by" && value === "word")),
     );
@@ -244,6 +249,21 @@ export default async function Browse({
   const available = currentCategory ? countOf(currentCategory.id) : 0;
   return (
     <div className="wrap page-space">
+      {!filters.producer && (
+        <MineBar
+          scope={scope}
+          inline
+          path="/browse"
+          query={{
+            by: by === "word" ? "" : by,
+            q: asked,
+            category: filters.category,
+            status: val("status"),
+            delivery: filters.delivery,
+            region: regionParam ?? "",
+          }}
+        />
+      )}
       {focus === "category" && currentCategory ? (
         <div className="page-intro section-intro">
           <p className="eyebrow">
@@ -323,6 +343,7 @@ export default async function Browse({
               category: filters.category,
               status: val("status"),
               delivery: filters.delivery,
+              mine: scope.active.join(","),
             }}
           />
         </div>

@@ -102,6 +102,19 @@ export type Filters = {
   /** يستبعد منتجات أسر هذه المنطقة/المدينة (حتى لا تتكرر بين القسمين). */
   notRegion?: string;
   notCity?: string;
+  /** فلاتر العضو أعلى الصفحة («مشابه لمنتجاتي»، «منطقتي»، «حسب تغطيتي»)؛ تُحسب في الخادم. */
+  mine?: MineFilters | null;
+};
+/** ما تحصره فلاتر العضو (src/server/member-scope.ts). */
+export type MineFilters = {
+  /** أقسام المنتجات المطلوبة (يكفي أحدها). مصفوفة فارغة = لا شيء يطابق. */
+  categories?: string[];
+  /** مدن الأسر المسموحة (تغطية المندوب). */
+  cities?: string[];
+  /** منطقة الأسر (منطقتي). */
+  region?: string;
+  /** يستبعد منتجات الأسرة نفسها من «مشابه لمنتجاتي». */
+  excludeProducer?: string;
 };
 export type SessionUser = {
   id: string;

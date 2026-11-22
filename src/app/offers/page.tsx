@@ -1,4 +1,6 @@
 import { cookies } from "next/headers";
+import { MineBar } from "@/components/public/mine-bar";
+import { pageMemberScope } from "@/server/page-member";
 import { AdSlot } from "@/components/public/ad-slot";
 import { Offers } from "@/components/forms/offers";
 import { RegionPicker } from "@/components/public/region-picker";
@@ -25,18 +27,23 @@ export default async function Page({
   const saved = jar.get("jdatna_region")?.value ?? "";
   const region =
     [asked ?? saved].find((r) => r && regions.some((x) => x.id === r)) ?? "";
+  const scope = await pageMemberScope(raw.mine);
   return (
-    <Offers
-      region={region}
-      scope={
-        <>
-          <div className="browse-scope">
-            <span>نطاقك:</span>
-            <RegionPicker regions={regions} value={region} path="/offers" />
-          </div>
-          <AdSlot placement="offers_top" />
-        </>
-      }
-    />
+    <>
+      <MineBar scope={scope} path="/offers" query={{ region: asked ?? "" }} />
+      <Offers
+        region={region}
+        mine={scope.active.join(",")}
+        scope={
+          <>
+            <div className="browse-scope">
+              <span>نطاقك:</span>
+              <RegionPicker regions={regions} value={region} path="/offers" />
+            </div>
+            <AdSlot placement="offers_top" />
+          </>
+        }
+      />
+    </>
   );
 }

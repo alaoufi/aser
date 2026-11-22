@@ -1,4 +1,5 @@
 import type { Category, City, Producer, Product, Filters } from "../lib/types";
+import { mineConditions } from "./member-scope";
 import { db, databaseConfigured } from "./db";
 import { categories, cities } from "./constants";
 import { notCookingTodaySql } from "./cooking-availability";
@@ -178,6 +179,7 @@ function conditions(f: Filters, products: boolean) {
     where.push("x.status<>'unavailable'");
   if (products && f.status === "available")
     where.push(`NOT ${notCookingTodaySql()}`);
+  mineConditions(f.mine, products, add);
   if (f.delivery === "true") where.push("p.delivery=true");
   if (f.delivery === "pickup") where.push("p.pickup=true");
   return { args, where: where.join(" AND ") };
@@ -200,7 +202,7 @@ export async function searchProducts(
  * (الطلبات غير المرفوضة أو الملغاة)، ثم المميز، ثم الأحدث.
  */
 export async function todayProducts(
-  filters: Pick<Filters, "region" | "city"> = {},
+  filters: Pick<Filters, "region" | "city" | "mine"> = {},
   limit = 48,
 ): Promise<Product[]> {
   if (!databaseConfigured()) return [];

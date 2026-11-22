@@ -1,4 +1,6 @@
 import { productStatusLabels } from "@/lib/site-texts";
+import { MineBar } from "@/components/public/mine-bar";
+import { pageMemberScope } from "@/server/page-member";
 import { AdSlot } from "@/components/public/ad-slot";
 import { identityProps } from "@/lib/brand";
 import { FoodPhotos } from "@/components/public/food-photos";
@@ -45,6 +47,8 @@ export default async function Home({
   const saved = jar.get("jdatna_region")?.value ?? "";
   const region =
     [asked ?? saved].find((r) => r && regions.some((x) => x.id === r)) ?? "";
+  const scope = await pageMemberScope(raw.mine);
+  const mine = scope.filters;
   const [
     template,
     texts,
@@ -59,10 +63,10 @@ export default async function Home({
     // لا يظهر القسم إلا إن كان فيه منتج قابل للطلب في نطاق الزائر.
     publicCategories(region),
     // منتجات المنطقة ثم ما يُشحن لكل المناطق، ثم الأسر بنفس الترتيب.
-    regionalProducts({ region }, 4),
-    regionalProducers({ region }),
+    regionalProducts({ region, mine }, 4),
+    regionalProducers({ region, mine }),
     recentCertificates(),
-    todayProducts({ region }),
+    todayProducts({ region, mine }),
   ]);
   const homeProducts = [...products.local, ...products.nationwide].slice(0, 4);
   const homeProducers = [...producers.local, ...producers.nationwide].slice(
@@ -97,6 +101,7 @@ export default async function Home({
           {template === "najdi" ? <NajdiDoor /> : <FoodPhotos />}
         </div>
       </section>
+      <MineBar scope={scope} path="/" query={{ region: asked ?? "" }} />
       <AdSlot placement="home_top" className="wrap" />
       <TodayTable
         products={today}
