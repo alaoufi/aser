@@ -5,16 +5,17 @@ import { REF_COOKIE, invitePattern, validInvite } from "@/server/referrals";
  * يُحسب لصاحبه حين يؤكد الزائر جواله ويسجل حسابًا جديدًا.
  */
 export async function GET(
-  request: Request,
+  _request: Request,
   context: { params: Promise<{ code: string }> },
 ) {
   const code = (await context.params).code.trim();
   const ok =
     invitePattern.test(code) && (await validInvite(code).catch(() => false));
-  const res = NextResponse.redirect(
-    new URL(ok ? "/login?signup=1" : "/", request.url),
-    302,
-  );
+  // تحويل نسبي: خلف البوابة عنوان الطلب داخلي (0.0.0.0:3000)، فيبقى الزائر على النطاق الذي فتحه.
+  const res = new NextResponse(null, {
+    status: 302,
+    headers: { Location: ok ? "/login?signup=1" : "/" },
+  });
   if (ok)
     res.cookies.set(REF_COOKIE, code, {
       path: "/",

@@ -87,6 +87,10 @@ test.describe("invite a friend", () => {
     context,
   }) => {
     test.skip(!code, "needs the code from the previous test");
+    // التحويل نسبي (لا يكشف عنوان الخادم الداخلي خلف البوابة).
+    const raw = await page.request.get(`/r/${code}`, { maxRedirects: 0 });
+    expect(raw.status()).toBe(302);
+    expect(raw.headers().location).toBe("/login?signup=1");
     await page.goto(`/r/${code}`);
     await expect(page).toHaveURL(/\/login\?signup=1/);
     const saved = (await context.cookies()).find(
