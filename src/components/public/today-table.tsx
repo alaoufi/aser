@@ -330,6 +330,7 @@ export function TodayTable({
   capacity,
   path,
   texts,
+  picker = true,
 }: {
   texts: Pick<
     SiteTexts,
@@ -349,6 +350,8 @@ export function TodayTable({
   /** عدد الأطباق التي تتسع لها الطاولة؛ بدونه تعرض الكل. */
   capacity?: number;
   path: string;
+  /** false: اختيار المنطقة في أعلى الصفحة (بجانب «وش تطلب اليوم» في الرئيسية)، فلا يتكرر هنا. */
+  picker?: boolean;
 }) {
   const shown = capacity ? products.slice(0, capacity) : products;
   const regionName = regions.find((r) => r.id === region)?.name;
@@ -365,13 +368,15 @@ export function TodayTable({
         >
           {texts["table.title"] || "مائدة اليوم"}
         </h2>
-        <RegionPicker
-          regions={regions}
-          value={region}
-          path={path}
-          autoLabel={texts["region.auto"]}
-          detectingLabel={texts["region.detecting"]}
-        />
+        {picker && (
+          <RegionPicker
+            regions={regions}
+            value={region}
+            path={path}
+            autoLabel={texts["region.auto"]}
+            detectingLabel={texts["region.detecting"]}
+          />
+        )}
       </div>
       {/* مائدة خشب كبيرة ثلاثية الأبعاد بأرجل قصيرة */}
       <div className="table-3d">
