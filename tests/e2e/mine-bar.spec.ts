@@ -78,33 +78,31 @@ test.describe("member filters at the top of the page", () => {
     for (const path of ["/", "/offers"]) {
       await page.goto(path);
       const bar = page.getByRole("navigation", { name: "اعرض لي" });
-      await expect(bar.getByRole("link", { name: "الكل" })).toHaveAttribute(
-        "aria-current",
-        "true",
-      );
-      await expect(bar.getByRole("button", { name: "منطقتي" })).toBeVisible();
+      // بلا «الكل»: لا اختيار = الكل.
+      await expect(bar.getByRole("link", { name: "الكل" })).toHaveCount(0);
+      await expect(
+        bar.getByRole("checkbox", { name: "منطقتي" }),
+      ).not.toBeChecked();
     }
     await page.goto("/browse");
     const bar = page.getByRole("navigation", { name: "اعرض لي" });
-    await expect(bar.getByRole("button")).toHaveText([
+    await expect(bar.getByRole("checkbox")).toHaveText([
       "مشابه لمنتجاتي",
       "منطقتي",
     ]);
-    await bar.getByRole("button", { name: "منطقتي" }).click();
+    await bar.getByRole("checkbox", { name: "منطقتي" }).click();
     await expect(page).toHaveURL(/mine=area/);
-    await expect(bar.getByRole("button", { name: /منطقتي/ })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
-    await bar.getByRole("button", { name: "مشابه لمنتجاتي" }).click();
+    await expect(bar.getByRole("checkbox", { name: "منطقتي" })).toBeChecked();
+    await bar.getByRole("checkbox", { name: "مشابه لمنتجاتي" }).click();
     await expect(page).toHaveURL(/mine=area%2Csimilar|mine=area,similar/);
     // بلا أقسام لمنتجاتها: سبب ظاهر بدل قائمة فارغة بلا تفسير.
     await expect(bar.getByRole("status")).toContainText("أضف منتجاتك");
-    // المفتاح يوقف نفسه، و«الكل» يرجع الافتراضي.
-    await bar.getByRole("button", { name: /منطقتي/ }).click();
+    // المفتاح يوقف نفسه، وإلغاء الاثنين يرجع الكل.
+    await bar.getByRole("checkbox", { name: "منطقتي" }).click();
     await expect(page).toHaveURL(/mine=similar/);
-    await bar.getByRole("link", { name: "الكل" }).click();
+    await bar.getByRole("checkbox", { name: "مشابه لمنتجاتي" }).click();
     await expect(page).not.toHaveURL(/mine=/);
+    await expect(bar.getByRole("checkbox", { checked: true })).toHaveCount(0);
     // لا شيء أعرض من الشاشة.
     expect(
       await page.evaluate(

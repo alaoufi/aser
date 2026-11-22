@@ -3523,7 +3523,7 @@ main {
   flex: 1 1 0;
   font-size: 0.95rem;
   font-weight: 700;
-  gap: 4px;
+  gap: 8px;
   justify-content: center;
   line-height: 1.25;
   min-height: 44px;
@@ -3535,26 +3535,41 @@ main {
     background-color 0.15s ease,
     color 0.15s ease;
 }
-/* «الكل» بعرض كلمته، والمساحة الباقية للخيارات الأطول. */
-.mine-seg:first-child {
-  flex: 0 0 auto;
-  padding-inline: 16px;
-}
 .mine-seg:hover {
   background: rgb(255 255 255 / 0.6);
 }
-.mine-seg[aria-pressed="true"],
-.mine-seg[aria-current="true"] {
+.mine-seg[aria-checked="true"] {
   background: var(--olive);
   box-shadow: 0 1px 3px rgb(56 41 31 / 0.2);
   color: #fff;
 }
+/* مربع الاختيار: فارغ، أو ✓ حين يُفعَّل. */
+.mine-box {
+  align-items: center;
+  background: var(--surface);
+  border: 2px solid currentColor;
+  border-radius: 5px;
+  color: var(--olive);
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 0.8rem;
+  height: 20px;
+  justify-content: center;
+  line-height: 1;
+  width: 20px;
+}
+.mine-seg[aria-checked="false"] .mine-box {
+  color: var(--muted);
+}
+.mine-seg[aria-checked="true"] .mine-box {
+  background: #fff;
+  border-color: #fff;
+  color: var(--olive);
+  font-weight: 900;
+}
 .mine-seg:focus-visible {
   outline: 3px solid var(--rust);
   outline-offset: 2px;
-}
-.mine-check {
-  font-size: 0.85em;
 }
 .mine-note {
   color: var(--muted);

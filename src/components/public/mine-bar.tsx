@@ -3,7 +3,8 @@ import type { MemberScope, MineKey } from "@/server/member-scope";
 
 /**
  * مفاتيح العضو أعلى الصفحة: «مشابه لمنتجاتي/لطلباتي» و«منطقتي» و«حسب تغطيتي».
- * الافتراضي «الكل» بلا فلتر؛ كل مفتاح رابط يفعّله أو يوقفه، وبقية معاملات الصفحة تبقى كما هي.
+ * كل خيار مربع اختيار مستقل؛ بلا أي اختيار يُعرض الكل (لا زر «الكل»، بطلب المالك).
+ * كل مفتاح رابط يفعّله أو يوقفه، وبقية معاملات الصفحة تبقى كما هي.
  */
 export function MineBar({
   scope,
@@ -39,31 +40,24 @@ export function MineBar({
           اعرض لي
         </span>
         <div className="mine-segments">
-          <Link
-            href={href([])}
-            className="mine-seg"
-            aria-current={scope.active.length ? undefined : "true"}
-            scroll={false}
-          >
-            الكل
-          </Link>
-          {scope.options.map((o) => (
-            <Link
-              key={o.key}
-              href={href(toggle(o.key))}
-              className="mine-seg"
-              aria-pressed={scope.active.includes(o.key)}
-              role="button"
-              scroll={false}
-            >
-              {scope.active.includes(o.key) && (
-                <span className="mine-check" aria-hidden="true">
-                  ✓
+          {scope.options.map((o) => {
+            const on = scope.active.includes(o.key);
+            return (
+              <Link
+                key={o.key}
+                href={href(toggle(o.key))}
+                className="mine-seg"
+                role="checkbox"
+                aria-checked={on}
+                scroll={false}
+              >
+                <span className="mine-box" aria-hidden="true">
+                  {on ? "✓" : ""}
                 </span>
-              )}
-              {o.label}
-            </Link>
-          ))}
+                {o.label}
+              </Link>
+            );
+          })}
         </div>
       </div>
       {scope.notes.map((n) => (
