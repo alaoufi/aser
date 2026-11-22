@@ -123,7 +123,28 @@ test(
       const customer = as(await mkUser("customer"), "customer");
       const empty = await memberScope(customer, ["similar"]);
       assert.equal(await seen(empty), "", "لم يطلب شيئًا: لا شيء يشبه طلباته");
-      assert.match(empty.summary, /^لا يُعرض شيء الآن: لم تطلب شيئًا بعد/);
+      assert.equal(
+        empty.needs,
+        "interests",
+        "لم يطلب بعد: يُطلب منه اختيار ما يحب",
+      );
+      assert.match(
+        empty.summary,
+        /^لم تطلب شيئًا بعد\. اختر ما تحب من الأكلات/,
+      );
+      // يختار ما يحب (قسم c2 وقسم مجهول يُترك بصمت) فيعمل الخيار قبل أول طلب.
+      const { saveInterests, getInterests } =
+        await import("../src/server/member-interests");
+      assert.deepEqual(
+        (await saveInterests(customer, { categories: [c2, "no-such"] }))
+          .categories,
+        [c2],
+      );
+      assert.deepEqual(await getInterests(customer), [c2]);
+      const liked = await memberScope(customer, ["similar"]);
+      assert.equal(liked.needs, null);
+      assert.equal(await seen(liked), "D");
+      await saveInterests(customer, { categories: [] });
       await pool.query(
         "INSERT INTO jdatna.order_requests(id,request_key,request_hash,user_id,producer_id,product_id,snapshot,customer_name,phone,quantity,meal,start_date,end_date,status) VALUES($1,$2,'h',$3,$4,$5,'{}','عميل','+966500000000',1,'lunch',current_date+1,current_date+1,'pending')",
         [
@@ -144,11 +165,8 @@ test(
         "AB",
       );
       const noRegion = await memberScope(customer, ["area"], "");
-      assert.equal(
-        noRegion.summary,
-        "يُعرض الآن الكل، و«منطقتي» لا يعمل حتى تختار منطقتك من «نطاقك».",
-        "بلا منطقة محفوظة: يقول إنه يعرض الكل ولماذا",
-      );
+      assert.equal(noRegion.needs, "region", "بلا منطقة: يُطلب تحديدها");
+      assert.equal(noRegion.summary, "حدد منطقتك ليعمل «منطقتي»:");
 
       const courierUser = await mkUser("courier");
       await pool.query(
@@ -206,6 +224,10 @@ test(
       await pool.query(
         "DELETE FROM jdatna.producer_profiles WHERE id=ANY($1::uuid[])",
         [ids.map((f) => f.id)],
+      );
+      await pool.query(
+        "DELETE FROM jdatna.member_interests WHERE user_id=ANY($1::uuid[])",
+        [users],
       );
       await pool.query("DELETE FROM jdatna.users WHERE id=ANY($1::uuid[])", [
         users,

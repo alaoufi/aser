@@ -1,5 +1,7 @@
 import Link from "next/link";
 import type { MemberScope, MineKey } from "@/server/member-scope";
+import type { MineChoices } from "@/server/page-member";
+import { MinePrompt } from "./mine-prompt";
 
 /**
  * مفاتيح العضو أعلى الصفحة: «مشابه لمنتجاتي/لطلباتي» و«منطقتي» و«حسب تغطيتي».
@@ -12,7 +14,7 @@ export function MineBar({
   query = {},
   inline = false,
 }: {
-  scope: MemberScope;
+  scope: MemberScope & { choices?: MineChoices };
   path: string;
   query?: Record<string, string>;
   /** داخل حاوية الصفحة نفسها (بلا هامش «wrap» ثانٍ). */
@@ -64,6 +66,9 @@ export function MineBar({
         <p className="mine-note" role="status">
           {scope.summary}
         </p>
+      )}
+      {scope.needs && (
+        <MinePrompt needs={scope.needs} choices={scope.choices ?? {}} />
       )}
     </nav>
   );

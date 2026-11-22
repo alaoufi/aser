@@ -19,6 +19,8 @@ export type MemberScope = {
   filters: MineFilters | null;
   /** حين لا يُعرض شيء بسبب فلتر لا يعمل (مثل: لم تطلب شيئًا بعد)؛ يصير هو سطر الحالة. */
   notes: string[];
+  /** ما يحتاجه الخيار ليعمل، فيُطلب من العضو في اللوحة نفسها: منطقته، أو ما يحب من الأكلات. */
+  needs: "region" | "interests" | null;
   /** سطر الحالة تحت المفاتيح: ما يُعرض الآن بالضبط (الأقسام والمنطقة والمدن بأسمائها). */
   summary: string;
 };
@@ -78,6 +80,7 @@ export async function memberScope(
     active: [],
     filters: null,
     notes: [],
+    needs: null,
     summary: "",
   };
   if (!user || !databaseConfigured()) return none;
@@ -95,6 +98,7 @@ export async function memberScope(
   const filters: MineFilters = {};
   const notes: string[] = [];
   let unapplied = "";
+  let needs: MemberScope["needs"] = null;
   if (who.kind === "family") {
     if (active.includes("similar")) {
       filters.categories = (
@@ -117,19 +121,32 @@ export async function memberScope(
       filters.categories = (
         await db().query<{ id: string }>(
           `SELECT DISTINCT pc.category_id AS id FROM jdatna.order_requests o
-             JOIN jdatna.product_categories pc ON pc.product_id=o.product_id WHERE o.user_id=$1`,
+             JOIN jdatna.product_categories pc ON pc.product_id=o.product_id WHERE o.user_id=$1
+           UNION
+           -- ما اختاره بنفسه، مع فروعه (اختيار «أكلات نجدية» يشمل الجريش والمرقوق تحته).
+           (WITH RECURSIVE picked AS (
+              SELECT category_id AS id FROM jdatna.member_interests WHERE user_id=$1
+              UNION SELECT c.id FROM jdatna.categories c JOIN picked p ON c.parent_id=p.id
+            ) SELECT id FROM picked)`,
           [user.id],
         )
       ).rows.map((r) => r.id);
-      if (!filters.categories.length)
+      if (!filters.categories.length) {
+        // لم يطلب بعد ولم يختر: يُطلب منه أن يختار ما يحب من الأكلات.
+        needs = "interests";
         notes.push(
-          "لا يُعرض شيء الآن: لم تطلب شيئًا بعد، فلا شيء يشبه طلباتك. ألغِ «مشابه لطلباتي» لترى الكل.",
+          "لم تطلب شيئًا بعد. اختر ما تحب من الأكلات ليعرض لك «مشابه لطلباتي» ما يشبهها:",
         );
+      }
     }
     if (active.includes("area")) {
-      // بلا منطقة محفوظة لا يُطبَّق «منطقتي»، ويقول سطر الحالة ذلك صراحة.
+      // بلا منطقة محفوظة: يُطلب منه تحديد منطقته أولًا.
       if (savedRegion) filters.region = savedRegion;
-      else unapplied = "«منطقتي» لا يعمل حتى تختار منطقتك من «نطاقك»";
+      else {
+        needs ??= "region";
+        unapplied = "«منطقتي» لا يعمل حتى تحدد منطقتك";
+        if (needs === "region") notes.push("حدد منطقتك ليعمل «منطقتي»:");
+      }
     }
   } else {
     // مدينة المندوب، ومدن المراكز التي اختار التوصيل لها (المركز تحت مدينته في شجرة التغطية).
@@ -151,6 +168,7 @@ export async function memberScope(
     active,
     filters,
     notes,
+    needs,
     summary: notes.length
       ? notes[0]
       : await describe(who.kind, filters, unapplied),

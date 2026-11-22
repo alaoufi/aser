@@ -18,6 +18,8 @@ test.describe("member filters at the top of the page", () => {
   const family = randomUUID();
   const product = randomUUID();
   const token = randomBytes(32).toString("hex");
+  const customer = randomUUID();
+  const customerToken = randomBytes(32).toString("hex");
   test.beforeAll(async () => {
     pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 2 });
     expect(
@@ -40,19 +42,38 @@ test.describe("member filters at the top of the page", () => {
       "INSERT INTO jdatna.products(id,producer_id,name,description,price,unit,status) VALUES($1,$2,'طبق المفاتيح','وصف',20,'صحن','available')",
       [product, family],
     );
-    // جلسة الموقع: البصمة تُحسب في القاعدة نفسها.
     await pool.query(
-      "INSERT INTO jdatna.sessions(token_hash,user_id,expires_at) VALUES(encode(sha256(convert_to($1,'UTF8')),'hex'),$2,now()+interval '1 hour')",
-      [token, user],
+      "INSERT INTO jdatna.users(id,name,phone,role,phone_verified_at) VALUES($1,'عميل المفاتيح',$2,'customer',now())",
+      [
+        customer,
+        "+9665" + String(Math.floor(Math.random() * 1e8)).padStart(8, "0"),
+      ],
     );
+    // جلسات الموقع: البصمة تُحسب في القاعدة نفسها.
+    for (const [t, u] of [
+      [token, user],
+      [customerToken, customer],
+    ])
+      await pool.query(
+        "INSERT INTO jdatna.sessions(token_hash,user_id,expires_at) VALUES(encode(sha256(convert_to($1,'UTF8')),'hex'),$2,now()+interval '1 hour')",
+        [t, u],
+      );
   });
   test.afterAll(async () => {
-    await pool?.query("DELETE FROM jdatna.sessions WHERE user_id=$1", [user]);
+    await pool?.query(
+      "DELETE FROM jdatna.sessions WHERE user_id=ANY($1::uuid[])",
+      [[user, customer]],
+    );
+    await pool?.query("DELETE FROM jdatna.member_interests WHERE user_id=$1", [
+      customer,
+    ]);
     await pool?.query("DELETE FROM jdatna.products WHERE id=$1", [product]);
     await pool?.query("DELETE FROM jdatna.producer_profiles WHERE id=$1", [
       family,
     ]);
-    await pool?.query("DELETE FROM jdatna.users WHERE id=$1", [user]);
+    await pool?.query("DELETE FROM jdatna.users WHERE id=ANY($1::uuid[])", [
+      [user, customer],
+    ]);
     await pool?.end();
   });
 
@@ -113,6 +134,51 @@ test.describe("member filters at the top of the page", () => {
     await expect(page).not.toHaveURL(/mine=/);
     await expect(bar.getByRole("checkbox", { checked: true })).toHaveCount(0);
     // لا شيء أعرض من الشاشة.
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      ),
+    ).toBe(true);
+  });
+
+  test("a customer with no orders picks favourite food, and one with no region picks it", async ({
+    page,
+    context,
+    baseURL,
+  }) => {
+    await context.addCookies([
+      { name: "jdatna_session", value: customerToken, url: baseURL! },
+    ]);
+    await page.goto("/browse");
+    const bar = page.getByRole("navigation", { name: "اعرض لي" });
+    await bar.getByRole("checkbox", { name: "مشابه لطلباتي" }).click();
+    await expect(bar.getByRole("status")).toHaveText(
+      /^لم تطلب شيئًا بعد\. اختر ما تحب من الأكلات/,
+    );
+    const food = bar.getByRole("group", { name: "ما تحب من الأكلات" });
+    const save = food.getByRole("button", { name: "احفظ واعرض المشابه" });
+    await expect(save).toBeDisabled();
+    const first = food.getByRole("checkbox").first();
+    const name = (await first.locator("xpath=..").innerText()).trim();
+    await first.check();
+    await save.click();
+    await expect(bar.getByRole("status")).toContainText(
+      `يُعرض الآن ما يشبه طلباتك (${name}`,
+    );
+    await expect(food).toHaveCount(0);
+    // «منطقتي» بلا منطقة محددة: يُطلب تحديدها في اللوحة نفسها.
+    await context.clearCookies({ name: "jdatna_region" });
+    await bar.getByRole("checkbox", { name: "مشابه لطلباتي" }).click();
+    await expect(page).not.toHaveURL(/mine=/);
+    await bar.getByRole("checkbox", { name: "منطقتي" }).click();
+    await expect(page).toHaveURL(/mine=area/);
+    await expect(bar.getByRole("status")).toHaveText(
+      "حدد منطقتك ليعمل «منطقتي»:",
+    );
+    await bar.getByLabel("منطقتك").selectOption({ index: 1 });
+    await expect(bar.getByRole("status")).toHaveText(
+      /^يُعرض الآن كل ما في .+\.$/,
+    );
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= window.innerWidth,
