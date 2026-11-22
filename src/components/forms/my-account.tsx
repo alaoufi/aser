@@ -9,6 +9,7 @@ import type { SessionUser } from "@/lib/types";
 
 const TABS = [
   { id: "profile", label: "البيانات الشخصية" },
+  { id: "invite", label: "ادعُ صديقًا" },
   { id: "password", label: "كلمة المرور" },
   { id: "look", label: "المظهر" },
   { id: "delete", label: "حذف الحساب" },
@@ -83,6 +84,7 @@ export function MyAccount() {
               choose(id);
             }}
           >
+            {tab === "invite" && <InviteFriend />}
             {tab === "profile" && (
               <form
                 className={`${s.form} ${s.card}`}
@@ -231,6 +233,95 @@ function Appearance() {
           </button>
         ))}
       </fieldset>
+    </section>
+  );
+}
+
+/**
+ * «ادعُ صديقًا» (قرار المالك 2026-11-22): رابط دعوة ثابت للعضو، ورصيده (عدد من سجلوا عن طريقه).
+ * يُحسب المسجل بعد تأكيد جواله، بالرابط أو إن كتب رقمك (رقم العضو أو جوالك) في «رقم الدعوة».
+ */
+function InviteFriend() {
+  const [d, setD] = useState<{
+    memberNo: number;
+    link: string;
+    count: number;
+  } | null>(null);
+  const [error, setError] = useState("");
+  const [msg, setMsg] = useState("");
+  useEffect(() => {
+    api<{ memberNo: number; link: string; count: number }>("/api/me/invite")
+      .then(setD)
+      .catch((e) => setError(e.message));
+  }, []);
+  const text = "سجّل في أكلات جدتنا، أكل البيت من الأسر المنتجة:";
+  return (
+    <section className={`${s.form} ${s.card}`} aria-label="ادعُ صديقًا">
+      <h2>ادعُ صديقًا</h2>
+      <p className={s.muted}>
+        أرسل رابطك لصديق، فإذا سجّل به وأكّد جواله يُحسب لك. ويُحسب لك أيضًا إن
+        كتب رقمك في خانة «رقم الدعوة» عند تسجيله.
+      </p>
+      <Message error={error} success={msg} />
+      {!d ? (
+        !error && <p role="status">جارٍ التحميل…</p>
+      ) : (
+        <>
+          <p className="invite-number">
+            رقم دعوتك: <strong dir="ltr">{d.memberNo}</strong>
+          </p>
+          <p className="invite-balance" data-testid="invite-balance">
+            رصيدك: <strong>{d.count}</strong>{" "}
+            {d.count === 1 ? "مسجل" : "مسجلين"} عن طريقك
+          </p>
+          <label className={s.field}>
+            رابط دعوتك
+            <input
+              value={d.link}
+              dir="ltr"
+              readOnly
+              onFocus={(e) => e.currentTarget.select()}
+            />
+          </label>
+          <div className={s.actions}>
+            <button
+              type="button"
+              className={s.button}
+              onClick={async () => {
+                setMsg("");
+                if (navigator.share) {
+                  try {
+                    await navigator.share({
+                      title: "أكلات جدتنا",
+                      text,
+                      url: d.link,
+                    });
+                    return;
+                  } catch {
+                    /* أُلغيت المشاركة: انسخ بدلها */
+                  }
+                }
+                try {
+                  await navigator.clipboard.writeText(`${text} ${d.link}`);
+                  setMsg("تم نسخ الرابط ✓");
+                } catch {
+                  setMsg("انسخ الرابط من الخانة أعلاه.");
+                }
+              }}
+            >
+              شارك الرابط
+            </button>
+            <a
+              className={s.buttonSecondary}
+              href={`https://wa.me/?text=${encodeURIComponent(`${text}\n${d.link}`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              واتساب
+            </a>
+          </div>
+        </>
+      )}
     </section>
   );
 }

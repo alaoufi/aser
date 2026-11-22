@@ -118,7 +118,7 @@ export async function sessionInfo(request: Request): Promise<{
   if (!token) return null;
   const row = (
     await db().query(
-      `SELECT u.id,u.name,u.phone,u.role,u.username,u.permissions,(u.password_hash IS NOT NULL) AS "hasPassword",false AS "canSetCredentials",
+      `SELECT u.id,u.name,u.phone,u.role,u.username,u.member_no AS "memberNo",u.permissions,(u.password_hash IS NOT NULL) AS "hasPassword",false AS "canSetCredentials",
         (SELECT COALESCE(p.trade_name,p.name) FROM jdatna.producer_profiles p WHERE p.user_id=u.id) AS "familyName"
        FROM jdatna.sessions s JOIN jdatna.users u ON u.id=s.user_id WHERE s.token_hash=$1 AND s.expires_at>now() AND NOT s.setup_only AND u.suspended_at IS NULL
          AND s.scope=$2 AND ($2='site' OR u.role='admin' OR cardinality(u.permissions)>0)`,
@@ -217,6 +217,8 @@ export async function verifyOtp(
   code: string,
   name?: string,
   purpose?: OtpPurpose,
+  /** «ادعُ صديقًا»: رمز رابط الدعوة المحفوظ في الجهاز، أو رقم من دعاه. */
+  referral?: { invite?: string | null; link?: string | null },
 ) {
   if (!registrationOpen()) throw new HttpError(503, "خدمة التحقق غير متاحة");
   await rateLimit("verify-global", 800, 3600);
@@ -287,6 +289,20 @@ export async function verifyOtp(
         ).rows[0];
       }
       if (!user) return null;
+      // حساب جديد أكّد جواله: يُحسب لمن دعاه (مرة واحدة، ولا يُفشل التسجيل أبدًا).
+      if (
+        challenge.purpose === "signup" &&
+        (referral?.invite || referral?.link)
+      ) {
+        const { recordReferral } = await import("./referrals");
+        await client.query("SAVEPOINT referral");
+        try {
+          await recordReferral(client, user.id, referral);
+          await client.query("RELEASE SAVEPOINT referral");
+        } catch {
+          await client.query("ROLLBACK TO SAVEPOINT referral");
+        }
+      }
       const token = randomBytes(32).toString("hex");
       await client.query(
         "INSERT INTO jdatna.sessions(token_hash,user_id,expires_at,setup_until,setup_only) VALUES($1,$2,now()+interval '10 minutes',now()+interval '10 minutes',true)",

@@ -5,6 +5,7 @@ import { ORDERS_CHANGED } from "@/components/public/order-alert";
 import { LocationInput, LocationLink } from "./location-share";
 import { RatingBox } from "./rating-box";
 import { OrderChatButton } from "./chat";
+import { DirectoryButton } from "./directory";
 import { DeleteAccountSection } from "./delete-account";
 import {
   AccountShell,
@@ -1031,6 +1032,9 @@ function ProducerOrder({
       </dl>
       {order.customerId && (
         <OrderChatButton orderId={order.id} label="مراسلة صاحب الطلب" />
+      )}
+      {order.customerId && (
+        <DirectoryButton target={{ customer: order.customerId }} />
       )}
       {order.customerId &&
         !["declined", "cancelled"].includes(order.status) && (

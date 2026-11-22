@@ -298,6 +298,13 @@ function AccountNavigation() {
     ["/", "الرئيسية"],
     ["/orders", "طلباتي"],
     ["/messages", "المحادثات"],
+    ["/directory", "دليلي"],
+    ...((user.role === "courier"
+      ? []
+      : [["/requests", family ? "طلبات العملاء" : "اطلب من الأسر"]]) as [
+      string,
+      string,
+    ][]),
     ["/my-subscriptions", "اشتراكاتي"],
     ["/me", "معلوماتي"],
     ...((user.role === "courier"
@@ -323,6 +330,7 @@ function AccountNavigation() {
   return (
     <>
       <div className={s.greeting}>
+        <MemberNo no={user.memberNo} />
         <p>
           مرحبًا، <strong>{shown}</strong>
         </p>
@@ -331,6 +339,15 @@ function AccountNavigation() {
       {/* روابط بارزة كأزرار، والصفحة الحالية مميزة بلونها. */}
       <AccountLinks links={links} path={path} />
     </>
+  );
+}
+/** رقم العضو فوق الاسم: المميِّز له لأن الأسماء تتكرر (قرار المالك 2026-11-22). */
+export function MemberNo({ no }: { no?: number | null }) {
+  if (!no) return null;
+  return (
+    <span className="member-no" title="رقم العضو">
+      رقم العضو <b dir="ltr">{no}</b>
+    </span>
   );
 }
 /**
@@ -493,6 +510,16 @@ export function LoginForm({
     const t = setTimeout(() => setResendIn((n) => n - 1), 1000);
     return () => clearTimeout(t);
   }, [resendIn]);
+  // رابط الدعوة (jdtna.sa/r/رقم العضو) يفتح «حساب جديد» مباشرة، ويملأ «رقم الدعوة» برقم من دعاه.
+  const [invited, setInvited] = useState("");
+  useEffect(() => {
+    if (register) return;
+    if (new URLSearchParams(window.location.search).get("signup") === "1")
+      setMode("signup");
+    setInvited(
+      /(?:^|;\s*)jdatna_ref=(\d{1,7})/.exec(document.cookie)?.[1] ?? "",
+    );
+  }, [register]);
   async function resend() {
     setBusy(true);
     setError("");
@@ -622,7 +649,14 @@ export function LoginForm({
             challengeId: challenge,
             code: f.get("code"),
             purpose: mode === "signup" ? "signup" : "reset",
-            ...(mode === "signup" ? { name: f.get("name") } : {}),
+            ...(mode === "signup"
+              ? {
+                  name: f.get("name"),
+                  ...(String(f.get("invite") ?? "").trim()
+                    ? { invite: String(f.get("invite")).trim() }
+                    : {}),
+                }
+              : {}),
           }),
         });
         if (!d.canSetCredentials)
@@ -835,6 +869,21 @@ export function LoginForm({
                     : "العميل: يتفعّل حسابه مباشرة بعد التحقق من الجوال."}{" "}
                 التصفح متاح للجميع، والطلب بعد التسجيل والتحقق من الجوال.
               </p>
+            )}
+            {mode === "signup" && challenge && (
+              <label className={s.field}>
+                رقم الدعوة (اختياري)
+                <input
+                  name="invite"
+                  key={invited}
+                  defaultValue={invited}
+                  dir="ltr"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  placeholder="رقم العضو الذي دعاك أو جواله"
+                  maxLength={30}
+                />
+              </label>
             )}
             {mode === "signup" && challenge && (
               <label className={s.field}>

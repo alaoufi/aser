@@ -130,6 +130,18 @@ export function Products() {
     setSuccess("");
     setError("");
   }
+  // زر (+) في القائمة السفلية يفتح «منتج جديد» مباشرة (?new=1).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: مرة واحدة عند الفتح.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("new") !== "1") return;
+    edit(null);
+    window.history.replaceState(null, "", window.location.pathname);
+    requestAnimationFrame(() =>
+      document
+        .querySelector("form[data-product-form]")
+        ?.scrollIntoView({ block: "start" }),
+    );
+  }, []);
   async function save(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");

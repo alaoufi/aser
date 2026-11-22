@@ -6,6 +6,7 @@ import type { City } from "@/lib/types";
 import { LocationFields } from "@/components/public/location-fields";
 import { LocationLink } from "./location-share";
 import { OrderChatButton } from "./chat";
+import { DirectoryButton } from "./directory";
 import { collectIssues, FormIssues, type FormIssue } from "./form-issues";
 import { Stars } from "@/components/public/stars";
 import {
@@ -881,6 +882,7 @@ export function CouriersDirectory() {
                     واتساب
                   </a>
                 )}
+                <DirectoryButton target={{ courier: k.id }} />
               </div>
             </li>
           ))}

@@ -25,6 +25,8 @@ export const POST = api(async (request) => {
         .pipe(z.string().regex(otpCodePattern)),
       name: z.string().trim().min(2).max(120).optional(),
       purpose: otpPurposeSchema,
+      // «ادعُ صديقًا»: «رقم الدعوة» (رقم عضو من دعاه أو جواله، اختياري).
+      invite: z.string().trim().max(30).optional(),
     })
     .strict()
     .refine(
@@ -32,11 +34,21 @@ export const POST = api(async (request) => {
       "أدخل اسم صاحب الحساب",
     )
     .parse(await jsonBody(request));
+  const refCode = request.headers
+    .get("cookie")
+    ?.split(";")
+    .map((c) => c.trim())
+    .find((c) => c.startsWith("jdatna_ref="))
+    ?.slice("jdatna_ref=".length);
   const result = await verifyOtp(
     body.challengeId,
     body.code,
     body.name,
     body.purpose,
+    {
+      link: refCode ? decodeURIComponent(refCode) : null,
+      invite: body.invite || null,
+    },
   );
   if (!result) {
     await recordSecurityEvent("otp.failed", { request, detail: body.purpose });

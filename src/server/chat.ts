@@ -59,12 +59,35 @@ export async function startConversation(user: SessionUser, input: unknown) {
       z.object({ order: z.uuid() }).strict(),
       z.object({ courier: z.uuid() }).strict(),
       z.object({ delivery: z.uuid() }).strict(),
+      // أسرة تراسل صاحب «طلب عميل» مفتوح.
+      z.object({ request: z.uuid() }).strict(),
     ])
     .parse(input);
   let customerId: string,
     producerId: string | null = null,
     courierId: string | null = null;
-  if ("delivery" in parsed) {
+  if ("request" in parsed) {
+    const family = (
+      await db().query(
+        "SELECT id FROM jdatna.producer_profiles WHERE user_id=$1 AND status='approved'",
+        [user.id],
+      )
+    ).rows[0] as { id: string } | undefined;
+    if (!family)
+      throw new HttpError(403, "مراسلة أصحاب الطلبات للأسر المنتجة المعتمدة");
+    const req = (
+      await db().query(
+        `SELECT r.user_id FROM jdatna.customer_requests r JOIN jdatna.users u ON u.id=r.user_id
+         WHERE r.id=$1 AND r.status='open' AND r.expires_at>now() AND u.suspended_at IS NULL AND u.deleted_at IS NULL`,
+        [parsed.request],
+      )
+    ).rows[0] as { user_id: string } | undefined;
+    if (!req) throw new HttpError(404, "الطلب لم يعد مفتوحًا");
+    if (req.user_id === user.id)
+      throw new HttpError(400, "لا يمكنك مراسلة نفسك");
+    customerId = req.user_id;
+    producerId = family.id;
+  } else if ("delivery" in parsed) {
     // مندوب الطلب وعميله فقط، ما دام التوصيل لم يكتمل أو اكتمل حديثًا.
     const row = (
       await db().query(

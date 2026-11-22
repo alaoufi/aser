@@ -11,6 +11,7 @@ type Member = {
   name: string;
   phone: string;
   role: "customer" | "producer" | "admin" | "staff";
+  memberNo: number;
   permissions: string[];
   suspended: boolean;
   familyName: string | null;
@@ -263,6 +264,10 @@ export function MembersAdmin() {
                   onClick={() => setOpenId((v) => (v === m.id ? "" : m.id))}
                 >
                   <span>
+                    <span className="member-no">
+                      رقم العضو <b dir="ltr">{m.memberNo}</b>
+                    </span>
+                    <br />
                     {m.name}
                     {m.familyName ? ` — ${m.familyName}` : ""}
                     {self ? " (حسابك)" : ""}
@@ -285,6 +290,14 @@ export function MembersAdmin() {
                   <p className={s.muted}>
                     لا يمكنك تعديل صلاحيات حسابك أو إيقافه من هنا.
                   </p>
+                )}
+                {openId === m.id && (
+                  <MemberNumber
+                    key={`no-${m.id}-${m.memberNo}`}
+                    member={m}
+                    busy={busy}
+                    onSave={update}
+                  />
                 )}
               </div>
             );
@@ -470,6 +483,60 @@ function MemberPassword({
         disabled={busy || password.length < 8}
       >
         حفظ كلمة المرور
+      </button>
+    </form>
+  );
+}
+
+/**
+ * تغيير رقم العضو لرقم مميز متاح (مثل 241 ← 22). المحجوز عن التسجيل مسموح للإدارة.
+ * الرقم القديم يبقى لصاحبه (روابط دعوته القديمة تعمل) ولا يُعطى لغيره.
+ */
+function MemberNumber({
+  member: m,
+  busy,
+  onSave,
+}: {
+  member: Member;
+  busy: boolean;
+  onSave: (body: Record<string, unknown>, done: string) => Promise<boolean>;
+}) {
+  const [no, setNo] = useState(String(m.memberNo));
+  const clean = no.replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
+  return (
+    <form
+      className={s.form}
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSave(
+          { action: "number", id: m.id, memberNo: clean },
+          `صار رقم ${m.name}: ${clean}.`,
+        );
+      }}
+    >
+      <label className={s.field}>
+        رقم العضو (يظهر فوق اسمه)
+        <input
+          value={no}
+          onChange={(e) => setNo(e.target.value)}
+          dir="ltr"
+          inputMode="numeric"
+          maxLength={7}
+          required
+        />
+        <small className={s.muted}>
+          اكتب رقمًا متاحًا. الأرقام المتشابهة (11، 222…) و2030 محجوزة عن
+          التسجيل وتمنحها الإدارة فقط. الرقم الحالي {m.memberNo} يبقى له ولا
+          يُعطى لغيره.
+        </small>
+      </label>
+      <button
+        className={s.buttonSecondary}
+        disabled={
+          busy || !/^\d{1,7}$/.test(clean) || clean === String(m.memberNo)
+        }
+      >
+        حفظ الرقم
       </button>
     </form>
   );
