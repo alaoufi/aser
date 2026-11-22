@@ -107,9 +107,7 @@ test.describe("member filters at the top of the page", () => {
     }
     await page.goto("/browse");
     const bar = page.getByRole("navigation", { name: "اعرض لي" });
-    await expect(bar.getByRole("status")).toHaveText(
-      "يُعرض الآن الكل، بلا فلتر. اختر ما يناسبك من الخيارات.",
-    );
+    await expect(bar.getByRole("status")).toHaveText("يُعرض الآن الكل.");
     await expect(bar.getByRole("checkbox")).toHaveText([
       "مشابه لمنتجاتي",
       "منطقتي",
