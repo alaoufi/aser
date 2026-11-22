@@ -156,9 +156,9 @@ test.describe("member filters at the top of the page", () => {
     const food = bar.getByRole("group", { name: "خياراتك من الأقسام" });
     const save = food.getByRole("button", { name: "احفظ واعرض" });
     await expect(save).toBeDisabled();
-    const first = food.getByRole("checkbox").first();
-    const name = (await first.locator("xpath=..").innerText()).trim();
-    await first.check();
+    // قسم ثابت من الأقسام الأصلية (اختبارات إدارة الأقسام تضيف أقسامًا وتخفيها في الوقت نفسه).
+    const name = "الأكلات الشعبية والتراثية";
+    await food.getByRole("checkbox", { name, exact: true }).check();
     await save.click();
     await expect(bar.getByRole("status")).toContainText(
       `يُعرض الآن من خياراتك (${name}`,
