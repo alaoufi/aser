@@ -18,7 +18,7 @@ test("a dish page explains the dish and is ready for search engines", async ({
   ).toBeVisible();
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     "href",
-    "https://jdatna.com" + slug("جريش"),
+    "https://jdtna.sa" + slug("جريش"),
   );
   expect(
     await page.locator('meta[name="description"]').getAttribute("content"),
@@ -64,7 +64,7 @@ test("the dishes hub lists every dish and an unknown dish is not found", async (
   await expect(page.locator(".dish-list li")).toHaveCount(12);
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     "href",
-    "https://jdatna.com/akalat",
+    "https://jdtna.sa/akalat",
   );
   expect((await request.get(slug("بيتزا"))).status()).toBe(404);
 });
@@ -73,9 +73,9 @@ test("the sitemap lists the dishes hub and every dish page", async ({
   request,
 }) => {
   const xml = await (await request.get("/sitemap.xml")).text();
-  expect(xml).toContain("<loc>https://jdatna.com/akalat</loc>");
+  expect(xml).toContain("<loc>https://jdtna.sa/akalat</loc>");
   for (const name of ["جريش", "مرقوق", "قرصان", "كليجا"])
     expect(xml).toContain(
-      `<loc>https://jdatna.com/akalat/${encodeURIComponent(name)}</loc>`,
+      `<loc>https://jdtna.sa/akalat/${encodeURIComponent(name)}</loc>`,
     );
 });

@@ -52,7 +52,7 @@ test(
       assert.notEqual(a, code);
       assert.equal(
         await shortLink("product", product),
-        "https://jdatna.com/s/" + code,
+        "https://jdtna.sa/s/" + code,
       );
 
       // التحويل إلى الصفحة الأصلية.

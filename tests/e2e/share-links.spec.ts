@@ -87,9 +87,9 @@ test.describe("short share links for products and family pages", () => {
     await apps.getByRole("button", { name: "رمز QR" }).click();
     await expect(menu.getByAltText("رمز QR لرابط المشاركة")).toBeVisible();
     const link = menu.locator(".share-link");
-    await expect(link).toHaveText(/^jdatna\.com\/s\/[2-9a-zA-Z]{6}$/);
+    await expect(link).toHaveText(/^jdtna\.sa\/s\/[2-9a-zA-Z]{6}$/);
     const code = (await link.textContent())!.split("/s/")[1];
-    const short = encodeURIComponent("https://jdatna.com/s/" + code);
+    const short = encodeURIComponent("https://jdtna.sa/s/" + code);
     await expect(apps.getByRole("link", { name: "واتساب" })).toHaveAttribute(
       "href",
       new RegExp("^https://wa\\.me/\\?text=.*" + short),
@@ -104,18 +104,16 @@ test.describe("short share links for products and family pages", () => {
     // نفس الرمز في كل زيارة، ويحوّل إلى صفحة المنتج.
     await page.reload();
     await toggle.click();
-    await expect(link).toHaveText("jdatna.com/s/" + code);
+    await expect(link).toHaveText("jdtna.sa/s/" + code);
     const res = await request.get(`/s/${code}`, { maxRedirects: 0 });
     expect(res.status()).toBe(301);
-    expect(res.headers().location).toBe(
-      `https://jdatna.com/products/${product}`,
-    );
+    expect(res.headers().location).toBe(`https://jdtna.sa/products/${product}`);
     const qr = await request.get(`/s/${code}/qr`);
     expect(qr.headers()["content-type"]).toContain("image/svg+xml");
     expect(await qr.text()).toContain("<svg");
     expect((await request.get("/s/zzzzzz/qr")).status()).toBe(404);
     const missing = await request.get("/s/zzzzzz", { maxRedirects: 0 });
-    expect(missing.headers().location).toBe("https://jdatna.com/browse");
+    expect(missing.headers().location).toBe("https://jdtna.sa/browse");
   });
 
   test("product page contact: chat always, WhatsApp and call only as the family chooses, no redirect button", async ({
@@ -161,11 +159,11 @@ test.describe("short share links for products and family pages", () => {
     const menu = page.locator(".page-top .share-menu");
     await menu.locator("summary").click();
     const link = menu.locator(".share-link");
-    await expect(link).toHaveText(/^jdatna\.com\/s\/[2-9a-zA-Z]{6}$/);
+    await expect(link).toHaveText(/^jdtna\.sa\/s\/[2-9a-zA-Z]{6}$/);
     const code = (await link.textContent())!.split("/s/")[1];
     const res = await request.get(`/s/${code}`, { maxRedirects: 0 });
     expect(res.headers().location).toBe(
-      `https://jdatna.com/producers/link-${fam}`,
+      `https://jdtna.sa/producers/link-${fam}`,
     );
   });
 });

@@ -5,15 +5,15 @@ test("robots announces the sitemap and hides private account pages", async ({
   request,
 }) => {
   const robots = await (await request.get("/robots.txt")).text();
-  expect(robots).toContain("Sitemap: https://jdatna.com/sitemap.xml");
+  expect(robots).toContain("Sitemap: https://jdtna.sa/sitemap.xml");
   for (const path of ["/dashboard", "/admin", "/messages", "/orders", "/me"])
     expect(robots).toContain(`Disallow: ${path}`);
   expect(robots).not.toContain("Disallow: /account/delete");
   const sitemap = await request.get("/sitemap.xml");
   expect(sitemap.ok()).toBe(true);
   const xml = await sitemap.text();
-  expect(xml).toContain("<loc>https://jdatna.com/</loc>");
-  expect(xml).toContain("<loc>https://jdatna.com/offers</loc>");
+  expect(xml).toContain("<loc>https://jdtna.sa/</loc>");
+  expect(xml).toContain("<loc>https://jdtna.sa/offers</loc>");
   expect(xml).toContain("<priority>");
 });
 
@@ -41,7 +41,7 @@ test("the home page carries search keywords, share image and site schema", async
   );
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     "href",
-    "https://jdatna.com",
+    "https://jdtna.sa",
   );
   const schemas = await page
     .locator('script[type="application/ld+json"]')
@@ -69,14 +69,14 @@ test("search pages get their own title, description and canonical", async ({
   await expect(page).toHaveTitle(/لقيمات — أكل بيت من الأسر المنتجة/);
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     "href",
-    "https://jdatna.com/browse?q=" + encodeURIComponent("لقيمات"),
+    "https://jdtna.sa/browse?q=" + encodeURIComponent("لقيمات"),
   );
   // البحث باسم أكلة لها صفحة في الدليل: الرابط المعتمد صفحتها.
   await page.goto("/browse?q=" + encodeURIComponent("جريش"));
   await expect(page).toHaveTitle(/جريش — أكل بيت من الأسر المنتجة/);
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     "href",
-    "https://jdatna.com/akalat/" + encodeURIComponent("جريش"),
+    "https://jdtna.sa/akalat/" + encodeURIComponent("جريش"),
   );
   // صورة المشاركة الافتراضية تبقى للصفحات التي بلا صورة.
   expect(

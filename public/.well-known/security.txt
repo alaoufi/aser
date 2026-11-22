@@ -1,6 +1,7 @@
 # أكلات جدتنا — الإبلاغ عن ثغرة أمنية
 # Jdatna — reporting a security vulnerability
-Contact: https://jdatna.com/support
+Contact: https://jdtna.sa/support
 Expires: 2027-11-16T00:00:00.000Z
 Preferred-Languages: ar, en
+Canonical: https://jdtna.sa/.well-known/security.txt
 Canonical: https://jdatna.com/.well-known/security.txt

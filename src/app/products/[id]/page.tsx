@@ -228,7 +228,7 @@ export default async function ProductDetail({
             <ChatButton producerSlug={p.producerSlug} />
             {familyWhatsapp && (
               <a
-                href={`https://wa.me/${familyWhatsapp}?text=${encodeURIComponent(`السلام عليكم، أستفسر عن «${p.name}» في أكلات جدتنا`)}`}
+                href={`https://wa.me/${familyWhatsapp}?text=${encodeURIComponent(`السلام عليكم، أستفسر عن «${p.name}» في أكلات جدتنا\n${share || SITE_URL}`)}`}
                 className="button secondary"
                 target="_blank"
                 rel="noopener noreferrer"

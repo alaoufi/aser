@@ -41,7 +41,7 @@ import {
 // القالب يُقرأ عند كل طلب حتى يسري اختيار الإدارة فورًا على كل الصفحات.
 export const dynamic = "force-dynamic";
 const siteMetadata: Metadata = {
-  metadataBase: new URL("https://jdatna.com"),
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "أكلات جدتنا | من بيوت أهلنا",
     template: "%s | أكلات جدتنا",
@@ -83,7 +83,7 @@ const siteMetadata: Metadata = {
   // رموز التحقق لـ Google Search Console وBing Webmaster من متغيرات الخادم (لا أسرار فيها).
   verification: {
     google: process.env.GOOGLE_SITE_VERIFICATION || undefined,
-    // رمز Bing Webmaster لـ jdatna.com (عام بطبيعته؛ متغير الخادم يغيّره إن لزم).
+    // رمز Bing Webmaster لحساب المالك (عام بطبيعته، ويصلح لكل مواقع الحساب؛ متغير الخادم يغيّره إن لزم).
     other: {
       "msvalidate.01":
         process.env.BING_SITE_VERIFICATION ||

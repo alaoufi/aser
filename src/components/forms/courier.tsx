@@ -1,4 +1,5 @@
 "use client";
+import { SITE_URL } from "@/lib/seo";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { City } from "@/lib/types";
@@ -873,7 +874,7 @@ export function CouriersDirectory() {
                 {k.whatsapp && (
                   <a
                     className={s.contact}
-                    href={`https://wa.me/${intl(k.whatsapp)}?text=${encodeURIComponent(family ? "السلام عليكم، أنا من أسرة منتجة في أكلات جدتنا، أرغب بالاتفاق على توصيل طلبات." : "السلام عليكم، أنا عميل في أكلات جدتنا، أرغب بالاتفاق على توصيل طلبي.")}`}
+                    href={`https://wa.me/${intl(k.whatsapp)}?text=${encodeURIComponent(`${family ? "السلام عليكم، أنا من أسرة منتجة في أكلات جدتنا، أرغب بالاتفاق على توصيل طلبات." : "السلام عليكم، أنا عميل في أكلات جدتنا، أرغب بالاتفاق على توصيل طلبي."}\n${SITE_URL}`)}`}
                     target="_blank"
                     rel="noopener noreferrer"
                   >

@@ -34,9 +34,9 @@ export default async function AppLink() {
         </a>
       </div>
       <p>
-        روابط مختصرة للمشاركة: <bdi dir="ltr">jdatna.com/app</bdi> لكل الأجهزة،
-        و<bdi dir="ltr">jdatna.com/ios</bdi> للآيفون، و
-        <bdi dir="ltr">jdatna.com/gl</bdi> لأندرويد.
+        روابط مختصرة للمشاركة: <bdi dir="ltr">jdtna.sa/app</bdi> لكل الأجهزة، و
+        <bdi dir="ltr">jdtna.sa/ios</bdi> للآيفون، و
+        <bdi dir="ltr">jdtna.sa/gl</bdi> لأندرويد.
       </p>
     </article>
   );
