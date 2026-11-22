@@ -94,15 +94,50 @@ export default async function Home({
                 placeholder={texts["home.search"]}
               />
             </label>
-            <button className="button" type="submit">
-              {texts["home.searchButton"] || "ابحث"}{" "}
-              <span aria-hidden="true">←</span>
+            <button
+              className="button"
+              type="submit"
+              aria-label={texts["home.searchButton"] || "ابحث"}
+            >
+              <span className="hero-search-word">
+                {texts["home.searchButton"] || "ابحث"}
+              </span>{" "}
+              <span className="hero-search-arrow" aria-hidden="true">
+                ←
+              </span>
+              {/* الجوال: عدسة بدل الكلمة، فتتسع خانة «وش تطلب اليوم». */}
+              <svg
+                className="hero-search-icon"
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                aria-hidden="true"
+              >
+                <circle
+                  cx="11"
+                  cy="11"
+                  r="6.5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                />
+                <path
+                  d="m16 16 4.5 4.5"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                />
+              </svg>
             </button>
           </form>
           {/* المنطقة بجانب «وش تطلب اليوم» في السطر نفسه (وهي منطقة المائدة تحتها أيضًا). */}
           <div className="hero-region">
             <RegionPicker
-              regions={regions}
+              regions={regions.map((r) => ({
+                ...r,
+                // «القصيم» بدل «منطقة القصيم»: الاسم كاملًا يُقص في سطر البحث على الجوال.
+                name: r.name.replace(/^منطقة\s+/, ""),
+              }))}
               value={region}
               path="/"
               autoLabel={texts["region.auto"]}

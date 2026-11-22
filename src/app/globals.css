@@ -3859,3 +3859,106 @@ main {
     grid-template-rows: auto;
   }
 }
+
+/* الجوال (6.2): سطر البحث والمنطقة لا يُقص فيه شيء حتى مع خط الجوال الكبير، والبطاقتان لا تنكسر عناوينهما. */
+.hero-search-icon {
+  display: none;
+}
+@media (max-width: 600px) {
+  .hero-copy .hero-search .button {
+    padding-inline: 10px;
+  }
+  .hero-copy .hero-search .hero-search-word,
+  .hero-copy .hero-search .hero-search-arrow {
+    display: none;
+  }
+  .hero-copy .hero-search .hero-search-icon {
+    display: block;
+  }
+  .hero-region {
+    flex: 0 0 34%;
+  }
+  .hero-region .table-region-wrap {
+    display: block;
+    position: relative;
+  }
+  /* «حسب موقعك» سطر صغير تحت خانة المنطقة لا يُنزل السطر ولا يُزيح البحث. */
+  .hero-region .table-region-note {
+    font-size: 11px;
+    inset-inline-start: 4px;
+    position: absolute;
+    top: calc(100% + 2px);
+    white-space: nowrap;
+  }
+  .hero-region select {
+    font-size: 15px;
+    padding-inline: 10px 26px;
+    text-overflow: ellipsis;
+  }
+  .hero-chip {
+    gap: 8px;
+    padding: 8px 10px;
+  }
+  .hero-chip-icon {
+    height: 28px;
+    width: 28px;
+  }
+  .hero-chip-text strong {
+    font-size: 0.95rem;
+    white-space: nowrap;
+  }
+  .hero-chip-text small {
+    font-size: 0.75rem;
+  }
+}
+
+/* الجوال (7.1): كل شيء في سطره بارتفاع واحد ومستوى واحد (طلب المالك):
+   - البحث والمنطقة 44px تمامًا، بالإطار والخلفية نفسيهما، و«حسب موقعك» على حافة إطار المنطقة كعنوان صغير.
+   - عمود الأطباق الصغيرة بطول الصورة الكبيرة نفسه، والأطباق موزعة عليه بالتساوي.
+   - البطاقتان بارتفاع واحد. */
+@media (max-width: 600px) {
+  .hero-copy {
+    align-items: stretch;
+  }
+  .hero-copy .hero-search,
+  .hero-region select {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    box-sizing: border-box;
+    height: 44px;
+  }
+  .hero-region .table-region-note {
+    background: var(--paper);
+    border-radius: 6px;
+    font-size: 10px;
+    inset-inline-end: 10px;
+    inset-inline-start: auto;
+    line-height: 1;
+    padding: 1px 4px;
+    pointer-events: none;
+    top: -7px;
+  }
+  .hero .food-showcase {
+    align-items: stretch;
+  }
+  .hero .food-showcase-strip {
+    gap: 6px;
+    grid-auto-rows: minmax(0, 1fr);
+    height: 100%;
+  }
+  .hero .food-showcase-strip .food-dish {
+    align-items: center;
+    display: flex;
+    justify-content: center;
+    min-height: 0;
+    padding: 0;
+  }
+  .hero .food-showcase-strip .food-dish-visual {
+    height: 100%;
+    max-width: 100%;
+    width: auto;
+  }
+  .hero-side {
+    align-items: stretch;
+  }
+}
