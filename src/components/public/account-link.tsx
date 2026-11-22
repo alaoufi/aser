@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import {
+  MemberNo,
   accountKind,
   isFamilyAccount,
   useSession,
@@ -37,12 +38,13 @@ export function AccountLink({ className }: { className?: string }) {
   );
 }
 
-/** أعلى قائمة الجوال: «مرحبًا، اسم الأسرة» حتى يكون صاحب الحساب واضحًا. */
+/** أعلى قائمة الجوال: رقم العضو فوق «مرحبًا، اسم الأسرة» حتى يكون صاحب الحساب واضحًا. */
 export function AccountGreeting() {
   const { user } = useSession();
   if (!user) return null;
   return (
     <div className="menu-greeting">
+      <MemberNo no={user.memberNo} />
       <p>
         مرحبًا، <strong>{user.familyName || user.name}</strong>
       </p>
