@@ -4135,3 +4135,34 @@ button.mine-seg {
   font: inherit;
   font-weight: 700;
 }
+/* «دعوات الأصدقاء» في الإدارة، و«ادعُ صديقًا» في الملف. */
+.invites-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+}
+.invites-table {
+  border-collapse: collapse;
+  min-width: 420px;
+  width: 100%;
+}
+.invites-table th,
+.invites-table td {
+  border-bottom: 1px solid var(--line);
+  padding: 8px 6px;
+  text-align: start;
+}
+.invites-name {
+  background: none;
+  border: 0;
+  color: var(--olive);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  min-height: 36px;
+  padding: 0;
+  text-decoration: underline;
+}
+.invite-balance {
+  font-size: 1.05rem;
+  margin: 0;
+}

@@ -217,6 +217,8 @@ export async function verifyOtp(
   code: string,
   name?: string,
   purpose?: OtpPurpose,
+  /** «ادعُ صديقًا»: رمز رابط الدعوة المحفوظ في الجهاز، أو رقم من دعاه. */
+  referral?: { code?: string | null; phone?: string | null },
 ) {
   if (!registrationOpen()) throw new HttpError(503, "خدمة التحقق غير متاحة");
   await rateLimit("verify-global", 800, 3600);
@@ -287,6 +289,20 @@ export async function verifyOtp(
         ).rows[0];
       }
       if (!user) return null;
+      // حساب جديد أكّد جواله: يُحسب لمن دعاه (مرة واحدة، ولا يُفشل التسجيل أبدًا).
+      if (
+        challenge.purpose === "signup" &&
+        (referral?.code || referral?.phone)
+      ) {
+        const { recordReferral } = await import("./referrals");
+        await client.query("SAVEPOINT referral");
+        try {
+          await recordReferral(client, user.id, referral);
+          await client.query("RELEASE SAVEPOINT referral");
+        } catch {
+          await client.query("ROLLBACK TO SAVEPOINT referral");
+        }
+      }
       const token = randomBytes(32).toString("hex");
       await client.query(
         "INSERT INTO jdatna.sessions(token_hash,user_id,expires_at,setup_until,setup_only) VALUES($1,$2,now()+interval '10 minutes',now()+interval '10 minutes',true)",

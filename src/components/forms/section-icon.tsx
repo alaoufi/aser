@@ -44,6 +44,7 @@ const icons: Record<string, string> = {
   library:
     "M3 5h18v14H3zM3 15l5-5 4 4 3-3 6 6M15.5 9.5a1.5 1.5 0 100-3 1.5 1.5 0 000 3",
   offers: "M3 12V3h9l9 9-9 9zM7.5 7.5h.01",
+  invites: "M9 11a4 4 0 100-8 4 4 0 000 8zM2 21a7 7 0 0114 0M19 8v6M16 11h6",
   members:
     "M9 11a4 4 0 100-8 4 4 0 000 8zM2 21a7 7 0 0114 0M16 4a4 4 0 010 7M18 14a6 6 0 014 7",
 };

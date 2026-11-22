@@ -140,6 +140,13 @@ export const NAV_GROUPS: AdminNavGroup[] = [
         perm: "suggestions",
         data: ["/api/admin/suggestions"],
       },
+      {
+        to: "/admin/invites",
+        icon: "invites",
+        labelKey: "دعوات الأصدقاء",
+        perm: "invites",
+        data: ["/api/admin/invites"],
+      },
     ],
   },
   {

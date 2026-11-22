@@ -29,6 +29,7 @@ export const adminPermissions = {
   integrations: "تكاملات API",
   verification: "إثبات ملكية النطاق",
   review: "مراجعة المتاجر",
+  invites: "دعوات الأصدقاء",
 } as const;
 export type AdminPermission = keyof typeof adminPermissions;
 export const ADMIN_PERMISSION_IDS = Object.keys(

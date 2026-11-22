@@ -500,6 +500,14 @@ export function LoginForm({
     const t = setTimeout(() => setResendIn((n) => n - 1), 1000);
     return () => clearTimeout(t);
   }, [resendIn]);
+  // رابط الدعوة (jdtna.sa/r/رمز) يفتح «حساب جديد» مباشرة، ويُذكر للزائر أن صديقًا دعاه.
+  const [invited, setInvited] = useState(false);
+  useEffect(() => {
+    if (register) return;
+    if (new URLSearchParams(window.location.search).get("signup") === "1")
+      setMode("signup");
+    setInvited(/(?:^|;\s*)jdatna_ref=/.test(document.cookie));
+  }, [register]);
   async function resend() {
     setBusy(true);
     setError("");
@@ -629,7 +637,14 @@ export function LoginForm({
             challengeId: challenge,
             code: f.get("code"),
             purpose: mode === "signup" ? "signup" : "reset",
-            ...(mode === "signup" ? { name: f.get("name") } : {}),
+            ...(mode === "signup"
+              ? {
+                  name: f.get("name"),
+                  ...(String(f.get("referrerPhone") ?? "").trim()
+                    ? { referrerPhone: String(f.get("referrerPhone")).trim() }
+                    : {}),
+                }
+              : {}),
           }),
         });
         if (!d.canSetCredentials)
@@ -842,6 +857,22 @@ export function LoginForm({
                     : "العميل: يتفعّل حسابه مباشرة بعد التحقق من الجوال."}{" "}
                 التصفح متاح للجميع، والطلب بعد التسجيل والتحقق من الجوال.
               </p>
+            )}
+            {mode === "signup" && challenge && (
+              <label className={s.field}>
+                {invited
+                  ? "رقم جوال من دعاك (اختياري؛ دعاك صديق برابطه ✓)"
+                  : "رقم جوال من دعاك (اختياري)"}
+                <input
+                  name="referrerPhone"
+                  type="tel"
+                  dir="ltr"
+                  inputMode="tel"
+                  autoComplete="off"
+                  placeholder="05xxxxxxxx"
+                  maxLength={30}
+                />
+              </label>
             )}
             {mode === "signup" && challenge && (
               <label className={s.field}>
