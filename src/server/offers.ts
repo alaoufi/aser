@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import type { PoolClient } from "pg";
-import type { SessionUser } from "../lib/types";
+import type { MineFilters, SessionUser } from "../lib/types";
 import { db, transaction } from "./db";
 import { HttpError } from "./security";
 export const preferenceSchema = z.object({
@@ -60,15 +60,32 @@ const visible = `p.status='approved' AND NOT p.review_only AND o.enabled AND o.s
  * العروض المتاحة للزائر في نطاقه: عروض أسر منطقته، وعروض ما يُشحن لكل المناطق.
  * بلا منطقة: كل العروض.
  */
-export async function listOffers(user: SessionUser | null, region = "") {
+export async function listOffers(
+  user: SessionUser | null,
+  region = "",
+  mine: MineFilters | null = null,
+) {
+  // فلاتر العضو (src/server/member-scope.ts): كل شرط يعمل وحده، ويجتمع مع غيره. NULL = غير مفعّل.
   return (
     await db().query(
       `${select} WHERE ${visible}
          AND ($2='' OR EXISTS(SELECT 1 FROM jdatna.cities rc WHERE rc.id=p.city_id AND rc.region_id=$2)
            OR (o.product_id IS NULL AND p.delivery_scope='kingdom')
            OR EXISTS(SELECT 1 FROM jdatna.products k WHERE k.id=o.product_id AND k.delivery_scope='kingdom'))
+         AND ($3::text[] IS NULL OR (o.product_id IS NOT NULL AND EXISTS(SELECT 1 FROM jdatna.product_categories mc WHERE mc.product_id=o.product_id AND mc.category_id=ANY($3::text[])))
+           OR (o.product_id IS NULL AND EXISTS(SELECT 1 FROM jdatna.producer_categories mc WHERE mc.producer_id=p.id AND mc.category_id=ANY($3::text[]))))
+         AND ($4::text[] IS NULL OR p.city_id=ANY($4::text[]))
+         AND ($5::text IS NULL OR EXISTS(SELECT 1 FROM jdatna.cities mr WHERE mr.id=p.city_id AND mr.region_id=$5))
+         AND ($6::uuid IS NULL OR p.id<>$6::uuid)
        ORDER BY EXISTS(SELECT 1 FROM jdatna.cities rc WHERE rc.id=p.city_id AND rc.region_id=$2) DESC,o.created_at DESC LIMIT 200`,
-      [user?.id ?? null, region.slice(0, 50)],
+      [
+        user?.id ?? null,
+        region.slice(0, 50),
+        mine?.categories ?? null,
+        mine?.cities ?? null,
+        mine?.region ?? null,
+        mine?.excludeProducer ?? null,
+      ],
     )
   ).rows;
 }

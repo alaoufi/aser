@@ -3483,3 +3483,36 @@ main {
   font-size: 14px;
   color: var(--muted);
 }
+
+/* مفاتيح العضو أعلى الصفحة («مشابه لمنتجاتي»، «منطقتي»…): الافتراضي «الكل». */
+.mine-bar {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-block: 12px;
+}
+.mine-chip {
+  align-items: center;
+  background: var(--paper, #f4ead9);
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  color: var(--ink, #2e1d12);
+  display: inline-flex;
+  font-size: 0.95rem;
+  font-weight: 700;
+  min-height: 44px;
+  padding: 6px 14px;
+  text-decoration: none;
+}
+.mine-chip[aria-pressed="true"],
+.mine-chip[aria-current="true"] {
+  background: var(--olive, #4f5d36);
+  border-color: var(--olive, #4f5d36);
+  color: #fff;
+}
+.mine-note {
+  flex-basis: 100%;
+  font-size: 0.95rem;
+  margin: 0;
+}
