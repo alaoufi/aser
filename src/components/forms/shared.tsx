@@ -330,6 +330,7 @@ function AccountNavigation() {
   return (
     <>
       <div className={s.greeting}>
+        <MemberNo no={user.memberNo} />
         <p>
           مرحبًا، <strong>{shown}</strong>
         </p>
@@ -338,6 +339,15 @@ function AccountNavigation() {
       {/* روابط بارزة كأزرار، والصفحة الحالية مميزة بلونها. */}
       <AccountLinks links={links} path={path} />
     </>
+  );
+}
+/** رقم العضو فوق الاسم: المميِّز له لأن الأسماء تتكرر (قرار المالك 2026-11-22). */
+export function MemberNo({ no }: { no?: number | null }) {
+  if (!no) return null;
+  return (
+    <span className="member-no" title="رقم العضو">
+      رقم العضو <b dir="ltr">{no}</b>
+    </span>
   );
 }
 /**
@@ -500,13 +510,15 @@ export function LoginForm({
     const t = setTimeout(() => setResendIn((n) => n - 1), 1000);
     return () => clearTimeout(t);
   }, [resendIn]);
-  // رابط الدعوة (jdtna.sa/r/رمز) يفتح «حساب جديد» مباشرة، ويُذكر للزائر أن صديقًا دعاه.
-  const [invited, setInvited] = useState(false);
+  // رابط الدعوة (jdtna.sa/r/رقم العضو) يفتح «حساب جديد» مباشرة، ويملأ «رقم الدعوة» برقم من دعاه.
+  const [invited, setInvited] = useState("");
   useEffect(() => {
     if (register) return;
     if (new URLSearchParams(window.location.search).get("signup") === "1")
       setMode("signup");
-    setInvited(/(?:^|;\s*)jdatna_ref=/.test(document.cookie));
+    setInvited(
+      /(?:^|;\s*)jdatna_ref=(\d{1,7})/.exec(document.cookie)?.[1] ?? "",
+    );
   }, [register]);
   async function resend() {
     setBusy(true);
@@ -640,8 +652,8 @@ export function LoginForm({
             ...(mode === "signup"
               ? {
                   name: f.get("name"),
-                  ...(String(f.get("referrerPhone") ?? "").trim()
-                    ? { referrerPhone: String(f.get("referrerPhone")).trim() }
+                  ...(String(f.get("invite") ?? "").trim()
+                    ? { invite: String(f.get("invite")).trim() }
                     : {}),
                 }
               : {}),
@@ -860,16 +872,15 @@ export function LoginForm({
             )}
             {mode === "signup" && challenge && (
               <label className={s.field}>
-                {invited
-                  ? "رقم جوال من دعاك (اختياري؛ دعاك صديق برابطه ✓)"
-                  : "رقم جوال من دعاك (اختياري)"}
+                رقم الدعوة (اختياري)
                 <input
-                  name="referrerPhone"
-                  type="tel"
+                  name="invite"
+                  key={invited}
+                  defaultValue={invited}
                   dir="ltr"
-                  inputMode="tel"
+                  inputMode="numeric"
                   autoComplete="off"
-                  placeholder="05xxxxxxxx"
+                  placeholder="رقم العضو الذي دعاك أو جواله"
                   maxLength={30}
                 />
               </label>

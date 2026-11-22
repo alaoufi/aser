@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
   AccountShell,
+  MemberNo,
   Guard,
   Message,
   api,
@@ -21,6 +22,7 @@ type Entry = {
   id: string;
   kind: "family" | "courier" | "customer" | "contact";
   name: string;
+  memberNo: number | null;
   slug: string | null;
   city: string | null;
   phone: string | null;
@@ -173,6 +175,7 @@ export function Directory() {
                       return (
                         <li key={e.id} className={`${s.card} directory-card`}>
                           <div className="directory-head">
+                            <MemberNo no={e.memberNo} />
                             <strong>
                               {e.slug ? (
                                 <Link href={`/producers/${e.slug}`}>

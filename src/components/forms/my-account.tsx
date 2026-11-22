@@ -239,14 +239,18 @@ function Appearance() {
 
 /**
  * «ادعُ صديقًا» (قرار المالك 2026-11-22): رابط دعوة ثابت للعضو، ورصيده (عدد من سجلوا عن طريقه).
- * يُحسب المسجل بعد تأكيد جواله، بالرابط أو إن كتب رقم جوالك عند التسجيل.
+ * يُحسب المسجل بعد تأكيد جواله، بالرابط أو إن كتب رقمك (رقم العضو أو جوالك) في «رقم الدعوة».
  */
 function InviteFriend() {
-  const [d, setD] = useState<{ link: string; count: number } | null>(null);
+  const [d, setD] = useState<{
+    memberNo: number;
+    link: string;
+    count: number;
+  } | null>(null);
   const [error, setError] = useState("");
   const [msg, setMsg] = useState("");
   useEffect(() => {
-    api<{ link: string; count: number }>("/api/me/invite")
+    api<{ memberNo: number; link: string; count: number }>("/api/me/invite")
       .then(setD)
       .catch((e) => setError(e.message));
   }, []);
@@ -256,13 +260,16 @@ function InviteFriend() {
       <h2>ادعُ صديقًا</h2>
       <p className={s.muted}>
         أرسل رابطك لصديق، فإذا سجّل به وأكّد جواله يُحسب لك. ويُحسب لك أيضًا إن
-        كتب رقم جوالك عند تسجيله.
+        كتب رقمك في خانة «رقم الدعوة» عند تسجيله.
       </p>
       <Message error={error} success={msg} />
       {!d ? (
         !error && <p role="status">جارٍ التحميل…</p>
       ) : (
         <>
+          <p className="invite-number">
+            رقم دعوتك: <strong dir="ltr">{d.memberNo}</strong>
+          </p>
           <p className="invite-balance" data-testid="invite-balance">
             رصيدك: <strong>{d.count}</strong>{" "}
             {d.count === 1 ? "مسجل" : "مسجلين"} عن طريقك

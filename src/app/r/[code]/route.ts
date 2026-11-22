@@ -1,15 +1,16 @@
 import { NextResponse } from "next/server";
-import { REF_COOKIE, validInviteCode } from "@/server/referrals";
+import { REF_COOKIE, invitePattern, validInvite } from "@/server/referrals";
 /**
- * رابط الدعوة jdtna.sa/r/رمز: يحفظ الرمز في الجهاز 30 يومًا ويفتح صفحة التسجيل.
+ * رابط الدعوة jdtna.sa/r/رقم العضو: يحفظ الرقم في الجهاز 30 يومًا ويفتح صفحة التسجيل.
  * يُحسب لصاحبه حين يؤكد الزائر جواله ويسجل حسابًا جديدًا.
  */
 export async function GET(
   request: Request,
   context: { params: Promise<{ code: string }> },
 ) {
-  const { code } = await context.params;
-  const ok = await validInviteCode(code).catch(() => false);
+  const code = (await context.params).code.trim();
+  const ok =
+    invitePattern.test(code) && (await validInvite(code).catch(() => false));
   const res = NextResponse.redirect(
     new URL(ok ? "/login?signup=1" : "/", request.url),
     302,

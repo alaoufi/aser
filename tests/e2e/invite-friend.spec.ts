@@ -3,8 +3,8 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { Pool } from "pg";
 
 /**
- * «ادعُ صديقًا»: الرابط في «معلوماتي» مع الرصيد، ورابط الدعوة يفتح «حساب جديد» ويذكر أن صديقًا دعاه،
- * ويطلب رقم من دعاه (اختياري). وصفحة الإدارة تعرض الأرصدة، والضغط على الاسم يعرض من سجلوا.
+ * «ادعُ صديقًا» برقم العضو: الرابط jdtna.sa/r/رقم العضو في «معلوماتي» مع الرصيد، ورقم العضو فوق الاسم،
+ * ورابط الدعوة يفتح «حساب جديد» ويحفظ رقم من دعاه ليملأ خانة «رقم الدعوة» (اختياري).
  */
 test.describe("invite a friend", () => {
   test.skip(
@@ -37,9 +37,6 @@ test.describe("invite a friend", () => {
     await pool?.query("DELETE FROM jdatna.referrals WHERE referrer_id=$1", [
       host,
     ]);
-    await pool?.query("DELETE FROM jdatna.referral_codes WHERE user_id=$1", [
-      host,
-    ]);
     await pool?.query("DELETE FROM jdatna.sessions WHERE user_id=$1", [host]);
     await pool?.query("DELETE FROM jdatna.users WHERE id=ANY($1::uuid[])", [
       [host, friend],
@@ -58,12 +55,20 @@ test.describe("invite a friend", () => {
     await context.addInitScript(() =>
       sessionStorage.setItem("jdatna:push-later", "1"),
     );
+    const no = (
+      await pool!.query("SELECT member_no FROM jdatna.users WHERE id=$1", [
+        host,
+      ])
+    ).rows[0].member_no as number;
     await page.goto("/me#invite");
     const box = page.getByRole("region", { name: "ادعُ صديقًا" });
     await expect(box.getByTestId("invite-balance")).toContainText("رصيدك: 0");
     const link = await box.getByLabel("رابط دعوتك").inputValue();
-    expect(link).toMatch(/^https:\/\/jdtna\.sa\/r\/[2-9a-km-zA-HJ-NP-Z]{7}$/);
-    code = link.split("/r/")[1];
+    expect(link).toBe(`https://jdtna.sa/r/${no}`);
+    await expect(box).toContainText(`رقم دعوتك: ${no}`);
+    code = String(no);
+    // رقم العضو فوق الاسم في قائمة الحساب.
+    await expect(page.locator(".member-no").first()).toContainText(String(no));
     // صديق سجل عن طريقه: يزيد الرصيد.
     await pool!.query(
       "INSERT INTO jdatna.referrals(referred_id,referrer_id,via) VALUES($1,$2,'link')",
@@ -88,8 +93,14 @@ test.describe("invite a friend", () => {
       (c) => c.name === "jdatna_ref",
     );
     expect(saved?.value).toBe(code);
-    // رمز غير صحيح لا يُحفظ، ويفتح الرئيسية.
+    // رقم غير صحيح لا يُحفظ، ويفتح الرئيسية.
+    await context.clearCookies();
     await page.goto("/r/zzzzzzz");
     await expect(page).toHaveURL(/\/$/);
+    await page.goto("/r/9999998");
+    await expect(page).toHaveURL(/\/$/);
+    expect(
+      (await context.cookies()).find((c) => c.name === "jdatna_ref"),
+    ).toBeUndefined();
   });
 });

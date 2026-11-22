@@ -25,8 +25,8 @@ export const POST = api(async (request) => {
         .pipe(z.string().regex(otpCodePattern)),
       name: z.string().trim().min(2).max(120).optional(),
       purpose: otpPurposeSchema,
-      // «ادعُ صديقًا»: رقم جوال من دعاه (اختياري).
-      referrerPhone: z.string().trim().max(30).optional(),
+      // «ادعُ صديقًا»: «رقم الدعوة» (رقم عضو من دعاه أو جواله، اختياري).
+      invite: z.string().trim().max(30).optional(),
     })
     .strict()
     .refine(
@@ -45,7 +45,10 @@ export const POST = api(async (request) => {
     body.code,
     body.name,
     body.purpose,
-    { code: refCode ?? null, phone: body.referrerPhone || null },
+    {
+      link: refCode ? decodeURIComponent(refCode) : null,
+      invite: body.invite || null,
+    },
   );
   if (!result) {
     await recordSecurityEvent("otp.failed", { request, detail: body.purpose });

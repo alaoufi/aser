@@ -11,6 +11,7 @@ import {
 } from "@/components/public/visit-stats";
 import { ChatButton } from "@/components/forms/chat";
 import { DirectoryButton } from "@/components/forms/directory";
+import { MemberNo } from "@/components/forms/shared";
 import { LocationLink } from "@/components/forms/location-share";
 import { LocationCheck } from "@/components/maps/location-check";
 import { RatingBox } from "@/components/forms/rating-box";
@@ -168,6 +169,7 @@ export default async function ProducerDetail({
             <p className="eyebrow">
               {p.regionName} · {p.cityName}
             </p>
+            <MemberNo no={p.memberNo} />
             <h1>{p.name}</h1>
             <p className="view-count">
               <span aria-hidden="true">🍲</span> {productsLabel(shown)}

@@ -8,18 +8,22 @@ import { api, s as forms } from "@/components/forms/shared";
  */
 type Referrer = {
   id: string;
+  memberNo: number;
+  internalNo: number;
   name: string;
   phone: string;
   count: number;
   byLink: number;
-  byPhone: number;
+  byNumber: number;
   last: string;
 };
 type Person = {
+  memberNo: number;
+  internalNo: number;
   name: string;
   phone: string;
   role: string;
-  via: "link" | "phone";
+  via: "link" | "number" | "phone";
   createdAt: string;
 };
 const ROLE: Record<string, string> = {
@@ -71,7 +75,8 @@ export function InvitesAdmin() {
           → كل الأعضاء
         </button>
         <h2 id="invited-title">
-          من سجلوا عن طريق {open.name} <small dir="ltr">({open.phone})</small>
+          من سجلوا عن طريق <span dir="ltr">#{open.memberNo}</span> {open.name}{" "}
+          <small dir="ltr">({open.phone})</small>
         </h2>
         <p className={forms.muted}>الرصيد: {open.count}</p>
         {!people ? (
@@ -81,6 +86,7 @@ export function InvitesAdmin() {
             <table className="invites-table">
               <thead>
                 <tr>
+                  <th>رقم العضو</th>
                   <th>الاسم</th>
                   <th>الجوال</th>
                   <th>الحساب</th>
@@ -90,11 +96,23 @@ export function InvitesAdmin() {
               </thead>
               <tbody>
                 {people.map((p) => (
-                  <tr key={p.phone}>
+                  <tr key={p.memberNo}>
+                    <td>
+                      <strong dir="ltr">{p.memberNo}</strong>
+                      <small className="member-internal" dir="ltr">
+                        {p.internalNo}
+                      </small>
+                    </td>
                     <td>{p.name}</td>
                     <td dir="ltr">{p.phone}</td>
                     <td>{ROLE[p.role] ?? p.role}</td>
-                    <td>{p.via === "link" ? "رابط الدعوة" : "كتب رقمه"}</td>
+                    <td>
+                      {p.via === "link"
+                        ? "رابط الدعوة"
+                        : p.via === "number"
+                          ? "كتب رقم العضو"
+                          : "كتب الجوال"}
+                    </td>
                     <td>{when(p.createdAt)}</td>
                   </tr>
                 ))}
@@ -120,6 +138,7 @@ export function InvitesAdmin() {
           <table className="invites-table">
             <thead>
               <tr>
+                <th>رقم العضو</th>
                 <th>الاسم</th>
                 <th>الرصيد</th>
                 <th>بالرابط</th>
@@ -130,6 +149,12 @@ export function InvitesAdmin() {
             <tbody>
               {rows.map((r) => (
                 <tr key={r.id}>
+                  <td>
+                    <strong dir="ltr">{r.memberNo}</strong>
+                    <small className="member-internal" dir="ltr">
+                      {r.internalNo}
+                    </small>
+                  </td>
                   <td>
                     <button
                       type="button"
@@ -143,7 +168,7 @@ export function InvitesAdmin() {
                     <strong>{r.count}</strong>
                   </td>
                   <td>{r.byLink}</td>
-                  <td>{r.byPhone}</td>
+                  <td>{r.byNumber}</td>
                   <td>{when(r.last)}</td>
                 </tr>
               ))}

@@ -18,6 +18,8 @@ export type City = {
 };
 export type Producer = {
   notCookingToday?: boolean;
+  /** رقم العضو (صاحب الأسرة) فوق اسمها: المميِّز لها لأن الأسماء تتكرر. */
+  memberNo?: number | null;
   /** شهادة «أسرة مميزة» إن صدرت. */
   certificateId?: string | null;
   id: string;
@@ -122,6 +124,8 @@ export type SessionUser = {
   phone: string;
   role: "customer" | "producer" | "admin" | "staff" | "courier";
   username?: string | null;
+  /** رقم العضو المعروض فوق اسمه: المميِّز له لأن الأسماء تتكرر. */
+  memberNo?: number | null;
   /** صلاحيات المشرف (staff) فقط. */
   permissions?: string[];
   /** اسم الأسرة المنتجة (الاسم التجاري) لصاحب الحساب إن كان له ملف أسرة: للترحيب الواضح. */

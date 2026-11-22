@@ -12,6 +12,10 @@ export type Member = {
   name: string;
   phone: string;
   role: SessionUser["role"];
+  /** رقم العضو المعروض فوق اسمه. */
+  memberNo: number;
+  /** الرقم الداخلي (6 أرقام) للعلاقات البرمجية: يظهر للإدارة فقط. */
+  internalNo: number;
   permissions: string[];
   suspended: boolean;
   familyName: string | null;
@@ -33,11 +37,12 @@ export async function listMembers(
   const digits = q.replace(/\D/g, "");
   return (
     await db().query(
-      `SELECT u.id,u.name,u.phone,u.role,u.permissions,(u.suspended_at IS NOT NULL) AS suspended,
+      `SELECT u.id,u.name,u.phone,u.role,u.member_no AS "memberNo",u.internal_no AS "internalNo",u.permissions,(u.suspended_at IS NOT NULL) AS suspended,
         COALESCE(p.trade_name,p.name) AS "familyName",u.created_at AS "createdAt"
        FROM jdatna.users u LEFT JOIN jdatna.producer_profiles p ON p.user_id=u.id
        WHERE $1='' OR u.name ILIKE '%'||$1||'%' OR COALESCE(p.name,'') ILIKE '%'||$1||'%'
          OR ($2<>'' AND u.phone LIKE '%'||$2||'%')
+         OR ($2<>'' AND length($2)<=7 AND (u.member_no::text=$2 OR u.internal_no::text=$2))
        ORDER BY (u.role='admin' OR cardinality(u.permissions)>0) DESC,u.created_at DESC LIMIT 200`,
       [q, digits.length >= 3 ? digits : ""],
     )
@@ -60,6 +65,18 @@ const updateSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("suspend"), id: z.uuid() }).strict(),
   z.object({ action: z.literal("unsuspend"), id: z.uuid() }).strict(),
   z.object({ action: z.literal("access"), id: z.uuid(), ...access }).strict(),
+  /** تغيير رقم العضو لرقم مميز متاح (مثل 241 ← 22)، ولو كان من المحجوز عن التسجيل. */
+  z
+    .object({
+      action: z.literal("number"),
+      id: z.uuid(),
+      memberNo: z.coerce
+        .number({ error: "اكتب الرقم" })
+        .int("الرقم بلا كسور")
+        .min(1, "الرقم من 1")
+        .max(9999999, "الرقم سبع خانات على الأكثر"),
+    })
+    .strict(),
   /** المدير يعيّن كلمة مرور لعضو عادي (مثل حساب مراجع المتجر). */
   z
     .object({
@@ -121,6 +138,7 @@ export async function updateMember(user: SessionUser, input: unknown) {
   assertOwnerAdmin(user);
   const value = updateSchema.parse(input);
   if (value.action === "create") return createMember(user, value);
+  if (value.action === "number") return changeMemberNo(user, value);
   if (value.id === user.id)
     throw new HttpError(400, "لا يمكنك تعديل حسابك أنت من هنا");
   return transaction(async (client) => {
@@ -202,6 +220,64 @@ export async function updateMember(user: SessionUser, input: unknown) {
     }
     await audit(client, user, "member." + value.action, value.id, value);
     return { ok: true };
+  });
+}
+
+/**
+ * الإدارة تغيّر رقم العضو لرقم متاح: غير مستعمل، وليس رقمًا قديمًا لعضو آخر.
+ * الرقم القديم يبقى لصاحبه في السجل (روابط دعوته القديمة تصل إليه) ولا يُعطى لغيره.
+ * المحجوز عن التسجيل (11، 222، 2030…) مسموح هنا لأن الإدارة هي من تمنحه.
+ */
+async function changeMemberNo(
+  user: SessionUser,
+  value: { id: string; memberNo: number },
+) {
+  return transaction(async (client) => {
+    await client.query(
+      "SELECT pg_advisory_xact_lock(hashtext('jdatna.member_no'))",
+    );
+    const target = (
+      await client.query<{ member_no: number }>(
+        "SELECT member_no FROM jdatna.users WHERE id=$1 FOR UPDATE",
+        [value.id],
+      )
+    ).rows[0];
+    if (!target) throw new HttpError(404, "العضو غير موجود");
+    if (target.member_no === value.memberNo)
+      return { ok: true, memberNo: value.memberNo };
+    const taken = (
+      await client.query(
+        `SELECT 1 FROM jdatna.users WHERE member_no=$1 AND id<>$2
+         UNION ALL SELECT 1 FROM jdatna.member_no_history WHERE member_no=$1 AND user_id<>$2`,
+        [value.memberNo, value.id],
+      )
+    ).rowCount;
+    if (taken)
+      throw new HttpError(
+        409,
+        `الرقم ${value.memberNo} غير متاح، اختر رقمًا آخر`,
+        {
+          field: "memberNo",
+        },
+      );
+    // إن رجع لرقم قديم له: يخرج من السجل ليكون رقمه الحالي.
+    await client.query(
+      "DELETE FROM jdatna.member_no_history WHERE member_no=$1 AND user_id=$2",
+      [value.memberNo, value.id],
+    );
+    await client.query(
+      "INSERT INTO jdatna.member_no_history(member_no,user_id) VALUES($1,$2) ON CONFLICT DO NOTHING",
+      [target.member_no, value.id],
+    );
+    await client.query("UPDATE jdatna.users SET member_no=$2 WHERE id=$1", [
+      value.id,
+      value.memberNo,
+    ]);
+    await audit(client, user, "member.number", value.id, {
+      from: target.member_no,
+      to: value.memberNo,
+    });
+    return { ok: true, memberNo: value.memberNo };
   });
 }
 

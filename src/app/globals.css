@@ -4166,3 +4166,30 @@ button.mine-seg {
   font-size: 1.05rem;
   margin: 0;
 }
+
+/* رقم العضو فوق الاسم (8.1.0.0). */
+.member-no {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3em;
+  font-size: 0.78rem;
+  color: var(--muted, #6b5a48);
+  line-height: 1.2;
+}
+.member-no b {
+  font-variant-numeric: tabular-nums;
+  color: var(--olive, #4f5d36);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+.member-internal {
+  margin-inline-start: 0.6em;
+  padding: 0 0.4em;
+  border-radius: 4px;
+  background: rgba(46, 29, 18, 0.06);
+  font-size: 0.72rem;
+  color: var(--muted, #6b5a48);
+}
+.directory-head .member-no {
+  flex-basis: 100%;
+}

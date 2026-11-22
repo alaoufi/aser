@@ -17,6 +17,8 @@ export type DirectoryEntry = {
   id: string;
   kind: DirectoryKind;
   name: string;
+  /** رقم العضو للجهة المسجلة في الموقع (لا للجهات اليدوية). */
+  memberNo: number | null;
   /** أسماء وروابط من ملف الجهة (الأسرة أو المندوب). */
   slug: string | null;
   city: string | null;
@@ -94,6 +96,7 @@ export async function listDirectory(
     await db().query<DirectoryEntry>(
       `SELECT d.id,d.kind,
          COALESCE(p.trade_name,p.name,k.name,cu.name,d.name) AS name,
+         COALESCE((SELECT pu.member_no FROM jdatna.users pu WHERE pu.id=p.user_id),ku.member_no,cu.member_no) AS "memberNo",
          p.slug,
          COALESCE(pc.name,kc.name) AS city,
          CASE

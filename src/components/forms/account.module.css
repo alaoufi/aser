@@ -1352,7 +1352,7 @@
 .greeting p {
   margin: 0;
 }
-.greeting > p:first-child {
+.greeting > p:first-of-type {
   font-size: 18px;
 }
 .greeting strong {
