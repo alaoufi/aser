@@ -3911,3 +3911,54 @@ main {
     font-size: 0.75rem;
   }
 }
+
+/* الجوال (7.1): كل شيء في سطره بارتفاع واحد ومستوى واحد (طلب المالك):
+   - البحث والمنطقة 44px تمامًا، بالإطار والخلفية نفسيهما، و«حسب موقعك» على حافة إطار المنطقة كعنوان صغير.
+   - عمود الأطباق الصغيرة بطول الصورة الكبيرة نفسه، والأطباق موزعة عليه بالتساوي.
+   - البطاقتان بارتفاع واحد. */
+@media (max-width: 600px) {
+  .hero-copy {
+    align-items: stretch;
+  }
+  .hero-copy .hero-search,
+  .hero-region select {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    box-sizing: border-box;
+    height: 44px;
+  }
+  .hero-region .table-region-note {
+    background: var(--paper);
+    border-radius: 6px;
+    font-size: 10px;
+    inset-inline-end: 10px;
+    inset-inline-start: auto;
+    line-height: 1;
+    padding: 1px 4px;
+    pointer-events: none;
+    top: -7px;
+  }
+  .hero .food-showcase {
+    align-items: stretch;
+  }
+  .hero .food-showcase-strip {
+    gap: 6px;
+    grid-auto-rows: minmax(0, 1fr);
+    height: 100%;
+  }
+  .hero .food-showcase-strip .food-dish {
+    align-items: center;
+    display: flex;
+    justify-content: center;
+    min-height: 0;
+    padding: 0;
+  }
+  .hero .food-showcase-strip .food-dish-visual {
+    height: 100%;
+    max-width: 100%;
+    width: auto;
+  }
+  .hero-side {
+    align-items: stretch;
+  }
+}
