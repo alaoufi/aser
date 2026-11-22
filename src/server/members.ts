@@ -14,8 +14,6 @@ export type Member = {
   role: SessionUser["role"];
   /** رقم العضو المعروض فوق اسمه. */
   memberNo: number;
-  /** الرقم الداخلي (6 أرقام) للعلاقات البرمجية: يظهر للإدارة فقط. */
-  internalNo: number;
   permissions: string[];
   suspended: boolean;
   familyName: string | null;
@@ -37,14 +35,21 @@ export async function listMembers(
   const digits = q.replace(/\D/g, "");
   return (
     await db().query(
-      `SELECT u.id,u.name,u.phone,u.role,u.member_no AS "memberNo",u.internal_no AS "internalNo",u.permissions,(u.suspended_at IS NOT NULL) AS suspended,
+      `SELECT u.id,u.name,u.phone,u.role,u.member_no AS "memberNo",u.permissions,(u.suspended_at IS NOT NULL) AS suspended,
         COALESCE(p.trade_name,p.name) AS "familyName",u.created_at AS "createdAt"
        FROM jdatna.users u LEFT JOIN jdatna.producer_profiles p ON p.user_id=u.id
        WHERE $1='' OR u.name ILIKE '%'||$1||'%' OR COALESCE(p.name,'') ILIKE '%'||$1||'%'
          OR ($2<>'' AND u.phone LIKE '%'||$2||'%')
-         OR ($2<>'' AND length($2)<=7 AND (u.member_no::text=$2 OR u.internal_no::text=$2))
+         OR u.member_no=$3::int
        ORDER BY (u.role='admin' OR cardinality(u.permissions)>0) DESC,u.created_at DESC LIMIT 200`,
-      [q, digits.length >= 3 ? digits : ""],
+      [
+        q,
+        digits.length >= 3 ? digits : "",
+        // رقم العضو (ولو من رقمين مثل 22): مطابقة تامة.
+        /^[0-9٠-٩]{1,7}$/.test(q)
+          ? Number(q.replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d))))
+          : null,
+      ],
     )
   ).rows;
 }

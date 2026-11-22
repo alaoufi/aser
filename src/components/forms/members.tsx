@@ -12,7 +12,6 @@ type Member = {
   phone: string;
   role: "customer" | "producer" | "admin" | "staff";
   memberNo: number;
-  internalNo: number;
   permissions: string[];
   suspended: boolean;
   familyName: string | null;
@@ -267,12 +266,6 @@ export function MembersAdmin() {
                   <span>
                     <span className="member-no">
                       رقم العضو <b dir="ltr">{m.memberNo}</b>
-                      <span
-                        className="member-internal"
-                        title="الرقم الداخلي للإدارة فقط"
-                      >
-                        داخلي <bdi dir="ltr">{m.internalNo}</bdi>
-                      </span>
                     </span>
                     <br />
                     {m.name}

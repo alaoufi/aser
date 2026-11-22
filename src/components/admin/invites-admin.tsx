@@ -9,7 +9,6 @@ import { api, s as forms } from "@/components/forms/shared";
 type Referrer = {
   id: string;
   memberNo: number;
-  internalNo: number;
   name: string;
   phone: string;
   count: number;
@@ -19,7 +18,6 @@ type Referrer = {
 };
 type Person = {
   memberNo: number;
-  internalNo: number;
   name: string;
   phone: string;
   role: string;
@@ -99,9 +97,6 @@ export function InvitesAdmin() {
                   <tr key={p.memberNo}>
                     <td>
                       <strong dir="ltr">{p.memberNo}</strong>
-                      <small className="member-internal" dir="ltr">
-                        {p.internalNo}
-                      </small>
                     </td>
                     <td>{p.name}</td>
                     <td dir="ltr">{p.phone}</td>
@@ -151,9 +146,6 @@ export function InvitesAdmin() {
                 <tr key={r.id}>
                   <td>
                     <strong dir="ltr">{r.memberNo}</strong>
-                    <small className="member-internal" dir="ltr">
-                      {r.internalNo}
-                    </small>
                   </td>
                   <td>
                     <button

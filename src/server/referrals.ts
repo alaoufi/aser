@@ -118,7 +118,6 @@ export async function adminReferrers(user: SessionUser) {
     await db().query<{
       id: string;
       memberNo: number;
-      internalNo: number;
       name: string;
       phone: string;
       count: number;
@@ -126,7 +125,7 @@ export async function adminReferrers(user: SessionUser) {
       byNumber: number;
       last: string;
     }>(
-      `SELECT u.id,u.member_no AS "memberNo",u.internal_no AS "internalNo",
+      `SELECT u.id,u.member_no AS "memberNo",
          COALESCE(p.trade_name,p.name,u.name) AS name,u.phone,
          count(*)::int AS count,
          count(*) FILTER (WHERE r.via='link')::int AS "byLink",
@@ -157,14 +156,13 @@ export async function adminReferred(user: SessionUser, referrerId: string) {
   const people = (
     await db().query<{
       memberNo: number;
-      internalNo: number;
       name: string;
       phone: string;
       role: string;
       via: "link" | "number" | "phone";
       createdAt: string;
     }>(
-      `SELECT u.member_no AS "memberNo",u.internal_no AS "internalNo",COALESCE(p.trade_name,p.name,u.name) AS name,u.phone,u.role,r.via,r.created_at AS "createdAt"
+      `SELECT u.member_no AS "memberNo",COALESCE(p.trade_name,p.name,u.name) AS name,u.phone,u.role,r.via,r.created_at AS "createdAt"
        FROM jdatna.referrals r JOIN jdatna.users u ON u.id=r.referred_id
        LEFT JOIN jdatna.producer_profiles p ON p.user_id=u.id
        WHERE r.referrer_id=$1 ORDER BY r.created_at DESC LIMIT 2000`,

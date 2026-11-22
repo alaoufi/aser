@@ -182,8 +182,15 @@ test(
         assert.equal(row?.byLink, 1);
         assert.equal(row?.byNumber, 2);
         assert.equal(row?.memberNo, special);
+        // الرقم الداخلي لا يظهر إطلاقًا، ولا للإدارة.
+        assert.equal(row && "internalNo" in row, false);
       }
       const detail = await ref.adminReferred(staff, host.id);
+      assert.ok(detail.people.every((p) => !("internalNo" in p)));
+      const { listMembers } = await import("../src/server/members");
+      const listed = await listMembers(admin, String(special));
+      assert.equal(listed[0]?.id, host.id, "البحث برقم العضو");
+      assert.equal("internalNo" in listed[0], false);
       assert.deepEqual(
         detail.people.map((p) => p.phone).sort(),
         [a.phone, b.phone, c.phone].sort(),
