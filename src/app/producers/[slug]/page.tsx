@@ -10,6 +10,7 @@ import {
   ProductViewBadge,
 } from "@/components/public/visit-stats";
 import { ChatButton } from "@/components/forms/chat";
+import { DirectoryButton } from "@/components/forms/directory";
 import { LocationLink } from "@/components/forms/location-share";
 import { LocationCheck } from "@/components/maps/location-check";
 import { RatingBox } from "@/components/forms/rating-box";
@@ -223,6 +224,7 @@ export default async function ProducerDetail({
             />
             <div className="contact-actions">
               <ChatButton producerSlug={p.slug} />
+              <DirectoryButton target={{ producer: p.slug }} />
               {phone && (
                 <a href={`tel:+${phone}`} className="button">
                   اتصل بالأسرة المنتجة

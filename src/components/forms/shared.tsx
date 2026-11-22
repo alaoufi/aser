@@ -298,6 +298,13 @@ function AccountNavigation() {
     ["/", "الرئيسية"],
     ["/orders", "طلباتي"],
     ["/messages", "المحادثات"],
+    ["/directory", "دليلي"],
+    ...((user.role === "courier"
+      ? []
+      : [["/requests", family ? "طلبات العملاء" : "اطلب من الأسر"]]) as [
+      string,
+      string,
+    ][]),
     ["/my-subscriptions", "اشتراكاتي"],
     ["/me", "معلوماتي"],
     ...((user.role === "courier"

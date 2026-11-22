@@ -1,4 +1,5 @@
 import { MobileNavigation } from "@/components/public/mobile-navigation";
+import { BottomNav } from "@/components/public/bottom-nav";
 import { AboutTicker } from "@/components/public/about-ticker";
 import { AccountLink } from "@/components/public/account-link";
 import { OrderAlert } from "@/components/public/order-alert";
@@ -263,6 +264,7 @@ export default async function RootLayout({
           />
         </SiteOnly>
         <main id="main">{children}</main>
+        <BottomNav />
         <SaveToast />
         <SiteOnly>
           <FamilyWelcome texts={texts} />
