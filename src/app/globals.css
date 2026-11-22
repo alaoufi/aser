@@ -3570,8 +3570,8 @@ main {
 }
 .mine-note {
   color: var(--muted);
-  font-size: 0.9rem;
-  margin: 8px 6px 0;
+  font-size: 0.8rem;
+  margin: 4px 8px 0;
 }
 /* ما يحتاجه الخيار ليعمل: اختيار المنطقة، أو ما يحب من الأكلات. */
 .mine-prompt {
@@ -3656,7 +3656,8 @@ main {
   }
 }
 
-/* الرئيسية على الجوال: الصورة نصف السطر، وبجانبها «متوفر الآن» و«اطلب الآن» والمنطقة. */
+/* الرئيسية على الجوال (6.1): سطر البحث والمنطقة، ثم بطاقة واحدة فيها الصورة نصف العرض
+   وبجانبها «متوفر الآن» و«اطلب الآن» بارتفاع الصورة نفسه. مسافات 8/12، وزوايا 12، ولا شيء يسيطر. */
 .hero-side {
   display: none;
 }
@@ -3673,19 +3674,20 @@ main {
 }
 @media (max-width: 600px) {
   .hero {
-    align-items: center;
+    align-items: stretch;
     display: grid;
-    gap: 10px 12px;
+    gap: 12px 10px;
     grid-template-areas:
       "copy copy"
       "visual side";
     grid-template-columns: 1fr 1fr;
-    padding-block: 16px 8px;
+    padding-block: 12px 4px;
   }
   .hero-copy {
     grid-area: copy;
   }
   .hero-visual {
+    align-self: center;
     grid-area: visual;
     margin: 0;
     max-width: none;
@@ -3693,25 +3695,54 @@ main {
   }
   .hero-side {
     display: grid;
-    gap: 8px;
+    gap: 10px;
     grid-area: side;
+    grid-template-rows: 1fr 1fr;
     min-width: 0;
   }
   .hero-chip {
     align-items: center;
-    background: #e8efde;
-    border-radius: 10px;
+    background: #eef3e6;
+    border: 1px solid #d7e0c8;
+    border-radius: 12px;
     color: var(--ink);
     display: flex;
-    font-size: 0.95rem;
-    font-weight: 700;
-    gap: 8px;
+    gap: 10px;
     min-height: 44px;
-    padding: 8px 12px;
+    padding: 10px 12px;
     text-decoration: none;
   }
   .hero-chip.warm {
-    background: #f5e4d5;
+    background: #f8ebdf;
+    border-color: #ecd3bd;
+  }
+  .hero-chip-icon {
+    align-items: center;
+    background: #fff;
+    border-radius: 50%;
+    display: inline-flex;
+    flex: 0 0 auto;
+    font-size: 1rem;
+    height: 32px;
+    justify-content: center;
+    width: 32px;
+  }
+  .hero-chip-icon .status-dot {
+    margin: 0;
+  }
+  .hero-chip-text {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+  }
+  .hero-chip-text strong {
+    font-size: 1rem;
+    line-height: 1.2;
+  }
+  .hero-chip-text small {
+    color: var(--muted);
+    font-size: 0.78rem;
+    line-height: 1.3;
   }
   /* «وش تطلب اليوم» والمنطقة في سطر واحد منخفض (44px). */
   .hero-copy {
@@ -3756,6 +3787,12 @@ main {
   .hero-region select {
     height: 44px;
     min-height: 0;
+  }
+  .hero-copy .hero-search,
+  .hero-region select {
+    border-color: var(--line);
+    border-radius: 12px;
+    box-shadow: none;
   }
   /* نُقلت للأعلى بجانب الصورة، فلا تتكرر أسفل الصفحة. */
   .availability-section {
