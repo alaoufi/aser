@@ -19,6 +19,8 @@ export type MemberScope = {
   filters: MineFilters | null;
   /** سبب ظاهر حين لا يستطيع الفلتر أن يعمل (مثل: لم تطلب شيئًا بعد). */
   notes: string[];
+  /** سطر الحالة تحت المفاتيح: ما يُعرض الآن بالضبط (الأقسام والمنطقة والمدن بأسمائها). */
+  summary: string;
 };
 
 const OPTIONS: Record<MemberKind, { key: MineKey; label: string }[]> = {
@@ -76,13 +78,20 @@ export async function memberScope(
     active: [],
     filters: null,
     notes: [],
+    summary: "",
   };
   if (!user || !databaseConfigured()) return none;
   const who = await kindOf(user);
   if (!who) return none;
   const options = OPTIONS[who.kind];
   const active = asked.filter((k) => options.some((o) => o.key === k));
-  if (!active.length) return { ...none, kind: who.kind, options };
+  if (!active.length)
+    return {
+      ...none,
+      kind: who.kind,
+      options,
+      summary: "يُعرض الآن الكل، بلا فلتر. اختر ما يناسبك من الخيارات.",
+    };
   const filters: MineFilters = {};
   const notes: string[] = [];
   if (who.kind === "family") {
@@ -130,7 +139,58 @@ export async function memberScope(
       )
     ).rows.map((r) => r.id);
   }
-  return { kind: who.kind, options, active, filters, notes };
+  return {
+    kind: who.kind,
+    options,
+    active,
+    filters,
+    notes,
+    summary: notes.length ? "" : await describe(who.kind, filters),
+  };
+}
+
+const list = (names: string[], max = 4) =>
+  names.length > max
+    ? `${names.slice(0, max).join("، ")} وغيرها`
+    : names.join("، ");
+/** يصف ما يُعرض الآن بأسماء الأقسام والمنطقة والمدن، مثل: «ما يشبه منتجاتك (جريش، مرقوق) في منطقة القصيم». */
+async function describe(kind: MemberKind, f: MineFilters) {
+  const [categories, region, cities] = await Promise.all([
+    f.categories?.length
+      ? db()
+          .query<{ name: string }>(
+            "SELECT name FROM jdatna.categories WHERE id=ANY($1::text[]) ORDER BY name",
+            [f.categories],
+          )
+          .then((r) => r.rows.map((x) => x.name))
+      : [],
+    f.region
+      ? db()
+          .query<{ name: string }>(
+            "SELECT name FROM jdatna.regions WHERE id=$1",
+            [f.region],
+          )
+          .then((r) => r.rows[0]?.name ?? "")
+      : "",
+    f.cities?.length
+      ? db()
+          .query<{ name: string }>(
+            "SELECT name FROM jdatna.cities WHERE id=ANY($1::text[]) ORDER BY name",
+            [f.cities],
+          )
+          .then((r) => r.rows.map((x) => x.name))
+      : [],
+  ]);
+  const parts: string[] = [];
+  if (categories.length)
+    parts.push(
+      `${kind === "family" ? "ما يشبه منتجاتك من أسر أخرى" : "ما يشبه طلباتك"} (${list(categories)})`,
+    );
+  // بلا أقسام: «كل ما في منطقة القصيم» بدل «في منطقة القصيم» وحدها.
+  const all = categories.length ? "" : "كل ما ";
+  if (region) parts.push(`${all}في ${region}`);
+  if (cities.length) parts.push(`${all}في تغطيتك: ${list(cities, 6)}`);
+  return parts.length ? `يُعرض الآن ${parts.join(" ")}.` : "";
 }
 
 /** شروط SQL لفلاتر العضو على المنتجات (x) أو الأسر (p)، تُضاف لشروط البحث. */

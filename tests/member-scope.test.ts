@@ -102,7 +102,16 @@ test(
         "BC",
         "مشابه لمنتجاتي: نفس القسم، بلا منتجاتها هي",
       );
-      assert.equal(await seen(await memberScope(famA, ["area"])), "ABD");
+      assert.match(none.summary, /يُعرض الآن الكل/);
+      const famArea = await memberScope(famA, ["area"]);
+      assert.equal(await seen(famArea), "ABD");
+      assert.match(
+        famArea.summary,
+        /^يُعرض الآن كل ما في .+\.$/,
+        "سطر الحالة يسمّي المنطقة",
+      );
+      const famBoth = await memberScope(famA, ["similar", "area"]);
+      assert.match(famBoth.summary, /ما يشبه منتجاتك من أسر أخرى \(.+\) في /);
       assert.equal(
         await seen(await memberScope(famA, ["similar", "area"])),
         "B",
@@ -148,7 +157,9 @@ test(
         (await memberScope(courier, [])).options.map((o) => o.key),
         ["coverage"],
       );
-      assert.equal(await seen(await memberScope(courier, ["coverage"])), "C");
+      const cov = await memberScope(courier, ["coverage"]);
+      assert.equal(await seen(cov), "C");
+      assert.match(cov.summary, /كل ما في تغطيتك: /);
 
       // العروض تتبع الفلاتر نفسها.
       for (const name of ["B", "C"])

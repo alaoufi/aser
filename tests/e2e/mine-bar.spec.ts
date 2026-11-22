@@ -86,6 +86,9 @@ test.describe("member filters at the top of the page", () => {
     }
     await page.goto("/browse");
     const bar = page.getByRole("navigation", { name: "اعرض لي" });
+    await expect(bar.getByRole("status")).toHaveText(
+      "يُعرض الآن الكل، بلا فلتر. اختر ما يناسبك من الخيارات.",
+    );
     await expect(bar.getByRole("checkbox")).toHaveText([
       "مشابه لمنتجاتي",
       "منطقتي",
@@ -93,6 +96,10 @@ test.describe("member filters at the top of the page", () => {
     await bar.getByRole("checkbox", { name: "منطقتي" }).click();
     await expect(page).toHaveURL(/mine=area/);
     await expect(bar.getByRole("checkbox", { name: "منطقتي" })).toBeChecked();
+    // سطر الحالة يقول ما يُعرض الآن بالاسم.
+    await expect(bar.getByRole("status")).toHaveText(
+      /^يُعرض الآن كل ما في .+\.$/,
+    );
     await bar.getByRole("checkbox", { name: "مشابه لمنتجاتي" }).click();
     await expect(page).toHaveURL(/mine=area%2Csimilar|mine=area,similar/);
     // بلا أقسام لمنتجاتها: سبب ظاهر بدل قائمة فارغة بلا تفسير.

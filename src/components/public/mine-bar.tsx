@@ -60,6 +60,11 @@ export function MineBar({
           })}
         </div>
       </div>
+      {scope.summary && (
+        <p className="mine-note" role="status">
+          {scope.summary}
+        </p>
+      )}
       {scope.notes.map((n) => (
         <p key={n} className="mine-note" role="status">
           {n}
