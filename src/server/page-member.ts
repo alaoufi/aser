@@ -3,6 +3,7 @@ import { sessionUser } from "./auth";
 import { getCategories, getCities } from "./catalog";
 import { memberScope, parseMine, type MemberScope } from "./member-scope";
 import { getInterests } from "./member-interests";
+import { getSiteTexts } from "./settings";
 import { regionsOf } from "@/components/public/today-table";
 
 export type MineChoices = {
@@ -19,7 +20,11 @@ export type MineChoices = {
 export async function pageMemberScope(
   mine: string | string[] | undefined,
 ): Promise<MemberScope & { choices: MineChoices }> {
-  const [h, jar] = await Promise.all([headers(), cookies()]);
+  const [h, jar, texts] = await Promise.all([
+    headers(),
+    cookies(),
+    getSiteTexts(),
+  ]);
   const user = await sessionUser(
     new Request("http://local/", { headers: new Headers(h) }),
   ).catch(() => null);
@@ -27,10 +32,11 @@ export async function pageMemberScope(
     user,
     parseMine(mine),
     jar.get("jdatna_region")?.value ?? "",
+    texts,
   );
   const choices: MineChoices = {};
   if (scope.needs === "region") choices.regions = regionsOf(await getCities());
-  if (scope.needs === "interests" && user) {
+  if ((scope.needs === "interests" || scope.editable) && user) {
     const [all, chosen] = await Promise.all([
       // قائمة الأقسام كلها (الظاهرة)، لا ما عليه منتجات اليوم فقط.
       getCategories(),

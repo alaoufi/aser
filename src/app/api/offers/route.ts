@@ -2,6 +2,7 @@ import { api, json } from "@/server/http";
 import { sessionUser } from "@/server/auth";
 import { listOffers } from "@/server/offers";
 import { memberScope, parseMine } from "@/server/member-scope";
+import { getSiteTexts } from "@/server/settings";
 export const GET = api(async (request) => {
   const url = new URL(request.url);
   const user = await sessionUser(request);
@@ -17,6 +18,7 @@ export const GET = api(async (request) => {
     user,
     parseMine(url.searchParams.get("mine") ?? ""),
     decodeURIComponent(saved).slice(0, 50),
+    await getSiteTexts(),
   );
   return json({
     offers: await listOffers(

@@ -121,30 +121,20 @@ test(
       assert.equal((await memberScope(famA, ["coverage"])).filters, null);
 
       const customer = as(await mkUser("customer"), "customer");
+      // «خياراتي»: بلا خيارات يُطلب منه الاختيار من قائمة الأقسام، ولا يُعرض شيء حتى يختار.
       const empty = await memberScope(customer, ["similar"]);
-      assert.equal(await seen(empty), "", "لم يطلب شيئًا: لا شيء يشبه طلباته");
-      assert.equal(
-        empty.needs,
-        "interests",
-        "لم يطلب بعد: يُطلب منه اختيار ما يحب",
-      );
-      assert.match(
-        empty.summary,
-        /^لم تطلب شيئًا بعد\. اختر ما تحب من الأكلات/,
-      );
-      // يختار ما يحب (قسم c2 وقسم مجهول يُترك بصمت) فيعمل الخيار قبل أول طلب.
-      const { saveInterests, getInterests } =
-        await import("../src/server/member-interests");
       assert.deepEqual(
-        (await saveInterests(customer, { categories: [c2, "no-such"] }))
-          .categories,
-        [c2],
+        empty.options.map((o) => o.label),
+        ["خياراتي", "منطقتي"],
       );
-      assert.deepEqual(await getInterests(customer), [c2]);
-      const liked = await memberScope(customer, ["similar"]);
-      assert.equal(liked.needs, null);
-      assert.equal(await seen(liked), "D");
-      await saveInterests(customer, { categories: [] });
+      assert.equal(await seen(empty), "");
+      assert.equal(empty.needs, "interests");
+      assert.equal(empty.editable, false);
+      assert.equal(
+        empty.summary,
+        "اختر من الأقسام ما تحب ليعرض لك «خياراتي» ما يناسبها:",
+      );
+      // طلباته وحدها لا تصير خيارات: «خياراتي» ما اختاره بنفسه فقط.
       await pool.query(
         "INSERT INTO jdatna.order_requests(id,request_key,request_hash,user_id,producer_id,product_id,snapshot,customer_name,phone,quantity,meal,start_date,end_date,status) VALUES($1,$2,'h',$3,$4,$5,'{}','عميل','+966500000000',1,'lunch',current_date+1,current_date+1,'pending')",
         [
@@ -155,7 +145,24 @@ test(
           families.A.product,
         ],
       );
-      assert.equal(await seen(await memberScope(customer, ["similar"])), "ABC");
+      assert.equal(
+        (await memberScope(customer, ["similar"])).needs,
+        "interests",
+      );
+      // يختار (قسم مجهول يُترك بصمت) فيعمل الخيار، ويظهر «عدّل خياراتي».
+      const { saveInterests, getInterests } =
+        await import("../src/server/member-interests");
+      assert.deepEqual(
+        (await saveInterests(customer, { categories: [c1, "no-such"] }))
+          .categories,
+        [c1],
+      );
+      assert.deepEqual(await getInterests(customer), [c1]);
+      const liked = await memberScope(customer, ["similar"]);
+      assert.equal(liked.needs, null);
+      assert.equal(liked.editable, true);
+      assert.equal(await seen(liked), "ABC");
+      assert.match(liked.summary, /^يُعرض الآن من خياراتك \(.+\)\.$/);
       assert.equal(
         await seen(await memberScope(customer, ["area"], r2.region)),
         "C",
@@ -163,6 +170,15 @@ test(
       assert.equal(
         await seen(await memberScope(customer, ["similar", "area"], r1.region)),
         "AB",
+      );
+      // الكلمات من «نصوص الموقع»: تعديل الإدارة يظهر في اللوحة.
+      assert.equal(
+        (
+          await memberScope(customer, [], "", {
+            "mine.customerChoices": "ما أحب",
+          })
+        ).options[0].label,
+        "ما أحب",
       );
       const noRegion = await memberScope(customer, ["area"], "");
       assert.equal(noRegion.needs, "region", "بلا منطقة: يُطلب تحديدها");

@@ -141,7 +141,7 @@ test.describe("member filters at the top of the page", () => {
     ).toBe(true);
   });
 
-  test("a customer with no orders picks favourite food, and one with no region picks it", async ({
+  test("a customer picks «خياراتي» from the categories, and one with no region picks it", async ({
     page,
     context,
     baseURL,
@@ -151,24 +151,26 @@ test.describe("member filters at the top of the page", () => {
     ]);
     await page.goto("/browse");
     const bar = page.getByRole("navigation", { name: "اعرض لي" });
-    await bar.getByRole("checkbox", { name: "مشابه لطلباتي" }).click();
+    await bar.getByRole("checkbox", { name: "خياراتي" }).click();
     await expect(bar.getByRole("status")).toHaveText(
-      /^لم تطلب شيئًا بعد\. اختر ما تحب من الأكلات/,
+      "اختر من الأقسام ما تحب ليعرض لك «خياراتي» ما يناسبها:",
     );
-    const food = bar.getByRole("group", { name: "ما تحب من الأكلات" });
-    const save = food.getByRole("button", { name: "احفظ واعرض المشابه" });
+    const food = bar.getByRole("group", { name: "خياراتك من الأقسام" });
+    const save = food.getByRole("button", { name: "احفظ واعرض" });
     await expect(save).toBeDisabled();
     const first = food.getByRole("checkbox").first();
     const name = (await first.locator("xpath=..").innerText()).trim();
     await first.check();
     await save.click();
     await expect(bar.getByRole("status")).toContainText(
-      `يُعرض الآن ما يشبه طلباتك (${name}`,
+      `يُعرض الآن من خياراتك (${name}`,
     );
-    await expect(food).toHaveCount(0);
+    // بعد الاختيار: القائمة تُطوى، ويبقى «عدّل خياراتي» لتغييرها.
+    await expect(bar.getByText("عدّل خياراتي")).toBeVisible();
+    await expect(food).toBeHidden();
     // «منطقتي» بلا منطقة محددة: يُطلب تحديدها في اللوحة نفسها.
     await context.clearCookies({ name: "jdatna_region" });
-    await bar.getByRole("checkbox", { name: "مشابه لطلباتي" }).click();
+    await bar.getByRole("checkbox", { name: "خياراتي" }).click();
     await expect(page).not.toHaveURL(/mine=/);
     await bar.getByRole("checkbox", { name: "منطقتي" }).click();
     await expect(page).toHaveURL(/mine=area/);

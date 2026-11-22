@@ -39,7 +39,7 @@ export function MineBar({
     <nav className={inline ? "mine-bar" : "mine-bar wrap"} aria-label="اعرض لي">
       <div className="mine-panel">
         <span className="mine-title" aria-hidden="true">
-          اعرض لي
+          {scope.words.title}
         </span>
         <div className="mine-segments">
           {scope.options.map((o) => {
@@ -68,7 +68,21 @@ export function MineBar({
         </p>
       )}
       {scope.needs && (
-        <MinePrompt needs={scope.needs} choices={scope.choices ?? {}} />
+        <MinePrompt
+          needs={scope.needs}
+          choices={scope.choices ?? {}}
+          words={scope.words}
+        />
+      )}
+      {scope.editable && (
+        <details className="mine-edit">
+          <summary>{scope.words.edit}</summary>
+          <MinePrompt
+            needs="interests"
+            choices={scope.choices ?? {}}
+            words={scope.words}
+          />
+        </details>
       )}
     </nav>
   );

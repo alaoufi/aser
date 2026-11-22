@@ -3,20 +3,23 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { api } from "@/components/forms/shared";
 import type { MineChoices } from "@/server/page-member";
+import type { MemberScope } from "@/server/member-scope";
 
 const year = 60 * 60 * 24 * 365;
 
 /**
  * ما يحتاجه الخيار ليعمل، داخل لوحة «اعرض لي» نفسها:
  * - «منطقتي» بلا منطقة محددة: قائمة المناطق، والاختيار يُحفظ في الجهاز (مثل «نطاقك»).
- * - «مشابه لطلباتي» قبل أول طلب: أقسام الأكلات ليختار ما يحب، وتُحفظ في حسابه.
+ * - «خياراتي»: قائمة الأقسام ليختار منها، وتُحفظ في حسابه (وتُعدَّل من «عدّل خياراتي»).
  */
 export function MinePrompt({
   needs,
   choices,
+  words,
 }: {
   needs: "region" | "interests";
   choices: MineChoices;
+  words: MemberScope["words"];
 }) {
   const router = useRouter();
   const [picked, setPicked] = useState<string[]>(choices.chosen ?? []);
@@ -35,7 +38,7 @@ export function MinePrompt({
             router.refresh();
           }}
         >
-          <option value="">اختر منطقتك…</option>
+          <option value="">{words.regionPlaceholder}</option>
           {(choices.regions ?? []).map((r) => (
             <option key={r.id} value={r.id}>
               {r.name}
@@ -62,7 +65,7 @@ export function MinePrompt({
   }
   return (
     <fieldset className="mine-prompt">
-      <legend className="sr-only">ما تحب من الأكلات</legend>
+      <legend className="sr-only">خياراتك من الأقسام</legend>
       <div className="mine-interests">
         {(choices.categories ?? []).map((c) => (
           <label key={c.id} className="mine-interest">
@@ -85,7 +88,7 @@ export function MinePrompt({
         onClick={save}
         disabled={busy || !picked.length}
       >
-        {busy ? "جارٍ الحفظ…" : "احفظ واعرض المشابه"}
+        {busy ? "جارٍ الحفظ…" : words.save}
       </button>
       {error && (
         <p role="alert" className="mine-error">

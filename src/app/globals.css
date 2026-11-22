@@ -3617,6 +3617,20 @@ main {
 .mine-prompt .button {
   justify-self: start;
 }
+.mine-edit {
+  margin: 8px 6px 0;
+}
+.mine-edit > summary {
+  color: var(--olive);
+  cursor: pointer;
+  display: inline-flex;
+  font-weight: 700;
+  min-height: 44px;
+  align-items: center;
+}
+.mine-edit .mine-prompt {
+  margin-inline: 0;
+}
 .mine-error {
   color: var(--rust);
   margin: 0;

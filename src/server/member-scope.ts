@@ -1,14 +1,19 @@
 import type { MineFilters, SessionUser } from "../lib/types";
 import { databaseConfigured, db } from "./db";
+import {
+  siteTextDefaults,
+  type SiteTextKey,
+  type SiteTexts,
+} from "../lib/site-texts";
 
 /**
  * فلاتر العضو أعلى الرئيسية والتصفح والعروض (قرار المالك 2026-11-22): الأصل العرض والطلب،
  * وكل عضو يرى ما يشبه حاجته في حدود منطقته إن أراد. الافتراضي يعرض الكل بلا فلتر، وكل مفتاح
  * يعمل وحده، وإذا فُعّل اثنان اجتمع شرطاهما.
  *   - الأسرة المنتجة: «مشابه لمنتجاتي» (أقسام منتجاتها، من أسر غيرها) و«منطقتي» (منطقة مطبخها).
- *   - العميل: «مشابه لطلباتي» (أقسام ما طلبه) و«منطقتي» (منطقته المحفوظة في الجهاز).
+ *   - العميل: «خياراتي» (أقسام يختارها بنفسه من قائمة الأقسام) و«منطقتي» (منطقته المحفوظة في الجهاز).
  *   - المندوب: «حسب تغطيتي» (مدينته ومدن المراكز التي يوصّل لها).
- * الإدارة لا علاقة لها بهذا (حسابها في الموقع شخصي كغيره).
+ * الإدارة لا علاقة لها بهذا (حسابها في الموقع شخصي كغيره). كل كلمات اللوحة من «نصوص الموقع» (mine.*).
  */
 export type MineKey = "similar" | "area" | "coverage";
 export type MemberKind = "family" | "customer" | "courier";
@@ -19,23 +24,40 @@ export type MemberScope = {
   filters: MineFilters | null;
   /** حين لا يُعرض شيء بسبب فلتر لا يعمل (مثل: لم تطلب شيئًا بعد)؛ يصير هو سطر الحالة. */
   notes: string[];
-  /** ما يحتاجه الخيار ليعمل، فيُطلب من العضو في اللوحة نفسها: منطقته، أو ما يحب من الأكلات. */
+  /** ما يحتاجه الخيار ليعمل، فيُطلب من العضو في اللوحة نفسها: منطقته، أو خياراته من الأقسام. */
   needs: "region" | "interests" | null;
+  /** «خياراتي» مفعّل وله خيارات: يظهر «عدّل خياراتي». */
+  editable: boolean;
+  /** كلمات اللوحة (من «نصوص الموقع»). */
+  words: Record<
+    | "title"
+    | "pickChoices"
+    | "pickRegion"
+    | "regionPlaceholder"
+    | "save"
+    | "edit",
+    string
+  >;
   /** سطر الحالة تحت المفاتيح: ما يُعرض الآن بالضبط (الأقسام والمنطقة والمدن بأسمائها). */
   summary: string;
 };
 
-const OPTIONS: Record<MemberKind, { key: MineKey; label: string }[]> = {
+const OPTIONS: Record<MemberKind, { key: MineKey; text: SiteTextKey }[]> = {
   family: [
-    { key: "similar", label: "مشابه لمنتجاتي" },
-    { key: "area", label: "منطقتي" },
+    { key: "similar", text: "mine.familySimilar" },
+    { key: "area", text: "mine.familyArea" },
   ],
   customer: [
-    { key: "similar", label: "مشابه لطلباتي" },
-    { key: "area", label: "منطقتي" },
+    { key: "similar", text: "mine.customerChoices" },
+    { key: "area", text: "mine.customerArea" },
   ],
-  courier: [{ key: "coverage", label: "حسب تغطيتي" }],
+  courier: [{ key: "coverage", text: "mine.courierCoverage" }],
 };
+/** كلمة من «نصوص الموقع»؛ المحذوفة تعود لأصلها (لا يصح زر أو سطر بلا كلام). */
+const wordsOf =
+  (texts?: Partial<SiteTexts> | null) =>
+  (k: SiteTextKey): string =>
+    texts?.[k] || siteTextDefaults[k];
 
 /** يقرأ المفاتيح المفعّلة من الرابط (?mine=similar,area) ويُبقي المعروف منها فقط. */
 export function parseMine(value: string | string[] | undefined): MineKey[] {
@@ -73,7 +95,17 @@ export async function memberScope(
   user: SessionUser | null,
   asked: MineKey[],
   savedRegion = "",
+  texts?: Partial<SiteTexts> | null,
 ): Promise<MemberScope> {
+  const t = wordsOf(texts);
+  const words: MemberScope["words"] = {
+    title: t("mine.title"),
+    pickChoices: t("mine.pickChoices"),
+    pickRegion: t("mine.pickRegion"),
+    regionPlaceholder: t("mine.regionPlaceholder"),
+    save: t("mine.save"),
+    edit: t("mine.edit"),
+  };
   const none: MemberScope = {
     kind: null,
     options: [],
@@ -81,24 +113,32 @@ export async function memberScope(
     filters: null,
     notes: [],
     needs: null,
+    editable: false,
+    words,
     summary: "",
   };
   if (!user || !databaseConfigured()) return none;
   const who = await kindOf(user);
   if (!who) return none;
-  const options = OPTIONS[who.kind];
+  const options = OPTIONS[who.kind].map((o) => ({
+    key: o.key,
+    label: t(o.text),
+  }));
   const active = asked.filter((k) => options.some((o) => o.key === k));
   if (!active.length)
     return {
       ...none,
       kind: who.kind,
       options,
-      summary: "يُعرض الآن الكل، بلا فلتر. اختر ما يناسبك من الخيارات.",
+      summary: t("mine.all"),
     };
   const filters: MineFilters = {};
   const notes: string[] = [];
   let unapplied = "";
   let needs: MemberScope["needs"] = null;
+  let editable = false;
+  // أسماء ما يظهر في سطر الحالة: ما اختاره العميل بنفسه (بلا فروعه).
+  let named: string[] | undefined;
   if (who.kind === "family") {
     if (active.includes("similar")) {
       filters.categories = (
@@ -110,33 +150,32 @@ export async function memberScope(
         )
       ).rows.map((r) => r.id);
       filters.excludeProducer = who.producer.id;
-      if (!filters.categories.length)
-        notes.push(
-          "لا يُعرض شيء الآن: ليس لمنتجاتك أقسام بعد ليُقارن بها. أضف منتجاتك وأقسامها، أو ألغِ «مشابه لمنتجاتي».",
-        );
+      if (!filters.categories.length) notes.push(t("mine.familyNone"));
     }
     if (active.includes("area")) filters.region = who.producer.region;
   } else if (who.kind === "customer") {
     if (active.includes("similar")) {
+      // «خياراتي»: الأقسام التي اختارها بنفسه، مع فروعها (اختيار قسم يشمل ما تحته).
       filters.categories = (
         await db().query<{ id: string }>(
-          `SELECT DISTINCT pc.category_id AS id FROM jdatna.order_requests o
-             JOIN jdatna.product_categories pc ON pc.product_id=o.product_id WHERE o.user_id=$1
-           UNION
-           -- ما اختاره بنفسه، مع فروعه (اختيار «أكلات نجدية» يشمل الجريش والمرقوق تحته).
-           (WITH RECURSIVE picked AS (
-              SELECT category_id AS id FROM jdatna.member_interests WHERE user_id=$1
-              UNION SELECT c.id FROM jdatna.categories c JOIN picked p ON c.parent_id=p.id
-            ) SELECT id FROM picked)`,
+          `WITH RECURSIVE picked AS (
+             SELECT category_id AS id FROM jdatna.member_interests WHERE user_id=$1
+             UNION SELECT c.id FROM jdatna.categories c JOIN picked p ON c.parent_id=p.id
+           ) SELECT id FROM picked`,
+          [user.id],
+        )
+      ).rows.map((r) => r.id);
+      editable = true;
+      named = (
+        await db().query<{ id: string }>(
+          "SELECT category_id AS id FROM jdatna.member_interests WHERE user_id=$1",
           [user.id],
         )
       ).rows.map((r) => r.id);
       if (!filters.categories.length) {
-        // لم يطلب بعد ولم يختر: يُطلب منه أن يختار ما يحب من الأكلات.
+        // لم يختر بعد: يُطلب منه الاختيار من قائمة الأقسام.
         needs = "interests";
-        notes.push(
-          "لم تطلب شيئًا بعد. اختر ما تحب من الأكلات ليعرض لك «مشابه لطلباتي» ما يشبهها:",
-        );
+        notes.push(t("mine.pickChoices"));
       }
     }
     if (active.includes("area")) {
@@ -144,8 +183,8 @@ export async function memberScope(
       if (savedRegion) filters.region = savedRegion;
       else {
         needs ??= "region";
-        unapplied = "«منطقتي» لا يعمل حتى تحدد منطقتك";
-        if (needs === "region") notes.push("حدد منطقتك ليعمل «منطقتي»:");
+        unapplied = t("mine.pickRegion").replace(/:$/, "");
+        if (needs === "region") notes.push(t("mine.pickRegion"));
       }
     }
   } else {
@@ -169,9 +208,16 @@ export async function memberScope(
     filters,
     notes,
     needs,
+    editable: editable && !needs,
+    words,
     summary: notes.length
       ? notes[0]
-      : await describe(who.kind, filters, unapplied),
+      : await describe(
+          who.kind,
+          { ...filters, categories: named ?? filters.categories },
+          t,
+          unapplied,
+        ),
   };
 }
 
@@ -180,7 +226,12 @@ const list = (names: string[], max = 4) =>
     ? `${names.slice(0, max).join("، ")} وغيرها`
     : names.join("، ");
 /** يصف ما يُعرض الآن بأسماء الأقسام والمنطقة والمدن، مثل: «ما يشبه منتجاتك (جريش، مرقوق) في منطقة القصيم». */
-async function describe(kind: MemberKind, f: MineFilters, unapplied = "") {
+async function describe(
+  kind: MemberKind,
+  f: MineFilters,
+  t: (k: SiteTextKey) => string,
+  unapplied = "",
+) {
   const [categories, region, cities] = await Promise.all([
     f.categories?.length
       ? db()
@@ -210,15 +261,16 @@ async function describe(kind: MemberKind, f: MineFilters, unapplied = "") {
   const parts: string[] = [];
   if (categories.length)
     parts.push(
-      `${kind === "family" ? "ما يشبه منتجاتك من أسر أخرى" : "ما يشبه طلباتك"} (${list(categories)})`,
+      `${t(kind === "family" ? "mine.familyLike" : "mine.customerLike")} (${list(categories)})`,
     );
   // بلا أقسام: «كل ما في منطقة القصيم» بدل «في منطقة القصيم» وحدها.
-  const all = categories.length ? "" : "كل ما ";
+  const all = categories.length ? "" : `${t("mine.everything")} `;
   if (region) parts.push(`${all}في ${region}`);
-  if (cities.length) parts.push(`${all}في تغطيتك: ${list(cities, 6)}`);
+  if (cities.length)
+    parts.push(`${all}${t("mine.inCoverage")} ${list(cities, 6)}`);
   const shown = parts.length
-    ? `يُعرض الآن ${parts.join(" ")}`
-    : "يُعرض الآن الكل";
+    ? `${t("mine.shown")} ${parts.join(" ")}`
+    : t("mine.all").replace(/[.،].*$/, "");
   return unapplied ? `${shown}، و${unapplied}.` : `${shown}.`;
 }
 
