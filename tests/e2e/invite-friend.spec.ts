@@ -48,7 +48,7 @@ test.describe("invite a friend", () => {
     page,
     context,
     baseURL,
-  }) => {
+  }, info) => {
     await context.addCookies([
       { name: "jdatna_session", value: token, url: baseURL! },
     ]);
@@ -67,6 +67,14 @@ test.describe("invite a friend", () => {
     expect(link).toBe(`https://jdtna.sa/r/${no}`);
     await expect(box).toContainText(`رقم دعوتك: ${no}`);
     code = String(no);
+    // رقم العضو فوق الاسم في قائمة الجوال (☰) أيضًا.
+    if (info.project.name === "mobile") {
+      await page.locator('summary[aria-label="قائمة التنقل"]').click();
+      await expect(page.locator(".menu-greeting .member-no")).toContainText(
+        String(no),
+      );
+      await page.keyboard.press("Escape");
+    }
     // رقم العضو فوق الاسم في قائمة الحساب.
     await expect(page.locator(".member-no").first()).toContainText(String(no));
     // صديق سجل عن طريقه: يزيد الرصيد.
@@ -87,6 +95,10 @@ test.describe("invite a friend", () => {
     context,
   }) => {
     test.skip(!code, "needs the code from the previous test");
+    // التحويل نسبي (لا يكشف عنوان الخادم الداخلي خلف البوابة).
+    const raw = await page.request.get(`/r/${code}`, { maxRedirects: 0 });
+    expect(raw.status()).toBe(302);
+    expect(raw.headers().location).toBe("/login?signup=1");
     await page.goto(`/r/${code}`);
     await expect(page).toHaveURL(/\/login\?signup=1/);
     const saved = (await context.cookies()).find(
