@@ -3,7 +3,7 @@ import { z } from "zod";
 import type { SessionUser } from "../lib/types";
 import { db } from "./db";
 import { HttpError } from "./security";
-import { can } from "../lib/permissions";
+import { can, canAny } from "../lib/permissions";
 import { siteTextDefaults } from "../lib/site-texts";
 
 export type RatingKind = "family" | "product" | "member" | "courier";
@@ -91,7 +91,7 @@ async function eligibility(
        AND ${unrated("o.id")} ORDER BY o.created_at LIMIT 1`,
     );
     if (orderId) return { role: "member", orderId };
-    return can(user, "producers") ? adminOnce() : null;
+    return canAny(user, "approvals", "producers") ? adminOnce() : null;
   }
   if (k === "product") {
     const orderId = await first(
@@ -111,7 +111,7 @@ async function eligibility(
        AND ${unrated("oc.order_id")} ORDER BY oc.delivered_at LIMIT 1`,
     );
     if (orderId) return { role: "family", orderId };
-    return can(user, "producers") ? adminOnce() : null;
+    return canAny(user, "approvals", "producers") ? adminOnce() : null;
   }
   // العضو تقيّمه الأسرة عن كل طلب مكتمل منه.
   if (targetId === user.id) return null;
@@ -133,7 +133,7 @@ export const ratedMessage: Record<RatingKind, string> = {
 
 /** تقييم العضو خاص: يراه من تعامل معه من الأسر، والإدارة. */
 async function assertCanViewMember(user: SessionUser | null, targetId: string) {
-  if (user && (can(user, "orders") || can(user, "producers"))) return;
+  if (user && canAny(user, "orders", "approvals", "producers")) return;
   // الأسرة ترى تقييم العميل من أول طلب لم تُرفضه، لتقرر قبوله؛ أما التقييم نفسه فبعد التسليم.
   if (
     user &&

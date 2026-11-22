@@ -534,7 +534,7 @@ export async function viewContract(user: SessionUser, id: string) {
     await db().query(
       `${contractSelect} JOIN jdatna.producer_profiles p ON p.id=k.producer_id
        WHERE k.id=$1 AND (k.user_id=$2 OR p.user_id=$2 OR $3)`,
-      [id, user.id, can(user, "orders")],
+      [id, user.id, can(user, "contracts")],
     )
   ).rows[0] as Contract | undefined;
   if (!row) throw new HttpError(404, "العقد غير موجود");
@@ -543,7 +543,7 @@ export async function viewContract(user: SessionUser, id: string) {
 
 /** الإدارة ← «عقود الاشتراكات». */
 export async function adminContracts(user: SessionUser) {
-  if (!can(user, "orders"))
+  if (!can(user, "contracts"))
     throw new HttpError(403, "لا تملك صلاحية عقود الاشتراكات");
   return (
     await db().query(

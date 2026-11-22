@@ -1,4 +1,5 @@
 import { createHmac, randomUUID } from "node:crypto";
+import { can } from "../lib/permissions";
 import { isIP } from "node:net";
 import { db, databaseConfigured } from "./db";
 import { HttpError } from "./security";
@@ -164,7 +165,7 @@ const reportSchema = z
  * ببطاقات ملخص ورسم يومي وأكثر الدول والعناوين هجومًا وجدول الأحداث. الأيام بتوقيت الرياض.
  */
 export async function securityReport(user: SessionUser, input: unknown) {
-  if (user.role !== "admin") throw new HttpError(403, "لا تملك صلاحية الوصول");
+  if (!can(user, "security")) throw new HttpError(403, "لا تملك صلاحية الوصول");
   const v = reportSchema.parse(input);
   const today = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Riyadh",

@@ -14,7 +14,7 @@ import { getProductFields } from "./settings";
 import { siteTextDefaults } from "../lib/site-texts";
 import { fieldShown } from "../lib/product-fields";
 import { productSelect, mapProduct } from "./catalog";
-import { can } from "../lib/permissions";
+import { can, canAny } from "../lib/permissions";
 type ProducerPrivate = { nationalId: string; workLocation: string };
 export function mergeProducerPrivate(
   existing: ProducerPrivate | null,
@@ -233,7 +233,7 @@ export async function notifyApprovers(
     const { notifyUser } = await import("./push");
     const approvers = (
       await db().query(
-        "SELECT id FROM jdatna.users WHERE role='admin' OR 'producers'=ANY(permissions)",
+        "SELECT id FROM jdatna.users WHERE role='admin' OR 'approvals'=ANY(permissions)",
       )
     ).rows as { id: string }[];
     await Promise.all(
@@ -531,7 +531,7 @@ export async function saveContactVisibility(user: SessionUser, input: unknown) {
 }
 /** عدد الأسر التي تنتظر الاعتماد: لتبويب «اعتماد الأسر المنتجة» وتنبيه المشرفين. */
 export async function pendingApprovals(user: SessionUser) {
-  if (!can(user, "producers"))
+  if (!canAny(user, "approvals", "producers"))
     throw new HttpError(403, "لا تملك صلاحية المراجعة");
   const row = (
     await db().query(
@@ -674,7 +674,7 @@ export async function saveProduct(
   });
 }
 export async function adminProducers(user: SessionUser) {
-  if (!can(user, "producers"))
+  if (!canAny(user, "approvals", "producers"))
     throw new HttpError(403, "لا تملك صلاحية المراجعة");
   const profiles = (
     await db().query(
@@ -705,7 +705,7 @@ export async function reviewProducer(
   id: string,
   input: unknown,
 ) {
-  if (!can(user, "producers"))
+  if (!canAny(user, "approvals", "producers"))
     throw new HttpError(403, "لا تملك صلاحية المراجعة");
   const value = reviewSchema.parse(input);
   const result = await transaction(async (client) => {

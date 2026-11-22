@@ -10,7 +10,7 @@ import {
 } from "node:crypto";
 import type { SessionUser } from "../lib/types";
 import { db, transaction, databaseConfigured } from "./db";
-import { HttpError, normalizePhone } from "./security";
+import { HttpError, normalizePhone, sameSite } from "./security";
 export const cookieName = "jdatna_session";
 /** ملف دخول «لوحة الإدارة»: مستقل عن الجلسة الشخصية (مثل «أي خدمة»، قرار المالك 2026-11-21). */
 export const adminCookieName = "jdatna_admin";
@@ -82,8 +82,7 @@ export function adminArea(request: Request) {
   if (!referer) return false;
   try {
     const from = new URL(referer);
-    const origin = process.env.APP_ORIGIN || url.origin;
-    return from.origin === origin && underAdmin(from.pathname);
+    return sameSite(from.origin, request) && underAdmin(from.pathname);
   } catch {
     return false;
   }

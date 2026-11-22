@@ -79,7 +79,7 @@ test(
     await pool.query("DELETE FROM jdatna.users WHERE phone=ANY($1)", [phones]);
 
     // المالك فقط، وكلمة المرور مطلوبة أول مرة.
-    await assert.rejects(setupReview(real, { days: 1 }), /لمدير المنصة/);
+    await assert.rejects(setupReview(real, { days: 1 }), /لمن أُعطي قسمها/);
     await assert.rejects(setupReview(admin, { days: 1 }), /كلمة مرور/);
     const password = "review-" + randomUUID().slice(0, 8);
     const status = await setupReview(admin, { password, days: 1 });

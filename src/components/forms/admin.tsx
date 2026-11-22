@@ -18,7 +18,7 @@ import {
 } from "./admin-tools";
 import { familyAccountState, type FamilyState } from "@/lib/family-status";
 import { Guard, Message, api, s, useSession } from "./shared";
-import { can, isManager } from "@/lib/permissions";
+import { canAny, isManager } from "@/lib/permissions";
 import { NAV_GROUPS, allowedItem } from "@/lib/admin-nav";
 import { MembersAdmin } from "./members";
 import { APPROVALS_CHANGED } from "@/components/admin/admin-frame";
@@ -266,7 +266,7 @@ export function Admin({ section }: { section?: string } = {}) {
   }, [section, router]);
   const waiting = producers.filter((p) => p.status === "pending");
   useEffect(() => {
-    if (can(session.user, "producers"))
+    if (canAny(session.user, "approvals", "producers"))
       load()
         .catch((e) => setError(e.message))
         .finally(() => setLoaded(true));

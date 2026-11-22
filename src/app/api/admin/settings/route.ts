@@ -3,9 +3,9 @@ import { requireUser, rateLimit } from "@/server/auth";
 import { getSiteTemplate, setSiteTemplate } from "@/server/settings";
 import { can } from "@/lib/permissions";
 import { HttpError } from "@/server/security";
-/** قالب الموقع في الإدارة: لصلاحية المحتوى فقط. */
+/** قالب الموقع في الإدارة: لصلاحية «قالب الموقع». */
 export const GET = api(async (request) => {
-  if (!can(await requireUser(request), "content"))
+  if (!can(await requireUser(request), "template"))
     throw new HttpError(403, "لا تملك صلاحية الإدارة");
   return json({ template: await getSiteTemplate() });
 });

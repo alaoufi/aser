@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { can } from "../lib/permissions";
 import { z } from "zod";
 import type { SessionUser } from "../lib/types";
 import { db } from "./db";
@@ -62,8 +63,8 @@ export async function submitSuggestion(
 }
 
 function assertOwner(user: SessionUser) {
-  if (user.role !== "admin")
-    throw new HttpError(403, "الاقتراحات لمسؤول الإدارة فقط");
+  if (!can(user, "suggestions"))
+    throw new HttpError(403, "الاقتراحات لمن أُعطي قسمها في الإدارة");
 }
 
 export async function adminSuggestions(user: SessionUser) {

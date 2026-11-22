@@ -26,7 +26,7 @@ test(
       permissions,
     });
     const member = mk("customer"),
-      staff = mk("staff", ["reports", "content"]),
+      staff = mk("staff", ["reports", "template"]),
       admin = mk("admin");
     const users = [member, staff, admin];
     const tag = randomUUID();

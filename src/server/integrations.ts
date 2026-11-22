@@ -8,6 +8,7 @@ import {
 import { apnsConfigured } from "./apns";
 import { databaseConfigured, db } from "./db";
 import { HttpError } from "./security";
+import { can } from "../lib/permissions";
 
 /**
  * «تكاملات API» (من «أي خدمة»): حالة الخدمات المربوطة بالموقع، مربوطة أو لا فقط.
@@ -24,7 +25,8 @@ export type Integration = {
 };
 
 export async function integrations(user: SessionUser): Promise<Integration[]> {
-  if (user.role !== "admin") throw new HttpError(403, "لا تملك صلاحية الوصول");
+  if (!can(user, "integrations"))
+    throw new HttpError(403, "لا تملك صلاحية الوصول");
   let database = false;
   if (databaseConfigured())
     database = await db()

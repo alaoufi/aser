@@ -51,10 +51,10 @@ const permission = z.enum(
   ],
 );
 const access = {
-  /** مدير كامل (كل الصلاحيات وإدارة الأعضاء). لا يُعطى لحساب أسرة منتجة. */
+  /** مدير عام (كل الأقسام وإدارة الأعضاء). لا يُعطى لحساب أسرة منتجة. */
   fullAdmin: z.boolean().default(false),
-  /** صلاحيات إدارية محددة لأي عضو، عميلًا كان أو أسرة منتجة. */
-  permissions: z.array(permission).max(20).default([]),
+  /** مدير مخصص: أقسام محددة لأي عضو، عميلًا كان أو أسرة منتجة. */
+  permissions: z.array(permission).max(40).default([]),
 };
 const updateSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("suspend"), id: z.uuid() }).strict(),

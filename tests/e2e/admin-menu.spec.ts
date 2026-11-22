@@ -76,14 +76,13 @@ test("the dashboard summary is grouped, and the sidebar lists the sections allow
     ),
   ).toBe(true);
 
-  // مشرف الطلبات: لوحة التحكم وقسماه فقط، وقسم غيره يُرفض بوضوح.
+  // مدير مخصص بقسم الطلبات وحده: لوحة التحكم وقسمه فقط، وقسم غيره يُرفض بوضوح.
   user = { ...user, role: "customer", permissions: ["orders"] };
   await page.goto("/admin/orders");
   await openMenu();
   await expect(menu.getByRole("navigation").getByRole("link")).toHaveText([
     "لوحة التحكم",
     "الطلبات",
-    "عقود الاشتراكات",
   ]);
   await page.goto("/admin/members");
   await expect(page.locator("main")).toContainText(

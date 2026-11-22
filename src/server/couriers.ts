@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
 import { z } from "zod";
 import type { SessionUser } from "../lib/types";
-import { can } from "../lib/permissions";
+import { can, canAny } from "../lib/permissions";
 import { db, transaction } from "./db";
 import {
   HttpError,
@@ -214,7 +214,8 @@ async function browseScope(user: SessionUser): Promise<BrowseScope> {
     )
   ).rows[0];
   if (family) return { family: family.id as string, publicOnly: false };
-  if (can(user, "producers")) return { family: null, publicOnly: false };
+  if (canAny(user, "approvals", "producers"))
+    return { family: null, publicOnly: false };
   if (user.role === "courier")
     throw new HttpError(403, "تجمع المندوبين للعملاء والأسر المنتجة");
   return { family: null, publicOnly: true };
@@ -522,7 +523,7 @@ export async function markCourierDelivered(user: SessionUser, input: unknown) {
 
 /** الإدارة: المندوبون بانتظار الاعتماد وغيرهم، مع رقم الهوية وصورتها (للمراجعة فقط). */
 export async function adminCouriers(user: SessionUser) {
-  if (!can(user, "producers"))
+  if (!canAny(user, "approvals", "producers"))
     throw new HttpError(403, "لا تملك صلاحية المراجعة");
   const rows = (
     await db().query(
@@ -544,7 +545,7 @@ export async function reviewCourier(
   id: string,
   input: unknown,
 ) {
-  if (!can(user, "producers"))
+  if (!canAny(user, "approvals", "producers"))
     throw new HttpError(403, "لا تملك صلاحية المراجعة");
   const value = z
     .object({

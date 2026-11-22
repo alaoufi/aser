@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { SessionUser } from "../lib/types";
 import { db } from "./db";
 import { HttpError } from "./security";
+import { can } from "../lib/permissions";
 
 /**
  * «سجل النشاطات» (من «أي خدمة»): ما فعله أعضاء الإدارة، من جدول admin_audit_logs الذي يُكتب مع كل إجراء.
@@ -85,7 +86,7 @@ export type ActivityRow = {
 };
 
 export async function activityLog(user: SessionUser, input: unknown) {
-  if (user.role !== "admin") throw new HttpError(403, "لا تملك صلاحية الوصول");
+  if (!can(user, "activity")) throw new HttpError(403, "لا تملك صلاحية الوصول");
   const { group, q, before } = query.parse(input);
   const prefixes = group ? ACTIVITY_GROUPS[group].prefixes : null;
   const rows = (
