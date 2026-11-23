@@ -8,6 +8,8 @@ test("the verified-store badge sits at the bottom-right and opens the certificat
   page,
 }) => {
   await page.goto("/");
+  if (process.env.SHOTS)
+    test.info().annotations.push({ type: "shot", description: "verified" });
   const badge = page.getByRole("link", {
     name: /متجر موثّق في المركز السعودي للأعمال، رقم الشهادة 0000346762/,
   });
@@ -17,9 +19,25 @@ test("the verified-store badge sits at the bottom-right and opens the certificat
   await expect(badge).toHaveAttribute("target", "_blank");
   const box = (await badge.boundingBox())!;
   const vw = page.viewportSize()!;
-  expect(vw.width - (box.x + box.width)).toBeLessThan(30);
   expect(box.y + box.height).toBeLessThanOrEqual(vw.height);
   expect(box.y).toBeGreaterThan(vw.height / 2);
+  const nav = page.getByRole("navigation", { name: "القائمة السفلية" });
+  if (await nav.isVisible()) {
+    // الجوال: فوق «حسابي» (أو «دخول» للزائر) تمامًا: نفس الوسط، وفوقه مباشرة.
+    const account = (await nav
+      .getByRole("link", { name: /^(حسابي|دخول)$/ })
+      .boundingBox())!;
+    const mid = (b: { x: number; width: number }) => b.x + b.width / 2;
+    expect(Math.abs(mid(box) - mid(account))).toBeLessThan(8);
+    expect(box.y + box.height).toBeLessThanOrEqual(account.y);
+  } else {
+    // الشاشة العريضة: الزاوية اليمنى السفلى.
+    expect(vw.width - (box.x + box.width)).toBeLessThan(30);
+  }
+  if (process.env.SHOTS)
+    await page.screenshot({
+      path: `${process.env.SHOTS}/verified-${test.info().project.name}.png`,
+    });
   // لا إطارات خارجية في الصفحة.
   await expect(page.locator("iframe")).toHaveCount(0);
   // /verified يحوّل إلى منصة المركز (رابط الشهادة، أو الاستعلام إن تعذّر الوصول).
