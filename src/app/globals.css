@@ -4212,3 +4212,125 @@ button.mine-seg {
   max-width: 100%;
   min-width: 0;
 }
+
+/* مدة الصلاحية: دائم / بالساعات / حتى تاريخ (8.2.0.0). */
+.duration-picker {
+  border: 1px solid rgba(46, 29, 18, 0.18);
+  border-radius: 10px;
+  padding: 10px 12px;
+  min-width: 0;
+}
+.duration-picker legend {
+  font-weight: 700;
+  padding: 0 4px;
+}
+.duration-modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin-bottom: 8px;
+}
+.duration-mode {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+}
+.duration-hours {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+.duration-hours input {
+  max-width: 100%;
+}
+.offer-stats {
+  color: var(--muted, #6b5a48);
+  font-size: 0.92rem;
+}
+.offer-state[data-state="expired"] {
+  color: #9c2f1e;
+  font-weight: 700;
+}
+.offer-state[data-state="active"] {
+  color: #4f5d36;
+  font-weight: 700;
+}
+.duration-mode {
+  white-space: nowrap;
+}
+.duration-mode input[type="radio"] {
+  appearance: auto;
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  flex: none;
+  border-radius: 50%;
+}
+
+/* شارة «متجر موثّق» ثابتة في زاوية الصفحة اليمنى السفلى (المركز السعودي للأعمال، 8.2.2.0). */
+.verified-seal {
+  position: fixed;
+  right: 14px;
+  bottom: calc(14px + env(safe-area-inset-bottom));
+  z-index: 35;
+  display: flex;
+  align-items: flex-end;
+  pointer-events: none;
+}
+.verified-seal > * {
+  pointer-events: auto;
+}
+/* على الجوال فوق القائمة السفلية. */
+@media (max-width: 760px) {
+  body:has(.bottom-nav) .verified-seal {
+    bottom: calc(80px + env(safe-area-inset-bottom));
+  }
+}
+.verified-seal-frame {
+  border: 0;
+  max-width: calc(100vw - 28px);
+}
+.verified-store {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px 6px 10px;
+  min-height: 44px;
+  border-radius: 999px;
+  background: #1b2a5c;
+  color: #fff;
+  text-decoration: none;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 14px rgb(27 42 92 / 0.28);
+}
+.verified-store:hover,
+.verified-store:focus-visible {
+  background: #24376f;
+  color: #fff;
+}
+.verified-store-icon {
+  color: #fff;
+  flex: none;
+}
+.verified-store-text {
+  display: grid;
+  line-height: 1.1;
+  color: #fff;
+}
+.verified-store-text strong {
+  font-size: 0.86rem;
+}
+.verified-store-text small {
+  font-size: 0.66rem;
+  opacity: 0.85;
+  letter-spacing: 0.04em;
+}
+@media print {
+  .verified-seal {
+    display: none;
+  }
+}

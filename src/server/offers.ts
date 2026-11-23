@@ -24,10 +24,11 @@ export const offerSchema = z
     audience: z.enum(["general", "students", "employees", "families"]),
     meal: z.enum(["breakfast", "lunch", "dinner", "occasion"]),
     startsAt: z.iso.datetime({ offset: true }),
-    endsAt: z.iso.datetime({ offset: true }),
+    /** null = عرض دائم يبقى حتى تعطّله الأسرة. */
+    endsAt: z.iso.datetime({ offset: true }).nullable().default(null),
     enabled: z.boolean(),
   })
-  .refine((v) => Date.parse(v.endsAt) > Date.parse(v.startsAt), {
+  .refine((v) => !v.endsAt || Date.parse(v.endsAt) > Date.parse(v.startsAt), {
     message: "نهاية العرض يجب أن تكون بعد بدايته",
   });
 export function offerVisible(
@@ -35,7 +36,7 @@ export function offerVisible(
     enabled: boolean;
     producerStatus: string;
     startsAt: string;
-    endsAt: string;
+    endsAt: string | null;
     audience: string;
     productId?: string | null;
     productVisible?: boolean;
@@ -48,14 +49,14 @@ export function offerVisible(
     row.enabled &&
     row.producerStatus === "approved" &&
     Date.parse(row.startsAt) <= +now &&
-    Date.parse(row.endsAt) > +now &&
+    (!row.endsAt || Date.parse(row.endsAt) > +now) &&
     (!row.productId ||
       (row.productVisible === true && row.productStatus !== "unavailable")) &&
     (row.audience === "general" || groups.includes(row.audience))
   );
 }
 const select = `SELECT o.id,o.producer_id AS "producerId",o.product_id AS "productId",o.title,o.description,o.terms,o.price::float8 AS price,o.audience,o.meal,o.starts_at AS "startsAt",o.ends_at AS "endsAt",o.enabled,COALESCE(p.trade_name,p.name) AS "producerName",p.slug AS "producerSlug" FROM jdatna.offers o JOIN jdatna.producer_profiles p ON p.id=o.producer_id`;
-const visible = `p.status='approved' AND NOT p.review_only AND o.enabled AND o.starts_at<=now() AND o.ends_at>now() AND (o.product_id IS NULL OR EXISTS(SELECT 1 FROM jdatna.products x WHERE x.id=o.product_id AND x.producer_id=o.producer_id AND x.visible AND x.status IN ('available','preorder'))) AND (o.audience='general' OR EXISTS(SELECT 1 FROM jdatna.offer_preferences f WHERE f.user_id=$1 AND f.audience=o.audience))`;
+const visible = `p.status='approved' AND NOT p.review_only AND o.enabled AND o.starts_at<=now() AND (o.ends_at IS NULL OR o.ends_at>now()) AND (o.product_id IS NULL OR EXISTS(SELECT 1 FROM jdatna.products x WHERE x.id=o.product_id AND x.producer_id=o.producer_id AND x.visible AND x.status IN ('available','preorder'))) AND (o.audience='general' OR EXISTS(SELECT 1 FROM jdatna.offer_preferences f WHERE f.user_id=$1 AND f.audience=o.audience))`;
 /**
  * العروض المتاحة للزائر في نطاقه: عروض أسر منطقته، وعروض ما يُشحن لكل المناطق.
  * بلا منطقة: كل العروض.
@@ -66,7 +67,7 @@ export async function listOffers(
   mine: MineFilters | null = null,
 ) {
   // فلاتر العضو (src/server/member-scope.ts): كل شرط يعمل وحده، ويجتمع مع غيره. NULL = غير مفعّل.
-  return (
+  const rows = (
     await db().query(
       `${select} WHERE ${visible}
          AND ($2='' OR EXISTS(SELECT 1 FROM jdatna.cities rc WHERE rc.id=p.city_id AND rc.region_id=$2)
@@ -88,6 +89,15 @@ export async function listOffers(
       ],
     )
   ).rows;
+  // إحصائية «مرات الظهور»: تبقى بعد انتهاء العرض. لا يُفشل العرض إن تعذّر العدّ.
+  if (rows.length)
+    await db()
+      .query(
+        "UPDATE jdatna.offers SET views=views+1 WHERE id=ANY($1::uuid[])",
+        [rows.map((r) => r.id)],
+      )
+      .catch(() => undefined);
+  return rows;
 }
 export async function getAccessibleOffer(
   user: SessionUser | null,
@@ -168,10 +178,20 @@ export async function saveOfferPreferences(user: SessionUser, input: unknown) {
     return { groups: [...new Set(groups)] };
   });
 }
+/**
+ * «عروض أسرتي»: كل العروض، والمنتهية منها تبقى بإحصائياتها (مرات الظهور، والطلبات بالعرض).
+ * الحالة: active يظهر الآن، scheduled لم يبدأ، expired انتهى، disabled معطّل.
+ */
 export async function ownOffers(user: SessionUser) {
   return (
     await db().query(
-      `${select} WHERE p.user_id=$1 ORDER BY o.created_at DESC LIMIT 200`,
+      `SELECT x.*,o.views,
+         (SELECT count(*)::int FROM jdatna.order_requests r WHERE r.offer_id=o.id) AS orders,
+         CASE WHEN o.ends_at IS NOT NULL AND o.ends_at<=now() THEN 'expired'
+              WHEN NOT o.enabled THEN 'disabled'
+              WHEN o.starts_at>now() THEN 'scheduled' ELSE 'active' END AS state
+       FROM (${select} WHERE p.user_id=$1) x JOIN jdatna.offers o ON o.id=x.id
+       ORDER BY (o.ends_at IS NOT NULL AND o.ends_at<=now()), o.created_at DESC LIMIT 200`,
       [user.id],
     )
   ).rows;

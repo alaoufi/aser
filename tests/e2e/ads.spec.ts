@@ -162,7 +162,7 @@ test("the owner adds an ad, a picture of another shape is shown before and after
   await expect(page.locator("main")).toContainText(
     "الاشتراك بالإعلان (صفحة «أعلن» للأعضاء): الآن موقوف",
   );
-  await page.getByRole("button", { name: "＋ إعلان جديد" }).click();
+  await page.getByRole("button", { name: "＋ إضافة إعلان" }).click();
   const form = page.getByRole("form", { name: "إعلان جديد" });
   await form.getByLabel("عنوان الإعلان").fill("عرض الجمعة");
   await form.getByLabel("الرابط عند الضغط (اختياري)").fill("/offers");
@@ -189,7 +189,7 @@ test("the owner adds an ad, a picture of another shape is shown before and after
   await fit.getByRole("button", { name: "الأعلى" }).click();
   await fit.getByRole("button", { name: "موافق" }).click();
   await expect.poll(() => uploaded).toBe("fit");
-  await form.getByRole("button", { name: "حفظ الإعلان" }).click();
+  await form.getByRole("button", { name: "إضافة الإعلان" }).click();
   await expect(page.getByRole("status").first()).toContainText(
     "تمت إضافة الإعلان",
   );

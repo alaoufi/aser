@@ -186,13 +186,16 @@ export function Products() {
       payload[k] = f.get(k) || null;
     setBusy(true);
     try {
+      // المصطلح واحد (قرار المالك 2026-11-23): «إضافة المنتج» ← «تمت إضافة المنتج»، و«حفظ التعديلات» ← «تم حفظ التعديلات».
+      const done = editing ? "تم حفظ تعديلات المنتج" : "تمت إضافة المنتج";
       await api("/api/producer/products", {
         method: editing ? "PATCH" : "POST",
         body: JSON.stringify(payload),
+        saved: done,
       });
       await load();
       setEditing(undefined);
-      setSuccess("تم حفظ المنتج.");
+      setSuccess(`${done} ✓`);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -438,12 +441,19 @@ export function Products() {
                 <Keep name="story" value={editing?.story} />
               )}
               <p className={s.muted}>
-                احفظ المنتج أولًا، ثم أضف صورته من بطاقته أدناه. تأكد من الإفصاح
-                عن معلومات السلامة والحساسية اللازمة لمنتجك.
+                {editing ? "احفظ التعديلات" : "أضف المنتج أولًا"}، ثم أضف صورته
+                من بطاقته أدناه. تأكد من الإفصاح عن معلومات السلامة والحساسية
+                اللازمة لمنتجك.
               </p>
               <div className={s.actions}>
                 <button className={s.button} disabled={busy}>
-                  {busy ? "جارٍ الحفظ…" : "حفظ المنتج"}
+                  {busy
+                    ? editing
+                      ? "جارٍ الحفظ…"
+                      : "جارٍ الإضافة…"
+                    : editing
+                      ? "حفظ التعديلات"
+                      : "إضافة المنتج"}
                 </button>
                 <button
                   className={s.button}

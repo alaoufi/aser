@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 /**
  * سياسة المحتوى (CSP): كل شيء من الموقع نفسه، عدا بلاطات الخريطة من OpenStreetMap.
- * لا إطارات ولا كائنات ولا نماذج لمواقع أخرى، ولا يُضمَّن الموقع في موقع آخر.
+ * لا إطارات (عدا ختم التوثيق من المركز السعودي للأعمال) ولا كائنات ولا نماذج لمواقع أخرى، ولا يُضمَّن الموقع في موقع آخر.
  * 'unsafe-inline' للسكربت لازم لتهيئة Next.js المضمَّنة في الصفحة (لا رموز nonce هنا)؛
  * الحماية الأولى من XSS تبقى تهريب React للنصوص. في التطوير يُضاف eval وws لإعادة التحميل.
  */
@@ -16,7 +16,8 @@ const csp = [
   "media-src 'self' blob:",
   "worker-src 'self'",
   "manifest-src 'self'",
-  "frame-src 'none'",
+  // ختم «متجر موثّق» الرسمي من المركز السعودي للأعمال فقط (src/components/public/verified-store.tsx).
+  "frame-src https://eauthenticate.saudibusiness.gov.sa",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",

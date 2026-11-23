@@ -35,14 +35,21 @@ export function warmApi(...urls: string[]) {
 export function dropWarm(url: string) {
   warm.delete(url);
 }
-export function api<T>(url: string, options?: RequestInit): Promise<T> {
+/**
+ * `saved`: نص رسالة النجاح أسفل الشاشة بحسب المصطلح (قرار المالك 2026-11-23):
+ * «تمت إضافة المنتج»، «تم حفظ التعديلات»، «تم نشر طلبك»… أو false لإخفائها.
+ * بلا نص: «تم الحذف» للحذف، و«تم الحفظ» لغيره.
+ */
+export type ApiOptions = RequestInit & { saved?: string | false };
+export function api<T>(url: string, options?: ApiOptions): Promise<T> {
   if (!options) {
     const p = warmed(url);
     if (p) return p as Promise<T>;
   } else if (options.method && options.method !== "GET") warm.clear();
   return request<T>(url, options);
 }
-async function request<T>(url: string, options?: RequestInit): Promise<T> {
+async function request<T>(url: string, opts?: ApiOptions): Promise<T> {
+  const { saved, ...options } = opts ?? {};
   const r = await fetch(url, {
     ...options,
     headers:
@@ -75,7 +82,7 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
       new Error(data.error || "تعذر إتمام الطلب. يرجى المحاولة مجددًا."),
       { status: r.status, data },
     );
-  announceSaved(url, options?.method);
+  announceSaved(url, options?.method, saved);
   return data as T;
 }
 /** يُبث بعد كل حفظ ناجح لتظهر رسالة «تم الحفظ» أسفل الشاشة. */
@@ -91,14 +98,14 @@ const NOT_A_SAVE = [
   "/api/producer/orders/alerts",
   "/api/session",
 ];
-function announceSaved(url: string, method = "GET") {
+function announceSaved(url: string, method = "GET", saved?: string | false) {
   const m = method.toUpperCase();
-  if (m === "GET" || typeof window === "undefined") return;
+  if (m === "GET" || saved === false || typeof window === "undefined") return;
   const path = url.split("?")[0];
   if (NOT_A_SAVE.some((p) => path.startsWith(p))) return;
   window.dispatchEvent(
     new CustomEvent(SAVED_EVENT, {
-      detail: m === "DELETE" ? "تم الحذف" : "تم الحفظ",
+      detail: saved || (m === "DELETE" ? "تم الحذف" : "تم الحفظ"),
     }),
   );
 }

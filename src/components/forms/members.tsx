@@ -185,6 +185,7 @@ export function MembersAdmin() {
       await api("/api/admin/members", {
         method: "PATCH",
         body: JSON.stringify(body),
+        saved: done.replace(/[.،]+$/, ""),
       });
       await load();
       setSuccess(done);

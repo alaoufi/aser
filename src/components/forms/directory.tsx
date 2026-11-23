@@ -141,10 +141,11 @@ export function Directory() {
                 run(async () => {
                   await api("/api/directory", {
                     method: "POST",
+                    saved: "تمت إضافة الجهة إلى دليلي",
                     body: JSON.stringify({ contact: v }),
                   });
                   setAdding(false);
-                }, "✓ أُضيفت الجهة.")
+                }, "تمت إضافة الجهة إلى دليلي ✓")
               }
             />
           )}
@@ -235,8 +236,9 @@ export function Directory() {
                                   () =>
                                     api(`/api/directory/${e.id}`, {
                                       method: "DELETE",
+                                      saved: "تم الحذف من دليلي",
                                     }),
-                                  "✓ حُذفت.",
+                                  "تم الحذف من دليلي ✓",
                                 )
                               }
                             >
@@ -251,10 +253,11 @@ export function Directory() {
                                 run(async () => {
                                   await api(`/api/directory/${e.id}`, {
                                     method: "PATCH",
+                                    saved: "تم حفظ التعديلات",
                                     body: JSON.stringify(v),
                                   });
                                   setEditing(null);
-                                }, "✓ حُفظ.")
+                                }, "تم حفظ التعديلات ✓")
                               }
                             />
                           )}
@@ -340,7 +343,7 @@ function ContactForm({
       </label>
       <div className={s.actions}>
         <button type="submit" className={s.button}>
-          حفظ
+          {entry ? "حفظ التعديلات" : "إضافة"}
         </button>
         <button type="button" className={s.buttonSecondary} onClick={onCancel}>
           إلغاء
@@ -385,6 +388,7 @@ export function DirectoryButton({
           try {
             await api("/api/directory", {
               method: "POST",
+              saved: "تمت الإضافة إلى دليلي",
               body: JSON.stringify(target),
             });
             setSaved(true);

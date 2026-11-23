@@ -122,7 +122,7 @@ test("a family's add-product form leaves out the fields the admin hid or deleted
   await form.getByLabel("اسم المنتج").fill("معمول");
   await form.getByLabel("السعر بالريال").fill("30");
   await form.getByLabel("الحلويات").check();
-  await form.getByRole("button", { name: "حفظ المنتج" }).click();
+  await form.getByRole("button", { name: "إضافة المنتج" }).click();
   await expect.poll(() => saved?.name).toBe("معمول");
   expect(saved).toMatchObject({ unit: "طبق", description: "", price: 30 });
   expect(saved?.story).toBeNull();

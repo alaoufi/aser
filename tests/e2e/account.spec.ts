@@ -122,11 +122,11 @@ test("admin category validates slug before sending and preserves errors from ser
   );
   // كل قسم بمساره في القائمة الجانبية (src/lib/admin-nav.ts).
   await page.goto("/admin/categories");
-  await page.getByRole("button", { name: "＋ قسم جديد" }).click();
+  await page.getByRole("button", { name: "＋ إضافة قسم" }).click();
   await page.getByLabel("اسم القسم").fill("الخبز");
   // الرابط المختصر يُنشأ داخليًا ولا يُعرض.
   await expect(page.getByLabel("الرابط المختصر")).toHaveCount(0);
-  await page.getByRole("button", { name: "حفظ التصنيف" }).click();
+  await page.getByRole("button", { name: "إضافة القسم" }).click();
   await expect(page.locator("main").getByRole("alert")).toHaveText(
     "التصنيف مسجل مسبقًا",
   );

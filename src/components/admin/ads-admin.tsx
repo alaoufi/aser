@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { api, s as forms } from "@/components/forms/shared";
 import { PLACEMENTS, PLACEMENT_IDS, WEEKDAYS, type Placement } from "@/lib/ads";
 import { AdMediaPicker } from "./ad-media-picker";
+import { DurationPicker } from "@/components/forms/duration-picker";
 import css from "./ads-admin.module.css";
 
 /**
@@ -219,7 +220,7 @@ export function AdsAdmin() {
                 setEditing(blank());
               }}
             >
-              ＋ إعلان جديد
+              ＋ إضافة إعلان
             </button>
           )}
           {!editing && (
@@ -470,6 +471,7 @@ function AdForm({
           : null;
       const d = await api<Data>("/api/admin/ads", {
         method: "POST",
+        saved: v.id ? "تم حفظ تعديلات الإعلان" : "تمت إضافة الإعلان",
         body: JSON.stringify({
           ...(v.id ? { id: v.id } : {}),
           title: v.title ?? "",
@@ -495,7 +497,7 @@ function AdForm({
           status: v.status === "paused" ? "paused" : "active",
         }),
       });
-      onSaved(d, v.id ? "تم حفظ الإعلان." : "تمت إضافة الإعلان.");
+      onSaved(d, v.id ? "تم حفظ تعديلات الإعلان ✓" : "تمت إضافة الإعلان ✓");
     } catch (err) {
       const e2 = err as Error & { data?: { field?: string } };
       setError(e2.message);
@@ -607,14 +609,13 @@ function AdForm({
           </label>
         </div>
         <div className={field("endsAt")} data-field="endsAt">
-          <label className={forms.field}>
-            ينتهي (اختياري)
-            <input
-              type="datetime-local"
-              value={toLocal(v.endsAt ?? null)}
-              onChange={(e) => set("endsAt", fromLocal(e.target.value))}
-            />
-          </label>
+          <DurationPicker
+            key={v.id ?? "new-ad"}
+            label="مدة الإعلان"
+            start={v.startsAt ?? null}
+            value={v.endsAt ?? null}
+            onChange={(endsAt) => set("endsAt", endsAt)}
+          />
         </div>
       </div>
       <div className={css.three}>
@@ -856,7 +857,13 @@ function AdForm({
       )}
       <div className={css.bar}>
         <button type="submit" className={forms.button} disabled={busy}>
-          {busy ? "جارٍ الحفظ…" : "حفظ الإعلان"}
+          {busy
+            ? v.id
+              ? "جارٍ الحفظ…"
+              : "جارٍ الإضافة…"
+            : v.id
+              ? "حفظ التعديلات"
+              : "إضافة الإعلان"}
         </button>
         <button
           type="button"
@@ -887,6 +894,7 @@ function Campaigns({
       onData(
         await api<Data>("/api/admin/ads/campaigns", {
           method: "POST",
+          saved: editing.id ? "تم حفظ تعديلات الحملة" : "تمت إضافة الحملة",
           body: JSON.stringify({
             ...(editing.id ? { id: editing.id } : {}),
             name: editing.name ?? "",
@@ -946,16 +954,15 @@ function Campaigns({
                 }
               />
             </label>
-            <label className={forms.field}>
-              تنتهي
-              <input
-                type="datetime-local"
-                value={toLocal(editing.endsAt ?? null)}
-                onChange={(e) =>
-                  setEditing({ ...editing, endsAt: fromLocal(e.target.value) })
-                }
-              />
-            </label>
+            <DurationPicker
+              key={editing.id ?? "new-campaign"}
+              label="مدة الحملة"
+              start={editing.startsAt ?? null}
+              value={editing.endsAt ?? null}
+              onChange={(endsAt) =>
+                setEditing((e) => (e ? { ...e, endsAt } : e))
+              }
+            />
           </div>
           <div className={css.two}>
             <label className={forms.field}>
@@ -999,7 +1006,7 @@ function Campaigns({
           )}
           <div className={forms.actions}>
             <button type="submit" className={forms.button}>
-              حفظ الحملة
+              {editing.id ? "حفظ التعديلات" : "إضافة الحملة"}
             </button>
             <button
               type="button"
@@ -1016,7 +1023,7 @@ function Campaigns({
           className={forms.button}
           onClick={() => setEditing({ status: "active" })}
         >
-          ＋ حملة جديدة
+          ＋ إضافة حملة
         </button>
       )}
       <ul className={css.list} aria-label="الحملات">

@@ -39,13 +39,16 @@ function useResource<T>(url: string) {
   useEffect(() => {
     refresh().catch((e) => setError(e.message));
   }, [url]);
-  async function write(method: string, body: unknown) {
+  /** `done`: رسالة النجاح بحسب المصطلح («تمت إضافة التصنيف»…). بلا نص: «تم الحذف» أو «تم الحفظ». */
+  async function write(method: string, body: unknown, done?: string) {
     setBusy(true);
     setError("");
     setSuccess("");
+    const message =
+      done ?? (method.toUpperCase() === "DELETE" ? "تم الحذف" : "تم الحفظ");
     try {
       try {
-        await api(url, { method, body: JSON.stringify(body) });
+        await api(url, { method, body: JSON.stringify(body), saved: message });
       } catch (err) {
         // الخادم يطلب تأكيدًا لإجراء له أثر (مثل حذف منتجات القسم معه): نسأل ثم نعيد بالتأكيد.
         const e = err as Error & {
@@ -55,6 +58,7 @@ function useResource<T>(url: string) {
         if (!window.confirm(e.message)) return false;
         await api(url, {
           method,
+          saved: message,
           body: JSON.stringify({
             ...(body as object),
             [e.data.confirmWith]: true,
@@ -62,7 +66,7 @@ function useResource<T>(url: string) {
         });
       }
       await refresh();
-      setSuccess("تم حفظ التغييرات.");
+      setSuccess(`${message} ✓`);
       return true;
     } catch (e) {
       setError((e as Error).message);
@@ -98,7 +102,7 @@ export function CategoriesAdmin() {
             aria-expanded={openId === "new"}
             onClick={() => toggle("new")}
           >
-            ＋ قسم جديد
+            ＋ إضافة قسم
           </button>
           {openId === "new" && (
             <CategoryEditor
@@ -196,12 +200,16 @@ function CategoryEditor({
   async function save(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
-    const ok = await r.write(editing ? "PATCH" : "POST", {
-      id: editing?.id,
-      name: f.get("name"),
-      icon: f.get("icon"),
-      parentId: f.get("parentId") || null,
-    });
+    const ok = await r.write(
+      editing ? "PATCH" : "POST",
+      {
+        id: editing?.id,
+        name: f.get("name"),
+        icon: f.get("icon"),
+        parentId: f.get("parentId") || null,
+      },
+      editing ? "تم حفظ تعديلات القسم" : "تمت إضافة القسم",
+    );
     if (ok && !editing) onDone();
   }
   async function remove() {
@@ -253,7 +261,7 @@ function CategoryEditor({
       )}
       <div className={s.actions}>
         <button className={s.button} disabled={r.busy}>
-          {r.busy ? "جارٍ الحفظ…" : editing ? "حفظ التعديل" : "حفظ التصنيف"}
+          {r.busy ? "جارٍ الحفظ…" : editing ? "حفظ التعديلات" : "إضافة القسم"}
         </button>
         {editing && (
           <button
@@ -330,12 +338,16 @@ export function LocationsAdmin() {
     const form = e.currentTarget;
     const f = new FormData(form);
     if (
-      await r.write("POST", {
-        kind,
-        name: f.get("name"),
-        regionId: f.get("regionId") || undefined,
-        cityId: f.get("cityId") || undefined,
-      })
+      await r.write(
+        "POST",
+        {
+          kind,
+          name: f.get("name"),
+          regionId: f.get("regionId") || undefined,
+          cityId: f.get("cityId") || undefined,
+        },
+        "تمت إضافة الموقع",
+      )
     )
       form.reset();
   }
@@ -394,7 +406,7 @@ export function LocationsAdmin() {
           <input name="name" required maxLength={120} />
         </label>
         <button className={s.button} disabled={r.busy || !r.data}>
-          {r.busy ? "جارٍ الحفظ…" : "إضافة الموقع"}
+          {r.busy ? "جارٍ الإضافة…" : "إضافة الموقع"}
         </button>
       </form>
       {!r.data && !r.error ? (

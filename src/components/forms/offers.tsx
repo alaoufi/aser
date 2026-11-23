@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AccountShell, Guard, Message, api, s, useSession } from "./shared";
+import { DurationPicker } from "./duration-picker";
 type Offer = {
   id: string;
   title: string;
@@ -12,10 +13,21 @@ type Offer = {
   audience: string;
   meal: string;
   startsAt: string;
-  endsAt: string;
+  /** null = دائم. */
+  endsAt: string | null;
   enabled: boolean;
   producerName: string;
   producerSlug: string;
+  /** «عروض أسرتي» فقط: الإحصائيات والحالة. */
+  views?: number;
+  orders?: number;
+  state?: "active" | "scheduled" | "expired" | "disabled";
+};
+const STATES = {
+  active: "يظهر الآن",
+  scheduled: "لم يبدأ بعد",
+  expired: "انتهى (مخفي، والإحصائيات باقية)",
+  disabled: "معطّل",
 };
 const audiences = {
   general: "للجميع",
@@ -62,8 +74,11 @@ export function Offers({
   const [products, setProducts] = useState<{ id: string; name: string }[]>([]);
   const [editing, setEditing] = useState<Offer | null | undefined>();
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [busy, setBusy] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  // بداية العرض في النموذج (لحساب النهاية بالساعات).
+  const [start, setStart] = useState("");
   async function load() {
     const d = await api<{ offers: Offer[] }>(
       manage ? "/api/producer/offers" : `/api/offers${query({ region, mine })}`,
@@ -107,9 +122,13 @@ export function Offers({
     const f = new FormData(e.currentTarget);
     setBusy(true);
     setError("");
+    setSuccess("");
+    // المصطلح واحد (قرار المالك 2026-11-23): «إضافة العرض» ← «تمت إضافة العرض».
+    const done = editing ? "تم حفظ تعديلات العرض" : "تمت إضافة العرض";
     try {
       await api("/api/producer/offers", {
         method: editing ? "PATCH" : "POST",
+        saved: done,
         body: JSON.stringify({
           id: editing?.id,
           title: f.get("title"),
@@ -120,12 +139,13 @@ export function Offers({
           audience: f.get("audience"),
           meal: f.get("meal"),
           startsAt: new Date(String(f.get("startsAt"))).toISOString(),
-          endsAt: new Date(String(f.get("endsAt"))).toISOString(),
+          endsAt: f.get("endsAt") ? String(f.get("endsAt")) : null,
           enabled: f.get("enabled") === "on",
         }),
       });
       await load();
       setEditing(undefined);
+      setSuccess(`${done} ✓`);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -138,10 +158,18 @@ export function Offers({
     try {
       await api("/api/producer/offers", {
         method: "PATCH",
+        saved: offer.enabled ? "تم تعطيل العرض" : "تم تفعيل العرض",
         body: JSON.stringify({
-          ...offer,
+          id: offer.id,
+          title: offer.title,
+          description: offer.description,
+          terms: offer.terms,
+          price: offer.price,
+          productId: offer.productId,
+          audience: offer.audience,
+          meal: offer.meal,
           startsAt: new Date(offer.startsAt).toISOString(),
-          endsAt: new Date(offer.endsAt).toISOString(),
+          endsAt: offer.endsAt ? new Date(offer.endsAt).toISOString() : null,
           enabled: !offer.enabled,
         }),
       });
@@ -161,7 +189,7 @@ export function Offers({
         الموقع.
       </p>
       {manage && <Guard {...session} />}
-      <Message error={error} />
+      <Message error={error} success={success} />
       {!manage &&
         (session.user ? (
           <form onSubmit={savePreferences} className={s.form}>
@@ -203,7 +231,13 @@ export function Offers({
         ))}
       {manage && session.user && (
         <>
-          <button className={s.button} onClick={() => setEditing(null)}>
+          <button
+            className={s.button}
+            onClick={() => {
+              setStart(localTime(new Date().toISOString()));
+              setEditing(null);
+            }}
+          >
             إضافة عرض
           </button>
           {editing !== undefined && (
@@ -301,18 +335,17 @@ export function Offers({
                   type="datetime-local"
                   name="startsAt"
                   required
-                  defaultValue={editing ? localTime(editing.startsAt) : ""}
+                  value={start}
+                  onChange={(e) => setStart(e.target.value)}
                 />
               </label>
-              <label className={s.field}>
-                نهاية العرض
-                <input
-                  type="datetime-local"
-                  name="endsAt"
-                  required
-                  defaultValue={editing ? localTime(editing.endsAt) : ""}
-                />
-              </label>
+              <DurationPicker
+                key={editing?.id ?? "new"}
+                label="مدة صلاحية العرض"
+                name="endsAt"
+                start={start ? new Date(start).toISOString() : null}
+                value={editing ? editing.endsAt : null}
+              />
               <label className={s.checks}>
                 <input
                   name="enabled"
@@ -322,7 +355,13 @@ export function Offers({
                 تفعيل العرض
               </label>
               <button className={s.button} disabled={busy}>
-                حفظ العرض
+                {busy
+                  ? editing
+                    ? "جارٍ الحفظ…"
+                    : "جارٍ الإضافة…"
+                  : editing
+                    ? "حفظ التعديلات"
+                    : "إضافة العرض"}
               </button>
               <button
                 className={s.button}
@@ -357,16 +396,26 @@ export function Offers({
                 : `${o.price} ريال`}
             </p>
             <p>
-              من {new Date(o.startsAt).toLocaleString("ar-SA")} إلى{" "}
-              {new Date(o.endsAt).toLocaleString("ar-SA")}
+              {o.endsAt
+                ? `من ${new Date(o.startsAt).toLocaleString("ar-SA")} إلى ${new Date(o.endsAt).toLocaleString("ar-SA")}`
+                : `من ${new Date(o.startsAt).toLocaleString("ar-SA")} · دائم`}
             </p>
             {manage ? (
               <>
-                <p>{o.enabled ? "مفعّل" : "معطّل"}</p>
+                <p className="offer-state" data-state={o.state}>
+                  {o.state ? STATES[o.state] : o.enabled ? "مفعّل" : "معطّل"}
+                </p>
+                <p className="offer-stats" data-testid="offer-stats">
+                  الإحصائيات: ظهر <strong>{o.views ?? 0}</strong> مرة ·{" "}
+                  <strong>{o.orders ?? 0}</strong> طلب بالعرض
+                </p>
                 <button
                   className={s.button}
                   disabled={busy}
-                  onClick={() => setEditing(o)}
+                  onClick={() => {
+                    setStart(localTime(o.startsAt));
+                    setEditing(o);
+                  }}
                 >
                   تعديل
                 </button>{" "}

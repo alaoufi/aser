@@ -125,7 +125,7 @@ test.describe("bottom bar, my directory and customer requests", () => {
     await page.getByRole("button", { name: "＋ إضافة يدوية" }).click();
     await page.getByLabel("الاسم").fill("أبو فهد");
     await page.getByLabel("الجوال").fill("0551234567");
-    await page.getByRole("button", { name: "حفظ" }).click();
+    await page.getByRole("button", { name: "إضافة", exact: true }).click();
     await expect(page.getByRole("region", { name: "جهاتي" })).toContainText(
       "أبو فهد",
     );

@@ -28,6 +28,7 @@ import {
   visitorTemplate,
 } from "@/server/settings";
 import { StoreBadges } from "@/components/public/store-badges";
+import { VerifiedStore } from "@/components/public/verified-store";
 import { dishPath, findDish } from "@/lib/dishes";
 import { TemplateSwitcher } from "@/components/public/template-switcher";
 import { VisitStats } from "@/components/public/visit-stats";
@@ -272,6 +273,7 @@ export default async function RootLayout({
           <FamilyWelcome texts={texts} />
           <OrderAlert />
           <MessageAlert />
+          <VerifiedStore />
           <footer className="site-footer">
             <div className="footer-top">
               {/* اسم الموقع وتحته أزرار تحميل التطبيق، بلا شعار (شعار الترويسة يكفي) ولا فراغ. */}

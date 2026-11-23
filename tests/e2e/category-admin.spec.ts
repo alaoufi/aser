@@ -70,7 +70,7 @@ test("tapping a category opens it right below for editing, and it is deleted onl
   await expect(page.getByRole("button", { name: "حذف القسم" })).toBeEnabled();
   await expect(page.getByText(/على هذا القسم 3 منتج/)).toBeVisible();
   await page.getByLabel("اسم القسم").fill("الحلويات الشعبية");
-  await page.getByRole("button", { name: "حفظ التعديل" }).click();
+  await page.getByRole("button", { name: "حفظ التعديلات" }).click();
   await expect.poll(() => sent.length).toBe(1);
   expect(sent[0]).toMatchObject({
     method: "PATCH",
