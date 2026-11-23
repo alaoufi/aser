@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { api, s as forms } from "@/components/forms/shared";
 import { PLACEMENTS, PLACEMENT_IDS, WEEKDAYS, type Placement } from "@/lib/ads";
 import { AdMediaPicker } from "./ad-media-picker";
+import { DurationPicker } from "@/components/forms/duration-picker";
 import css from "./ads-admin.module.css";
 
 /**
@@ -607,14 +608,13 @@ function AdForm({
           </label>
         </div>
         <div className={field("endsAt")} data-field="endsAt">
-          <label className={forms.field}>
-            ينتهي (اختياري)
-            <input
-              type="datetime-local"
-              value={toLocal(v.endsAt ?? null)}
-              onChange={(e) => set("endsAt", fromLocal(e.target.value))}
-            />
-          </label>
+          <DurationPicker
+            key={v.id ?? "new-ad"}
+            label="مدة الإعلان"
+            start={v.startsAt ?? null}
+            value={v.endsAt ?? null}
+            onChange={(endsAt) => set("endsAt", endsAt)}
+          />
         </div>
       </div>
       <div className={css.three}>
@@ -946,16 +946,15 @@ function Campaigns({
                 }
               />
             </label>
-            <label className={forms.field}>
-              تنتهي
-              <input
-                type="datetime-local"
-                value={toLocal(editing.endsAt ?? null)}
-                onChange={(e) =>
-                  setEditing({ ...editing, endsAt: fromLocal(e.target.value) })
-                }
-              />
-            </label>
+            <DurationPicker
+              key={editing.id ?? "new-campaign"}
+              label="مدة الحملة"
+              start={editing.startsAt ?? null}
+              value={editing.endsAt ?? null}
+              onChange={(endsAt) =>
+                setEditing((e) => (e ? { ...e, endsAt } : e))
+              }
+            />
           </div>
           <div className={css.two}>
             <label className={forms.field}>

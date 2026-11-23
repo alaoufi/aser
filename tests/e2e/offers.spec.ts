@@ -71,7 +71,11 @@ for (const width of [320, 1280]) {
     await form.locator('select[name="audience"]').selectOption("students");
     await form.locator('select[name="meal"]').selectOption("breakfast");
     await form.getByLabel("بداية العرض").fill("2026-11-08T08:00");
-    await form.getByLabel("نهاية العرض").fill("2026-12-08T08:00");
+    // المدة بالساعات (طلب المالك 2026-11-23): 48 ساعة من البداية.
+    const duration = form.getByRole("group", { name: "مدة صلاحية العرض" });
+    await expect(duration.getByRole("radio", { name: "دائم" })).toBeChecked();
+    await duration.getByRole("radio", { name: "بالساعات" }).check();
+    await duration.getByLabel("عدد الساعات").fill("48");
     await form.getByLabel("تفعيل العرض").check();
     expect(
       await page.evaluate(
@@ -89,6 +93,10 @@ for (const width of [320, 1280]) {
       productId,
       price: 15,
     });
+    expect(
+      Date.parse(created!.endsAt as string) -
+        Date.parse(created!.startsAt as string),
+    ).toBe(48 * 3_600_000);
     await page.getByRole("button", { name: "تعطيل العرض" }).click();
     await expect(page.getByText("معطّل", { exact: true })).toBeVisible();
     expect(patched).toMatchObject({
