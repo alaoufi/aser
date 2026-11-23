@@ -1758,7 +1758,7 @@ export function DomainVerificationAdmin() {
       ) : code !== undefined ? (
         <form
           key={code}
-          className={`${s.card} ${s.form}`}
+          className={`${s.card} ${s.form} domain-verify`}
           onSubmit={(e) => {
             e.preventDefault();
             const f = new FormData(e.currentTarget);
