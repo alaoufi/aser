@@ -7,7 +7,7 @@ import { forwardRef, useEffect, useRef, useState } from "react";
  * - شهادة توثيق المتجر الإلكتروني من المركز السعودي للأعمال رقم 0000346762
  *   (سارية حتى 2027-01-09، ورابط المتجر المسجل فيها https://jdatna.com؛ تحقق منها 2026-11-23).
  * - الختم الرسمي: خدمة المركز `EAuthSealApi/seal` (نفسها التي يحمّلها seal.js) تُحمَّل في إطار مخفي.
- *   إن أرسلت مقاسه ظهر الختم الرسمي مكان شارتنا. وإن ردّت «أخفِ» (كما ترد حتى 2026-11-23) حُذف الإطار
+ *   إن أرسلت مقاسه ظهر الختم الرسمي مكان شارتنا. وإن ردّت «أخفِ» (إن أوقفت المنصة الختم) حُذف الإطار
  *   وبقيت شارتنا، وهي تفتح صفحة الاستعلام الرسمية ورقم الشهادة مكتوب عليها.
  * - لا نحمّل seal.js نفسه: يضع إطارًا شفافًا 120×44 فوق الصفحة ولو ردّت الخدمة «أخفِ».
  */
@@ -15,9 +15,11 @@ export const VERIFICATION_NUMBER = "0000346762";
 export const VERIFICATION_INQUIRY =
   "https://eauthenticate.saudibusiness.gov.sa/inquiry";
 const SEAL_BASE = "https://eauthenticate.saudibusiness.gov.sa/EAuthSealApi";
-/** رمز إثبات ملكية النطاق نفسه (المنشور في الصفحة) هو رمز الختم. */
-const SEAL_TOKEN =
-  "fe7d1c310cddeda07c92b84334ce1e570264715ccc2dc4621c5b348d2fd40926";
+/**
+ * رمز ختم «جدتنا» من كود التضمين في منصة الأعمال (أرسله المالك 2026-11-23). عام بطبيعته: يظهر في
+ * كود كل صفحة. تحقق 2026-11-23: المنصة ترد بالختم الرسمي لشهادة 0000346762 على jdtna.sa وjdatna.com.
+ */
+const SEAL_TOKEN = "bzdWdzBVYW5qUnlEZnRkd3hIWFY3QT09";
 
 export function VerifiedStore() {
   const frame = useRef<HTMLIFrameElement>(null);
@@ -39,9 +41,10 @@ export function VerifiedStore() {
         return;
       if (d.remove) setSeal(false);
       else if (d.width || d.height)
+        // الختم يكبر عند الضغط (نافذة الرمز والحالة و«عرض التحقق»)، فيتسع في حدود الشاشة.
         setSeal((s) => ({
-          w: Math.min(260, d.width || (s ? s.w : 120)),
-          h: Math.min(120, d.height || (s ? s.h : 44)),
+          w: Math.min(window.innerWidth - 28, d.width || (s ? s.w : 120)),
+          h: Math.min(window.innerHeight - 100, d.height || (s ? s.h : 44)),
         }));
     };
     window.addEventListener("message", on);
