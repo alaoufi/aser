@@ -273,6 +273,7 @@ export default async function RootLayout({
           <FamilyWelcome texts={texts} />
           <OrderAlert />
           <MessageAlert />
+          <VerifiedStore />
           <footer className="site-footer">
             <div className="footer-top">
               {/* اسم الموقع وتحته أزرار تحميل التطبيق، بلا شعار (شعار الترويسة يكفي) ولا فراغ. */}
@@ -290,7 +291,6 @@ export default async function RootLayout({
                       texts["store.googlePlay"] || "احصل عليه من Google Play",
                   }}
                 />
-                <VerifiedStore />
               </div>
               <div>
                 <h3>اكتشف</h3>

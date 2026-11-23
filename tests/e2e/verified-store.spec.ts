@@ -1,9 +1,18 @@
 import { test, expect } from "@playwright/test";
 
-/** شارة «متجر موثّق» في التذييل: رقم الشهادة، وتفتح صفحة الاستعلام الرسمية في تبويب جديد. */
-test("the footer shows the verified-store badge with the certificate number", async ({
+/**
+ * شارة «متجر موثّق» ثابتة في زاوية الصفحة اليمنى السفلى: رقم الشهادة، وتفتح صفحة الاستعلام
+ * الرسمية في تبويب جديد. الختم الرسمي يحل محلها إن فعّلته المنصة؛ هنا تُحاكى «أخفِ» كما ترد الآن.
+ */
+test("the verified-store badge sits fixed at the bottom-right corner", async ({
   page,
 }) => {
+  await page.route("https://eauthenticate.saudibusiness.gov.sa/**", (r) =>
+    r.fulfill({
+      contentType: "text/html",
+      body: "<script>parent.postMessage({sbcSeal:true,remove:true},'*')</script>",
+    }),
+  );
   await page.goto("/");
   const badge = page.getByRole("link", {
     name: "متجر موثّق في المركز السعودي للأعمال، رقم الشهادة 0000346762",
@@ -15,14 +24,21 @@ test("the footer shows the verified-store badge with the certificate number", as
     "https://eauthenticate.saudibusiness.gov.sa/inquiry",
   );
   await expect(badge).toHaveAttribute("target", "_blank");
+  // «أخفِ» من المنصة: لا يبقى إطار الختم.
+  await expect(page.locator(".verified-seal-frame")).toHaveCount(0);
+  // ثابتة في الزاوية اليمنى السفلى وهي ظاهرة بلا تمرير.
+  const box = (await badge.boundingBox())!;
+  const vw = page.viewportSize()!;
+  expect(vw.width - (box.x + box.width)).toBeLessThan(30);
+  expect(box.y + box.height).toBeLessThanOrEqual(vw.height);
+  expect(box.y).toBeGreaterThan(vw.height / 2);
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBe(true);
-  await badge.scrollIntoViewIfNeeded();
   if (process.env.SHOTS)
-    await page.locator(".footer-brand-col").screenshot({
+    await page.screenshot({
       path: `${process.env.SHOTS}/verified-${test.info().project.name}.png`,
     });
 });
