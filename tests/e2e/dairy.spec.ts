@@ -61,10 +61,10 @@ test("admin assigns deep subsection and excludes its own descendants as parents"
   });
   // كل قسم بمساره في القائمة الجانبية (src/lib/admin-nav.ts).
   await page.goto("/admin/categories");
-  await page.getByRole("button", { name: "＋ قسم جديد" }).click();
+  await page.getByRole("button", { name: "＋ إضافة قسم" }).click();
   await page.getByLabel("اسم القسم").fill("حليب");
   await page.locator("select[name=parentId]").selectOption("drinks-hot");
-  await page.getByRole("button", { name: "حفظ التصنيف", exact: true }).click();
+  await page.getByRole("button", { name: "إضافة القسم", exact: true }).click();
   await expect(page.getByRole("status")).toBeVisible();
   expect(saved.parentId).toBe("drinks-hot");
   await page

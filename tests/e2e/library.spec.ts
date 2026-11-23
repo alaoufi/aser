@@ -109,7 +109,7 @@ test("family uploads dish photos with name, description and its own categories",
   });
   await page.getByLabel("اسم الطبق").fill("قرصان");
   await category.selectOption("2");
-  await page.getByRole("button", { name: "رفع إلى المكتبة" }).click();
+  await page.getByRole("button", { name: "إضافة الصورة" }).click();
   await expect(page.getByText("تمت إضافة الصورة إلى مكتبتك.")).toBeVisible();
   expect(uploaded).toEqual({ name: "قرصان", categoryId: "2" });
   await expect(list.getByRole("img", { name: "قرصان" })).toBeVisible();
@@ -149,7 +149,7 @@ test("adding a product picks its photo from the library and fills the dish detai
   await expect(
     page.getByLabel("رسوم الشحن (ريال، تضاف على السعر)"),
   ).toHaveValue("25");
-  await page.getByRole("button", { name: "حفظ المنتج" }).click();
+  await page.getByRole("button", { name: "إضافة المنتج" }).click();
   await expect.poll(() => saved).toBeTruthy();
   expect(saved).toMatchObject({
     name: "جريش بالدجاج",

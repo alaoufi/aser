@@ -74,6 +74,7 @@ export function Offers({
   const [products, setProducts] = useState<{ id: string; name: string }[]>([]);
   const [editing, setEditing] = useState<Offer | null | undefined>();
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [busy, setBusy] = useState(false);
   const [loaded, setLoaded] = useState(false);
   // بداية العرض في النموذج (لحساب النهاية بالساعات).
@@ -121,9 +122,13 @@ export function Offers({
     const f = new FormData(e.currentTarget);
     setBusy(true);
     setError("");
+    setSuccess("");
+    // المصطلح واحد (قرار المالك 2026-11-23): «إضافة العرض» ← «تمت إضافة العرض».
+    const done = editing ? "تم حفظ تعديلات العرض" : "تمت إضافة العرض";
     try {
       await api("/api/producer/offers", {
         method: editing ? "PATCH" : "POST",
+        saved: done,
         body: JSON.stringify({
           id: editing?.id,
           title: f.get("title"),
@@ -140,6 +145,7 @@ export function Offers({
       });
       await load();
       setEditing(undefined);
+      setSuccess(`${done} ✓`);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -152,6 +158,7 @@ export function Offers({
     try {
       await api("/api/producer/offers", {
         method: "PATCH",
+        saved: offer.enabled ? "تم تعطيل العرض" : "تم تفعيل العرض",
         body: JSON.stringify({
           id: offer.id,
           title: offer.title,
@@ -182,7 +189,7 @@ export function Offers({
         الموقع.
       </p>
       {manage && <Guard {...session} />}
-      <Message error={error} />
+      <Message error={error} success={success} />
       {!manage &&
         (session.user ? (
           <form onSubmit={savePreferences} className={s.form}>
@@ -348,7 +355,13 @@ export function Offers({
                 تفعيل العرض
               </label>
               <button className={s.button} disabled={busy}>
-                حفظ العرض
+                {busy
+                  ? editing
+                    ? "جارٍ الحفظ…"
+                    : "جارٍ الإضافة…"
+                  : editing
+                    ? "حفظ التعديلات"
+                    : "إضافة العرض"}
               </button>
               <button
                 className={s.button}

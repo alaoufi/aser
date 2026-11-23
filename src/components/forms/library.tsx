@@ -70,7 +70,12 @@ export function PhotoLibrary() {
     const body = new FormData(form);
     if (
       await run(
-        () => api("/api/producer/library", { method: "POST", body }),
+        () =>
+          api("/api/producer/library", {
+            method: "POST",
+            body,
+            saved: "تمت إضافة الصورة إلى مكتبتك",
+          }),
         "تمت إضافة الصورة إلى مكتبتك.",
       )
     )
@@ -123,7 +128,7 @@ export function PhotoLibrary() {
               <textarea name="description" maxLength={2000} rows={2} />
             </label>
             <button className={s.button} disabled={busy}>
-              {busy ? "جارٍ الرفع…" : "رفع إلى المكتبة"}
+              {busy ? "جارٍ الإضافة…" : "إضافة الصورة"}
             </button>
           </form>
           <Message error={error} success={success} />

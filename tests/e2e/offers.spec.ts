@@ -82,7 +82,7 @@ for (const width of [320, 1280]) {
         () => document.documentElement.scrollWidth <= innerWidth,
       ),
     ).toBe(true);
-    await form.getByRole("button", { name: "حفظ العرض" }).click();
+    await form.getByRole("button", { name: "إضافة العرض" }).click();
     await expect(
       page.getByRole("heading", { name: "فطور للمهتمين بعروض الطلاب" }),
     ).toBeVisible();

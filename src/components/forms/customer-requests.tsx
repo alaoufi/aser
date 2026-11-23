@@ -122,6 +122,7 @@ function CustomerSide({
     try {
       await api("/api/requests", {
         method: "POST",
+        saved: "تم نشر طلبك",
         body: JSON.stringify({
           body: f.get("body"),
           categoryId: f.get("categoryId") || null,
@@ -262,7 +263,10 @@ function CustomerSide({
                     if (!window.confirm("إغلاق الطلب؟ لن تراه الأسر بعدها."))
                       return;
                     try {
-                      await api(`/api/requests/${r.id}`, { method: "DELETE" });
+                      await api(`/api/requests/${r.id}`, {
+                        method: "DELETE",
+                        saved: "تم إغلاق الطلب",
+                      });
                       await load();
                     } catch (e) {
                       setError((e as Error).message);
