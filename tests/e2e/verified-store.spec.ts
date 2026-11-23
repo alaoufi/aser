@@ -50,3 +50,11 @@ test("the verified-store badge sits at the bottom-right and opens the certificat
     /^https:\/\/eauthenticate\.saudibusiness\.gov\.sa\/(certificate-details\/0000346762\?vt=|inquiry$)/,
   );
 });
+
+/** في صفحات الحساب والإدارة لا تظهر الشارة (لا تغطي الخرائط والنماذج). */
+test("the badge is not shown on account pages", async ({ page }) => {
+  await page.goto("/login");
+  await expect(page.locator(".verified-store")).toHaveCount(0);
+  await page.goto("/producers");
+  await expect(page.locator(".verified-store")).toHaveCount(1);
+});
