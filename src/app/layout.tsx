@@ -28,6 +28,7 @@ import {
   visitorTemplate,
 } from "@/server/settings";
 import { StoreBadges } from "@/components/public/store-badges";
+import { VerifiedStore } from "@/components/public/verified-store";
 import { dishPath, findDish } from "@/lib/dishes";
 import { TemplateSwitcher } from "@/components/public/template-switcher";
 import { VisitStats } from "@/components/public/visit-stats";
@@ -289,6 +290,7 @@ export default async function RootLayout({
                       texts["store.googlePlay"] || "احصل عليه من Google Play",
                   }}
                 />
+                <VerifiedStore />
               </div>
               <div>
                 <h3>اكتشف</h3>

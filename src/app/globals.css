@@ -715,7 +715,7 @@ img {
   font-size: 13px;
   margin-bottom: 15px;
 }
-.footer-top > div > a:not(.footer-brand) {
+.footer-top > div > a:not(.footer-brand):not(.verified-store) {
   display: block;
   font-size: 12px;
   color: var(--muted);
@@ -1587,7 +1587,7 @@ hr {
   .footer-top p {
     font-size: 12px;
   }
-  .footer-top > div > a:not(.footer-brand) {
+  .footer-top > div > a:not(.footer-brand):not(.verified-store) {
     font-size: 12px;
     padding-block: 3px;
   }
@@ -2201,7 +2201,7 @@ main small a:not([class]),
     font-size: 13px;
     line-height: 1.55;
   }
-  .footer-top > div > a:not(.footer-brand) {
+  .footer-top > div > a:not(.footer-brand):not(.verified-store) {
     font-size: 13px;
   }
 }
@@ -4269,4 +4269,51 @@ button.mine-seg {
   padding: 0;
   flex: none;
   border-radius: 50%;
+}
+
+/* شارة «متجر موثّق» في التذييل (المركز السعودي للأعمال، 8.2.2.0). */
+.verified-store {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 8px 16px 8px 12px;
+  min-height: 44px;
+  border-radius: 999px;
+  background: #1b2a5c;
+  color: #fff;
+  text-decoration: none;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  width: fit-content;
+  max-width: 100%;
+}
+.verified-store:hover,
+.verified-store:focus-visible {
+  background: #24376f;
+  color: #fff;
+}
+.verified-store-icon {
+  color: #fff;
+  flex: none;
+}
+.verified-store-text {
+  display: grid;
+  line-height: 1.15;
+}
+.verified-store-text strong {
+  font-size: 0.98rem;
+}
+.verified-store-text small {
+  font-size: 0.72rem;
+  opacity: 0.85;
+  letter-spacing: 0.04em;
+}
+.site-footer a.verified-store,
+.site-footer a.verified-store:hover {
+  color: #fff;
+  flex-direction: row;
+}
+.site-footer .verified-store-text strong,
+.site-footer .verified-store-text small {
+  color: #fff;
 }
