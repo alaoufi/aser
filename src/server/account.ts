@@ -14,7 +14,8 @@ export { DELETE_CONFIRMATION };
 
 /**
  * حذف الحساب من داخل التطبيق (شرط آبل وقوقل بلاي): يُحذف الحساب وكل متعلقاته نهائيًا
- * (الطلبات، العروض، المنتجات، التقييمات، بيانات الأسرة ومستنداتها، الإشعارات، الجلسات)،
+ * (الطلبات، العروض، المنتجات، التقييمات، بيانات الأسرة ومستنداتها، ملف المندوب وهويته، «دليلي»،
+ * طلباته المنشورة، اهتماماته، دعواته، اقتراحاته، أجهزة إشعاراته، الجلسات)،
  * وتبقى المحادثات وحدها كما هي للرجوع إليها عند النزاع.
  */
 export async function deleteAccount(user: SessionUser, input: unknown) {
@@ -71,6 +72,12 @@ export async function deleteAccount(user: SessionUser, input: unknown) {
         family.id,
       ]);
       await del("DELETE FROM jdatna.offers WHERE producer_id=$1", [family.id]);
+      // طلبات الاشتراك عند الأسرة، إلا ما صار عقدًا (العقود لا تُحذف أبدًا).
+      await del(
+        `DELETE FROM jdatna.subscription_requests s WHERE s.producer_id=$1
+           AND NOT EXISTS(SELECT 1 FROM jdatna.subscription_contracts c WHERE c.subscription_id=s.id)`,
+        [family.id],
+      );
       await del(
         "DELETE FROM jdatna.ratings WHERE (kind='family' AND target_id=$1) OR (kind='product' AND target_id=ANY($2::uuid[]))",
         [family.id, products],
@@ -103,6 +110,11 @@ export async function deleteAccount(user: SessionUser, input: unknown) {
         "producer_cooking_days",
         "producer_private",
         "photo_library",
+        "producer_brand",
+        "producer_subscription_plans",
+        "subscription_menu_items",
+        // الأسرة في «دليلي» عند الآخرين.
+        "directory_entries",
       ])
         await del(`DELETE FROM jdatna.${table} WHERE producer_id=$1`, [
           family.id,
@@ -136,6 +148,21 @@ export async function deleteAccount(user: SessionUser, input: unknown) {
           family.id,
         ]);
     }
+    // حساب المندوب: ملفه (الاسم، الهوية المشفرة، السيارة) ومراكزه وتوصيلاته، ويُحذف قبل مستنداته
+    // لأن ملفه يشير إلى صورة هويته.
+    const courier = (
+      await client.query<{ id: string }>(
+        "SELECT id FROM jdatna.courier_profiles WHERE user_id=$1",
+        [user.id],
+      )
+    ).rows[0];
+    await del("DELETE FROM jdatna.order_couriers WHERE courier_user_id=$1", [
+      user.id,
+    ]);
+    if (courier)
+      await del("DELETE FROM jdatna.courier_profiles WHERE id=$1", [
+        courier.id,
+      ]);
     const documents = (
       await client.query(
         "DELETE FROM jdatna.producer_documents WHERE user_id=$1 RETURNING object_key",
@@ -146,6 +173,22 @@ export async function deleteAccount(user: SessionUser, input: unknown) {
       "DELETE FROM jdatna.reports WHERE reporter_id=$1 AND producer_id IS NULL",
       "DELETE FROM jdatna.offer_preferences WHERE user_id=$1",
       "DELETE FROM jdatna.push_subscriptions WHERE user_id=$1",
+      "DELETE FROM jdatna.apns_devices WHERE user_id=$1",
+      "DELETE FROM jdatna.member_interests WHERE user_id=$1",
+      "DELETE FROM jdatna.member_product_views WHERE user_id=$1",
+      // «دليلي» له، وهو في «دليلي» عند الآخرين.
+      "DELETE FROM jdatna.directory_entries WHERE owner_id=$1 OR customer_id=$1",
+      // طلباته المنشورة للأسر.
+      "DELETE FROM jdatna.customer_requests WHERE user_id=$1",
+      // الدعوات: من دعاهم ومن دعاه.
+      "DELETE FROM jdatna.referrals WHERE referrer_id=$1 OR referred_id=$1",
+      // اقتراحاته (فيها اسمه ووسيلة تواصله).
+      "DELETE FROM jdatna.suggestions WHERE user_id=$1",
+      // طلبات اشتراكه كعميل، إلا ما صار عقدًا.
+      `DELETE FROM jdatna.subscription_requests s WHERE s.user_id=$1
+         AND NOT EXISTS(SELECT 1 FROM jdatna.subscription_contracts c WHERE c.subscription_id=s.id)`,
+      // سجل الأمان يبقى للحماية، بلا ربط بالحساب.
+      "UPDATE jdatna.security_events SET user_id=NULL WHERE user_id=$1",
       "DELETE FROM jdatna.sessions WHERE user_id=$1",
     ])
       await del(sql, [user.id]);
