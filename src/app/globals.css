@@ -4284,68 +4284,59 @@ button.mine-seg {
 .verified-seal > * {
   pointer-events: auto;
 }
-/*
- * على الجوال: فوق «حسابي» تمامًا (آخر خانات القائمة السفلية الخمس، في طرفها الأيسر)، بشكل مدمج:
- * الشعار وتحته «موثّق»، وعرضه 64px متمركز على وسط الخانة (10vw من اليسار).
- */
+/* على الجوال: فوق «حسابي» (طرف القائمة السفلية الأيسر). */
 @media (max-width: 760px) {
   body:has(.bottom-nav) .verified-seal {
     right: auto;
-    left: max(4px, calc(10vw - 32px));
+    left: 8px;
     bottom: calc(80px + env(safe-area-inset-bottom));
   }
-  body:has(.bottom-nav) .verified-store {
-    flex-direction: column;
-    gap: 2px;
-    width: 64px;
-    padding: 6px 4px;
-    border-radius: 16px;
-    justify-content: center;
-  }
-  body:has(.bottom-nav) .verified-store-text {
-    text-align: center;
-  }
-  body:has(.bottom-nav) .verified-store-text strong {
-    font-size: 0.72rem;
-  }
-  body:has(.bottom-nav) .verified-store-text small {
-    display: none;
-  }
 }
+/* بشكل ختم المركز السعودي للأعمال الرسمي (EAuthSealApi): كبسولة كحلية وشعار في مربع أبيض. */
 .verified-store {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 14px 6px 10px;
   min-height: 44px;
+  padding: 7px 14px;
   border-radius: 999px;
-  background: #1b2a5c;
+  background: linear-gradient(160deg, #0a1f63 0%, #081b38 100%);
+  border: 1px solid rgb(255 255 255 / 0.18);
+  box-shadow: 0 4px 14px rgb(2 8 30 / 0.4);
   color: #fff;
   text-decoration: none;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 4px 14px rgb(27 42 92 / 0.28);
+  white-space: nowrap;
+  transition:
+    box-shadow 0.15s ease,
+    transform 0.15s ease,
+    border-color 0.15s ease;
 }
 .verified-store:hover,
 .verified-store:focus-visible {
-  background: #24376f;
   color: #fff;
+  border-color: #47cd89;
+  box-shadow: 0 8px 22px rgb(2 8 30 / 0.55);
+  transform: translateY(-1px);
 }
-.verified-store-icon {
-  color: #fff;
+.verified-store-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  background: #fff;
+  border-radius: 7px;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.35);
   flex: none;
 }
+.verified-store-chip img {
+  width: 20px;
+  height: 22px;
+}
 .verified-store-text {
-  display: grid;
-  line-height: 1.1;
+  font-weight: 700;
+  font-size: 0.95rem;
   color: #fff;
-}
-.verified-store-text strong {
-  font-size: 0.86rem;
-}
-.verified-store-text small {
-  font-size: 0.66rem;
-  opacity: 0.85;
-  letter-spacing: 0.04em;
 }
 @media print {
   .verified-seal {
