@@ -50,6 +50,15 @@ test.describe("domain verification meta tag", () => {
       '<meta name="domain-verification" content="3007acd4be257a0dc8ad617c6e49eb126d3ca8ea713b6f1f1455050fd8380cf5"/>',
     );
     expect(after).not.toContain(code);
+    // رمز jdtna.sa الثابت في الكود يظهر دائمًا، بالصيغتين (طلب المالك 2026-11-23).
+    for (const h of [head, after.slice(0, after.indexOf("</head>"))]) {
+      expect(h).toContain(
+        '<meta name="domain-verification" content="fe7d1c310cddeda07c92b84334ce1e570264715ccc2dc4621c5b348d2fd40926"/>',
+      );
+      expect(h).toContain(
+        '<meta name="domain-verification" content="fe7d1c310cddeda07c92b84334ce1e570264715ccc2dc4621c5b348d2fd40926">',
+      );
+    }
   });
 });
 

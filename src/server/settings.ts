@@ -381,6 +381,20 @@ const DOMAIN_VERIFICATION_KEY = "verify:domain";
  */
 const DOMAIN_VERIFICATION_DEFAULT =
   "3007acd4be257a0dc8ad617c6e49eb126d3ca8ea713b6f1f1455050fd8380cf5";
+/**
+ * رموز ثابتة في الكود تظهر دائمًا مع رمز الإدارة (طلب المالك 2026-11-23: «هذا الكود تضيفه على الكود»).
+ * الرمز الذي أرسله المالك 2026-11-23 للمركز السعودي للأعمال (لنطاق jdtna.sa).
+ */
+export const DOMAIN_VERIFICATION_FIXED = [
+  "fe7d1c310cddeda07c92b84334ce1e570264715ccc2dc4621c5b348d2fd40926",
+];
+/** كل رموز إثبات الملكية في الصفحة: رمز الإدارة (أو الافتراضي) ثم الثابتة، بلا تكرار. */
+export async function getDomainVerifications(): Promise<string[]> {
+  const stored = await getDomainVerification();
+  return [...new Set([stored, ...DOMAIN_VERIFICATION_FIXED])].filter((c) =>
+    /^[A-Za-z0-9._:-]+$/.test(c),
+  );
+}
 export async function getDomainVerification(): Promise<string> {
   if (!databaseConfigured()) return DOMAIN_VERIFICATION_DEFAULT;
   try {

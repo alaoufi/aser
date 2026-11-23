@@ -4187,3 +4187,28 @@ button.mine-seg {
 .directory-head .member-no {
   flex-basis: 100%;
 }
+
+/* إثبات ملكية النطاق: الرمز الطويل يلتف داخل الصفحة على الجوال، وزر «حفظ» ظاهر (8.1.0.3). */
+.domain-verify {
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.domain-verify textarea {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
+  word-break: break-all;
+}
+.domain-verify code {
+  display: block;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-all;
+}
+.domain-verify p,
+.domain-verify button {
+  max-width: 100%;
+  min-width: 0;
+}
