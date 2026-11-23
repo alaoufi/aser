@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { forwardRef, useEffect, useRef, useState } from "react";
 
 /**
  * شارة «متجر موثّق» ثابتة في زاوية الصفحة اليمنى السفلى (طلب المالك 2026-11-23).
@@ -59,6 +59,7 @@ export function VerifiedStore() {
     };
   }, []);
   const official = Boolean(seal);
+  const dialog = useRef<HTMLDialogElement>(null);
   return (
     <div className="verified-seal" data-official={official || undefined}>
       {listening && seal !== false && (
@@ -76,39 +77,153 @@ export function VerifiedStore() {
         />
       )}
       {!official && (
-        <a
+        <button
+          type="button"
           className="verified-store"
-          href={VERIFICATION_INQUIRY}
-          target="_blank"
-          rel="noopener noreferrer"
+          aria-haspopup="dialog"
           aria-label={`متجر موثّق في المركز السعودي للأعمال، رقم الشهادة ${VERIFICATION_NUMBER}`}
+          onClick={() => dialog.current?.showModal()}
         >
-          <svg
-            viewBox="0 0 24 24"
-            width="22"
-            height="22"
-            aria-hidden="true"
-            className="verified-store-icon"
-          >
-            <path
-              fill="currentColor"
-              d="M12 1.5l2.4 1.8 3-.2.9 2.9 2.5 1.7-1 2.8 1 2.8-2.5 1.7-.9 2.9-3-.2L12 20.5l-2.4-1.8-3 .2-.9-2.9-2.5-1.7 1-2.8-1-2.8 2.5-1.7.9-2.9 3 .2z"
-            />
-            <path
-              fill="none"
-              stroke="#1b2a5c"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M7.8 11.2l2.8 2.8 5.6-5.6"
-            />
-          </svg>
+          <SealIcon />
           <span className="verified-store-text">
             <strong>متجر موثّق</strong>
             <small dir="ltr">{VERIFICATION_NUMBER}</small>
           </span>
-        </a>
+        </button>
       )}
+      <CertificateDialog ref={dialog} />
     </div>
   );
 }
+
+/**
+ * بيانات الشهادة كما في منصة المركز السعودي للأعمال (تحقق منها 2026-11-23). المنصة تحمي بياناتها
+ * باختبار تحقق آلي، فلا تُجلب تلقائيًا: تُعرض هنا ثابتة، وزر «تحقق في المنصة» ينسخ الرقم ويفتح الاستعلام الرسمي.
+ */
+export const CERTIFICATE = {
+  storeName: "جدتنا – jdatna",
+  storeUrl: "https://jdatna.com",
+  linkedTo: "سجل تجاري",
+  expires: "2027-01-09",
+  checkedAt: "2026-11-23",
+};
+const day = (iso: string) => iso.split("-").reverse().join("/");
+
+function SealIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="22"
+      height="22"
+      aria-hidden="true"
+      className="verified-store-icon"
+    >
+      <path
+        fill="currentColor"
+        d="M12 1.5l2.4 1.8 3-.2.9 2.9 2.5 1.7-1 2.8 1 2.8-2.5 1.7-.9 2.9-3-.2L12 20.5l-2.4-1.8-3 .2-.9-2.9-2.5-1.7 1-2.8-1-2.8 2.5-1.7.9-2.9 3 .2z"
+      />
+      <path
+        fill="none"
+        stroke="#1b2a5c"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M7.8 11.2l2.8 2.8 5.6-5.6"
+      />
+    </svg>
+  );
+}
+
+const CertificateDialog = forwardRef<HTMLDialogElement>(
+  function CertificateDialog(_, ref) {
+    const [copied, setCopied] = useState(false);
+    const valid =
+      new Date() < new Date(`${CERTIFICATE.expires}T23:59:59+03:00`);
+    return (
+      // biome-ignore lint/a11y/useKeyWithClickEvents: الضغط على الخلفية للفأرة واللمس فقط؛ لوحة المفاتيح تغلق بـ Esc وزر «إغلاق»
+      <dialog
+        ref={ref}
+        className="certificate-dialog"
+        aria-labelledby="certificate-title"
+        onClick={(e) => {
+          // الضغط خارج البطاقة يغلقها.
+          if (e.target === e.currentTarget) e.currentTarget.close();
+        }}
+      >
+        <div className="certificate-card">
+          <button
+            type="button"
+            className="certificate-close"
+            aria-label="إغلاق"
+            onClick={(e) =>
+              (e.currentTarget.closest("dialog") as HTMLDialogElement).close()
+            }
+          >
+            ✕
+          </button>
+          <SealIcon />
+          <h2 id="certificate-title">متجر موثّق</h2>
+          <p className="certificate-sub">
+            شهادة توثيق المتجر الإلكتروني من المركز السعودي للأعمال
+          </p>
+          <dl className="certificate-data">
+            <div>
+              <dt>اسم المتجر</dt>
+              <dd>{CERTIFICATE.storeName}</dd>
+            </div>
+            <div>
+              <dt>رقم شهادة التوثيق</dt>
+              <dd dir="ltr">{VERIFICATION_NUMBER}</dd>
+            </div>
+            <div>
+              <dt>حالة الشهادة</dt>
+              <dd>
+                <span
+                  className="certificate-status"
+                  data-valid={valid || undefined}
+                >
+                  {valid ? "سارية" : "انتهت — تحقق من المنصة"}
+                </span>
+              </dd>
+            </div>
+            <div>
+              <dt>تاريخ انتهاء الصلاحية</dt>
+              <dd dir="ltr">{day(CERTIFICATE.expires)}</dd>
+            </div>
+            <div>
+              <dt>رابط المتجر المسجل</dt>
+              <dd dir="ltr">{CERTIFICATE.storeUrl}</dd>
+            </div>
+            <div>
+              <dt>ارتباط الشهادة</dt>
+              <dd>{CERTIFICATE.linkedTo}</dd>
+            </div>
+          </dl>
+          <a
+            className="certificate-verify"
+            href={VERIFICATION_INQUIRY}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => {
+              navigator.clipboard
+                ?.writeText(VERIFICATION_NUMBER)
+                .then(() => setCopied(true))
+                .catch(() => {});
+            }}
+          >
+            تحقق في منصة المركز السعودي للأعمال
+          </a>
+          <p className="certificate-hint" aria-live="polite">
+            {copied
+              ? "نُسخ رقم الشهادة ✓ الصقه في خانة البحث في المنصة."
+              : "يُنسخ رقم الشهادة عند الضغط، فالصقه في خانة البحث في المنصة."}
+          </p>
+          <p className="certificate-checked">
+            آخر تحقق من بيانات المنصة:{" "}
+            <span dir="ltr">{day(CERTIFICATE.checkedAt)}</span>
+          </p>
+        </div>
+      </dialog>
+    );
+  },
+);
