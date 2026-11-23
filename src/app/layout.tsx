@@ -23,7 +23,7 @@ import {
   APP_STORE_URL,
   PLAY_STORE_URL,
   getAppLinks,
-  getDomainVerification,
+  getDomainVerifications,
   getSiteTexts,
   visitorTemplate,
 } from "@/server/settings";
@@ -111,15 +111,15 @@ const siteMetadata: Metadata = {
  * <meta name="domain-verification" content="…"> في <head> كل صفحة، ومنها الرئيسية.
  */
 export async function generateMetadata(): Promise<Metadata> {
-  const domain = await getDomainVerification();
-  if (!domain) return siteMetadata;
+  const codes = await getDomainVerifications();
+  if (!codes.length) return siteMetadata;
   return {
     ...siteMetadata,
     verification: {
       ...siteMetadata.verification,
       other: {
         ...siteMetadata.verification?.other,
-        "domain-verification": domain,
+        "domain-verification": codes,
       },
     },
   };
@@ -140,11 +140,11 @@ export default async function RootLayout({
     type: "font/woff2",
     crossOrigin: "anonymous",
   });
-  const [template, texts, appLinks, domainCode] = await Promise.all([
+  const [template, texts, appLinks, domainCodes] = await Promise.all([
     visitorTemplate(),
     getSiteTexts(),
     getAppLinks(),
-    getDomainVerification(),
+    getDomainVerifications(),
   ]);
   return (
     <html
@@ -159,12 +159,14 @@ export default async function RootLayout({
         داخل noscript: الفاحصات التي لا تشغّل JavaScript تقرؤه وسمًا في <head>، والمتصفح يتجاهله.
         الرمز حروف وأرقام فقط (parseDomainVerification)، فلا يُحقن به شيء.
       */}
-      {domainCode && /^[A-Za-z0-9._:-]+$/.test(domainCode) && (
+      {domainCodes.length > 0 && (
         <head>
           <noscript
-            // biome-ignore lint/security/noDangerouslySetInnerHtml: الرمز مقيّد بحروف وأرقام، والوسم يجب أن يُكتب حرفيًا
+            // biome-ignore lint/security/noDangerouslySetInnerHtml: الرموز مقيّدة بحروف وأرقام (getDomainVerifications)، والوسم يجب أن يُكتب حرفيًا
             dangerouslySetInnerHTML={{
-              __html: `<meta name="domain-verification" content="${domainCode}">`,
+              __html: domainCodes
+                .map((c) => `<meta name="domain-verification" content="${c}">`)
+                .join(""),
             }}
           />
         </head>
