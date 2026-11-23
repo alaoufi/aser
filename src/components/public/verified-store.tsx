@@ -25,7 +25,7 @@ export function VerifiedStore() {
   const [seal, setSeal] = useState<null | false | { w: number; h: number }>(
     null,
   );
-  // الإطار بعد ربط المستمع فقط، حتى لا يفوتنا رد المنصة قبل تهيئة الصفحة.
+  // الإطار بعد ربط المستمع، وبعد اكتمال الصفحة بأربع ثوانٍ.
   const [listening, setListening] = useState(false);
   useEffect(() => {
     const on = (e: MessageEvent) => {
@@ -45,8 +45,18 @@ export function VerifiedStore() {
         }));
     };
     window.addEventListener("message", on);
-    setListening(true);
-    return () => window.removeEventListener("message", on);
+    // الختم من موقع خارجي: يُحمَّل بعد اكتمال الصفحة وهدوئها، فلا يؤخر تحميلها ولا يُبقيها «تحمّل».
+    let timer = 0;
+    const start = () => {
+      timer = window.setTimeout(() => setListening(true), 4000);
+    };
+    if (document.readyState === "complete") start();
+    else window.addEventListener("load", start, { once: true });
+    return () => {
+      window.removeEventListener("message", on);
+      window.removeEventListener("load", start);
+      window.clearTimeout(timer);
+    };
   }, []);
   const official = Boolean(seal);
   return (

@@ -14,6 +14,9 @@ test("the verified-store badge sits fixed at the bottom-right corner", async ({
     }),
   );
   await page.goto("/");
+  // لا إطار خارجي قبل اكتمال الصفحة (اختبارات أخرى تنتظر هدوء الشبكة).
+  await page.waitForLoadState("networkidle");
+  await expect(page.locator(".verified-seal-frame")).toHaveCount(0);
   const badge = page.getByRole("link", {
     name: "متجر موثّق في المركز السعودي للأعمال، رقم الشهادة 0000346762",
   });
@@ -24,7 +27,8 @@ test("the verified-store badge sits fixed at the bottom-right corner", async ({
     "https://eauthenticate.saudibusiness.gov.sa/inquiry",
   );
   await expect(badge).toHaveAttribute("target", "_blank");
-  // «أخفِ» من المنصة: لا يبقى إطار الختم.
+  // الختم يُطلب بعد اكتمال الصفحة (لا يؤخر تحميلها)، و«أخفِ» من المنصة تحذف إطاره.
+  await page.waitForRequest(/EAuthSealApi\/seal\?token=/, { timeout: 15000 });
   await expect(page.locator(".verified-seal-frame")).toHaveCount(0);
   // ثابتة في الزاوية اليمنى السفلى وهي ظاهرة بلا تمرير.
   const box = (await badge.boundingBox())!;
