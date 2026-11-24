@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { api, useSession } from "@/components/forms/shared";
+import { api, useSession } from "@/components/forms/session";
 import { stopPushOnLogout } from "./push-setup";
 
 /** «خروج»: يظهر للمسجّل فقط، ويُخرجه من هذا الجهاز ثم يعيده للرئيسية. */

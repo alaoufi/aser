@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { api, useSession } from "@/components/forms/shared";
+import { api, useSession } from "@/components/forms/session";
 
 /**
  * «لوحة الإدارة» في قائمة الحساب (مثل «أي خدمة»، AdminPanelLink): دخول واحد، فمن له صلاحيات إدارية

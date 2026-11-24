@@ -1,7 +1,7 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { api } from "@/components/forms/shared";
+import { api } from "@/components/forms/session";
 import type { MineChoices } from "@/server/page-member";
 import type { MemberScope } from "@/server/member-scope";
 

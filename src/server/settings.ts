@@ -389,12 +389,13 @@ export const DOMAIN_VERIFICATION_FIXED = [
   "fe7d1c310cddeda07c92b84334ce1e570264715ccc2dc4621c5b348d2fd40926",
 ];
 /** كل رموز إثبات الملكية في الصفحة: رمز الإدارة (أو الافتراضي) ثم الثابتة، بلا تكرار. */
-export async function getDomainVerifications(): Promise<string[]> {
+// cache: الصفحة تطلبه مرتين (metadata والـ layout)، فيُقرأ من القاعدة مرة واحدة لكل طلب.
+export const getDomainVerifications = cache(async (): Promise<string[]> => {
   const stored = await getDomainVerification();
   return [...new Set([stored, ...DOMAIN_VERIFICATION_FIXED])].filter((c) =>
     /^[A-Za-z0-9._:-]+$/.test(c),
   );
-}
+});
 export async function getDomainVerification(): Promise<string> {
   if (!databaseConfigured()) return DOMAIN_VERIFICATION_DEFAULT;
   try {

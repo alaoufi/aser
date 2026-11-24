@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { SAVED_EVENT } from "@/components/forms/shared";
+import { SAVED_EVENT } from "@/components/forms/session";
 
 /** رسالة «✓ تم الحفظ» تظهر أسفل الشاشة بعد كل حفظ ناجح في أي مكان بالموقع. */
 export function SaveToast() {

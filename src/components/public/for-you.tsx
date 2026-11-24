@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import type { Product } from "@/lib/types";
-import { useSession } from "@/components/forms/shared";
+import { useSession } from "@/components/forms/session";
 import { ProductCard } from "./ui";
 
 type Suggestion = { product: Product; reason: string };

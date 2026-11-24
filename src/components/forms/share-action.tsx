@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { api } from "./shared";
+import { api } from "./session";
 
 /**
  * زر مشاركة في لوحة الأسرة: يجلب الرابط المختصر، ثم يفتح قائمة المشاركة في الجوال
