@@ -14,11 +14,12 @@ plutil -replace NSPhotoLibraryUsageDescription -string "لاختيار صور م
 plutil -replace NSCameraUsageDescription -string "لتصوير منتجاتك ورفع صورها." "$PLIST"
 plutil -replace ITSAppUsesNonExemptEncryption -bool NO "$PLIST"
 plutil -replace UIBackgroundModes -json '["remote-notification"]' "$PLIST"
-plutil -replace WKAppBoundDomains -json '["jdatna.com"]' "$PLIST"
+# النطاق الأساسي jdtna.sa (قرار المالك 2026-11-24)، وjdatna.com للروابط القديمة.
+plutil -replace WKAppBoundDomains -json '["jdtna.sa","jdatna.com"]' "$PLIST"
 plutil -replace UISupportedInterfaceOrientations -json '["UIInterfaceOrientationPortrait"]' "$PLIST"
 plutil -remove "UISupportedInterfaceOrientations~ipad" "$PLIST" 2>/dev/null || true
 
-# الإشعارات الأصلية وروابط jdatna.com تفتح التطبيق مباشرة.
+# الإشعارات الأصلية، وروابط jdtna.sa وjdatna.com تفتح التطبيق مباشرة.
 cat > $APP/App.entitlements <<'XML'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -27,6 +28,8 @@ cat > $APP/App.entitlements <<'XML'
   <key>aps-environment</key><string>production</string>
   <key>com.apple.developer.associated-domains</key>
   <array>
+    <string>applinks:jdtna.sa</string>
+    <string>webcredentials:jdtna.sa</string>
     <string>applinks:jdatna.com</string>
     <string>webcredentials:jdatna.com</string>
   </array>
