@@ -1,6 +1,7 @@
 # بناء تطبيق أندرويد (ملف .aab موقّع) من store/android/twa-manifest.json، بلا PWABuilder.
 # يدويًا: Actions ← «بناء تطبيق أندرويد» ← Run workflow. الناتج يُنزَّل من صفحة التشغيل (Artifacts)
-# ويرفعه المالك بنفسه في Play Console. السير لا يرفع شيئًا إلى المتجر.
+# ويرفعه المالك بنفسه في Play Console، أو يختار «upload» عند التشغيل فيُرفع إلى الإنتاج ويُرسل للمراجعة
+# (android/play/upload.cjs بحساب الخدمة PLAY_SERVICE_ACCOUNT_JSON). بلا اختيار لا يُرفع شيء.
 # الأسرار (يضيفها المالك من جهازه: Settings ← Secrets and variables ← Actions):
 #   ANDROID_KEYSTORE_BASE64: ملف android.keystore بترميز base64.
 #   ANDROID_KEYSTORE_PASSWORD: كلمة مرور الملف.
@@ -9,6 +10,11 @@
 name: بناء تطبيق أندرويد
 on:
   workflow_dispatch:
+    inputs:
+      upload:
+        description: "رفع الملف إلى Google Play (الإنتاج) وإرساله للمراجعة"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -53,7 +59,11 @@ jobs:
             exit 1
           fi
           export KEYSTORE="$RUNNER_TEMP/upload.keystore"
-          echo "$KEYSTORE_BASE64" | base64 -d > "$KEYSTORE"
+          # المسافات وأسطر Windows من اللصق لا تُفسد الملف.
+          if ! printf '%s' "$KEYSTORE_BASE64" | tr -d ' \r\n' | base64 -d > "$KEYSTORE" 2>/dev/null; then
+            echo "السر ANDROID_KEYSTORE_BASE64 ليس نص base64 صالحًا. أعد نسخه بأمر PowerShell ولصقه." >&2
+            exit 1
+          fi
           version=$(node -p 'const m=require("./store/android/twa-manifest.json");m.appVersion+"-"+m.appVersionCode')
           out="$RUNNER_TEMP/jdatna-$version.aab"
           cp "$RUNNER_TEMP/app/app/build/outputs/bundle/release/app-release.aab" "$out"
@@ -68,3 +78,12 @@ jobs:
           path: ${{ runner.temp }}/jdatna-*.aab
           retention-days: 7
           if-no-files-found: error
+      - name: الرفع إلى Google Play
+        if: ${{ inputs.upload }}
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          PLAY_PACKAGE: com.jdatna.app
+        run: |
+          name=$(node -p 'require("./store/android/twa-manifest.json").appVersion')
+          code=$(node -p 'require("./store/android/twa-manifest.json").appVersionCode')
+          node android/play/upload.cjs "$RUNNER_TEMP/jdatna-$name-$code.aab" production "$name" "$code"
