@@ -318,8 +318,32 @@ async function saveProfileRecord(user: SessionUser, input: unknown) {
           privateKey(),
         );
     }
+    // آخر مستند أهلية قبل هذا الحفظ: تغييره يعيد الأسرة للمراجعة.
+    const previous = existing
+      ? (
+          await client.query(
+            "SELECT document_id,document_type,document_number,document_expires_at FROM jdatna.producer_verifications WHERE producer_id=$1 ORDER BY created_at DESC LIMIT 1",
+            [id],
+          )
+        ).rows[0]
+      : null;
+    // بلا مستند (null) في المرتين يُعدّ المستند نفسه.
+    const sameDocument =
+      Boolean(previous) &&
+      (previous.document_id ?? null) === (value.documentId ?? null) &&
+      (previous.document_type ?? null) === (value.documentType ?? null);
+    // قرار المالك 2026-11-24: الأسرة المعتمدة تبقى ظاهرة بتعديلاتها العادية (الوصف، الجوال، الحي،
+    // طرق التسليم...). تغيير الاسم التجاري أو مستند الأهلية فقط يعيدها «بانتظار الاعتماد».
+    // كانت كل تعديلات الملف تعيدها للمراجعة فتختفي من الموقع حتى يعيد المشرف اعتمادها.
+    const sameTradeName =
+      value.tradeName === undefined ||
+      (value.tradeName ?? "").trim() === (existing?.trade_name ?? "").trim();
+    const keepApproved =
+      existing?.status === "approved" && sameTradeName && sameDocument;
     await client.query(
-      `INSERT INTO jdatna.producer_profiles(id,user_id,slug,name,description,city_id,neighborhood,phone,whatsapp,delivery,pickup,trade_name) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) ON CONFLICT(user_id) DO UPDATE SET name=EXCLUDED.name,description=EXCLUDED.description,city_id=EXCLUDED.city_id,neighborhood=EXCLUDED.neighborhood,phone=EXCLUDED.phone,whatsapp=EXCLUDED.whatsapp,delivery=EXCLUDED.delivery,pickup=EXCLUDED.pickup,trade_name=EXCLUDED.trade_name,status='pending',verified=false,updated_at=now()`,
+      `INSERT INTO jdatna.producer_profiles(id,user_id,slug,name,description,city_id,neighborhood,phone,whatsapp,delivery,pickup,trade_name) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) ON CONFLICT(user_id) DO UPDATE SET name=EXCLUDED.name,description=EXCLUDED.description,city_id=EXCLUDED.city_id,neighborhood=EXCLUDED.neighborhood,phone=EXCLUDED.phone,whatsapp=EXCLUDED.whatsapp,delivery=EXCLUDED.delivery,pickup=EXCLUDED.pickup,trade_name=EXCLUDED.trade_name,
+        status=CASE WHEN $13 THEN jdatna.producer_profiles.status ELSE 'pending' END,
+        verified=CASE WHEN $13 THEN jdatna.producer_profiles.verified ELSE false END,updated_at=now()`,
       [
         id,
         user.id,
@@ -341,6 +365,7 @@ async function saveProfileRecord(user: SessionUser, input: unknown) {
         value.tradeName === undefined
           ? (existing?.trade_name ?? null)
           : value.tradeName,
+        keepApproved,
       ],
     );
     if (encrypted)
@@ -362,17 +387,6 @@ async function saveProfileRecord(user: SessionUser, input: unknown) {
             : null,
         ],
       );
-    const previous = existing
-      ? (
-          await client.query(
-            "SELECT document_id,document_type,document_number,document_expires_at FROM jdatna.producer_verifications WHERE producer_id=$1 ORDER BY created_at DESC LIMIT 1",
-            [id],
-          )
-        ).rows[0]
-      : null;
-    const sameDocument =
-      previous?.document_id === value.documentId &&
-      previous?.document_type === value.documentType;
     await client.query(
       "INSERT INTO jdatna.producer_verifications(id,producer_id,document_id,document_type,document_number,document_expires_at,reason) VALUES($1,$2,$3,$4,$5,$6,$7)",
       [
@@ -444,10 +458,11 @@ async function saveProfileRecord(user: SessionUser, input: unknown) {
     );
     return {
       id,
-      status: "pending" as const,
+      status: keepApproved ? ("approved" as const) : ("pending" as const),
       name: (value.tradeName || value.name) as string,
       // ينبّه المشرفين حين يدخل الملف قائمة الانتظار، لا مع كل تعديل وهو فيها.
-      newlyPending: !existing || existing.status !== "pending",
+      newlyPending:
+        !keepApproved && (!existing || existing.status !== "pending"),
     };
   });
 }
