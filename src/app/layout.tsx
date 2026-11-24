@@ -29,6 +29,7 @@ import {
   visitorTemplate,
 } from "@/server/settings";
 import { StoreBadges } from "@/components/public/store-badges";
+import { NavProgress } from "@/components/public/nav-progress";
 import { VerifiedStore } from "@/components/public/verified-store";
 import { VerifiedStoreGate } from "@/components/public/verified-store-gate";
 import { dishPath, findDish } from "@/lib/dishes";
@@ -272,6 +273,7 @@ export default async function RootLayout({
         </SiteOnly>
         <main id="main">{children}</main>
         <BottomNav guest={guest} />
+        <NavProgress />
         <SaveToast />
         <SiteOnly>
           <FamilyWelcome texts={texts} />

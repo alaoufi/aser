@@ -4343,3 +4343,30 @@ button.mine-seg {
     display: none;
   }
 }
+
+/* شريط تقدم التنقل أعلى الصفحة (8.3.1.0). */
+.nav-progress {
+  position: fixed;
+  inset-inline: 0;
+  top: 0;
+  height: 3px;
+  z-index: 100;
+  pointer-events: none;
+  background: linear-gradient(90deg, #d6a35c, #9c2f1e);
+  transform-origin: right;
+  animation: nav-progress 1.6s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+}
+@keyframes nav-progress {
+  from {
+    transform: scaleX(0.05);
+  }
+  to {
+    transform: scaleX(0.9);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav-progress {
+    animation: none;
+    transform: scaleX(0.6);
+  }
+}
