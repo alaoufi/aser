@@ -14,14 +14,43 @@
   "maskableIconUrl": "https://jdtna.sa/brand/app-icon-maskable-512.png",
   "webManifestUrl": "https://jdtna.sa/manifest.webmanifest",
   "fallbackType": "customtabs",
-  "features": { "locationDelegation": { "enabled": true } },
+  "features": {
+    "locationDelegation": {
+      "enabled": true
+    }
+  },
   "shortcuts": [
-    { "name": "مائدة اليوم", "url": "/table" },
-    { "name": "المحادثات", "url": "/messages" },
-    { "name": "طلباتي", "url": "/orders" }
+    {
+      "name": "مائدة اليوم",
+      "url": "/table",
+      "shortName": "مائدة اليوم",
+      "chosenIconUrl": "https://jdtna.sa/brand/app-icon-192.png"
+    },
+    {
+      "name": "المحادثات",
+      "url": "/messages",
+      "shortName": "المحادثات",
+      "chosenIconUrl": "https://jdtna.sa/brand/app-icon-192.png"
+    },
+    {
+      "name": "طلباتي",
+      "url": "/orders",
+      "shortName": "طلباتي",
+      "chosenIconUrl": "https://jdtna.sa/brand/app-icon-192.png"
+    }
   ],
-  "appVersionName": "1.0.1",
+  "appVersion": "1.0.1",
   "appVersionCode": 2,
   "minSdkVersion": 21,
-  "signingKey": { "path": "./android.keystore", "alias": "jdatna" }
+  "signingKey": {
+    "path": "./android.keystore",
+    "alias": "jdatna"
+  },
+  "themeColorDark": "#2E1D12",
+  "navigationColorDark": "#2E1D12",
+  "navigationDividerColor": "#2E1D12",
+  "navigationDividerColorDark": "#2E1D12",
+  "splashScreenFadeOutDuration": 300,
+  "enableSiteSettingsShortcut": true,
+  "generatorApp": "jdatna-ci"
 }

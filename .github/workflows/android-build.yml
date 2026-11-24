@@ -1,0 +1,70 @@
+# بناء تطبيق أندرويد (ملف .aab موقّع) من store/android/twa-manifest.json، بلا PWABuilder.
+# يدويًا: Actions ← «بناء تطبيق أندرويد» ← Run workflow. الناتج يُنزَّل من صفحة التشغيل (Artifacts)
+# ويرفعه المالك بنفسه في Play Console. السير لا يرفع شيئًا إلى المتجر.
+# الأسرار (يضيفها المالك من جهازه: Settings ← Secrets and variables ← Actions):
+#   ANDROID_KEYSTORE_BASE64: ملف android.keystore بترميز base64.
+#   ANDROID_KEYSTORE_PASSWORD: كلمة مرور الملف.
+#   ANDROID_KEY_PASSWORD: كلمة مرور الاسم المستعار jdatna.
+# المفتاح يُفحص قبل التوقيع: بصمته يجب أن تطابق بصمة التطبيق المعروفة (store/android/sign.sh).
+name: بناء تطبيق أندرويد
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-build
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Android SDK
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;35.0.0" > /dev/null
+      - name: توليد المشروع
+        run: |
+          npm install --no-save --prefix "$RUNNER_TEMP/bw" @bubblewrap/core@1.24.1
+          NODE_PATH="$RUNNER_TEMP/bw/node_modules" node store/android/generate.cjs "$RUNNER_TEMP/app"
+      - name: البناء
+        working-directory: ${{ runner.temp }}/app
+        run: |
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          chmod +x gradlew
+          ./gradlew --no-daemon bundleRelease
+      - name: التوقيع
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ] || [ -z "$KEYSTORE_PASSWORD" ] || [ -z "$KEY_PASSWORD" ]; then
+            echo "أضف الأسرار الثلاثة أولًا: ANDROID_KEYSTORE_BASE64 وANDROID_KEYSTORE_PASSWORD وANDROID_KEY_PASSWORD" >&2
+            exit 1
+          fi
+          export KEYSTORE="$RUNNER_TEMP/upload.keystore"
+          echo "$KEYSTORE_BASE64" | base64 -d > "$KEYSTORE"
+          version=$(node -p 'const m=require("./store/android/twa-manifest.json");m.appVersion+"-"+m.appVersionCode')
+          out="$RUNNER_TEMP/jdatna-$version.aab"
+          cp "$RUNNER_TEMP/app/app/build/outputs/bundle/release/app-release.aab" "$out"
+          alias=$(node -p 'require("./store/android/twa-manifest.json").signingKey.alias')
+          status=0
+          bash store/android/sign.sh "$out" "$alias" || status=$?
+          rm -f "$KEYSTORE"
+          exit $status
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jdatna-android
+          path: ${{ runner.temp }}/jdatna-*.aab
+          retention-days: 7
+          if-no-files-found: error
