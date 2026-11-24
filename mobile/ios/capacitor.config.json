@@ -3,9 +3,9 @@
   "appName": "أكلات جدتنا",
   "webDir": "www",
   "server": {
-    "url": "https://jdatna.com/?source=ios",
+    "url": "https://jdtna.sa/?source=ios",
     "cleartext": false,
-    "allowNavigation": ["jdatna.com"],
+    "allowNavigation": ["jdtna.sa", "jdatna.com"],
     "errorPath": "offline.html"
   },
   "ios": {
