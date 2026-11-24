@@ -11,7 +11,7 @@ import {
 import { passwordLogin } from "../src/server/credentials";
 import { searchProducers, todayProducts } from "../src/server/catalog";
 import { submitOrder } from "../src/server/orders";
-import { startConversation } from "../src/server/chat";
+import { sendMessage, startConversation } from "../src/server/chat";
 
 test(
   "isolated store review: owner-only setup, password sign-in without SMS, review family hidden and paired",
@@ -160,6 +160,37 @@ test(
       startConversation(real, { producer: REVIEW.familySlug }),
       /غير متاحة/,
     );
+    // المندوبون: حساب المراجعة لا يراسل مندوبًا حقيقيًا (شكوى المالك 2026-11-24).
+    const courierUser = mk("customer");
+    await pool.query(
+      "INSERT INTO jdatna.users(id,name,phone,role,phone_verified_at) VALUES($1,$2,$3,'courier',now())",
+      [courierUser.id, "مندوب حقيقي", courierUser.phone],
+    );
+    await pool.query(
+      `INSERT INTO jdatna.courier_profiles(id,user_id,name,city_id,car_type,status,national_id_encrypted,active)
+       VALUES($1,$2,'مندوب حقيقي',$3,'سيدان','approved','\\x00',true)`,
+      [randomUUID(), courierUser.id, city],
+    );
+    await assert.rejects(
+      startConversation(reviewer, { courier: courierUser.id }),
+      /غير متاحة/,
+    );
+    // ومحادثة مختلطة قديمة (قبل العزل) لا يُرسل فيها.
+    const oldMixed = randomUUID();
+    await pool.query(
+      "INSERT INTO jdatna.conversations(id,customer_id,courier_id) VALUES($1,$2,$3)",
+      [oldMixed, reviewer.id, courierUser.id],
+    );
+    await assert.rejects(
+      sendMessage(reviewer, oldMixed, { body: "مرحبا" }),
+      /لا يمكن الإرسال/,
+    );
+    await pool.query("DELETE FROM jdatna.conversations WHERE id=$1", [
+      oldMixed,
+    ]);
+    await pool.query("DELETE FROM jdatna.courier_profiles WHERE user_id=$1", [
+      courierUser.id,
+    ]);
 
     // رمز التحقق: لرقم إنشاء الحساب التجريبي أثناء الوضع فقط، وحسابا المراجعة بكلمة المرور.
     assert.equal(await reviewOtpCode(REVIEW.signupPhone), REVIEW.code);

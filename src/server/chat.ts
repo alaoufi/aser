@@ -113,6 +113,8 @@ export async function startConversation(user: SessionUser, input: unknown) {
       throw new HttpError(400, "طلب الضيف بلا حساب؛ تواصل معه بالجوال");
     if (row.user_id === row.courier_user_id)
       throw new HttpError(400, "لا يمكنك مراسلة نفسك");
+    const { assertReviewUsers } = await import("./store-review");
+    await assertReviewUsers(db(), row.user_id, row.courier_user_id);
     customerId = row.user_id;
     courierId = row.courier_user_id;
   } else if ("courier" in parsed) {
@@ -131,6 +133,11 @@ export async function startConversation(user: SessionUser, input: unknown) {
     ).rows[0] as
       | { user_id: string; family_id: string | null; active: boolean }
       | undefined;
+    // حساب مراجعة المتاجر لا يصل لمندوب حقيقي، ولا العكس.
+    if (courier) {
+      const { assertReviewUsers } = await import("./store-review");
+      await assertReviewUsers(db(), user.id, courier.user_id);
+    }
     if (family) {
       if (!courier) throw new HttpError(404, "المندوب غير متاح");
       // الأسرة مع المندوب: المندوب في طرف «العميل».
@@ -465,6 +472,18 @@ async function deliver(
           ? "حظرت هذه المحادثة؛ ألغِ الحظر لترسل"
           : "لا يمكن الإرسال في هذه المحادثة",
       );
+    // محادثة قائمة بين حساب مراجعة المتاجر وحساب حقيقي (قبل عزل المندوبين): لا إرسال فيها.
+    const mixed = (
+      await client.query(
+        `SELECT 1 FROM jdatna.conversations c
+           JOIN jdatna.users cu ON cu.id=c.customer_id
+           LEFT JOIN jdatna.producer_profiles p ON p.id=c.producer_id
+           LEFT JOIN jdatna.users ou ON ou.id=COALESCE(p.user_id,c.courier_id)
+          WHERE c.id=$1 AND ou.id IS NOT NULL AND cu.review_account<>ou.review_account`,
+        [c.id],
+      )
+    ).rowCount;
+    if (mixed) throw new HttpError(403, "لا يمكن الإرسال في هذه المحادثة");
     const message = (
       await client.query(
         `INSERT INTO jdatna.messages(id,conversation_id,sender_id,body) VALUES($1,$2,$3,$4)

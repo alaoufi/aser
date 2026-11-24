@@ -111,6 +111,26 @@ export async function assertReviewPair(
     );
 }
 
+/**
+ * حساب مراجعة المتاجر لا يراسل حسابًا حقيقيًا ولا العكس (المندوبون ومحادثات التوصيل):
+ * الطرفان كلاهما حسابا مراجعة أو كلاهما حقيقيان. شكوى المالك 2026-11-24: رسائل وصلت لمسجلين
+ * من حساب المراجعة عبر «تجمع المندوبين» الذي لم يكن معزولًا.
+ */
+export async function assertReviewUsers(
+  runner: Pick<PoolClient, "query">,
+  a: string,
+  b: string,
+) {
+  const rows = (
+    await runner.query(
+      "SELECT review_account FROM jdatna.users WHERE id=ANY($1::uuid[])",
+      [[a, b]],
+    )
+  ).rows as { review_account: boolean }[];
+  if (rows.length === 2 && rows[0].review_account !== rows[1].review_account)
+    throw new HttpError(403, "هذه المحادثة غير متاحة");
+}
+
 function owner(user: SessionUser) {
   if (!can(user, "review"))
     throw new HttpError(403, "حسابات المراجعة لمن أُعطي قسمها في الإدارة");
