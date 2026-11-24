@@ -189,8 +189,9 @@ const emptyAppLinks: AppLinks = {
   showAppStore: false,
   showPlayStore: false,
 };
-/** صفحتا التطبيق في المتجرين (App Store: رقم التطبيق 6833382132). */
-export const APP_STORE_URL = "https://apps.apple.com/app/id6833382132";
+/** صفحتا التطبيق في المتجرين (App Store: رقم التطبيق 6833382132).
+ * رابط App Store بالمتجر السعودي `/sa/`: التطبيق منشور فيه وحده، والرابط بلا دولة يرجع 404 خارجه (مراجعة 2026-11-24). */
+export const APP_STORE_URL = "https://apps.apple.com/sa/app/id6833382132";
 export const PLAY_STORE_URL =
   "https://play.google.com/store/apps/details?id=com.jdatna.app";
 /**

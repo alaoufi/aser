@@ -49,7 +49,10 @@ export function DurationPicker({
     // بلا بداية محددة لا تُحسب الساعات من «الآن» عند فتح المحفوظ، فيبقى تاريخه كما هو.
     if (!start) return "until";
     const h = (Date.parse(value) - base()) / HOUR;
-    return h > 0 && Math.abs(h - Math.round(h)) < 0.001 ? "hours" : "until";
+    // أكثر من سنة (8760 ساعة، حد خانة الساعات) يُفتح «حتى تاريخ» كي لا تُقص المدة عند الحفظ.
+    return h > 0 && h <= 8760 && Math.abs(h - Math.round(h)) < 0.001
+      ? "hours"
+      : "until";
   });
   const [hours, setHours] = useState<number>(initialHours);
   const [until, setUntil] = useState<string>(value ?? "");

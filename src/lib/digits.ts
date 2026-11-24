@@ -7,3 +7,12 @@ export function toAsciiDigits(value: string) {
     String(digit.charCodeAt(0) - (digit >= "۰" ? 0x6f0 : 0x660)),
   );
 }
+
+/** فك ترميز قيمة كوكي أو رابط بلا رمي: القيمة التالفة (مثل %E0%A4) تصير فارغة بدل خطأ 500. */
+export function safeDecode(value: string) {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return "";
+  }
+}

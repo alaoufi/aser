@@ -13,6 +13,7 @@ export * from "./session";
 import {
   accountKind,
   api,
+  familyPending,
   isFamilyAccount,
   MemberNo,
   primeSession,
@@ -50,12 +51,13 @@ function AccountNavigation() {
   if (!user) return null;
   // حساب أسرة: دوره أسرة منتجة، أو المدير الكامل الذي له ملف أسرة.
   const family = isFamilyAccount(user);
+  const pending = familyPending(user);
   const links: [string, string][] = [
     ["/", "الرئيسية"],
     ["/orders", "طلباتي"],
     ["/messages", "المحادثات"],
     ["/directory", "دليلي"],
-    ...((user.role === "courier"
+    ...((user.role === "courier" || pending
       ? []
       : [["/requests", family ? "طلبات العملاء" : "اطلب من الأسر"]]) as [
       string,
@@ -69,7 +71,7 @@ function AccountNavigation() {
         ? // أقسام الأسرة في «لوحتي» بمربعات، و«مندوبي الخاص» ظاهر في القائمة أيضًا.
           [
             ["/dashboard", "لوحتي"],
-            ["/dashboard/couriers", "مندوبي الخاص"],
+            ...(pending ? [] : [["/dashboard/couriers", "مندوبي الخاص"]]),
           ]
         : [
             ["/offers", "العروض الخاصة"],
@@ -182,7 +184,15 @@ function FamilyTabs({ children }: { children: React.ReactNode }) {
   const tab = FAMILY_TABS.find((t) => t.href === path);
   if (!user || !isFamilyAccount(user) || !tab) return <>{children}</>;
   return (
-    <FolderTabs label="أقسام الأسرة المنتجة" tabs={FAMILY_TABS} active={tab.id}>
+    <FolderTabs
+      label="أقسام الأسرة المنتجة"
+      tabs={
+        familyPending(user)
+          ? FAMILY_TABS.filter((t) => t.id !== "couriers")
+          : FAMILY_TABS
+      }
+      active={tab.id}
+    >
       {children}
     </FolderTabs>
   );

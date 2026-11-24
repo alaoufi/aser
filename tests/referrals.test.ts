@@ -211,6 +211,21 @@ test(
         "number",
         "phone",
       ]);
+      // الخانة مملوءة مسبقًا برقم رابط الدعوة نفسه: يُحسب «بالرابط».
+      const e = await mk();
+      assert.equal(
+        await record(e.id, { invite: String(special), link: String(special) }),
+        true,
+      );
+      assert.equal(
+        (
+          await pool.query(
+            "SELECT via FROM jdatna.referrals WHERE referred_id=$1",
+            [e.id],
+          )
+        ).rows[0]?.via,
+        "link",
+      );
     } finally {
       await pool.query(
         "DELETE FROM jdatna.admin_audit_logs WHERE actor_id=ANY($1::uuid[])",

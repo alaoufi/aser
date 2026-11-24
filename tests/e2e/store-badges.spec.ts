@@ -61,7 +61,7 @@ test.describe("store download buttons in the footer", () => {
     const badges = page.getByTestId("store-badges");
     await expect(
       badges.getByRole("link", { name: "حمّل من App Store" }),
-    ).toHaveAttribute("href", "https://apps.apple.com/app/id6833382132");
+    ).toHaveAttribute("href", "https://apps.apple.com/sa/app/id6833382132");
     await expect(
       badges.getByRole("link", { name: "احصل عليه من Google Play" }),
     ).toHaveCount(0);
@@ -74,7 +74,7 @@ test.describe("store download buttons in the footer", () => {
     await page.goto("/");
     await expect(
       badges.getByRole("link", { name: "حمّل من App Store" }),
-    ).toHaveAttribute("href", "https://apps.apple.com/app/id6833382132");
+    ).toHaveAttribute("href", "https://apps.apple.com/sa/app/id6833382132");
     await expect(
       badges.getByRole("link", { name: "احصل عليه من Google Play" }),
     ).toHaveAttribute(

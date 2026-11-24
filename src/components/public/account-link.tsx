@@ -3,6 +3,7 @@ import Link from "next/link";
 import {
   MemberNo,
   accountKind,
+  familyPending,
   isFamilyAccount,
   useSession,
 } from "@/components/forms/session";
@@ -56,6 +57,6 @@ export function AccountGreeting() {
 /** «مندوبي الخاص» في قائمة الجوال لحسابات الأسر. */
 export function FamilyMenuLinks() {
   const { user } = useSession();
-  if (!isFamilyAccount(user)) return null;
+  if (!isFamilyAccount(user) || familyPending(user)) return null;
   return <Link href="/dashboard/couriers">مندوبي الخاص</Link>;
 }

@@ -4,6 +4,7 @@ import { SuggestionForm } from "@/components/public/suggestion-form";
 export const metadata: Metadata = {
   title: "الاقتراحات",
   description: "أرسل اقتراحك لتحسين أكلات جدتنا، ويصل لإدارة الموقع مباشرة.",
+  alternates: { canonical: "/suggestions" },
 };
 export const dynamic = "force-dynamic";
 /** الاقتراحات: متاحة للجميع، وتصل لمسؤول الإدارة وحده. */

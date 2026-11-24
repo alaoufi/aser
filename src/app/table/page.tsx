@@ -6,6 +6,7 @@ import { TodayTable, regionsOf } from "@/components/public/today-table";
 export const metadata: Metadata = {
   title: "مائدة اليوم",
   description: "كل الأطباق المتوفرة اليوم من الأسر المنتجة في منطقتك.",
+  alternates: { canonical: "/table" },
 };
 export const dynamic = "force-dynamic";
 export default async function TablePage({

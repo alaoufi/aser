@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GuideArt } from "./guide-art";
 import { GUIDE_CHAPTERS, type GuideChapter } from "./guide-content";
 import b from "./guide-book.module.css";
+import { safeDecode } from "@/lib/digits";
 
 type Page =
   | { kind: "cover" }
@@ -85,7 +86,7 @@ export function GuideBook({
     sync();
     q.addEventListener("change", sync);
     const fromHash = hash
-      ? chapterPage(decodeURIComponent(location.hash.slice(1)))
+      ? chapterPage(safeDecode(location.hash.slice(1)))
       : -1;
     if (fromHash > 0) setPage(fromHash);
     return () => q.removeEventListener("change", sync);

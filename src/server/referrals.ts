@@ -75,7 +75,8 @@ export async function recordReferral(
   if (typed) {
     if (invitePattern.test(typed)) {
       referrer = await ownerOfNumber(client, typed);
-      via = "number";
+      // الخانة تُملأ مسبقًا من رابط الدعوة: الرقم نفسه يعني أنه جاء بالرابط (مراجعة 2026-11-24).
+      via = ref.link && ascii(ref.link) === typed ? "link" : "number";
     } else {
       try {
         const phone = cleanPhone(typed);

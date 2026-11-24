@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 const PLAY = "https://play.google.com/store/apps/details?id=com.jdatna.app";
-const APPLE = "https://apps.apple.com/app/id6833382132";
+const APPLE = "https://apps.apple.com/sa/app/id6833382132";
 const ANDROID =
   "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Mobile Safari/537.36";
 const IPHONE =

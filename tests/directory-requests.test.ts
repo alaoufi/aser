@@ -93,7 +93,25 @@ test(
           { name: "خطأ", phone: "x" },
         ],
       });
-      assert.deepEqual(imported, { added: 1, skipped: 2 });
+      assert.deepEqual(imported, { added: 1, skipped: 2, full: 0 });
+      // الإضافة اليدوية بالرقم نفسه مرفوضة، والجهة اليدوية لا تبقى بلا رقم.
+      await assert.rejects(
+        dir.addToDirectory(customer, {
+          contact: { name: "أم سعد مكرر", phone: "0553334444" },
+        }),
+        { status: 409 },
+      );
+      const manual = (await dir.listDirectory(customer)).find(
+        (e) => e.kind === "contact" && e.name === "أم سعد",
+      );
+      assert.ok(manual);
+      await assert.rejects(
+        dir.updateDirectoryEntry(customer, manual.id, {
+          phone: "",
+          whatsapp: "",
+        }),
+        { status: 400 },
+      );
       assert.equal((await dir.listDirectory(customer)).length, 3);
       assert.equal((await dir.listDirectory(other)).length, 0);
       await assert.rejects(
@@ -194,6 +212,16 @@ test(
       await assert.rejects(startConversation(familyUser, { request: id }), {
         status: 404,
       });
+      // انتهت مدة الطلب ولم يُغلق: صاحبه يراه «انتهت مدته» لا مفتوحًا.
+      await pool.query(
+        "UPDATE jdatna.customer_requests SET expires_at=now()-interval '1 minute' WHERE id=$1",
+        [second.id],
+      );
+      assert.equal(
+        (await req.myCustomerRequests(customer)).find((r) => r.id === second.id)
+          ?.status,
+        "expired",
+      );
     } finally {
       await pool.query(
         "DELETE FROM jdatna.messages WHERE conversation_id IN (SELECT id FROM jdatna.conversations WHERE producer_id=$1)",

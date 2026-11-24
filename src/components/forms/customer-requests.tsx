@@ -1,4 +1,5 @@
 "use client";
+import { telHref, whatsappHref } from "@/lib/phone-links";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { enterNext } from "./enter-next";
@@ -26,14 +27,13 @@ type Req = {
   people: number | null;
   neededOn: string | null;
   createdAt: string;
-  status: "open" | "closed";
+  status: "open" | "closed" | "expired";
   name: string | null;
   phone: string | null;
   whatsapp: string | null;
   mine: boolean;
 };
 type Option = { id: string; name: string };
-const digits = (p: string) => p.replace(/\D/g, "");
 const when = (iso: string) =>
   new Intl.DateTimeFormat("ar-SA-u-nu-latn", {
     day: "numeric",
@@ -83,6 +83,12 @@ function RequestCard({ r, children }: { r: Req; children?: React.ReactNode }) {
         {r.name ?? "عميل"}
         {r.status === "closed" && (
           <span className="request-closed"> · مغلق</span>
+        )}
+        {r.status === "expired" && (
+          <span className="request-closed">
+            {" "}
+            · انتهت مدته، ولم يعد ظاهرًا للأسر
+          </span>
         )}
       </p>
       {children}
@@ -377,15 +383,15 @@ function FamilyBoard() {
                 {r.phone && (
                   <a
                     className={s.buttonSecondary}
-                    href={`tel:+${digits(r.phone)}`}
+                    href={telHref(r.phone) ?? undefined}
                   >
                     اتصال
                   </a>
                 )}
-                {r.whatsapp && (
+                {r.whatsapp && whatsappHref(r.whatsapp) && (
                   <a
                     className={s.buttonSecondary}
-                    href={`https://wa.me/${digits(r.whatsapp)}`}
+                    href={whatsappHref(r.whatsapp) ?? undefined}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
