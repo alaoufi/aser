@@ -153,7 +153,40 @@ test(
       const conv = await startConversation(familyUser, { request: id });
       assert.ok(conv.id);
       await dir.addToDirectory(familyUser, { customer: customer.id });
-      assert.equal((await dir.listDirectory(familyUser))[0].kind, "customer");
+      const saved = (await dir.listDirectory(familyUser))[0];
+      assert.equal(saved.kind, "customer");
+      // الطلب بلا موافقة على الاسم: لا يظهر اسم العميل للأسرة في المحادثة ولا في دليلها.
+      const { listConversations } = await import("../src/server/chat");
+      assert.equal(
+        (await listConversations(familyUser)).find((c) => c.id === conv.id)
+          ?.title,
+        "عميل",
+      );
+      assert.equal(saved.name, "عميل");
+      // والعميل يرى اسم الأسرة كالمعتاد.
+      assert.notEqual(
+        (await listConversations(customer)).find((c) => c.id === conv.id)
+          ?.title,
+        "عميل",
+      );
+      // حساب مراجعة المتاجر: أسرته لا ترى طلبات العملاء الحقيقيين ولا تراسلهم.
+      await pool.query(
+        "UPDATE jdatna.producer_profiles SET review_only=true WHERE user_id=$1",
+        [familyUser.id],
+      );
+      assert.ok(
+        !(await req.openCustomerRequests(familyUser)).some(
+          (r) => r.id === second.id,
+        ),
+      );
+      await assert.rejects(
+        startConversation(familyUser, { request: second.id }),
+        { status: 403 },
+      );
+      await pool.query(
+        "UPDATE jdatna.producer_profiles SET review_only=false WHERE user_id=$1",
+        [familyUser.id],
+      );
       // إغلاق الطلب يخفيه من اللوحة.
       await req.closeCustomerRequest(customer, id);
       board = await req.openCustomerRequests(familyUser);

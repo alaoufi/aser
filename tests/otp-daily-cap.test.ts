@@ -47,7 +47,7 @@ test(
     try {
       Object.assign(process.env, overrides);
       globalThis.fetch = async (_url, init) => {
-        code = JSON.parse(String(init?.body)).message.slice(-4);
+        code = JSON.parse(String(init?.body)).message.slice(-6);
         return Response.json({ accepted: true });
       };
       // اليوم استُنفدت فيه 10 إدخالات على هذا الجوال: حتى الرمز الصحيح يُرفض حتى الغد.

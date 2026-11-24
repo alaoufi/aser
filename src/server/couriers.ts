@@ -769,10 +769,13 @@ export async function saveFamilyCourier(user: SessionUser, input: unknown) {
           [randomUUID(), phone, value.name],
         )
       ).rows[0];
-    } else {
-      await client.query(
-        "UPDATE jdatna.users SET role='courier' WHERE id=$1 AND role='customer'",
-        [member!.id],
+    } else if (!existing && member!.role === "customer") {
+      // حساب عميل قائم لا يُحوَّل إلى مندوب بغير موافقة صاحبه (مراجعة أمنية 2026-11-24):
+      // كانت أي أسرة معتمدة تغيّر نوع حساب أي عميل برقم جواله.
+      throw new HttpError(
+        409,
+        "هذا الجوال له حساب في الموقع. لا يُسجَّل مندوبًا إلا بموافقة صاحبه: اطلب منه أن يسجّل «مندوب» من حسابه، أو استخدم جوالًا آخر له.",
+        { field: "phone" },
       );
     }
     const id = existing?.id ?? randomUUID();

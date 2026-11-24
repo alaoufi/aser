@@ -66,20 +66,18 @@ test(
       assert.ok(next.memberNo > host.memberNo, "بالتسلسل");
       assert.ok(next.internalNo > host.internalNo);
 
-      // التسلسل يتجاوز المحجوز: لو كان آخر رقم 1110 فالتالي 1112.
-      const jump = await mk();
-      // أقرب رقم محجوز (متشابه الأرقام) بعد آخر رقم مستعمل، ونضع عضوًا قبله مباشرة.
-      let rep = (
-        await pool.query<{ n: number }>(
-          "SELECT greatest(max(u.member_no),coalesce((SELECT max(member_no) FROM jdatna.member_no_history),0))+1 AS n FROM jdatna.users u",
-        )
-      ).rows[0].n;
+      // التسلسل يتجاوز المحجوز: نضع العدّاد قبل أقرب رقم متشابه الأرقام، فيتخطاه.
+      let rep =
+        Number(
+          (
+            await pool.query<{ n: string }>(
+              "SELECT last_value AS n FROM jdatna.member_no_seq",
+            )
+          ).rows[0].n,
+        ) + 1;
       while (!/^(\d)\1+$/.test(String(rep))) rep++;
       const base = rep - 1;
-      await pool.query("UPDATE jdatna.users SET member_no=$2 WHERE id=$1", [
-        jump.id,
-        base,
-      ]);
+      await pool.query("SELECT setval('jdatna.member_no_seq', $1)", [base]);
       const after = await mk();
       assert.equal(after.memberNo, base + 2, `بعد ${base} يأتي ${base + 2}`);
 
@@ -114,6 +112,19 @@ test(
         memberNo: special,
       });
       assert.equal((await ref.myInvite(host)).memberNo, special);
+      // رقم مميز عالٍ تمنحه الإدارة لا يحرّك التسلسل: التالي يكمل من حيث كان.
+      const high = await mk();
+      await updateMember(admin, {
+        action: "number",
+        id: high.id,
+        memberNo: 9000000 + Math.floor(Math.random() * 900000),
+      });
+      const afterHigh = await mk();
+      assert.ok(
+        afterHigh.memberNo > high.memberNo &&
+          afterHigh.memberNo < high.memberNo + 50,
+        `بعد ${high.memberNo} يأتي قريب منه لا بعد الرقم الممنوح (${afterHigh.memberNo})`,
+      );
       // الرقم المأخوذ أو القديم لعضو آخر غير متاح.
       await assert.rejects(
         updateMember(admin, {

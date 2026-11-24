@@ -35,11 +35,14 @@ export function DurationPicker({
   allowForever?: boolean;
 }) {
   const id = useId();
-  const base = () => (start ? Date.parse(start) : Date.now());
+  // «الآن» يُثبَّت عند فتح النموذج: حسابه في كل رسم كان يغيّر النهاية كل مرة فيعيد الرسم بلا توقف
+  // حين تكون البداية فارغة (حلقة تجمّد الصفحة على الجوالات البطيئة، مراجعة 2026-11-24).
+  const [opened] = useState(() => Date.now());
+  const base = () => (start ? Date.parse(start) : opened);
   const initialHours = () => {
     if (!value) return 24;
     const h = Math.round((Date.parse(value) - base()) / HOUR);
-    return h > 0 ? Math.min(8760, h) : 24;
+    return h > 0 ? h : 24;
   };
   const [mode, setMode] = useState<Mode>(() => {
     if (!value) return allowForever ? "forever" : "hours";
@@ -122,7 +125,7 @@ export function DurationPicker({
       )}
       <small className={s.muted} aria-live="polite">
         {computed
-          ? `ينتهي ${new Date(computed).toLocaleString("ar-SA", { dateStyle: "medium", timeStyle: "short" })}، ثم يختفي وتبقى إحصائياته.`
+          ? `ينتهي ${new Date(computed).toLocaleString("ar-SA-u-ca-gregory-nu-latn", { dateStyle: "medium", timeStyle: "short" })}، ثم يختفي وتبقى إحصائياته.`
           : "دائم: يبقى ظاهرًا حتى توقفه."}
       </small>
       {name && <input type="hidden" name={name} value={computed ?? ""} />}

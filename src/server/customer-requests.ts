@@ -119,11 +119,11 @@ export async function openCustomerRequests(
   f: { region?: string | null; categories?: string[] | null } = {},
 ) {
   const family = (
-    await db().query(
-      "SELECT 1 FROM jdatna.producer_profiles WHERE user_id=$1 AND status='approved'",
+    await db().query<{ review_only: boolean }>(
+      "SELECT review_only FROM jdatna.producer_profiles WHERE user_id=$1 AND status='approved'",
       [user.id],
     )
-  ).rowCount;
+  ).rows[0];
   if (!family && user.role !== "admin")
     throw new HttpError(403, "طلبات العملاء تراها الأسر المنتجة المعتمدة");
   return (
@@ -131,8 +131,16 @@ export async function openCustomerRequests(
       `${select} WHERE r.status='open' AND r.expires_at>now()
          AND ($2::text IS NULL OR c.region_id=$2)
          AND ($3::text[] IS NULL OR r.category_id=ANY($3::text[]))
+         AND u.suspended_at IS NULL AND u.deleted_at IS NULL
+         AND ($4::boolean IS NULL OR u.review_account=$4)
        ORDER BY r.created_at DESC LIMIT 200`,
-      [user.id, f.region ?? null, f.categories ?? null],
+      // أسرة مراجعة المتاجر ترى طلبات حساب المراجعة فقط، والأسر الحقيقية لا تراها.
+      [
+        user.id,
+        f.region ?? null,
+        f.categories ?? null,
+        family ? family.review_only : null,
+      ],
     )
   ).rows;
 }

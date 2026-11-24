@@ -74,7 +74,7 @@ test(
       const c = r.headers.get("set-cookie") ?? "";
       return { pair: c.split(";")[0], maxAge: /Max-Age=(\d+)/.exec(c)?.[1] };
     };
-    const lastCode = () => /(\d{4})$/.exec(sms.at(-1) ?? "")?.[1] ?? "";
+    const lastCode = () => /(\d{6})$/.exec(sms.at(-1) ?? "")?.[1] ?? "";
     const whoAmI = async (cookie: string) =>
       (
         await (
@@ -250,8 +250,8 @@ test(
       );
       assert.equal(r.status, 401, "old password no longer works");
 
-      // الرسائل كلها رمز من أربعة أرقام، ولا شيء غيره.
-      assert.ok(sms.every((m) => /^رمز التحقق .* \d{4}$/.test(m)));
+      // الرسائل كلها رمز من ستة أرقام، ولا شيء غيره.
+      assert.ok(sms.every((m) => /^رمز التحقق .* \d{6}$/.test(m)));
       assert.equal(toAsciiDigits("٠٥١٢"), "0512");
     } finally {
       globalThis.fetch = realFetch;

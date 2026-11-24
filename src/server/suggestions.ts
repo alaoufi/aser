@@ -27,7 +27,7 @@ export async function submitSuggestion(
   input: unknown,
 ) {
   const value = suggestionSchema.parse(input);
-  await rateLimit("suggestions-global", 60, 3600);
+  await rateLimit("suggestions-global", 600, 3600);
   if (user) await rateLimit("suggestions:" + user.id, 5, 3600);
   await db().query(
     "INSERT INTO jdatna.suggestions(id,user_id,name,contact,body) VALUES($1,$2,$3,$4,$5)",

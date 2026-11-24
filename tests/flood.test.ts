@@ -14,6 +14,11 @@ test("flood guard: per-address limits per minute, separate buckets, first refusa
   assert.equal(floodBucket("POST", "/api/orders"), "api-write");
   assert.equal(floodBucket("DELETE", "/api/conversations/x"), "api-write");
   assert.equal(floodBucket("GET", "/api/live"), "live");
+  // التحميل المسبق للروابط في خانة مستقلة، فلا يأكل حد الصفحات.
+  assert.equal(floodBucket("GET", "/browse", true), "prefetch");
+  assert.equal(floodBucket("POST", "/browse", true), "page");
+  assert.equal(floodBucket("GET", "/api/products", true), "api-read");
+  assert.ok(FLOOD_LIMITS.prefetch > FLOOD_LIMITS.page);
   const t0 = 1_000_000;
   const limit = FLOOD_LIMITS["api-write"];
   for (let i = 0; i < limit; i++)

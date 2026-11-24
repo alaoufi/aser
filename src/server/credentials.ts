@@ -115,7 +115,7 @@ export async function passwordLogin(input: unknown) {
   // السقف اليومي لكل حساب: كلمات المرور القصيرة (أربع خانات) لا تُخمَّن بالمحاولات المتواصلة.
   // صاحب الحساب يعود في اليوم التالي أو يستعيد كلمة المرور برمز الجوال.
   await Promise.all([
-    rateLimit("password-login-global", 600, 3600),
+    rateLimit("password-login-global", 6000, 3600),
     rateLimit("password-login:" + hash(identifier), 10, 900),
     rateLimit("password-login-day:" + hash(identifier), 30, 86400),
   ]);
@@ -224,7 +224,7 @@ export async function setCredentials(request: Request, input: unknown) {
       : value.username === null
         ? null
         : normalizeUsername(value.username);
-  await rateLimit("credentials-global", 300, 3600);
+  await rateLimit("credentials-global", 3000, 3600);
   await rateLimit("credentials:" + hash(token), 10, 900);
   try {
     return await transaction(async (client) => {
