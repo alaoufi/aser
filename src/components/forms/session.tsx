@@ -259,6 +259,10 @@ export function useSession() {
 export function isFamilyAccount(user: SessionUser | null | undefined) {
   return Boolean(user && (user.role === "producer" || user.familyName));
 }
+/** أسرة لم تُعتمد بعد: تُخفى عنها أقسام تتطلب الاعتماد بدل أن تفتح على رسالة رفض (مراجعة 2026-11-24). */
+export function familyPending(user: SessionUser | null | undefined) {
+  return isFamilyAccount(user) && user?.familyApproved === false;
+}
 /** نوع الحساب كما يُكتب تحت الاسم. */
 export function accountKind(user: SessionUser) {
   if (user.role === "courier") return "حساب مندوب";

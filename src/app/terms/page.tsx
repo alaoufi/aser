@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
-export const metadata: Metadata = { title: "شروط الاستخدام" };
+export const metadata: Metadata = {
+  title: "شروط الاستخدام",
+  alternates: { canonical: "/terms" },
+};
 export default function Terms() {
   return (
     <article className="wrap prose page-space">

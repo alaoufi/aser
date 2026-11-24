@@ -51,6 +51,8 @@ export async function deleteAccount(user: SessionUser, input: unknown) {
       )
     ).rows[0] as { id: string } | undefined;
     const del = (sql: string, args: unknown[]) => client.query(sql, args);
+    // ملفات التخزين التي تُحذف بعد الحفظ: صور مكتبة الأسرة ومستندات الحساب (مراجعة 2026-11-24).
+    const libraryKeys: string[] = [];
     // طلباته كعميل، وتقييماته وتقييمات الآخرين له.
     await del("DELETE FROM jdatna.order_requests WHERE user_id=$1", [user.id]);
     await del(
@@ -109,7 +111,6 @@ export async function deleteAccount(user: SessionUser, input: unknown) {
         "producer_zones",
         "producer_cooking_days",
         "producer_private",
-        "photo_library",
         "producer_brand",
         "producer_subscription_plans",
         "subscription_menu_items",
@@ -119,6 +120,15 @@ export async function deleteAccount(user: SessionUser, input: unknown) {
         await del(`DELETE FROM jdatna.${table} WHERE producer_id=$1`, [
           family.id,
         ]);
+      // صور المكتبة: صور المنتجات تشير إليها (/api/media/<id>)، فتُحذف ملفاتها من التخزين أيضًا.
+      libraryKeys.push(
+        ...(
+          await client.query(
+            "DELETE FROM jdatna.photo_library WHERE producer_id=$1 RETURNING object_key",
+            [family.id],
+          )
+        ).rows.map((r) => r.object_key as string),
+      );
       // مندوبو الأسرة الخاصون يتوقفون بحذفها (حساباتهم ومحادثاتهم تبقى كما هي).
       await del(
         `UPDATE jdatna.courier_profiles SET status='suspended',active=false,review_reason='حُذف حساب الأسرة',updated_at=now()
@@ -202,7 +212,7 @@ export async function deleteAccount(user: SessionUser, input: unknown) {
       "INSERT INTO jdatna.admin_audit_logs(id,actor_id,action,target_id,details) VALUES($1,$2,'account.delete',$2,$3)",
       [randomUUID(), user.id, JSON.stringify({ family: Boolean(family) })],
     );
-    return documents;
+    return [...documents, ...libraryKeys];
   });
   // ملفات المستندات الخاصة تُحذف من التخزين بعد الحفظ؛ تعذّر الحذف لا يعيد الحساب.
   if (objectKeys.length) {

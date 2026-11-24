@@ -3,6 +3,9 @@ import { sessionUser } from "@/server/auth";
 import { listOffers } from "@/server/offers";
 import { memberScope, parseMine } from "@/server/member-scope";
 import { getSiteTexts } from "@/server/settings";
+import { clientIp, mask } from "@/server/security-events";
+import { BOT } from "@/server/views";
+import { safeDecode } from "@/lib/digits";
 export const GET = api(async (request) => {
   const url = new URL(request.url);
   const user = await sessionUser(request);
@@ -17,14 +20,23 @@ export const GET = api(async (request) => {
   const scope = await memberScope(
     user,
     parseMine(url.searchParams.get("mine") ?? ""),
-    decodeURIComponent(saved).slice(0, 50),
+    safeDecode(saved).slice(0, 50),
     await getSiteTexts(),
   );
+  // الزائر المموَّه لعدّ المشاهدات (كما في src/server/views.ts)؛ الزواحف لا تُعدّ.
+  const agent = request.headers.get("user-agent") ?? "";
+  const viewer =
+    agent && !BOT.test(agent)
+      ? mask(
+          user ? `user:${user.id}` : `anon:${clientIp(request) ?? ""}:${agent}`,
+        )
+      : null;
   return json({
     offers: await listOffers(
       user,
       url.searchParams.get("region") ?? "",
       scope.filters,
+      viewer,
     ),
   });
 });

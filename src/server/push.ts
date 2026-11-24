@@ -46,12 +46,41 @@ export async function pushPublicKey() {
   return (await vapid()).publicKey;
 }
 
+/**
+ * خدمات الإشعارات الرسمية للمتصفحات فقط: الخادم يرسل إلى هذا الرابط، فلا يُقبل عنوان آخر
+ * (داخلي أو موقع غريب) يُستغل لإرسال طلبات من الخادم (SSRF، مراجعة 2026-11-24).
+ * `.invalid` لا يُحلّ أبدًا (RFC 2606)، وتستعمله الاختبارات.
+ */
+const PUSH_HOSTS = [
+  "fcm.googleapis.com",
+  "android.googleapis.com",
+  "updates.push.services.mozilla.com",
+  "push.services.mozilla.com",
+  "web.push.apple.com",
+];
+export function pushEndpointAllowed(value: string) {
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    return false;
+  }
+  if (url.protocol !== "https:" || url.port || url.username) return false;
+  const host = url.hostname.toLowerCase();
+  return (
+    PUSH_HOSTS.includes(host) ||
+    host.endsWith(".push.apple.com") ||
+    host.endsWith(".notify.windows.com") ||
+    host.endsWith(".invalid")
+  );
+}
+
 const subscriptionSchema = z
   .object({
     endpoint: z
       .url()
       .max(1000)
-      .refine((u) => u.startsWith("https://"), "رابط الاشتراك غير صالح"),
+      .refine(pushEndpointAllowed, "رابط الاشتراك غير صالح"),
     expirationTime: z.number().nullable().optional(),
     keys: z
       .object({
@@ -106,11 +135,13 @@ async function notifyWeb(userId: string, payload: PushPayload) {
   try {
     if (!databaseConfigured()) return 0;
     const subs = (
-      await db().query(
-        "SELECT endpoint,p256dh,auth FROM jdatna.push_subscriptions WHERE user_id=$1",
-        [userId],
-      )
-    ).rows as { endpoint: string; p256dh: string; auth: string }[];
+      (
+        await db().query(
+          "SELECT endpoint,p256dh,auth FROM jdatna.push_subscriptions WHERE user_id=$1",
+          [userId],
+        )
+      ).rows as { endpoint: string; p256dh: string; auth: string }[]
+    ).filter((s) => pushEndpointAllowed(s.endpoint));
     if (!subs.length) return 0;
     const v = await vapid();
     const body = JSON.stringify(payload);

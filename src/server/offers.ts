@@ -65,6 +65,8 @@ export async function listOffers(
   user: SessionUser | null,
   region = "",
   mine: MineFilters | null = null,
+  /** الزائر المموَّه (لا يُعدّ إن غاب): مشاهدة واحدة لكل زائر لكل عرض في اليوم. */
+  viewer: string | null = null,
 ) {
   // فلاتر العضو (src/server/member-scope.ts): كل شرط يعمل وحده، ويجتمع مع غيره. NULL = غير مفعّل.
   const rows = (
@@ -90,11 +92,19 @@ export async function listOffers(
     )
   ).rows;
   // إحصائية «مرات الظهور»: تبقى بعد انتهاء العرض. لا يُفشل العرض إن تعذّر العدّ.
-  if (rows.length)
+  // مرة لكل زائر لكل عرض في اليوم، ولا تُعدّ مشاهدة صاحب العرض نفسه (مراجعة 2026-11-24).
+  if (rows.length && viewer)
     await db()
       .query(
-        "UPDATE jdatna.offers SET views=views+1 WHERE id=ANY($1::uuid[])",
-        [rows.map((r) => r.id)],
+        `WITH seen AS (
+           INSERT INTO jdatna.view_seen(kind,target_id,visitor,day)
+           SELECT 'offer',o.id,$2,(now() AT TIME ZONE 'Asia/Riyadh')::date
+           FROM jdatna.offers o JOIN jdatna.producer_profiles p ON p.id=o.producer_id
+           WHERE o.id=ANY($1::uuid[]) AND p.user_id IS DISTINCT FROM $3::uuid
+           ON CONFLICT DO NOTHING RETURNING target_id
+         )
+         UPDATE jdatna.offers SET views=views+1 WHERE id IN (SELECT target_id FROM seen)`,
+        [rows.map((r) => r.id), viewer, user?.id ?? null],
       )
       .catch(() => undefined);
   return rows;

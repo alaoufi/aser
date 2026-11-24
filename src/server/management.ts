@@ -276,6 +276,12 @@ async function saveProfileRecord(user: SessionUser, input: unknown) {
         [user.id],
       )
     ).rows[0];
+    // أسرة أوقفتها الإدارة لا تعيد نفسها «بانتظار الاعتماد» بتعديل ملفها (مراجعة 2026-11-24).
+    if (existing?.status === "suspended")
+      throw new HttpError(
+        403,
+        "أوقفت الإدارة حساب الأسرة، فلا يُعدَّل ملفها. تواصل مع الدعم",
+      );
     if (!existing && !value.categoryIds?.length)
       throw new HttpError(400, "اختر قسمًا واحدًا على الأقل لمنتجاتك");
     if (!existing && !value.tradeName)

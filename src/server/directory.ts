@@ -207,11 +207,14 @@ export async function addToDirectory(user: SessionUser, input: unknown) {
   } else {
     const { name, phone, whatsapp, note } = parsed.contact;
     if (!phone && !whatsapp) throw new HttpError(400, "اكتب الجوال أو واتساب");
-    await db().query(
+    // لا تكرار بالرقم نفسه (ولا من ضغطتين سريعتين)، كالاستيراد من الجوال (مراجعة 2026-11-24).
+    const r = await db().query(
       `INSERT INTO jdatna.directory_entries(id,owner_id,kind,name,phone,whatsapp,note)
-       VALUES($1,$2,'contact',$3,$4,$5,$6)`,
+       SELECT $1,$2,'contact',$3,$4,$5,$6
+       WHERE $4::text IS NULL OR NOT EXISTS(SELECT 1 FROM jdatna.directory_entries WHERE owner_id=$2 AND phone=$4)`,
       [id, user.id, name, phone, whatsapp, note],
     );
+    if (!r.rowCount) throw new HttpError(409, "هذا الرقم محفوظ في دليلك");
   }
   return { ok: true };
 }
@@ -231,10 +234,12 @@ export async function importContacts(user: SessionUser, input: unknown) {
         .max(50),
     })
     .parse(input);
-  const room = MAX_ENTRIES - (await count(user));
+  const room = Math.max(0, MAX_ENTRIES - (await count(user)));
   let added = 0;
   let skipped = 0;
-  for (const c of contacts.slice(0, Math.max(0, room))) {
+  // ما لا يتسع له الدليل يُعدّ ويُبلَّغ به، لا يُقص بصمت.
+  const full = Math.max(0, contacts.length - room);
+  for (const c of contacts.slice(0, room)) {
     let phone: string | null;
     try {
       phone = cleanPhone(c.phone);
@@ -255,7 +260,7 @@ export async function importContacts(user: SessionUser, input: unknown) {
     if (r.rowCount) added++;
     else skipped++;
   }
-  return { added, skipped };
+  return { added, skipped, full };
 }
 
 export async function updateDirectoryEntry(
@@ -276,10 +281,18 @@ export async function updateDirectoryEntry(
     `UPDATE jdatna.directory_entries SET
        name=CASE WHEN kind='contact' THEN COALESCE($3,name) ELSE name END,
        phone=$4,whatsapp=$5,note=COALESCE($6,note)
-     WHERE id=$1 AND owner_id=$2`,
+     WHERE id=$1 AND owner_id=$2 AND (kind<>'contact' OR $4::text IS NOT NULL OR $5::text IS NOT NULL)`,
     [id, user.id, v.name ?? null, v.phone, v.whatsapp, v.note ?? null],
   );
-  if (!r.rowCount) throw new HttpError(404, "غير موجود");
+  if (!r.rowCount) {
+    // الجهة اليدوية تبقى بجوال أو واتساب، كما في إضافتها.
+    const exists = await db().query(
+      "SELECT 1 FROM jdatna.directory_entries WHERE id=$1 AND owner_id=$2",
+      [id, user.id],
+    );
+    if (exists.rowCount) throw new HttpError(400, "اكتب الجوال أو واتساب");
+    throw new HttpError(404, "غير موجود");
+  }
   return { ok: true };
 }
 

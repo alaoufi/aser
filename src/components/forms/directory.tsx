@@ -1,4 +1,5 @@
 "use client";
+import { telHref, whatsappHref } from "@/lib/phone-links";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
@@ -44,7 +45,6 @@ const KINDS: { kind: Entry["kind"]; label: string }[] = [
   { kind: "courier", label: "المندوبون" },
   { kind: "contact", label: "جهاتي" },
 ];
-const digits = (p: string) => p.replace(/\D/g, "");
 
 export function Directory() {
   const session = useSession();
@@ -68,7 +68,8 @@ export function Directory() {
     setSuccess("");
     try {
       await fn();
-      setSuccess(done);
+      // نص فارغ: الدالة كتبت رسالتها بنفسها (مثل عدد ما استُورد)، فلا تُمحى.
+      if (done) setSuccess(done);
       await load();
     } catch (e) {
       setError((e as Error).message);
@@ -83,21 +84,23 @@ export function Directory() {
     } catch {
       return;
     }
-    const list = picked
+    const all = picked
       .filter((c) => c.tel?.[0])
-      .map((c) => ({ name: c.name?.[0] ?? "", phone: c.tel?.[0] ?? "" }))
-      .slice(0, 50);
+      .map((c) => ({ name: c.name?.[0] ?? "", phone: c.tel?.[0] ?? "" }));
+    const list = all.slice(0, 50);
     if (!list.length) return;
     await run(async () => {
-      const r = await api<{ added: number; skipped: number }>(
+      const r = await api<{ added: number; skipped: number; full?: number }>(
         "/api/directory/contacts",
         {
           method: "POST",
           body: JSON.stringify({ contacts: list }),
         },
       );
+      // ما زاد على 50 في المرة، أو على سعة الدليل (500)، يُذكر عدده.
+      const over = all.length - list.length + (r.full ?? 0);
       setSuccess(
-        `أُضيفت ${r.added} جهة${r.skipped ? `، وتُركت ${r.skipped} (مكررة أو رقمها غير صحيح)` : ""}.`,
+        `أُضيفت ${r.added} جهة${r.skipped ? `، وتُركت ${r.skipped} (مكررة أو رقمها غير صحيح)` : ""}${over ? `، ولم تُضف ${over} (الحد 50 في المرة و500 في الدليل)` : ""}.`,
       );
     }, "");
   }
@@ -193,15 +196,15 @@ export function Directory() {
                             {phone && (
                               <a
                                 className={s.buttonSecondary}
-                                href={`tel:+${digits(phone)}`}
+                                href={telHref(phone) ?? undefined}
                               >
                                 اتصال
                               </a>
                             )}
-                            {wa && (
+                            {wa && whatsappHref(wa) && (
                               <a
                                 className={s.buttonSecondary}
-                                href={`https://wa.me/${digits(wa)}`}
+                                href={whatsappHref(wa) ?? undefined}
                                 target="_blank"
                                 rel="noopener noreferrer"
                               >
@@ -286,22 +289,30 @@ function ContactForm({
     phone: string;
     whatsapp: string;
     note: string;
-  }) => void;
+  }) => Promise<unknown> | void;
   onCancel: () => void;
 }) {
   const manual = !entry || entry.kind === "contact";
+  // الزر معطّل أثناء الحفظ: ضغطتان سريعتان لا تضيفان الجهة مرتين.
+  const [busy, setBusy] = useState(false);
   return (
     <form
       className={`${s.form} directory-form`}
-      onSubmit={(ev) => {
+      onSubmit={async (ev) => {
         ev.preventDefault();
+        if (busy) return;
         const f = new FormData(ev.currentTarget);
-        onSave({
-          ...(manual ? { name: String(f.get("name") ?? "") } : {}),
-          phone: String(f.get("phone") ?? ""),
-          whatsapp: String(f.get("whatsapp") ?? ""),
-          note: String(f.get("note") ?? ""),
-        });
+        setBusy(true);
+        try {
+          await onSave({
+            ...(manual ? { name: String(f.get("name") ?? "") } : {}),
+            phone: String(f.get("phone") ?? ""),
+            whatsapp: String(f.get("whatsapp") ?? ""),
+            note: String(f.get("note") ?? ""),
+          });
+        } finally {
+          setBusy(false);
+        }
       }}
     >
       {manual && (
@@ -342,7 +353,7 @@ function ContactForm({
         <input name="note" maxLength={300} defaultValue={entry?.note ?? ""} />
       </label>
       <div className={s.actions}>
-        <button type="submit" className={s.button}>
+        <button type="submit" className={s.button} disabled={busy}>
           {entry ? "حفظ التعديلات" : "إضافة"}
         </button>
         <button type="button" className={s.buttonSecondary} onClick={onCancel}>

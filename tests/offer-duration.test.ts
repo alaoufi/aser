@@ -82,15 +82,21 @@ test("offer validity: permanent stays, expired hides, statistics remain", async 
       },
       false,
     );
-    const shown = async () =>
-      (await listOffers(null)).filter((o) =>
+    const shown = async (viewer = "0123456789abcdef") =>
+      (await listOffers(null, "", null, viewer)).filter((o) =>
         [forever.id, hours.id].includes(o.id),
       );
     assert.equal((await shown()).length, 2, "الاثنان ظاهران");
     // ظهرت مرة: تُعدّ.
     let own = await ownOffers(user);
     // (اختبارات أخرى تعرض العروض بالتوازي، فالعدّ «على الأقل».)
-    assert.ok((own.find((o) => o.id === hours.id)?.views ?? 0) >= 1);
+    const once = own.find((o) => o.id === hours.id)?.views ?? 0;
+    assert.ok(once >= 1);
+    // الزائر نفسه في اليوم نفسه لا يُعدّ مرة أخرى، وصاحب العرض لا يُعدّ أبدًا.
+    await shown();
+    await listOffers(user, "", null, "fedcba9876543210");
+    own = await ownOffers(user);
+    assert.equal(own.find((o) => o.id === hours.id)?.views, once);
     assert.equal(own.find((o) => o.id === forever.id)?.state, "active");
 
     // انتهت ساعات العرض (نقدّم الزمن بتعديل البداية والنهاية إلى الماضي).
@@ -99,7 +105,8 @@ test("offer validity: permanent stays, expired hides, statistics remain", async 
       [hours.id],
     );
     const before = await ownOffers(user);
-    const after = await shown();
+    // زائر آخر: يُعدّ للدائم، ولا يُعدّ للمنتهي.
+    const after = await shown("1111111111111111");
     assert.deepEqual(
       after.map((o) => o.id),
       [forever.id],

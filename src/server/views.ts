@@ -3,7 +3,21 @@ import type { SessionUser } from "../lib/types";
 import { can, isManager } from "../lib/permissions";
 import { db, databaseConfigured } from "./db";
 import { HttpError } from "./security";
-import { clientIp, mask } from "./security-events";
+import { clientIp, mask, sourceKey } from "./security-events";
+import { rateLimit } from "./auth";
+
+/**
+ * حد لكل عنوان للعدّادات (مراجعة 2026-11-24): ما زاد يُرد عاديًا بلا عدّ ولا خطأ للزائر،
+ * فلا يرفع سكربت المشاهدات أو الزوار بتغيير المتصفح.
+ */
+async function countAllowed(request: Request, bucket: string, max: number) {
+  const source = sourceKey(request);
+  if (!source) return true;
+  return rateLimit(`${bucket}:${source}`, max, 60).then(
+    () => true,
+    () => false,
+  );
+}
 
 /**
  * المشاهدات: تُحسب دائمًا لصفحة المنتج وصفحة الأسرة (الموقع والتطبيقان يعرضان الصفحات نفسها).
@@ -13,7 +27,7 @@ import { clientIp, mask } from "./security-events";
 const viewSchema = z
   .object({ kind: z.enum(["product", "producer"]), id: z.uuid() })
   .strict();
-const BOT =
+export const BOT =
   /bot|crawl|spider|slurp|facebookexternalhit|whatsapp|telegrambot|preview|lighthouse|headless/i;
 
 export async function viewsPublic() {
@@ -46,7 +60,10 @@ export async function recordView(
   if (!target) throw new HttpError(404, "الصفحة غير موجودة");
   const agent = request.headers.get("user-agent") ?? "";
   const counts =
-    !BOT.test(agent) && target.owner !== user?.id && Boolean(agent);
+    !BOT.test(agent) &&
+    target.owner !== user?.id &&
+    Boolean(agent) &&
+    (await countAllowed(request, "views-ip", 60));
   if (counts) {
     // الزائر: حسابه إن كان مسجلًا، وإلا عنوانه مع متصفحه (مموّهين)؛ يتجدد كل يوم.
     const visitor = mask(
@@ -208,7 +225,11 @@ export async function recordVisit(request: Request, user: SessionUser | null) {
     user ? `user:${user.id}` : `anon:${clientIp(request) ?? ""}:${agent}`,
   );
   const now = Date.now();
-  if (agent && !BOT.test(agent)) {
+  if (
+    agent &&
+    !BOT.test(agent) &&
+    (await countAllowed(request, "visits-ip", 60))
+  ) {
     presence.set(visitor, now);
     await db().query(
       `WITH seen AS (

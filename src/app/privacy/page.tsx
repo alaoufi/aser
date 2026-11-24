@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
-export const metadata: Metadata = { title: "سياسة الخصوصية" };
+export const metadata: Metadata = {
+  title: "سياسة الخصوصية",
+  alternates: { canonical: "/privacy" },
+};
 export default function Privacy() {
   return (
     <article className="wrap prose page-space">

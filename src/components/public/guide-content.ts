@@ -195,7 +195,7 @@ export const GUIDE_CHAPTERS: GuideChapter[] = [
       "«طبخات اليوم» و«العروض»: أعلن ما تطبخينه اليوم وعروضك الخاصة.",
       "تختار الأسرة بنفسها إظهار الواتساب والجوال أو إخفاءهما.",
     ],
-    links: [{ href: "/dashboard", label: "لوحة الأسرة" }],
+    links: [{ href: "/dashboard", label: "لوحة الأسرة (للأسر المنتجة)" }],
   },
   {
     id: "family-tools",
@@ -213,8 +213,8 @@ export const GUIDE_CHAPTERS: GuideChapter[] = [
       "زر «مشاركة» أعلى لوحتك يرسل رابط صفحة أسرتك ومنتجاتها.",
     ],
     links: [
-      { href: "/dashboard/orders", label: "الطلبات" },
-      { href: "/dashboard/subscriptions", label: "الاشتراكات" },
+      { href: "/dashboard/orders", label: "طلبات الأسرة" },
+      { href: "/dashboard/subscriptions", label: "اشتراكات الأسرة" },
     ],
   },
   {
@@ -231,7 +231,11 @@ export const GUIDE_CHAPTERS: GuideChapter[] = [
       "«لوحة المندوب»: بياناتك وحالتك ومحادثاتك.",
       "مندوب الأسرة الخاص تضيفه الأسرة بنفسها، ويدخل برقم جواله.",
     ],
-    links: [{ href: "/couriers", label: "المندوبون" }],
+    // «تجمع المندوبين» للعملاء والأسر، و«لوحة المندوب» للمندوب نفسه (مراجعة 2026-11-24).
+    links: [
+      { href: "/couriers", label: "تجمع المندوبين (للعملاء والأسر)" },
+      { href: "/courier", label: "لوحة المندوب" },
+    ],
   },
   {
     id: "privacy",

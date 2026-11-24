@@ -21,7 +21,7 @@ export type CustomerRequest = {
   people: number | null;
   neededOn: string | null;
   createdAt: string;
-  status: "open" | "closed";
+  status: "open" | "closed" | "expired";
   /** ما سمح العميل بإظهاره فقط. */
   name: string | null;
   phone: string | null;
@@ -47,7 +47,9 @@ const createSchema = z.object({
 
 const select = `SELECT r.id,r.body,r.category_id AS "categoryId",cat.name AS "categoryName",
   c.name AS "cityName",c.region_id AS "regionId",r.people,to_char(r.needed_on,'YYYY-MM-DD') AS "neededOn",
-  r.created_at AS "createdAt",r.status,
+  r.created_at AS "createdAt",
+  -- انتهت مدة ظهوره (14 يومًا) ولم يُغلق: يراه صاحبه «انتهت مدته» لا «مفتوحًا» (مراجعة 2026-11-24).
+  CASE WHEN r.status='open' AND r.expires_at<=now() THEN 'expired' ELSE r.status END AS status,
   CASE WHEN r.show_name OR r.user_id=$1 THEN u.name END AS name,
   CASE WHEN r.show_phone OR r.user_id=$1 THEN u.phone END AS phone,
   CASE WHEN r.show_whatsapp OR r.user_id=$1 THEN r.whatsapp END AS whatsapp,

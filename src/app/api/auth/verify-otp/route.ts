@@ -12,6 +12,7 @@ import {
 import { recordSecurityEvent, sourceKey } from "@/server/security-events";
 import { HttpError } from "@/server/security";
 import { roleDestination } from "@/server/credentials";
+import { safeDecode } from "@/lib/digits";
 export const POST = api(async (request) => {
   const source = sourceKey(request);
   if (source) await rateLimit("verify-ip:" + source, 40, 900);
@@ -46,7 +47,7 @@ export const POST = api(async (request) => {
     body.name,
     body.purpose,
     {
-      link: refCode ? decodeURIComponent(refCode) : null,
+      link: refCode ? safeDecode(refCode) || null : null,
       invite: body.invite || null,
     },
   );

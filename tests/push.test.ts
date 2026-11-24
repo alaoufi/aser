@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { db } from "../src/server/db";
 import {
   notifyUser,
+  pushEndpointAllowed,
   pushPublicKey,
   setPushTransport,
   subscribePush,
@@ -42,6 +43,16 @@ test(
       await assert.rejects(
         subscribePush(user, { endpoint: "http://insecure.invalid/x", keys }),
       );
+      // خدمات الإشعارات الرسمية فقط: لا عنوان داخلي ولا موقع غريب (SSRF).
+      for (const bad of [
+        "https://169.254.169.254/latest",
+        "https://localhost/x",
+        "https://example.com/push",
+        "https://fcm.googleapis.com:8443/x",
+      ])
+        await assert.rejects(subscribePush(user, { endpoint: bad, keys }));
+      assert.ok(pushEndpointAllowed("https://fcm.googleapis.com/fcm/send/abc"));
+      assert.ok(pushEndpointAllowed("https://web.push.apple.com/QAbc"));
       await subscribePush(user, { endpoint: endpoint("a"), keys });
       await subscribePush(user, {
         endpoint: endpoint("gone"),

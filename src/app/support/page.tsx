@@ -4,6 +4,7 @@ import { getSiteTexts } from "@/server/settings";
 export const metadata = {
   title: "الدعم والتواصل",
   description: "كيف تتواصل مع أكلات جدتنا، وتبلغ عن محتوى، وتحذف حسابك.",
+  alternates: { canonical: "/support" },
 };
 
 /** صفحة الدعم: رابط الدعم المطلوب في متجري آبل وقوقل. */

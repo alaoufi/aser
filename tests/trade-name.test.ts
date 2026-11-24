@@ -155,6 +155,30 @@ test(
         tradeName: "أسرة مختلفة " + uid,
       });
       otherPid = second.id;
+      // أسرة أوقفتها الإدارة لا تعيد نفسها «بانتظار الاعتماد» بتعديل ملفها.
+      await pool.query(
+        "UPDATE jdatna.producer_profiles SET status='suspended' WHERE id=$1",
+        [otherPid],
+      );
+      await assert.rejects(
+        saveProfile(other, {
+          ...data,
+          phone: other.phone,
+          documentId: undefined,
+          documentType: "producer_certificate",
+          tradeName: "أسرة مختلفة " + uid,
+        }),
+        { status: 403 },
+      );
+      assert.equal(
+        (
+          await pool.query(
+            "SELECT status FROM jdatna.producer_profiles WHERE id=$1",
+            [otherPid],
+          )
+        ).rows[0].status,
+        "suspended",
+      );
     } finally {
       if (productId) {
         await pool.query(
