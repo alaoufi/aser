@@ -11,7 +11,7 @@ import {
 } from "@/components/public/visit-stats";
 import { ChatButton } from "@/components/forms/chat";
 import { DirectoryButton } from "@/components/forms/directory";
-import { MemberNo } from "@/components/forms/shared";
+import { MemberNo } from "@/components/forms/session";
 import { LocationLink } from "@/components/forms/location-share";
 import { LocationCheck } from "@/components/maps/location-check";
 import { RatingBox } from "@/components/forms/rating-box";

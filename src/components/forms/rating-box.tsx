@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Stars, starPath } from "@/components/public/stars";
-import { api, useSession } from "./shared";
+import { api, useSession } from "./session";
 
 type View = {
   average: number | null;

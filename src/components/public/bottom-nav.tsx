@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { isFamilyAccount, useSession } from "@/components/forms/shared";
+import { isFamilyAccount, useSession } from "@/components/forms/session";
 import { ownAccountHref } from "./account-link";
 import { useUnread } from "./message-alert";
 
@@ -12,13 +12,14 @@ import { useUnread } from "./message-alert";
  *   - الزائر: «اطلب» و«دليلي» و«المحادثات» تفتح تسجيل الدخول.
  * لا تظهر في لوحة الإدارة ولا على الشاشة العريضة.
  */
-export function BottomNav() {
+export function BottomNav({ guest = false }: { guest?: boolean }) {
   const { user, ready } = useSession();
   const path = usePathname() ?? "/";
   const unread = useUnread();
   if (path === "/admin" || path.startsWith("/admin/")) return null;
   // تظهر بعد معرفة الحساب، حتى لا يُضغط زر الزائر («دخول») لعضو مسجّل. ثابتة أسفل الشاشة فلا تزيح شيئًا.
-  if (!ready) return null;
+  // والزائر بلا جلسة (يعرفه الخادم من الكوكي) تظهر له فورًا مع أول رسم.
+  if (!ready && !guest) return null;
   const family = isFamilyAccount(user);
   const plus = !user
     ? { href: "/login", label: "اطلب" }

@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { api, useSession } from "@/components/forms/shared";
+import { api, useSession } from "@/components/forms/session";
 
 /** نموذج الاقتراح: للزائر والعضو. الاسم ووسيلة التواصل اختياريان للزائر. */
 export function SuggestionForm() {

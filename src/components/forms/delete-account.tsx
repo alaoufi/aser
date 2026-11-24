@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
-import { api, useSession } from "./shared";
+import { api, useSession } from "./session";
 import { stopPushOnLogout } from "@/components/public/push-setup";
 import {
   DELETE_CONFIRMATION as CONFIRM,

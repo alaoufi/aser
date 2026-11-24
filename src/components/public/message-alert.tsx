@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api, useSession } from "@/components/forms/shared";
+import { api, useSession } from "@/components/forms/session";
 import { onLive } from "@/components/forms/live";
 
 type Unread = {

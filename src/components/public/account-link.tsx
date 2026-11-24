@@ -5,7 +5,7 @@ import {
   accountKind,
   isFamilyAccount,
   useSession,
-} from "@/components/forms/shared";
+} from "@/components/forms/session";
 import { AdminPanelLink } from "./admin-panel-link";
 
 /**

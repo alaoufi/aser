@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { useSession } from "@/components/forms/shared";
+import { useSession } from "@/components/forms/session";
 import type { SiteTexts } from "@/lib/site-texts";
 
 type WelcomeTexts = Pick<

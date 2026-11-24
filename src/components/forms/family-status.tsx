@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import type { FamilyState } from "@/lib/family-status";
 import s from "./account.module.css";
-import { api, dropWarm, knownSession, loadSession, warmApi } from "./shared";
+import { api, dropWarm, knownSession, loadSession, warmApi } from "./session";
 
 export const FAMILY_STATUS_CHANGED = "jdatna:family-status";
 const steps: FamilyState["key"][] = [

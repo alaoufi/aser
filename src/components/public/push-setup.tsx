@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { api, useSession } from "@/components/forms/shared";
+import { api, useSession } from "@/components/forms/session";
 
 const LATER = "jdatna:push-later";
 

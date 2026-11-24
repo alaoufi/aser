@@ -15,6 +15,7 @@ import "./fonts.css";
 import type { Metadata, Viewport } from "next";
 import { preload } from "react-dom";
 import Link from "next/link";
+import { cookies } from "next/headers";
 import Image from "next/image";
 import "./globals.css";
 import "./heritage.css";
@@ -28,6 +29,7 @@ import {
   visitorTemplate,
 } from "@/server/settings";
 import { StoreBadges } from "@/components/public/store-badges";
+import { NavProgress } from "@/components/public/nav-progress";
 import { VerifiedStore } from "@/components/public/verified-store";
 import { VerifiedStoreGate } from "@/components/public/verified-store-gate";
 import { dishPath, findDish } from "@/lib/dishes";
@@ -137,11 +139,13 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   // الخط العربي الأساسي يُطلب مع أول الصفحة، لا بعد قراءة ملف التنسيق، فيظهر النص بخطه أسرع.
-  preload("/fonts/noto-sans-arabic-arabic.woff2", {
+  preload("/fonts/noto-sans-arabic-core.woff2", {
     as: "font",
     type: "font/woff2",
     crossOrigin: "anonymous",
   });
+  // زائر بلا جلسة: القائمة السفلية تُرسم في HTML الخادم فورًا بدل انتظار /api/session.
+  const guest = !(await cookies()).has("jdatna_session");
   const [template, texts, appLinks, domainCodes] = await Promise.all([
     visitorTemplate(),
     getSiteTexts(),
@@ -268,7 +272,8 @@ export default async function RootLayout({
           />
         </SiteOnly>
         <main id="main">{children}</main>
-        <BottomNav />
+        <BottomNav guest={guest} />
+        <NavProgress />
         <SaveToast />
         <SiteOnly>
           <FamilyWelcome texts={texts} />
