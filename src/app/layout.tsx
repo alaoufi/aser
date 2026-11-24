@@ -297,21 +297,45 @@ export default async function RootLayout({
               </div>
               <div>
                 <h3>اكتشف</h3>
-                <Link href="/browse">الأكلات والمنتجات</Link>
-                <Link href="/producers">الأسر المنتجة</Link>
-                <Link href="/akalat">الأكلات الشعبية</Link>
-                <Link href="/offers">العروض الخاصة</Link>
-                <Link href="/subscriptions">الاشتراكات</Link>
-                <Link href="/orders">طلباتي</Link>
+                <Link href="/browse" prefetch={false}>
+                  الأكلات والمنتجات
+                </Link>
+                <Link href="/producers" prefetch={false}>
+                  الأسر المنتجة
+                </Link>
+                <Link href="/akalat" prefetch={false}>
+                  الأكلات الشعبية
+                </Link>
+                <Link href="/offers" prefetch={false}>
+                  العروض الخاصة
+                </Link>
+                <Link href="/subscriptions" prefetch={false}>
+                  الاشتراكات
+                </Link>
+                <Link href="/orders" prefetch={false}>
+                  طلباتي
+                </Link>
               </div>
               <div>
                 <h3>عن المنصة</h3>
-                <Link href="/about">حكايتنا</Link>
-                <Link href="/guide">دليل المستخدم</Link>
-                <Link href="/privacy">سياسة الخصوصية</Link>
-                <Link href="/terms">شروط الاستخدام</Link>
-                <Link href="/support">الدعم والتواصل</Link>
-                <Link href="/suggestions">الاقتراحات</Link>
+                <Link href="/about" prefetch={false}>
+                  حكايتنا
+                </Link>
+                <Link href="/guide" prefetch={false}>
+                  دليل المستخدم
+                </Link>
+                <Link href="/privacy" prefetch={false}>
+                  سياسة الخصوصية
+                </Link>
+                <Link href="/terms" prefetch={false}>
+                  شروط الاستخدام
+                </Link>
+                <Link href="/support" prefetch={false}>
+                  الدعم والتواصل
+                </Link>
+                <Link href="/suggestions" prefetch={false}>
+                  الاقتراحات
+                </Link>
               </div>
             </div>
             <nav className="footer-searches" aria-label="عمليات بحث شائعة">

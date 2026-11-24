@@ -95,7 +95,13 @@ export async function listDirectory(
   return (
     await db().query<DirectoryEntry>(
       `SELECT d.id,d.kind,
-         COALESCE(p.trade_name,p.name,k.name,cu.name,d.name) AS name,
+         COALESCE(p.trade_name,p.name,k.name,
+           -- عميل راسلته الأسرة من طلب لم يوافق فيه على إظهار اسمه، ولم يطلب منها: «عميل».
+           CASE WHEN d.kind='customer' AND EXISTS(SELECT 1 FROM jdatna.conversations ac
+               WHERE ac.customer_id=d.customer_id AND ac.producer_id=$2 AND ac.anonymous_customer)
+             AND NOT EXISTS(SELECT 1 FROM jdatna.order_requests ao
+               WHERE ao.user_id=d.customer_id AND ao.producer_id=$2) THEN 'عميل' ELSE cu.name END,
+           d.name) AS name,
          COALESCE((SELECT pu.member_no FROM jdatna.users pu WHERE pu.id=p.user_id),ku.member_no,cu.member_no) AS "memberNo",
          p.slug,
          COALESCE(pc.name,kc.name) AS city,

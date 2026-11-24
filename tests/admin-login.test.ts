@@ -115,7 +115,7 @@ test(
         )
       ).rows[0].id as string;
       assert.equal(await sessions(admin.id), 0, "no admin session before code");
-      const code = /(\d{4})$/.exec(sent.at(-1) ?? "")?.[1];
+      const code = /(\d{6})$/.exec(sent.at(-1) ?? "")?.[1];
       assert.ok(code, "admin code sent by SMS");
       assert.match(sent.at(-1)!, /دخول إدارة/);
 

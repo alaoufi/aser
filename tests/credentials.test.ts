@@ -80,12 +80,12 @@ test("role destinations use server roles only", () => {
   assert.equal(roleDestination("producer"), "/dashboard");
   assert.equal(roleDestination("customer"), "/orders");
 });
-test("registration SMS has exact requested wording followed by four digits", () => {
+test("registration SMS has exact requested wording followed by six digits", () => {
   assert.equal(
-    otpMessage("1234"),
-    "رمز التحقق للتسجيل في موقع أكلات جدتنا 1234",
+    otpMessage("123456"),
+    "رمز التحقق للتسجيل في موقع أكلات جدتنا 123456",
   );
-  assert.throws(() => otpMessage("123456"));
+  assert.throws(() => otpMessage("1234"));
 });
 test(
   "isolated credentials require one-use fresh OTP, preserve roles, rotate sessions and reject conflicting identities",

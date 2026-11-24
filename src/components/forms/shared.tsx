@@ -723,7 +723,7 @@ export function LoginForm({
             ? "ادخل باسم المستخدم أو جوالك المتحقق منه وكلمة المرور. نفتح حسابك بحسب صلاحياته المعتمدة."
             : mode === "recover"
               ? "نرسل رمزًا إلى الجوال المسجل لاستعادة كلمة المرور. إذا لم تعيّن كلمة مرور لحسابك سابقًا، يمكنك إعدادها بهذه الخطوة مرة واحدة."
-              : "نرسل رمزًا من أربعة أرقام لإنشاء حسابك لأول مرة، ثم تعيّن كلمة مرور للدخول. لا تشارك الرمز مع أي شخص."}
+              : "نرسل رمزًا من ستة أرقام لإنشاء حسابك لأول مرة، ثم تعيّن كلمة مرور للدخول. لا تشارك الرمز مع أي شخص."}
       </p>
       {register && (
         <p className={s.notice}>
@@ -806,9 +806,9 @@ export function LoginForm({
                 name="adminCode"
                 inputMode="numeric"
                 autoComplete="one-time-code"
-                pattern="[0-9٠-٩۰-۹]{4}"
+                pattern="[0-9٠-٩۰-۹]{4,6}"
                 minLength={4}
-                maxLength={4}
+                maxLength={6}
                 required
                 autoFocus
               />
@@ -925,9 +925,9 @@ export function LoginForm({
                   name="code"
                   inputMode="numeric"
                   autoComplete="one-time-code"
-                  pattern="[0-9٠-٩۰-۹]{4}"
+                  pattern="[0-9٠-٩۰-۹]{4,6}"
                   minLength={4}
-                  maxLength={4}
+                  maxLength={6}
                   required
                   autoFocus
                 />

@@ -85,9 +85,9 @@ test(
         const body = JSON.parse(String(init?.body));
         assert.match(
           body.message,
-          /^رمز التحقق للتسجيل في موقع أكلات جدتنا \d{4}$/,
+          /^رمز التحقق للتسجيل في موقع أكلات جدتنا \d{6}$/,
         );
-        codes.set(body.to, body.message.slice(-4));
+        codes.set(body.to, body.message.slice(-6));
         return Response.json({ accepted: true });
       };
       await pool.query(

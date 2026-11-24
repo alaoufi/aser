@@ -162,7 +162,7 @@ const otpHash = (id: string, code: string) =>
     .update(id + ":" + code)
     .digest("hex");
 export function otpMessage(code: string) {
-  if (!/^\d{4}$/.test(code)) throw new Error("Invalid OTP format");
+  if (!/^\d{6}$/.test(code)) throw new Error("Invalid OTP format");
   return `رمز التحقق للتسجيل في موقع أكلات جدتنا ${code}`;
 }
 export async function requestOtp(phoneValue: string, purpose: OtpPurpose) {
@@ -173,9 +173,9 @@ export async function requestOtp(phoneValue: string, purpose: OtpPurpose) {
       "التسجيل غير متاح حتى اعتماد خدمات التحقق وحفظ المستندات",
     );
   const phone = normalizePhone(phoneValue);
-  await rateLimit("otp-global", 100, 3600);
+  await rateLimit("otp-global", 600, 3600);
   await rateLimit("otp-phone:" + hash(phone), 3, 900);
-  // سقف يومي لكل جوال: الرمز أربعة أرقام، فلا تُتاح محاولات تخمين متواصلة طوال اليوم.
+  // سقف يومي لكل جوال: حتى مع رمز من ستة أرقام لا تُتاح محاولات تخمين متواصلة طوال اليوم.
   await rateLimit("otp-phone-day:" + hash(phone), 8, 86400);
   // أرقام مراجعة المتاجر: لا رسالة، والرمز الثابت أثناء «وضع المراجعة» فقط
   // (قبل فحص «الجوال مسجل» لأنها تحرر رقم إنشاء الحساب من حساب مراجعة سابق).
@@ -221,7 +221,7 @@ export async function verifyOtp(
   referral?: { invite?: string | null; link?: string | null },
 ) {
   if (!registrationOpen()) throw new HttpError(503, "خدمة التحقق غير متاحة");
-  await rateLimit("verify-global", 800, 3600);
+  await rateLimit("verify-global", 8000, 3600);
   await rateLimit("verify:" + id, 8, 900);
   /* failed attempts must commit, not roll back */ return transaction(
     async (client) => {
@@ -352,7 +352,7 @@ export async function startAdminChallenge(
   return id;
 }
 export async function verifyAdminLogin(id: string, code: string) {
-  await rateLimit("verify-global", 800, 3600);
+  await rateLimit("verify-global", 8000, 3600);
   await rateLimit("verify:" + id, 8, 900);
   /* failed attempts must commit, not roll back */ return transaction(
     async (client) => {

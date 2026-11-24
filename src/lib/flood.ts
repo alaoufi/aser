@@ -3,11 +3,15 @@
  * خفيف جدًا (لا قاعدة بيانات لكل طلب)، ويُقطع الإغراق قبل أن يصل لأي صفحة أو API.
  * الحدود سخية لأن مستخدمي الجوال قد يتشاركون عنوانًا واحدًا (CGNAT).
  */
-export type FloodBucket = "page" | "api-read" | "api-write" | "live";
+export type FloodBucket =
+  "page" | "prefetch" | "api-read" | "api-write" | "live";
 
 /** الحد الأقصى في الدقيقة لكل عنوان. */
 export const FLOOD_LIMITS: Record<FloodBucket, number> = {
   page: 240,
+  // التحميل المسبق للروابط (Next يرسله تلقائيًا، عشرات لكل صفحة): خانة مستقلة سخية، حتى لا يأكل
+  // حد الصفحات فيُحجب متصفح عادي بعد بضع صفحات (مراجعة 2026-11-24).
+  prefetch: 1500,
   "api-read": 600,
   "api-write": 90,
   live: 30,
@@ -19,11 +23,17 @@ const store: Map<string, Counter> = ((
 ).__jdatnaFlood ??= new Map());
 
 /** نوع الطلب: صفحة، أو قراءة API، أو تعديل، أو فتح بث لحظي. */
-export function floodBucket(method: string, path: string): FloodBucket {
+export function floodBucket(
+  method: string,
+  path: string,
+  prefetch = false,
+): FloodBucket {
   if (path === "/api/live") return "live";
   if (path.startsWith("/api/"))
     return method === "GET" || method === "HEAD" ? "api-read" : "api-write";
-  return "page";
+  return prefetch && (method === "GET" || method === "HEAD")
+    ? "prefetch"
+    : "page";
 }
 
 /**

@@ -430,7 +430,7 @@ test(
               DOCUMENT_ENCRYPTION_KEY: encryptionKey,
             });
             await db().query(
-              "INSERT INTO jdatna.rate_limits(key,count,reset_at) VALUES('otp-global',100,now()+interval '1 hour'),('verify-global',800,now()+interval '1 hour') ON CONFLICT(key) DO UPDATE SET count=EXCLUDED.count,reset_at=EXCLUDED.reset_at",
+              "INSERT INTO jdatna.rate_limits(key,count,reset_at) VALUES('otp-global',600,now()+interval '1 hour'),('verify-global',8000,now()+interval '1 hour') ON CONFLICT(key) DO UPDATE SET count=EXCLUDED.count,reset_at=EXCLUDED.reset_at",
             );
             await assert.rejects(requestOtp(phone, "signup"), /محاولات كثيرة/);
             for (const id of ids)

@@ -28,7 +28,7 @@ test("registration transport receives exact brand wording and four-digit OTP", a
       );
     },
   );
-  assert.match(delivered, /^رمز التحقق للتسجيل في موقع أكلات جدتنا \d{4}$/);
+  assert.match(delivered, /^رمز التحقق للتسجيل في موقع أكلات جدتنا \d{6}$/);
 });
 test("Taqnyat sends Saudi recipient and approved sender, accepts documented receipt", async () => {
   let called = false;

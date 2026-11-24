@@ -211,20 +211,22 @@ test(
         { status: 409 },
       );
 
-      // جوال مسجل لعميل: يتحول لمندوب خاص ويبقى حسابه.
-      const converted = await saveFamilyCourier(famUser, {
-        ...pledge,
-        name: "عميل صار مندوبًا",
-        phone: customer.phone,
-      });
-      assert.equal(converted.userId, customer.id);
+      // جوال مسجل لعميل: لا يُحوَّل لمندوب بغير موافقة صاحبه، وحسابه يبقى عميلًا (مراجعة أمنية 2026-11-24).
+      await assert.rejects(
+        saveFamilyCourier(famUser, {
+          ...pledge,
+          name: "عميل صار مندوبًا",
+          phone: customer.phone,
+        }),
+        { status: 409 },
+      );
       assert.equal(
         (
           await pool.query("SELECT role FROM jdatna.users WHERE id=$1", [
             customer.id,
           ])
         ).rows[0].role,
-        "courier",
+        "customer",
       );
       // مرفوض: مندوب عام، أو مندوب خاص لأسرة أخرى، أو أسرة منتجة، أو إدارة.
       await assert.rejects(

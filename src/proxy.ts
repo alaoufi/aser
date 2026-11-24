@@ -14,7 +14,13 @@ export function proxy(request: NextRequest) {
     .at(-1);
   if (!ip) return NextResponse.next();
   const path = request.nextUrl.pathname;
-  const bucket = floodBucket(request.method, path);
+  // صفحة «لا يوجد اتصال» يطلبها عامل الخدمة: لا تُحسب ولا تُحجب.
+  if (path === "/offline.html") return NextResponse.next();
+  const prefetch =
+    request.headers.get("next-router-prefetch") === "1" ||
+    request.headers.get("purpose") === "prefetch" ||
+    request.headers.get("sec-purpose")?.includes("prefetch") === true;
+  const bucket = floodBucket(request.method, path, prefetch);
   const result = floodCheck(ip, bucket);
   if (result.ok) return NextResponse.next();
   if (result.first) {

@@ -42,7 +42,12 @@ const KIND_SQL = `CASE WHEN c.courier_id=$1 THEN 'customer'
         WHEN c.customer_id=$1 AND c.courier_id IS NOT NULL THEN 'courier'
         WHEN c.customer_id=$1 THEN 'family'
         WHEN u.role='courier' THEN 'courier' ELSE 'customer' END`;
-const TITLE_SQL = `CASE WHEN c.customer_id=$1 THEN COALESCE(p.trade_name,p.name,kp.name) ELSE u.name END`;
+// اسم العميل لا يظهر للأسرة إن بدأت هي المحادثة من «طلب عميل» لم يوافق صاحبه على إظهار اسمه،
+// حتى يطلب منها (فالطلب يحمل اسمه). مراجعة أمنية 2026-11-24.
+const TITLE_SQL = `CASE WHEN c.customer_id=$1 THEN COALESCE(p.trade_name,p.name,kp.name)
+        WHEN c.anonymous_customer AND NOT EXISTS(SELECT 1 FROM jdatna.order_requests ao
+          WHERE ao.user_id=c.customer_id AND ao.producer_id=c.producer_id) THEN 'عميل'
+        ELSE u.name END`;
 const VOICE_COLUMNS = `m.id,m.body,m.sender_id=$2 AS mine,m.created_at AS "createdAt",v.duration_ms AS "voiceMs"`;
 
 /**
@@ -65,7 +70,8 @@ export async function startConversation(user: SessionUser, input: unknown) {
     .parse(input);
   let customerId: string,
     producerId: string | null = null,
-    courierId: string | null = null;
+    courierId: string | null = null,
+    anonymous = false;
   if ("request" in parsed) {
     const family = (
       await db().query(
@@ -77,16 +83,20 @@ export async function startConversation(user: SessionUser, input: unknown) {
       throw new HttpError(403, "مراسلة أصحاب الطلبات للأسر المنتجة المعتمدة");
     const req = (
       await db().query(
-        `SELECT r.user_id FROM jdatna.customer_requests r JOIN jdatna.users u ON u.id=r.user_id
+        `SELECT r.user_id,r.show_name FROM jdatna.customer_requests r JOIN jdatna.users u ON u.id=r.user_id
          WHERE r.id=$1 AND r.status='open' AND r.expires_at>now() AND u.suspended_at IS NULL AND u.deleted_at IS NULL`,
         [parsed.request],
       )
-    ).rows[0] as { user_id: string } | undefined;
+    ).rows[0] as { user_id: string; show_name: boolean } | undefined;
     if (!req) throw new HttpError(404, "الطلب لم يعد مفتوحًا");
     if (req.user_id === user.id)
       throw new HttpError(400, "لا يمكنك مراسلة نفسك");
+    // حساب مراجعة المتاجر لا يصل لعملاء حقيقيين، ولا العكس.
+    const { assertReviewPair } = await import("./store-review");
+    await assertReviewPair(db(), req.user_id, family.id);
     customerId = req.user_id;
     producerId = family.id;
+    anonymous = !req.show_name;
   } else if ("delivery" in parsed) {
     // مندوب الطلب وعميله فقط، ما دام التوصيل لم يكتمل أو اكتمل حديثًا.
     const row = (
@@ -182,10 +192,13 @@ export async function startConversation(user: SessionUser, input: unknown) {
         ? `INSERT INTO jdatna.conversations(id,customer_id,courier_id) VALUES($1,$2,$3)
            ON CONFLICT(customer_id,courier_id) WHERE courier_id IS NOT NULL DO UPDATE SET ${reopen}
            RETURNING id`
-        : `INSERT INTO jdatna.conversations(id,customer_id,producer_id) VALUES($1,$2,$3)
+        : // محادثة قائمة تبقى كما هي (الاسم معروف فيها من قبل)؛ الجديدة من طلب بلا اسم تبدأ مجهولة.
+          `INSERT INTO jdatna.conversations(id,customer_id,producer_id,anonymous_customer) VALUES($1,$2,$3,$4)
            ON CONFLICT(customer_id,producer_id) DO UPDATE SET ${reopen}
            RETURNING id`,
-      [randomUUID(), customerId, courierId ?? producerId],
+      courierId
+        ? [randomUUID(), customerId, courierId]
+        : [randomUUID(), customerId, producerId, anonymous],
     )
   ).rows[0];
   return { id: row.id as string };
