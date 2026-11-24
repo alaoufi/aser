@@ -189,7 +189,7 @@ export function ProfileForm({
           if (input) input.value = "";
         }
       }
-      await api("/api/producer/profile", {
+      const saved = await api<{ status: string }>("/api/producer/profile", {
         method: "POST",
         body: JSON.stringify({
           ...optional,
@@ -209,7 +209,10 @@ export function ProfileForm({
       setSuccess(
         registration || !profile
           ? "تم تسجيل أسرتك بنجاح ✓ طلبك الآن تحت المراجعة، وستظهر حالة الحساب أعلى الصفحة. يمكنك إضافة منتجاتك خلال المراجعة."
-          : "تم حفظ البيانات وإرسالها للمراجعة.",
+          : saved.status === "approved"
+            ? // قرار المالك 2026-11-24: التعديل العادي لا يعيد الأسرة المعتمدة للمراجعة.
+              "تم حفظ البيانات، وأسرتك ما زالت ظاهرة."
+            : "تم حفظ البيانات وإرسالها للمراجعة.",
       );
       await load().catch(() => {});
       window.dispatchEvent(new Event(FAMILY_STATUS_CHANGED));
@@ -492,7 +495,11 @@ export function ProfileForm({
           </details>
           <FormIssues issues={issues} />
           <button className={s.button} disabled={busy}>
-            {busy ? "جارٍ الحفظ…" : "حفظ وإرسال للمراجعة"}
+            {busy
+              ? "جارٍ الحفظ…"
+              : profile?.status === "approved"
+                ? "حفظ"
+                : "حفظ وإرسال للمراجعة"}
           </button>
         </form>
       )}

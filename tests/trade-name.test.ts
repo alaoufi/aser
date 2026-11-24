@@ -89,6 +89,31 @@ test(
         [pid],
       );
       assert.equal((await getProducer("family-" + pid))?.name, "تجاري-" + uid);
+      // قرار المالك 2026-11-24: التعديل العادي يبقي الأسرة المعتمدة ظاهرة،
+      // وتغيير الاسم التجاري يعيدها «بانتظار الاعتماد».
+      const statusOf = async () =>
+        (
+          await pool.query(
+            "SELECT status FROM jdatna.producer_profiles WHERE id=$1",
+            [pid],
+          )
+        ).rows[0].status;
+      assert.equal(
+        (await saveProfile(user, { ...data, description: "وصف جديد" })).status,
+        "approved",
+      );
+      assert.equal(await statusOf(), "approved");
+      assert.equal(
+        (await saveProfile(user, { ...data, tradeName: "تجاري2-" + uid }))
+          .status,
+        "pending",
+      );
+      assert.equal(await statusOf(), "pending");
+      await saveProfile(user, { ...data, tradeName: "تجاري-" + uid });
+      await pool.query(
+        "UPDATE jdatna.producer_profiles SET status='approved'WHERE id=$1",
+        [pid],
+      );
       // البحث بالاسم المعلن فقط؛ الاسم الداخلي (للإدارة) لا يكشف الأسرة.
       assert.ok(
         (await searchProducers({ q: "تجاري-" + uid })).some(
