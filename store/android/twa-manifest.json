@@ -39,8 +39,8 @@
       "chosenIconUrl": "https://jdtna.sa/brand/app-icon-192.png"
     }
   ],
-  "appVersion": "1.0.1",
-  "appVersionCode": 2,
+  "appVersion": "1.0.2",
+  "appVersionCode": 3,
   "minSdkVersion": 21,
   "signingKey": {
     "path": "./android.keystore",
