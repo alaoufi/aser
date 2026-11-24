@@ -53,7 +53,11 @@ jobs:
             exit 1
           fi
           export KEYSTORE="$RUNNER_TEMP/upload.keystore"
-          echo "$KEYSTORE_BASE64" | base64 -d > "$KEYSTORE"
+          # المسافات وأسطر Windows من اللصق لا تُفسد الملف.
+          if ! printf '%s' "$KEYSTORE_BASE64" | tr -d ' \r\n' | base64 -d > "$KEYSTORE" 2>/dev/null; then
+            echo "السر ANDROID_KEYSTORE_BASE64 ليس نص base64 صالحًا. أعد نسخه بأمر PowerShell ولصقه." >&2
+            exit 1
+          fi
           version=$(node -p 'const m=require("./store/android/twa-manifest.json");m.appVersion+"-"+m.appVersionCode')
           out="$RUNNER_TEMP/jdatna-$version.aab"
           cp "$RUNNER_TEMP/app/app/build/outputs/bundle/release/app-release.aab" "$out"
