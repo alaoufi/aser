@@ -118,6 +118,10 @@ test("a family's add-product form leaves out the fields the admin hid or deleted
   await expect(form.getByLabel("اسم المنتج")).toBeVisible();
   for (const gone of ["وحدة البيع", "تفاصيل المنتج", "المكونات", "قصة الأكلة"])
     await expect(form.getByLabel(gone)).toHaveCount(0);
+  // غير الأساسي مطويّ تحت «تفاصيل إضافية»، وحالة «جاهز / حسب الطلب» ليست في النموذج.
+  await expect(form.getByLabel("مدة الصلاحية")).toBeHidden();
+  await expect(form.locator('select[name="status"]')).toHaveCount(0);
+  await form.getByText("تفاصيل إضافية (اختياري)").click();
   await expect(form.getByLabel("مدة الصلاحية")).toBeVisible();
   await form.getByLabel("اسم المنتج").fill("معمول");
   await form.getByLabel("السعر بالريال").fill("30");

@@ -1,6 +1,7 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { enterNext } from "./enter-next";
 import {
   AccountShell,
   Guard,
@@ -153,7 +154,11 @@ function CustomerSide({
         وواتسابك لا تظهر إلا إذا اخترت ذلك.
       </p>
       <Message error={error} success={success} />
-      <form className={`${s.card} ${s.form}`} onSubmit={submit}>
+      <form
+        className={`${s.card} ${s.form} compact-form`}
+        onSubmit={submit}
+        onKeyDown={enterNext}
+      >
         <label className={s.field}>
           <span>وش تطلب؟</span>
           <textarea
@@ -190,8 +195,7 @@ function CustomerSide({
               ))}
             </select>
           </label>
-        </div>
-        <div className="request-row">
+          {/* خانة «اليوم» أُلغيت (طلب المالك 2026-11-24: لا تواريخ، حقول أقل): يُكتب اليوم في نص الطلب. */}
           <label className={s.field}>
             <span>عدد الأشخاص (اختياري)</span>
             <input
@@ -201,10 +205,6 @@ function CustomerSide({
               max={1000}
               inputMode="numeric"
             />
-          </label>
-          <label className={s.field}>
-            <span>اليوم (اختياري)</span>
-            <input name="neededOn" type="date" />
           </label>
         </div>
         <fieldset className="request-consent">

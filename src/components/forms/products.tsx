@@ -1,6 +1,7 @@
 "use client";
 import { categoryLabel } from "@/lib/category-label";
 import { useEffect, useState } from "react";
+import { enterNext } from "./enter-next";
 import type { Product, Category } from "@/lib/types";
 import { ProductPhoto } from "./product-photo";
 import { LibraryPicker, type LibraryPhoto } from "./library";
@@ -227,9 +228,10 @@ export function Products() {
           </button>
           {editing !== undefined && (
             <form
-              className={`${s.card} ${s.form}`}
+              className={`${s.card} ${s.form} compact-form`}
               key={editing?.id || "new"}
               onSubmit={save}
+              onKeyDown={enterNext}
               data-product-form
             >
               <h2>{editing ? "تعديل المنتج" : "منتج جديد"}</h2>
@@ -262,6 +264,7 @@ export function Products() {
                   }}
                 />
               )}
+              {/* الأساسي أولًا بترتيب ما تفكر فيه الأسرة: الاسم، القسم، السعر، ثم التفاصيل والتوصيل (طلب المالك 2026-11-24). */}
               <div className={s.grid}>
                 <label className={s.field}>
                   اسم المنتج
@@ -272,39 +275,31 @@ export function Products() {
                     defaultValue={editing?.name}
                   />
                 </label>
-                {show("unit") ? (
-                  <label className={s.field}>
-                    وحدة البيع
-                    <input
-                      name="unit"
-                      required
-                      defaultValue={editing?.unit || "طبق"}
-                      maxLength={60}
-                    />
-                  </label>
-                ) : (
-                  <Keep name="unit" value={editing?.unit || "طبق"} />
+              </div>
+              <fieldset>
+                <legend>القسم (من أقسامك)</legend>
+                {mine.length === 0 && (
+                  <p className={s.notice}>
+                    اختر أقسام منتجاتك أولًا من صفحة بيانات الأسرة.
+                  </p>
                 )}
-                {show("status") ? (
-                  <label className={s.field}>
-                    <span className="sr-only">التوفر</span>
-                    <select
-                      name="status"
-                      defaultValue={editing?.status || "available"}
-                    >
-                      <option value="" disabled>
-                        اختر حالة التوفر
-                      </option>
-                      {Object.entries(statusLabels).map(([v, n]) => (
-                        <option key={v} value={v}>
-                          {n}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                ) : (
-                  <Keep name="status" value={editing?.status || "available"} />
-                )}
+                <div className={s.checks}>
+                  {categories
+                    .filter((c) => mine.includes(c.id))
+                    .map((c) => (
+                      <label key={c.id}>
+                        <input
+                          type="checkbox"
+                          name="categoryIds"
+                          value={c.id}
+                          defaultChecked={editing?.categoryIds.includes(c.id)}
+                        />
+                        {categoryLabel(c, categories)}
+                      </label>
+                    ))}
+                </div>
+              </fieldset>
+              <div className={s.grid}>
                 {show("price") && (
                   <label className={s.field}>
                     السعر بالريال
@@ -319,6 +314,19 @@ export function Products() {
                     />
                   </label>
                 )}
+                {show("unit") ? (
+                  <label className={s.field}>
+                    وحدة البيع
+                    <input
+                      name="unit"
+                      required
+                      defaultValue={editing?.unit || "طبق"}
+                      maxLength={60}
+                    />
+                  </label>
+                ) : (
+                  <Keep name="unit" value={editing?.unit || "طبق"} />
+                )}
               </div>
               <label className={s.checks} hidden={!show("price")}>
                 <input
@@ -328,6 +336,8 @@ export function Products() {
                 />
                 السعر عند التواصل
               </label>
+              {/* حالتا «جاهز / حسب الطلب» أُلغيتا من النموذج (طلب المالك 2026-11-24): المنتج المنشور متوفر، والإخفاء بزر «إخفاء». */}
+              <Keep name="status" value="available" />
               {show("description") ? (
                 <label className={s.field}>
                   تفاصيل المنتج
@@ -370,76 +380,83 @@ export function Products() {
                   />
                 </>
               )}
-              <fieldset>
-                <legend>القسم (من أقسامك)</legend>
-                {mine.length === 0 && (
-                  <p className={s.notice}>
-                    اختر أقسام منتجاتك أولًا من صفحة بيانات الأسرة.
-                  </p>
+              {/* غير الأساسي مطويّ، فالنموذج قصير؛ يُفتح تلقائيًا إن كان في المنتج شيء منه. */}
+              <details
+                className="form-more"
+                hidden={
+                  !(
+                    show("allergens") ||
+                    show("ingredients") ||
+                    show("storage") ||
+                    show("shelfLife") ||
+                    show("preparationTime") ||
+                    show("story")
+                  )
+                }
+                open={Boolean(
+                  editing &&
+                  (editing.allergens.length ||
+                    editing.ingredients ||
+                    editing.storage ||
+                    editing.shelfLife ||
+                    editing.preparationTime ||
+                    editing.story),
                 )}
-                <div className={s.checks}>
-                  {categories
-                    .filter((c) => mine.includes(c.id))
-                    .map((c) => (
-                      <label key={c.id}>
-                        <input
-                          type="checkbox"
-                          name="categoryIds"
-                          value={c.id}
-                          defaultChecked={editing?.categoryIds.includes(c.id)}
-                        />
-                        {categoryLabel(c, categories)}
-                      </label>
-                    ))}
-                </div>
-              </fieldset>
-              {show("allergens") ? (
-                <label className={s.field}>
-                  مسببات الحساسية · افصل بفاصلة عربية (،)
-                  <input
-                    name="allergens"
-                    defaultValue={editing?.allergens.join("، ")}
-                    placeholder="الحليب، المكسرات، القمح"
-                  />
-                </label>
-              ) : (
-                <Keep name="allergens" value={editing?.allergens.join("، ")} />
-              )}
-              <div className={s.grid}>
-                {(
-                  [
-                    ["ingredients", "المكونات"],
-                    ["storage", "شروط الحفظ والتبريد"],
-                    ["shelfLife", "مدة الصلاحية"],
-                    ["preparationTime", "وقت التجهيز"],
-                  ] as const
-                ).map(([key, label]) =>
-                  !show(key) ? (
-                    <Keep key={key} name={key} value={editing?.[key]} />
-                  ) : (
-                    <label className={s.field} key={key}>
-                      {label}
+              >
+                <summary>تفاصيل إضافية (اختياري)</summary>
+                <div className={s.form}>
+                  {show("allergens") ? (
+                    <label className={s.field}>
+                      مسببات الحساسية · افصل بفاصلة عربية (،)
                       <input
-                        name={key}
-                        defaultValue={editing?.[key] || ""}
-                        maxLength={1000}
+                        name="allergens"
+                        defaultValue={editing?.allergens.join("، ")}
+                        placeholder="الحليب، المكسرات، القمح"
                       />
                     </label>
-                  ),
-                )}
-              </div>
-              {show("story") ? (
-                <label className={s.field}>
-                  قصة الأكلة (اختياري)
-                  <textarea
-                    name="story"
-                    defaultValue={editing?.story || ""}
-                    maxLength={3000}
-                  />
-                </label>
-              ) : (
-                <Keep name="story" value={editing?.story} />
-              )}
+                  ) : (
+                    <Keep
+                      name="allergens"
+                      value={editing?.allergens.join("، ")}
+                    />
+                  )}
+                  <div className={s.grid}>
+                    {(
+                      [
+                        ["ingredients", "المكونات"],
+                        ["storage", "شروط الحفظ والتبريد"],
+                        ["shelfLife", "مدة الصلاحية"],
+                        ["preparationTime", "وقت التجهيز"],
+                      ] as const
+                    ).map(([key, label]) =>
+                      !show(key) ? (
+                        <Keep key={key} name={key} value={editing?.[key]} />
+                      ) : (
+                        <label className={s.field} key={key}>
+                          {label}
+                          <input
+                            name={key}
+                            defaultValue={editing?.[key] || ""}
+                            maxLength={1000}
+                          />
+                        </label>
+                      ),
+                    )}
+                  </div>
+                  {show("story") ? (
+                    <label className={s.field}>
+                      قصة الأكلة (اختياري)
+                      <textarea
+                        name="story"
+                        defaultValue={editing?.story || ""}
+                        maxLength={3000}
+                      />
+                    </label>
+                  ) : (
+                    <Keep name="story" value={editing?.story} />
+                  )}
+                </div>
+              </details>
               <p className={s.muted}>
                 {editing ? "احفظ التعديلات" : "أضف المنتج أولًا"}، ثم أضف صورته
                 من بطاقته أدناه. تأكد من الإفصاح عن معلومات السلامة والحساسية

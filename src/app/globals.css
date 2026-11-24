@@ -4370,3 +4370,80 @@ button.mine-seg {
     transform: scaleX(0.6);
   }
 }
+
+/* النماذج المدمجة: أسطر متقاربة وحقول مرتبة (إضافة منتج، طلب عميل) — 8.4.0.0. */
+.compact-form {
+  gap: 12px !important;
+}
+.compact-form > div[class*="grid"] {
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(min(120px, 100%), 1fr));
+}
+.compact-form label[class*="field"] {
+  gap: 3px;
+}
+.compact-form textarea {
+  min-height: 72px;
+}
+.compact-form fieldset {
+  margin: 0;
+  padding: 8px 12px 10px;
+  border: 1px solid var(--line, #dccbb0);
+  border-radius: 10px;
+  min-width: 0;
+}
+.compact-form fieldset legend {
+  padding: 0 6px;
+  font-size: 14px;
+  font-weight: 700;
+}
+.compact-form div[class*="checks"] {
+  gap: 4px 14px;
+}
+.compact-form div[class*="checks"] label,
+.compact-form label[class*="checks"] {
+  min-height: 40px;
+}
+.form-more {
+  border: 1px dashed var(--line, #dccbb0);
+  border-radius: 10px;
+  padding: 4px 12px;
+}
+.form-more > summary {
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 14px;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  color: #4f5d36;
+}
+.form-more[open] {
+  padding-bottom: 12px;
+}
+.form-more[open] > summary {
+  margin-bottom: 6px;
+}
+.compact-form .request-row {
+  grid-template-columns: repeat(auto-fit, minmax(min(140px, 100%), 1fr));
+}
+.compact-form .request-row {
+  grid-template-columns: repeat(auto-fit, minmax(min(120px, 100%), 1fr));
+}
+/* موافقات الإظهار في سطر واحد. */
+.compact-form .request-consent {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 18px;
+}
+.compact-form .request-consent > label:not([class]) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+}
+.compact-form .request-consent > label[class],
+.compact-form .request-consent > small {
+  flex-basis: 100%;
+}
