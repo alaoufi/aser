@@ -77,6 +77,7 @@ export function RegionPicker({
     };
     // يُحدَّد مرة في كل دخول فقط.
   }, []);
+  const note = (state === "detecting" ? detectingLabel : autoLabel) ?? "";
   return (
     <div className="table-region-wrap">
       <label className="table-region">
@@ -98,9 +99,10 @@ export function RegionPicker({
           ))}
         </select>
       </label>
-      {state !== "idle" && (detectingLabel || autoLabel) && (
+      {/* النص من «نصوص الموقع»: إن أخفاه المالك (فارغ) تختفي معه أيقونة الموقع 📍 (طلب المالك 2026-11-25). */}
+      {state !== "idle" && note.trim() && (
         <small className="table-region-note" aria-live="polite">
-          {state === "detecting" ? detectingLabel : autoLabel}
+          {note}
         </small>
       )}
     </div>
