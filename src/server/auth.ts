@@ -166,7 +166,15 @@ export function otpMessage(code: string) {
   if (!/^\d{6}$/.test(code)) throw new Error("Invalid OTP format");
   return `رمز التحقق للتسجيل في موقع أكلات جدتنا ${code}`;
 }
-export async function requestOtp(phoneValue: string, purpose: OtpPurpose) {
+/**
+ * source: مفتاح عنوان الطالب (sourceKey). حدود الجوال تُحسب لكل جوال مع مصدره، وبسقف أوسع للجوال كله،
+ * فلا يستنفد غريبٌ حصة صاحب الجوال من رموز الاستعادة (مراجعة أمنية 2026-11-25).
+ */
+export async function requestOtp(
+  phoneValue: string,
+  purpose: OtpPurpose,
+  source: string | null = null,
+) {
   otpPurposeSchema.parse(purpose);
   if (!registrationOpen())
     throw new HttpError(
@@ -175,9 +183,12 @@ export async function requestOtp(phoneValue: string, purpose: OtpPurpose) {
     );
   const phone = normalizePhone(phoneValue);
   await rateLimit("otp-global", 600, 3600);
-  await rateLimit("otp-phone:" + hash(phone), 3, 900);
-  // سقف يومي لكل جوال: حتى مع رمز من ستة أرقام لا تُتاح محاولات تخمين متواصلة طوال اليوم.
-  await rateLimit("otp-phone-day:" + hash(phone), 8, 86400);
+  const from = source ?? "unknown";
+  await rateLimit("otp-phone:" + hash(phone + "|" + from), 3, 900);
+  await rateLimit("otp-phone-all:" + hash(phone), 6, 900);
+  // سقف يومي لكل جوال من كل مصدر، وسقف أوسع للجوال كله (تكلفة الرسائل).
+  await rateLimit("otp-phone-day:" + hash(phone + "|" + from), 8, 86400);
+  await rateLimit("otp-phone-day-all:" + hash(phone), 20, 86400);
   // أرقام مراجعة المتاجر: لا رسالة، والرمز الثابت أثناء «وضع المراجعة» فقط
   // (قبل فحص «الجوال مسجل» لأنها تحرر رقم إنشاء الحساب من حساب مراجعة سابق).
   const { reviewOtpCode } = await import("./store-review");
@@ -220,6 +231,7 @@ export async function verifyOtp(
   purpose?: OtpPurpose,
   /** «ادعُ صديقًا»: رمز رابط الدعوة المحفوظ في الجهاز، أو رقم من دعاه. */
   referral?: { invite?: string | null; link?: string | null },
+  source: string | null = null,
 ) {
   if (!registrationOpen()) throw new HttpError(503, "خدمة التحقق غير متاحة");
   await rateLimit("verify-global", 8000, 3600);
@@ -246,7 +258,18 @@ export async function verifyOtp(
         [id],
       );
       // سقف يومي للمحاولات على الجوال الواحد عبر كل رموزه: 10 محاولات من 9000 احتمال يوميًا.
-      await rateLimit("verify-phone-day:" + hash(challenge.phone), 10, 86400);
+      // لكل مصدر 10، وللجوال كله 30 (من مليون احتمال): لا يُفسد غريبٌ تحقق صاحب الجوال.
+      await rateLimit(
+        "verify-phone-day:" +
+          hash(challenge.phone + "|" + (source ?? "unknown")),
+        10,
+        86400,
+      );
+      await rateLimit(
+        "verify-phone-day-all:" + hash(challenge.phone),
+        30,
+        86400,
+      );
       if (
         !timingSafeEqual(
           Buffer.from(challenge.code_hash, "hex"),
@@ -393,8 +416,9 @@ export async function verifyAdminLogin(id: string, code: string) {
       ).rows[0] as SessionUser | undefined;
       if (!user) return null;
       const token = randomBytes(32).toString("hex");
+      // mfa: جاءت من كلمة المرور ثم رمز الجوال، فتفتح لوحة الإدارة (createAdminSession).
       await client.query(
-        `INSERT INTO jdatna.sessions(token_hash,user_id,expires_at) VALUES($1,$2,${SESSION_EXPIRY})`,
+        `INSERT INTO jdatna.sessions(token_hash,user_id,expires_at,mfa) VALUES($1,$2,${SESSION_EXPIRY},true)`,
         [hash(token), user.id],
       );
       return { user, token };
@@ -420,13 +444,20 @@ export async function createAdminSession(request: Request) {
     throw new HttpError(401, "يرجى تسجيل الدخول");
   const owner = (
     await db().query(
-      `SELECT u.id FROM jdatna.sessions s JOIN jdatna.users u ON u.id=s.user_id
+      `SELECT u.id,s.mfa FROM jdatna.sessions s JOIN jdatna.users u ON u.id=s.user_id
        WHERE s.token_hash=$1 AND s.expires_at>now() AND NOT s.setup_only AND s.scope='site'
          AND u.suspended_at IS NULL AND (u.role='admin' OR cardinality(u.permissions)>0)`,
       [hash(token)],
     )
-  ).rows[0] as { id: string } | undefined;
+  ).rows[0] as { id: string; mfa: boolean } | undefined;
   if (!owner) throw new HttpError(403, "لا تملك صلاحية الإدارة");
+  // خطوتا الدخول مفعّلتان: اللوحة من جلسة جاءت بكلمة المرور ورمز الجوال فقط، لا من «نسيت كلمة المرور»
+  // وحده (مراجعة أمنية 2026-11-25).
+  if (adminOtpRequired() && !owner.mfa)
+    throw new HttpError(
+      403,
+      "لفتح لوحة الإدارة سجّل الخروج ثم ادخل بكلمة المرور ورمز الجوال",
+    );
   const admin = randomBytes(32).toString("hex");
   await db().query(
     `INSERT INTO jdatna.sessions(token_hash,user_id,expires_at,scope) VALUES($1,$2,now()+interval '12 hours','admin')`,

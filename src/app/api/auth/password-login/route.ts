@@ -16,7 +16,7 @@ export const POST = api(async (request) => {
     typeof body?.identifier === "string" ? body.identifier.trim() : "";
   let result: Awaited<ReturnType<typeof passwordLogin>>;
   try {
-    result = await passwordLogin(body);
+    result = await passwordLogin(body, source);
   } catch (error) {
     if (error instanceof HttpError) {
       const e = error as HttpError & { userId?: string; justLocked?: boolean };

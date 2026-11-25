@@ -1,3 +1,4 @@
+import { ratingAverageSql, ratingCountSql } from "./rating-sql";
 import { createHash, randomUUID } from "node:crypto";
 import { z } from "zod";
 import type { SessionUser } from "../lib/types";
@@ -170,8 +171,8 @@ export async function subscriptionFamilies(filters: {
     await db().query(
       `SELECT p.id,p.slug,COALESCE(p.trade_name,p.name) AS name,c.name AS "cityName",r.name AS "regionName",
          p.logo_url AS "logoUrl",s.daily,s.weekly,s.monthly,s.period,s.meals,(s.delivery AND p.delivery) AS delivery,s.notes,
-         (SELECT round(avg(g.stars)::numeric,1)::float8 FROM jdatna.ratings g WHERE g.kind='family' AND g.target_id=p.id) AS "ratingAverage",
-         (SELECT count(*)::int FROM jdatna.ratings g WHERE g.kind='family' AND g.target_id=p.id) AS "ratingCount"
+         ${ratingAverageSql("family", "p.id")} AS "ratingAverage",
+         ${ratingCountSql("family", "p.id")} AS "ratingCount"
        FROM jdatna.producer_subscription_plans s
        JOIN jdatna.producer_profiles p ON p.id=s.producer_id
        JOIN jdatna.cities c ON c.id=p.city_id

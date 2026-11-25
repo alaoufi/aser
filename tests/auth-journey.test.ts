@@ -189,7 +189,7 @@ test(
       );
       assert.equal(r.status, 429);
       await db().query("DELETE FROM jdatna.rate_limits WHERE key=$1", [
-        "otp-phone:" + hash(intl),
+        "otp-phone:" + hash(intl + "|unknown"),
       ]);
       // 6) استعادة كلمة المرور برمز الجوال: كلمة جديدة، والأجهزة الأخرى تخرج.
       r = await requestOtpRoute(

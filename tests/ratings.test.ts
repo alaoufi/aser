@@ -172,9 +172,10 @@ test(
       await assert.rejects(
         rate(buyer, { kind: "family", target: familyId, stars: 6, oath: true }),
       );
+      // العدد بالمقيِّمين (مراجعة أمنية 2026-11-25): المشتري بتعاملين صوت واحد، والإدارة صوت.
       assert.deepEqual(await ratingSummary("family", familyId), {
         average: 4,
-        count: 3,
+        count: 2,
       });
       const mine = await ratingView(buyer, {
         kind: "family",

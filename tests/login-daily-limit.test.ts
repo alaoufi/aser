@@ -17,7 +17,8 @@ test(
     const id = randomUUID(),
       phone =
         "+9665" + String(Math.floor(Math.random() * 1e8)).padStart(8, "0");
-    const dayKey = "password-login-day:" + hash(phone),
+    // اليومي لكل اسم دخول مع مصدره (مراجعة 2026-11-25): الاختبار بلا عنوان زائر = «unknown».
+    const dayKey = "password-login-day:" + hash(phone + "|unknown"),
       shortKey = "password-login:" + hash(phone);
     try {
       await pool.query(
@@ -48,10 +49,22 @@ test(
         passwordLogin({ identifier: phone, password: "4321" }),
         { status: 429 },
       );
+      // مصدر آخر (صاحب الحساب من جهازه) لا يتأثر بمحاولات غيره اليومية.
+      const owner = await passwordLogin(
+        { identifier: phone, password: "4321" },
+        "owner-device",
+      );
+      assert.ok(owner.token);
     } finally {
       await pool.query(
         "DELETE FROM jdatna.rate_limits WHERE key=ANY($1::text[])",
-        [[dayKey, shortKey]],
+        [
+          [
+            dayKey,
+            shortKey,
+            "password-login-day:" + hash(phone + "|owner-device"),
+          ],
+        ],
       );
       await pool.query("DELETE FROM jdatna.sessions WHERE user_id=$1", [id]);
       await pool.query("DELETE FROM jdatna.users WHERE id=$1", [id]);

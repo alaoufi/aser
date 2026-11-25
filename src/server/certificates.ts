@@ -17,7 +17,8 @@ export type Certificate = {
 async function familyRatings(producerId: string) {
   const row = (
     await db().query(
-      "SELECT count(*)::int AS total,COALESCE(min(stars),0)::int AS lowest FROM jdatna.ratings WHERE kind='family' AND target_id=$1",
+      // العدد بالمقيِّمين المختلفين: حساب واحد بطلبات متكررة لا يصنع الشهادة (مراجعة أمنية 2026-11-25).
+      "SELECT count(DISTINCT rater_id)::int AS total,COALESCE(min(stars),0)::int AS lowest FROM jdatna.ratings WHERE kind='family' AND target_id=$1",
       [producerId],
     )
   ).rows[0] as { total: number; lowest: number };
