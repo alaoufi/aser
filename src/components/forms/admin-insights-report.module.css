@@ -1,0 +1,283 @@
+/* تقرير ملف واتساب: عرض صفحة A4 ثابت (794px)، جداول مرتبة، وألوان الموقع. */
+.report {
+  width: 794px;
+  padding: 0 0 12px;
+  background: #fff;
+  color: #2e1d12;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.report section,
+.head {
+  padding-inline: 28px;
+}
+.report section {
+  padding-top: 6px;
+  padding-bottom: 6px;
+  background: #fff;
+}
+.single {
+  display: grid;
+}
+.head {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding-top: 22px;
+  padding-bottom: 16px;
+  border-bottom: 10px solid transparent;
+  border-image: var(--sadu-band) 0 0 22 0 / 0 0 10px 0 repeat;
+  background: #fff;
+}
+.logo {
+  width: 84px;
+  height: 84px;
+  border-radius: 16px;
+  object-fit: cover;
+}
+.titles {
+  display: grid;
+  gap: 2px;
+}
+.titles h2 {
+  margin: 0;
+  font-size: 30px;
+  line-height: 1.2;
+}
+.brand {
+  color: #4f5d36;
+  font-weight: 700;
+}
+.meta {
+  color: #7a6552;
+  font-size: 13px;
+}
+.section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 0 10px;
+  font-size: 18px;
+}
+.section::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  transform: rotate(45deg);
+  background: #9c2f1e;
+}
+.heroes {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+.hero {
+  display: grid;
+  gap: 2px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #f4ead9;
+  border-top: 4px solid #4f5d36;
+}
+.hero span {
+  color: #7a6552;
+  font-size: 13px;
+}
+.hero strong {
+  font-size: 26px;
+  line-height: 1.2;
+}
+.hero small {
+  font-size: 12px;
+  font-weight: 700;
+  color: #7a6552;
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+.table th {
+  padding: 7px 8px;
+  background: #4f5d36;
+  color: #fff;
+  font-weight: 700;
+  text-align: start;
+}
+.table th:first-child {
+  border-start-start-radius: 8px;
+}
+.table th:last-child {
+  border-start-end-radius: 8px;
+}
+.table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid #eadbc2;
+}
+.table tbody tr:nth-child(even) td {
+  background: #fbf6ee;
+}
+.numCol {
+  width: 1%;
+  white-space: nowrap;
+  text-align: center !important;
+  font-variant-numeric: tabular-nums;
+}
+.strong {
+  font-weight: 700;
+}
+.up {
+  color: #3f6b2a;
+  font-weight: 700;
+}
+.down {
+  color: #9c2f1e;
+  font-weight: 700;
+}
+.rank {
+  width: 1%;
+  color: #7a6552;
+  text-align: center !important;
+}
+.amount {
+  color: #7a6552;
+}
+.share {
+  display: inline-block;
+  width: 46px;
+  height: 6px;
+  margin-inline-end: 6px;
+  vertical-align: middle;
+  border-radius: 3px;
+  background: #efe3cc;
+  overflow: hidden;
+}
+.shareBar {
+  display: block;
+  height: 100%;
+  background: #4f5d36;
+}
+.strip {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  border: 1px solid #eadbc2;
+  border-radius: 12px;
+  overflow: hidden;
+}
+.strip > div {
+  display: grid;
+  gap: 2px;
+  padding: 10px 14px;
+  text-align: center;
+}
+.strip > div + div {
+  border-inline-start: 1px solid #eadbc2;
+}
+.strip strong {
+  font-size: 22px;
+}
+.strip span {
+  color: #7a6552;
+  font-size: 13px;
+}
+.note {
+  margin: 6px 0 0;
+  color: #7a6552;
+  font-size: 12px;
+}
+.chart {
+  margin-top: 10px;
+  padding: 10px 14px;
+  border: 1px solid #eadbc2;
+  border-radius: 12px;
+}
+.chart h4,
+.tableCard h4,
+.tips h4 {
+  margin: 0 0 8px;
+  font-size: 14.5px;
+}
+.columns {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 110px;
+  direction: ltr;
+  border-bottom: 1px solid #eadbc2;
+}
+.column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  height: 100%;
+}
+.column small {
+  font-size: 10px;
+  color: #7a6552;
+}
+.column span {
+  display: block;
+  width: 100%;
+  border-radius: 4px 4px 0 0;
+  background: #4f5d36;
+}
+.axis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+  font-size: 11px;
+  color: #7a6552;
+  direction: ltr;
+}
+.pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  align-items: start;
+}
+.tableCard {
+  padding: 10px 12px;
+  border: 1px solid #eadbc2;
+  border-radius: 12px;
+}
+.empty {
+  margin: 0;
+  color: #7a6552;
+  font-size: 12.5px;
+}
+.tips {
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: #f4ead9;
+  border-inline-start: 5px solid #9c2f1e;
+}
+.tips ol {
+  margin: 0;
+  padding-inline-start: 22px;
+  display: grid;
+  gap: 6px;
+  line-height: 1.7;
+}
+.footer {
+  margin: 14px 0 0;
+  padding-top: 8px;
+  border-top: 1px solid #eadbc2;
+  color: #7a6552;
+  font-size: 11.5px;
+  text-align: center;
+}
+/* مكان التصوير: خارج الشاشة بعرض A4 ثابت مهما كان الجهاز. */
+.stage {
+  position: fixed;
+  top: 0;
+  left: -10000px;
+  z-index: -1;
+  pointer-events: none;
+}
+.stack {
+  display: grid;
+  gap: 14px;
+}

@@ -1,5 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
+import { InsightsReport } from "./admin-insights-report";
 import type { AdminInsights as Data } from "@/server/insights";
 import { api, useSession, useSiteTexts } from "./session";
 import type { SiteTextKey } from "@/lib/site-texts";
@@ -275,6 +277,8 @@ function summaryText(tx: Tx, d: Data, period: string) {
 
 export function AdminInsights() {
   const box = useRef<HTMLElement>(null);
+  const stage = useRef<HTMLDivElement>(null);
+  const [report, setReport] = useState(false);
   const [sharing, setSharing] = useState("");
   const { user } = useSession();
   const { tx, txb } = useSiteTexts();
@@ -325,71 +329,67 @@ export function AdminInsights() {
    * الجوال: قائمة المشاركة (واتساب وغيره). الكمبيوتر: يُحفظ الملف ليُرفق في واتساب.
    */
   async function sharePdf() {
-    const el = box.current;
-    if (!el || !d) return;
+    if (!d) return;
     setSharing(tx("ins.preparing"));
-    el.classList.add(c.capturing);
+    // التقرير يُرسم خارج الشاشة بعرض A4 ثابت، فيخرج الملف مرتبًا من الجوال والكمبيوتر معًا.
+    flushSync(() => setReport(true));
     try {
+      const el = stage.current;
+      if (!el) throw new Error("no report");
+      await Promise.all(
+        [...el.querySelectorAll("img")].map((img) =>
+          img.decode().catch(() => {}),
+        ),
+      );
+      await document.fonts?.ready;
       const [{ toCanvas }, { jsPDF }] = await Promise.all([
         import("html-to-image"),
         import("jspdf"),
       ]);
-      // كل جزء يُصوَّر وحده ويوضع في الصفحة كاملًا (لا يُقسم مربع بين صفحتين).
-      const parts = [...el.children].filter(
-        (n): n is HTMLElement =>
-          n instanceof HTMLElement &&
-          !n.dataset.noCapture &&
-          n.tagName !== "HEADER" &&
-          n.getAttribute("role") !== "status",
-      );
+      const blocks = [
+        ...el.querySelectorAll<HTMLElement>("[data-report-block]"),
+      ];
       const pdf = new jsPDF({ unit: "mm", format: "a4" });
       const pageW = 210,
         pageH = 297,
-        margin = 10,
-        gap = 3;
-      const w = pageW - margin * 2;
-      let y = margin;
-      const full = pageH - margin * 2;
-      const shots: { url: string; w: number; h: number; keep: boolean }[] = [];
-      for (const part of parts) {
-        const canvas = await toCanvas(part, {
+        top = 8,
+        bottom = 14;
+      const room = pageH - top - bottom;
+      let y = top;
+      for (const block of blocks) {
+        const canvas = await toCanvas(block, {
           pixelRatio: 2,
           backgroundColor: "#ffffff",
         });
         if (!canvas.width || !canvas.height) continue;
-        // جزء أطول من الصفحة (على الجوال) يُصغَّر ليدخل صفحة واحدة.
-        let h = (canvas.height / canvas.width) * w;
-        let pw = w;
-        if (h > full) {
-          pw = (w * full) / h;
-          h = full;
+        let h = (canvas.height / canvas.width) * pageW;
+        let w = pageW;
+        if (h > room) {
+          w = (pageW * room) / h;
+          h = room;
         }
-        shots.push({
-          url: canvas.toDataURL("image/jpeg", 0.92),
-          w: pw,
-          h,
-          // العنوان وسطر الشرح يبقيان مع ما بعدهما في الصفحة نفسها.
-          keep: part.tagName === "H3" || part.tagName === "P",
-        });
-      }
-      for (let i = 0; i < shots.length; i++) {
-        let need = shots[i].h;
-        for (let j = i; shots[j]?.keep && shots[j + 1]; j++)
-          need += gap + shots[j + 1].h;
-        if (y + Math.min(need, full) > pageH - margin && y > margin) {
+        if (y + h > pageH - bottom && y > top) {
           pdf.addPage();
-          y = margin;
+          y = top;
         }
-        const shot = shots[i];
         pdf.addImage(
-          shot.url,
+          canvas.toDataURL("image/jpeg", 0.92),
           "JPEG",
-          margin + (w - shot.w),
+          (pageW - w) / 2,
           y,
-          shot.w,
-          shot.h,
+          w,
+          h,
         );
-        y += shot.h + gap;
+        y += h;
+      }
+      // ترقيم الصفحات (أرقام لاتينية فقط: خط الملف لا يرسم العربية).
+      const pages = pdf.getNumberOfPages();
+      for (let i = 1; i <= pages; i++) {
+        pdf.setPage(i);
+        pdf.setFontSize(9);
+        pdf.setTextColor(122, 101, 82);
+        pdf.text(`${i} / ${pages}`, pageW / 2, pageH - 6, { align: "center" });
+        pdf.text("jdtna.sa", 12, pageH - 6);
       }
       const name = `jdatna-insights-${days}d-${d.generatedAt.slice(0, 10)}.pdf`;
       const file = new File([pdf.output("blob")], name, {
@@ -412,7 +412,7 @@ export function AdminInsights() {
     } catch {
       setSharing(tx("ins.shareFailed"));
     } finally {
-      el.classList.remove(c.capturing);
+      setReport(false);
     }
   }
   return (
@@ -723,6 +723,32 @@ export function AdminInsights() {
             )}
           </div>
         </>
+      )}
+      {report && d && (
+        <div
+          ref={stage}
+          aria-hidden="true"
+          data-no-capture="1"
+          style={{
+            position: "fixed",
+            top: 0,
+            left: -10000,
+            zIndex: -1,
+            pointerEvents: "none",
+          }}
+        >
+          <InsightsReport
+            d={d}
+            tx={tx}
+            period={period}
+            sar={(v) => sar(tx, v)}
+            hourLabel={(h) => hourLabel(tx, h)}
+            meal={(k) => (MEALS[k] ? tx(MEALS[k]) : k)}
+            day={(n) => (DAYS[n] ? tx(DAYS[n]) : String(n))}
+            tips={tips(tx, d)}
+            rate={(x) => rate(x)}
+          />
+        </div>
       )}
     </section>
   );

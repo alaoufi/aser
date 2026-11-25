@@ -218,6 +218,18 @@ export const siteTextDefaults = {
   "ins.waForecastTitle": "التوقع للأسابيع الأربعة القادمة (تقدير):",
   "ins.waForecast": "طلبات {orders} · أعضاء {members} · قيمة {value}",
   "ins.waTips": "توصيات:",
+  "ins.rTitle": "تقرير الإحصاءات",
+  "ins.rBrand": "أكلات جدتنا",
+  "ins.rHighlights": "أبرز الأرقام",
+  "ins.rDetails": "المؤشرات التفصيلية",
+  "ins.rColMetric": "المؤشر",
+  "ins.rColNow": "هذه الفترة",
+  "ins.rColPrev": "الفترة السابقة",
+  "ins.rColChange": "التغير",
+  "ins.rColCount": "العدد",
+  "ins.rColShare": "النسبة",
+  "ins.rFooter":
+    "تقرير آلي من لوحة إدارة أكلات جدتنا · الأرقام التقديرية للاسترشاد",
 } as const;
 export type SiteTextKey = keyof typeof siteTextDefaults;
 export type SiteTexts = Record<SiteTextKey, string>;
@@ -228,6 +240,20 @@ export const siteTextLabels: Record<
   [group: string, label: string]
 > = {
   "ticker.text": ["أعلى الموقع", "الشريط المتحرك"],
+  "ins.rTitle": ["الإحصاءات (لوحة الإدارة)", "ملف واتساب: العنوان"],
+  "ins.rBrand": ["الإحصاءات (لوحة الإدارة)", "ملف واتساب: اسم الموقع"],
+  "ins.rHighlights": ["الإحصاءات (لوحة الإدارة)", "ملف واتساب: أبرز الأرقام"],
+  "ins.rDetails": ["الإحصاءات (لوحة الإدارة)", "ملف واتساب: جدول المؤشرات"],
+  "ins.rColMetric": ["الإحصاءات (لوحة الإدارة)", "ملف واتساب: عمود المؤشر"],
+  "ins.rColNow": ["الإحصاءات (لوحة الإدارة)", "ملف واتساب: عمود هذه الفترة"],
+  "ins.rColPrev": [
+    "الإحصاءات (لوحة الإدارة)",
+    "ملف واتساب: عمود الفترة السابقة",
+  ],
+  "ins.rColChange": ["الإحصاءات (لوحة الإدارة)", "ملف واتساب: عمود التغير"],
+  "ins.rColCount": ["الإحصاءات (لوحة الإدارة)", "ملف واتساب: عمود العدد"],
+  "ins.rColShare": ["الإحصاءات (لوحة الإدارة)", "ملف واتساب: عمود النسبة"],
+  "ins.rFooter": ["الإحصاءات (لوحة الإدارة)", "ملف واتساب: التذييل"],
   "brand.tagline": ["أعلى الموقع", "العبارة تحت «أكلات جدتنا»"],
   "home.search": ["الرئيسية", "نص خانة البحث"],
   "home.searchButton": ["الرئيسية", "زر البحث"],
