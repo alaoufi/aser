@@ -17,6 +17,8 @@ export function BottomNav({ guest = false }: { guest?: boolean }) {
   const path = usePathname() ?? "/";
   const unread = useUnread();
   if (path === "/admin" || path.startsWith("/admin/")) return null;
+  // شاشة تحديث التطبيق القديم: لا قائمة سفلية (لا مواصلة إلا بالتحديث).
+  if (path === "/update-app") return null;
   // تظهر بعد معرفة الحساب، حتى لا يُضغط زر الزائر («دخول») لعضو مسجّل. ثابتة أسفل الشاشة فلا تزيح شيئًا.
   // والزائر بلا جلسة (يعرفه الخادم من الكوكي) تظهر له فورًا مع أول رسم.
   if (!ready && !guest) return null;

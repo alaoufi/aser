@@ -6,6 +6,24 @@ import { floodBucket, floodCheck } from "./lib/flood";
  * عنوان الزائر آخر قيمة في X-Forwarded-For تضعها البوابة؛ بلا عنوان (تشغيل محلي) لا حد.
  */
 export function proxy(request: NextRequest) {
+  // التطبيق القديم (قبل jdtna.sa) يفتح jdatna.com/?source=app أو ?source=ios: يُحوَّل لشاشة التحديث
+  // فلا يواصل بالنسخة القديمة (طلب المالك 2026-11-25). النسختان الجديدتان تفتحان jdtna.sa.
+  const source = request.nextUrl.searchParams.get("source");
+  const host = (request.headers.get("host") ?? "").split(":")[0].toLowerCase();
+  if (
+    request.nextUrl.pathname === "/" &&
+    (source === "app" || source === "ios") &&
+    /^(www\.)?jdatna\.com$/.test(host)
+  ) {
+    // عنوان مطلق من ترويسة الزائر (jdatna.com تحقق منه الشرط أعلاه)، لا العنوان الداخلي خلف البوابة.
+    const target = new URL(
+      `/update-app?p=${source === "ios" ? "ios" : "android"}`,
+      `https://${host}`,
+    );
+    const res = NextResponse.redirect(target, 302);
+    res.headers.set("cache-control", "no-store");
+    return res;
+  }
   const ip = request.headers
     .get("x-forwarded-for")
     ?.split(",")
