@@ -53,25 +53,38 @@ test.describe("login attempt limit", () => {
     });
     await page.goto("/login");
     const identifier = page.getByLabel("اسم المستخدم أو رقم الجوال");
-    for (let i = 0; i < 5; i++) {
+    const tryWrong = async () => {
       await identifier.fill(local);
       await page.getByLabel("كلمة المرور", { exact: true }).fill("1111");
       await page.getByRole("button", { name: "دخول", exact: true }).click();
+    };
+    for (let i = 0; i < 4; i++) {
+      await tryWrong();
       await expect(
-        page.locator("form").getByRole("button", { name: "دخول", exact: true }),
-      ).toBeEnabled();
-      await expect(page.getByText(/غير صحيحة|تجاوزت الحد/)).toBeVisible();
+        page.getByText("اسم الدخول أو كلمة المرور غير صحيحة"),
+      ).toBeVisible();
     }
-    await expect(
-      page.getByText("تجاوزت الحد المسموح من محاولات الدخول"),
-    ).toBeVisible();
-    const recover = page.getByRole("button", {
-      name: "لاستعادة كلمة المرور اضغط هنا",
+    // الخامسة: رسالة منبثقة واضحة فوق الصفحة.
+    await tryWrong();
+    const dialog = page.getByRole("dialog", {
+      name: "تجاوزت الحد المسموح من محاولات الدخول",
     });
-    await expect(recover).toBeVisible();
+    await expect(dialog).toBeVisible();
+    await expect(dialog).toContainText("رمز تحقق يصل إلى جوالك");
     await page.screenshot({ path: "test-results/login-limit.png" });
-    await recover.click();
-    // يُرسل الرمز مباشرة إلى الجوال المكتوب، وتظهر خانة الرمز.
+    // «إغلاق» يخفيها، وتبقى الرسالة والزر في الصفحة.
+    await dialog.getByRole("button", { name: "إغلاق" }).click();
+    await expect(dialog).toBeHidden();
+    await expect(
+      page.getByRole("button", { name: "لاستعادة كلمة المرور اضغط هنا" }),
+    ).toBeVisible();
+    // محاولة أخرى تعيدها، وزرها يرسل الرمز مباشرة إلى الجوال المكتوب.
+    await tryWrong();
+    await expect(dialog).toBeVisible();
+    await dialog
+      .getByRole("button", { name: "لاستعادة كلمة المرور اضغط هنا" })
+      .click();
+    await expect(dialog).toBeHidden();
     await expect(page.getByLabel("رمز التحقق")).toBeVisible();
     expect(sent).toEqual({ phone: local, purpose: "reset" });
     await expect(
