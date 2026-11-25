@@ -2073,3 +2073,29 @@ button.food-dish:focus-visible .food-dish-visual {
   line-height: 1.7;
   color: var(--ink);
 }
+
+/* «تصدير PDF» في إحصاءات الإدارة: يُطبع قسم الإحصاءات وحده. */
+@media print {
+  body.print-insights * {
+    visibility: hidden;
+  }
+  body.print-insights .insights-print,
+  body.print-insights .insights-print * {
+    visibility: visible;
+  }
+  html:has(body.print-insights),
+  body.print-insights {
+    background: #fff !important;
+  }
+  body.print-insights .insights-print {
+    position: absolute;
+    inset: 0 0 auto;
+    margin: 0;
+    padding: 0 8mm;
+    background: #fff;
+  }
+  @page {
+    size: A4;
+    margin: 12mm 8mm;
+  }
+}

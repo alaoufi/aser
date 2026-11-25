@@ -1,4 +1,5 @@
 "use client";
+import { AdminInsights } from "./admin-insights";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -280,6 +281,7 @@ export function Admin({ section }: { section?: string } = {}) {
           {/* العنوان ظاهر في رأس اللوحة؛ هنا لقارئ الشاشة فقط. */}
           <h1 className="sr-only">لوحة التحكم</h1>
           <AdminSummary onOpen={open} />
+          <AdminInsights />
           {waiting.length > 0 && (
             <p className={s.notice}>
               {waiting.length} أسرة تنتظر الاعتماد.{" "}
