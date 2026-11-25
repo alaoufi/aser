@@ -230,6 +230,15 @@ export const siteTextDefaults = {
   "ins.rColShare": "النسبة",
   "ins.rFooter":
     "تقرير آلي من لوحة إدارة أكلات جدتنا · الأرقام التقديرية للاسترشاد",
+  "palette.button": "ألوان الموقع",
+  "palette.title": "ألوان الموقع",
+  "palette.note": "يُحفظ اختيارك في هذا الجهاز.",
+  "palette.sadu": "السدو",
+  "palette.nakheel": "النخيل",
+  "palette.teen": "الطين",
+  "palette.qahwa": "القهوة والهيل",
+  "palette.zafaran": "الزعفران",
+  "palette.neel": "النيلة",
 } as const;
 export type SiteTextKey = keyof typeof siteTextDefaults;
 export type SiteTexts = Record<SiteTextKey, string>;
@@ -240,6 +249,15 @@ export const siteTextLabels: Record<
   [group: string, label: string]
 > = {
   "ticker.text": ["أعلى الموقع", "الشريط المتحرك"],
+  "palette.button": ["ألوان الموقع", "زر ألوان الموقع في الترويسة"],
+  "palette.title": ["ألوان الموقع", "عنوان نافذة الألوان"],
+  "palette.note": ["ألوان الموقع", "سطر تحت الألوان"],
+  "palette.sadu": ["ألوان الموقع", "لون: السدو (الأصلي)"],
+  "palette.nakheel": ["ألوان الموقع", "لون: النخيل"],
+  "palette.teen": ["ألوان الموقع", "لون: الطين"],
+  "palette.qahwa": ["ألوان الموقع", "لون: القهوة والهيل"],
+  "palette.zafaran": ["ألوان الموقع", "لون: الزعفران"],
+  "palette.neel": ["ألوان الموقع", "لون: النيلة"],
   "ins.rTitle": ["الإحصاءات (لوحة الإدارة)", "ملف واتساب: العنوان"],
   "ins.rBrand": ["الإحصاءات (لوحة الإدارة)", "ملف واتساب: اسم الموقع"],
   "ins.rHighlights": ["الإحصاءات (لوحة الإدارة)", "ملف واتساب: أبرز الأرقام"],

@@ -9,10 +9,10 @@
   justify-self: stretch;
   min-height: 52px;
   padding: 10px 18px;
-  border: 2px solid var(--gold, #d6a35c);
+  border: 2px solid var(--gold, var(--gold));
   border-radius: 14px;
   background: #fff8e8;
-  color: var(--ink, #2e1d12);
+  color: var(--ink, var(--ink));
   font: inherit;
   font-size: 1.05rem;
   font-weight: 800;

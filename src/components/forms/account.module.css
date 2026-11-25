@@ -22,9 +22,9 @@
   max-width: 100%;
   min-height: 46px;
   padding: 8px 18px;
-  border: 1.5px solid #4f5d36;
+  border: 1.5px solid var(--olive);
   border-radius: 999px;
-  background: #4f5d36;
+  background: var(--olive);
   color: #fff;
   font-weight: 700;
   cursor: pointer;
@@ -42,7 +42,7 @@
   transform: rotate(180deg);
 }
 .accountMenuButton:focus-visible {
-  outline: 3px solid #9c2f1e;
+  outline: 3px solid var(--rust);
   outline-offset: 2px;
 }
 .accountMenuCurrent {
@@ -102,7 +102,7 @@
     transform 0.1s ease;
 }
 .navLink:hover {
-  border-color: #9c2f1e;
+  border-color: var(--rust);
   background: #fff;
 }
 .navLink:active {
@@ -110,18 +110,18 @@
   box-shadow: none;
 }
 .navLink:focus-visible {
-  outline: 3px solid #9c2f1e;
+  outline: 3px solid var(--rust);
   outline-offset: 2px;
 }
 .navLink[aria-current="page"] {
-  background: #4f5d36;
-  border-color: #4f5d36;
+  background: var(--olive);
+  border-color: var(--olive);
   color: #fff;
   box-shadow: 0 2px 0 #3b4628;
 }
 /* الروابط النصية داخل صفحات الحساب والإدارة: لون وخط تحتها لتُعرف أنها روابط. */
 .shell a:not([class]) {
-  color: #9c2f1e;
+  color: var(--rust);
   font-weight: 700;
   text-decoration: underline;
   text-underline-offset: 4px;
@@ -425,7 +425,7 @@
   padding: 10px 12px;
   border-radius: 6px;
   background: #eef2e6;
-  color: var(--olive, #4f5d36);
+  color: var(--olive, var(--olive));
   font-weight: 700;
 }
 .familyStatusReason {
@@ -489,14 +489,14 @@
 }
 .summaryCard:hover {
   transform: translateY(-2px);
-  border-color: #d6a35c;
+  border-color: var(--gold);
   box-shadow: 0 6px 14px rgb(46 29 18 / 0.1);
 }
 .summaryCard strong {
   font-size: 22px;
   line-height: 1;
   font-variant-numeric: tabular-nums;
-  color: #4f5d36;
+  color: var(--olive);
 }
 .summaryCard span {
   font-size: 11.5px;
@@ -508,7 +508,7 @@
   background: #fff6f3;
 }
 .summaryAlert strong {
-  color: var(--rust, #9c2f1e);
+  color: var(--rust, var(--rust));
 }
 .summaryAlert::after {
   content: "";
@@ -518,7 +518,7 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--rust, #9c2f1e);
+  background: var(--rust, var(--rust));
 }
 
 /* أقسام الإدارة: مجموعات من مربعات بأيقونة */
@@ -529,7 +529,7 @@
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 14px;
-  background: #fbf5ea;
+  background: var(--surface);
 }
 .adminNavGroup {
   display: grid;
@@ -594,25 +594,25 @@
   height: 20px;
   padding: 0 5px;
   border-radius: 10px;
-  background: #9c2f1e;
+  background: var(--rust);
   color: #fff;
   font-size: 12px;
   font-weight: 700;
   line-height: 20px;
 }
 .adminNavItem svg {
-  color: #4f5d36;
+  color: var(--olive);
 }
 .adminNavItem:hover {
-  border-color: #d6a35c;
+  border-color: var(--gold);
 }
 .adminNavItem[aria-pressed="true"] {
-  background: #4f5d36;
+  background: var(--olive);
   color: #fff;
-  border-color: #4f5d36;
+  border-color: var(--olive);
 }
 .adminNavItem[aria-pressed="true"] svg {
-  color: #f4ead9;
+  color: var(--paper);
 }
 @media (prefers-reduced-motion: reduce) {
   .summaryCard,
@@ -630,7 +630,7 @@
 }
 .danger {
   composes: button;
-  background: #9c2f1e;
+  background: var(--rust);
 }
 .categoryRow {
   width: 100%;
@@ -680,7 +680,7 @@
   aspect-ratio: 4 / 3;
   object-fit: cover;
   border-radius: 8px;
-  background: #efe0c6;
+  background: var(--cream);
 }
 .library h3 {
   margin: 6px 0 2px;
@@ -729,12 +729,12 @@
 .hideToggle input {
   width: 18px;
   height: 18px;
-  accent-color: #4f5d36;
+  accent-color: var(--olive);
 }
 .hideToggle:has(input:checked) {
-  background: #4f5d36;
+  background: var(--olive);
   border-style: solid;
-  border-color: #4f5d36;
+  border-color: var(--olive);
   color: #fff;
 }
 .paragraphCard {
@@ -772,7 +772,7 @@
   margin: 8px 0 18px;
   border: 0;
   border-radius: 14px;
-  background: #4f5d36;
+  background: var(--olive);
   color: #fff;
   font: inherit;
   font-size: 18px;
@@ -850,7 +850,7 @@
   color: var(--muted);
 }
 .hiddenTag {
-  color: var(--rust, #9c2f1e);
+  color: var(--rust, var(--rust));
   font-style: normal;
 }
 .productActions {
@@ -875,7 +875,7 @@
   cursor: pointer;
 }
 .productActions .deleteAction {
-  color: var(--rust, #9c2f1e);
+  color: var(--rust, var(--rust));
   border-color: #e3b9ae;
 }
 .categoryLine {
@@ -908,7 +908,7 @@
   top: 0;
   padding: 10px 12px;
   background: #efe3cf;
-  color: var(--ink, #2e1d12);
+  color: var(--ink, var(--ink));
   font-size: 14px;
   text-align: start;
   white-space: nowrap;
@@ -951,8 +951,8 @@
   cursor: pointer;
 }
 .filterChips button[aria-pressed="true"] {
-  background: var(--olive, #4f5d36);
-  border-color: var(--olive, #4f5d36);
+  background: var(--olive, var(--olive));
+  border-color: var(--olive, var(--olive));
   color: #fff;
 }
 @media (max-width: 640px) {
@@ -999,7 +999,7 @@
   margin: 6px 0;
 }
 .fieldError {
-  color: #9c2f1e;
+  color: var(--rust);
   font-weight: 700;
 }
 .fieldError:empty {
@@ -1175,8 +1175,8 @@
 }
 .patternSwatch:has(input:checked),
 .optionChip:has(input:checked) {
-  border-color: #4f5d36;
-  box-shadow: 0 0 0 2px #4f5d36;
+  border-color: var(--olive);
+  box-shadow: 0 0 0 2px var(--olive);
 }
 .patternTile {
   background-color: #fbf6ec;
@@ -1231,7 +1231,7 @@
   width: 32px;
 }
 .hueDot[aria-checked="true"] {
-  box-shadow: 0 0 0 3px #2e1d12;
+  box-shadow: 0 0 0 3px var(--ink);
 }
 .takenTag {
   background: #f3e3dc;
@@ -1264,7 +1264,7 @@
 .issues button {
   background: none;
   border: 0;
-  color: #9c2f1e;
+  color: var(--rust);
   cursor: pointer;
   font: inherit;
   font-weight: 700;
@@ -1277,7 +1277,7 @@
 }
 .navLogout {
   border-color: rgba(156, 47, 30, 0.45) !important;
-  color: #9c2f1e !important;
+  color: var(--rust) !important;
   cursor: pointer;
   font: inherit;
 }
@@ -1293,7 +1293,7 @@
 .passwordToggle {
   background: transparent;
   border: 0;
-  color: #9c2f1e;
+  color: var(--rust);
   cursor: pointer;
   font: inherit;
   font-size: 0.85rem;
@@ -1308,7 +1308,7 @@
 /* شارة «مندوب خاص لـ (اسم الأسرة)» */
 .privateCourier {
   display: inline-block;
-  background: #4f5d36;
+  background: var(--olive);
   color: #fff;
   border-radius: 999px;
   font-size: 13px;
@@ -1356,11 +1356,11 @@
   font-size: 18px;
 }
 .greeting strong {
-  color: #2e1d12;
+  color: var(--ink);
   font-size: 21px;
 }
 .greetingRole {
-  color: #4f5d36;
+  color: var(--olive);
   font-size: 14px;
   font-weight: 700;
   margin-top: 2px !important;
@@ -1399,7 +1399,7 @@
 .linkButton {
   background: none;
   border: 0;
-  color: #9c2f1e;
+  color: var(--rust);
   cursor: pointer;
   font: inherit;
   font-size: 13px;
@@ -1467,12 +1467,12 @@
   box-shadow: 0 10px 20px -14px rgb(40 25 15 / 0.5);
 }
 .lookChoice:focus-visible {
-  outline: 3px solid #9c2f1e;
+  outline: 3px solid var(--rust);
   outline-offset: 2px;
 }
 .lookChoice[aria-pressed="true"] {
-  border-color: #4f5d36;
-  box-shadow: 0 0 0 2px #4f5d36;
+  border-color: var(--olive);
+  box-shadow: 0 0 0 2px var(--olive);
 }
 .lookSwatch {
   width: 100%;
@@ -1489,14 +1489,14 @@
   background:
     repeating-linear-gradient(
       45deg,
-      #9c2f1e 0 8px,
+      var(--rust) 0 8px,
       #2c1d12 8px 16px,
-      #f4ead9 16px 24px
+      var(--paper) 16px 24px
     ),
-    #f4ead9;
+    var(--paper);
 }
 .lookOn {
-  color: #4f5d36;
+  color: var(--olive);
   font-weight: 700;
   font-size: 0.9rem;
 }
@@ -1515,7 +1515,7 @@
   background: #fffaf1;
 }
 .securitySummary strong {
-  color: #9c2f1e;
+  color: var(--rust);
   font-size: 1.15em;
 }
 
@@ -1541,7 +1541,7 @@
   gap: 8px;
   margin: 0;
   font-size: 15px;
-  color: #4f5d36;
+  color: var(--olive);
 }
 .summaryGroupTitle svg {
   flex: none;
@@ -1574,18 +1574,18 @@
 }
 .summaryStat:hover {
   transform: translateY(-2px);
-  border-color: #d6a35c;
+  border-color: var(--gold);
   box-shadow: 0 6px 14px rgb(46 29 18 / 0.1);
 }
 .summaryStat:focus-visible {
-  outline: 3px solid #9c2f1e;
+  outline: 3px solid var(--rust);
   outline-offset: 2px;
 }
 .summaryStat strong {
   font-size: 26px;
   line-height: 1;
   font-variant-numeric: tabular-nums;
-  color: #4f5d36;
+  color: var(--olive);
 }
 .summaryStat span {
   font-size: 12.5px;
@@ -1631,12 +1631,12 @@
   cursor: pointer;
 }
 .vehicleChoice label:has(input:checked) {
-  border-color: #4f5d36;
-  background: #4f5d36;
+  border-color: var(--olive);
+  background: var(--olive);
   color: #fff;
 }
 .vehicleChoice input {
-  accent-color: #4f5d36;
+  accent-color: var(--olive);
 }
 /* «مدير مخصص»: الأقسام مجمّعة مثل القائمة الجانبية */
 .permissionGroups {

@@ -74,7 +74,7 @@
   outline: none;
 }
 .tab:focus-visible::before {
-  border-color: #9c2f1e;
+  border-color: var(--rust);
   box-shadow: 0 0 0 3px rgb(156 47 30 / 0.35);
 }
 .active,
@@ -103,7 +103,7 @@
   animation: folder-open 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 .panel:focus-visible {
-  outline: 3px solid #9c2f1e;
+  outline: 3px solid var(--rust);
   outline-offset: 2px;
 }
 @keyframes folder-open {
