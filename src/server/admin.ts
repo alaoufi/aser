@@ -118,7 +118,7 @@ export async function moderateProduct(user: SessionUser, input: unknown) {
       // إخفاء الإدارة يُنسب لها، فلا تلغيه الأسرة.
       `UPDATE jdatna.products SET visible=COALESCE($2,visible),
          hidden_by=CASE WHEN $2::boolean IS NULL THEN hidden_by WHEN $2 THEN NULL ELSE 'admin' END,
-         featured=COALESCE($3,featured),updated_at=now() WHERE id=$1`,
+         featured=COALESCE($3,featured),updated_at=now() WHERE id=$1 AND deleted_at IS NULL`,
       [value.id, value.visible ?? null, value.featured ?? null],
     );
     if (value.categoryIds) {

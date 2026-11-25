@@ -264,10 +264,20 @@ test(
           assert.deepEqual(await searchProducts({ q: "' OR 1=1 --" }), []);
         },
       );
-      await t.test("profile edit unpublishes until fresh review", async () => {
-        await saveProfile(users[0], profileData(0));
-        assert.equal(await getProduct(product.id), null);
-      });
+      await t.test(
+        "ordinary profile edit keeps the family public; a new trade name needs fresh review",
+        async () => {
+          // قرار المالك 2026-11-24 (9.0.1.4): التعديل العادي لا يخفي الأسرة المعتمدة.
+          await saveProfile(users[0], profileData(0));
+          assert.notEqual(await getProduct(product.id), null);
+          // تغيير الاسم التجاري يعيدها للمراجعة فيختفي منتجها حتى الاعتماد.
+          await saveProfile(users[0], {
+            ...profileData(0),
+            tradeName: "اسم معلن جديد " + docIds[0],
+          });
+          assert.equal(await getProduct(product.id), null);
+        },
+      );
       await t.test(
         "session is opaque, expiry honored, role server enforced",
         async () => {

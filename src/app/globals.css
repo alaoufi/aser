@@ -4447,3 +4447,16 @@ button.mine-seg {
 .compact-form .request-consent > small {
   flex-basis: 100%;
 }
+
+/* ترقيم نتائج «تصفح» (فحص الفلاتر 2026-11-25): السابق، ورقم الصفحة، والتالي. */
+.pager {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  margin: 20px 0 8px;
+}
+.pager-info {
+  color: var(--muted, #6b5a48);
+  font-size: 14px;
+}
