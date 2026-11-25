@@ -12,12 +12,16 @@ import {
   hashPassword,
   passwordLogin,
   setCredentials,
-  LOGIN_LOCK_AFTER,
+  LOGIN_WRONG_LIMIT,
 } from "../src/server/credentials";
 
-/** قفل الحساب بعد 5 محاولات خاطئة متتالية، وفتحه باستعادة كلمة المرور فقط. */
+/**
+ * لا قفل للحساب (قرار المالك 2026-11-25): بعد 5 محاولات خاطئة من الجهاز نفسه يتوقف الدخول منه
+ * برسالة «تجاوزت الحد المسموح من محاولات الدخول» (ومعها زر الاستعادة في الواجهة)،
+ * وصاحب الحساب يدخل من جهاز آخر، والاستعادة برمز الجوال تمسح الحد من كل الأجهزة.
+ */
 test(
-  "five wrong passwords lock the account until the password is reset by phone code",
+  "five wrong passwords stop that device with the limit message; the account is never locked",
   { skip: process.env.JDATNA_TEST_DB !== "true" },
   async () => {
     const pool = db();
@@ -26,37 +30,45 @@ test(
         "jdatna_test_",
       ),
     );
-    assert.equal(LOGIN_LOCK_AFTER, 5);
+    assert.equal(LOGIN_WRONG_LIMIT, 5);
     const id = randomUUID();
     const phone =
       "+9665" + String(Math.floor(Math.random() * 1e8)).padStart(8, "0");
     const limits = () =>
-      pool.query(
-        "DELETE FROM jdatna.rate_limits WHERE key LIKE 'password-login%'",
-      );
+      pool.query("DELETE FROM jdatna.rate_limits WHERE key LIKE 'password-%'");
     try {
+      await limits();
       await pool.query(
-        "INSERT INTO jdatna.users(id,name,phone,role,phone_verified_at,password_hash) VALUES($1,'مختبر القفل',$2,'customer',now(),$3)",
+        "INSERT INTO jdatna.users(id,name,phone,role,phone_verified_at,password_hash) VALUES($1,'مختبر الحد',$2,'customer',now(),$3)",
         [id, phone, await hashPassword("2468")],
       );
-      const login = (password: string) =>
-        passwordLogin({ identifier: phone, password });
-      // محاولة خاطئة ثم صحيحة: يُصفَّر العداد ولا يُقفل.
-      await assert.rejects(login("1111"), { status: 401 });
+      const login = (password: string, source = "attacker") =>
+        passwordLogin({ identifier: phone, password }, source).catch((e) => e);
+      // محاولة خاطئة ثم صحيحة: يُصفَّر العداد.
+      assert.equal((await login("1111")).status, 401);
       assert.ok((await login("2468")).token);
-      for (let i = 1; i < LOGIN_LOCK_AFTER; i++)
-        await assert.rejects(login("1111"), { status: 401 });
-      // الخامسة تقفل، ولا تكشف الاستجابة رقم الحساب.
-      const fifth = await login("1111").catch((e) => e);
-      assert.equal(fifth.status, 423);
-      assert.equal(fifth.justLocked, true);
-      assert.deepEqual(fifth.details, { locked: true });
-      // حتى كلمة المرور الصحيحة مرفوضة وهو مقفل.
-      const right = await login("2468").catch((e) => e);
-      assert.equal(right.status, 423);
-      assert.equal(right.justLocked, false);
-      await limits();
-      // الاستعادة برمز الجوال (جلسة إعداد مؤقتة) تعيّن كلمة جديدة وتفتح الحساب.
+      for (let i = 1; i < LOGIN_WRONG_LIMIT; i++)
+        assert.equal((await login("1111")).status, 401);
+      // الخامسة: رسالة الحد، لا قفل.
+      const fifth = await login("1111");
+      assert.equal(fifth.status, 429);
+      assert.equal(fifth.message, "تجاوزت الحد المسموح من محاولات الدخول");
+      assert.deepEqual(fifth.details, { limit: true });
+      assert.equal(fifth.justLimited, true);
+      // من الجهاز نفسه حتى الكلمة الصحيحة تنتظر انتهاء المدة أو الاستعادة.
+      assert.equal((await login("2468")).status, 429);
+      // الحساب ليس مقفلًا: صاحبه يدخل من جهازه.
+      assert.ok((await login("2468", "owner")).token);
+      assert.equal(
+        (
+          await pool.query(
+            "SELECT login_locked_at FROM jdatna.users WHERE id=$1",
+            [id],
+          )
+        ).rows[0].login_locked_at,
+        null,
+      );
+      // الاستعادة برمز الجوال تمسح الحد من كل الأجهزة.
       const setup = "ab".repeat(32);
       await pool.query(
         "INSERT INTO jdatna.sessions(token_hash,user_id,expires_at,setup_until,setup_only) VALUES($1,$2,now()+interval '10 minutes',now()+interval '10 minutes',true)",
@@ -67,13 +79,6 @@ test(
       });
       assert.equal(sessionToken(request), setup);
       await setCredentials(request, { password: "9753" });
-      const row = (
-        await pool.query(
-          "SELECT failed_logins,login_locked_at FROM jdatna.users WHERE id=$1",
-          [id],
-        )
-      ).rows[0];
-      assert.deepEqual(row, { failed_logins: 0, login_locked_at: null });
       assert.ok((await login("9753")).token);
     } finally {
       await limits();

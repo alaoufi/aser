@@ -1,7 +1,7 @@
 import { randomBytes, scrypt, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import type { SessionUser } from "../lib/types";
-import { transaction } from "./db";
+import { db, transaction } from "./db";
 import {
   adminOtpRequired,
   hash,
@@ -115,24 +115,36 @@ export async function passwordLogin(
     }
   }
   // الحدود الثلاثة تُحسب معًا (كلها تُعدّ دائمًا)، لا واحدًا بعد الآخر.
-  // السقف اليومي لكل حساب: كلمات المرور القصيرة (أربع خانات) لا تُخمَّن بالمحاولات المتواصلة.
-  // صاحب الحساب يعود في اليوم التالي أو يستعيد كلمة المرور برمز الجوال.
-  await Promise.all([
-    rateLimit("password-login-global", 6000, 3600),
-    rateLimit("password-login:" + hash(identifier), 10, 900),
-    // اليومي لكل اسم دخول مع مصدره: غريبٌ لا يوقف دخول صاحب الحساب يومًا كاملًا (مراجعة 2026-11-25).
-    rateLimit(
-      "password-login-day:" + hash(identifier + "|" + (source ?? "unknown")),
-      30,
-      86400,
-    ),
-  ]);
+  // لا قفل للحساب (قرار المالك 2026-11-25): بعد محاولات خاطئة يتوقف الدخول من هذا الجهاز
+  // مؤقتًا برسالة «تجاوزت الحد المسموح…» وزر لاستعادة كلمة المرور برمز الجوال.
+  // الحدود بمفتاح اسم الدخول ثم المصدر، فتمسحها الاستعادة كلها (setCredentials).
+  const scope = loginScope(identifier, source);
+  const wrongKey = "password-wrong:" + scope;
+  try {
+    await Promise.all([
+      rateLimit("password-login-global", 6000, 3600),
+      rateLimit("password-login:" + hash(identifier), 10, 900),
+      // سقف يومي للحساب من كل المصادر: كلمات المرور القصيرة لا تُخمَّن من عناوين كثيرة.
+      rateLimit("password-login-all:" + hash(identifier), 100, 86400),
+      rateLimit("password-login-day:" + scope, 30, 86400),
+    ]);
+    const wrong = (
+      await db().query(
+        "SELECT count FROM jdatna.rate_limits WHERE key=$1 AND reset_at>now()",
+        [wrongKey],
+      )
+    ).rows[0]?.count as number | undefined;
+    if ((wrong ?? 0) >= LOGIN_WRONG_LIMIT) throw new HttpError(429, "");
+  } catch (error) {
+    if (error instanceof HttpError && error.status === 429) throw tooMany();
+    throw error;
+  }
   // المحاولة الخاطئة تُحفظ (لا تتراجع مع الخطأ)، ثم يُرمى الخطأ بعد إنهاء المعاملة.
   const outcome = await transaction(async (client) => {
     const row = validIdentifier
       ? (
           await client.query(
-            `SELECT id,name,phone,role,username,permissions,password_hash,suspended_at,failed_logins,login_locked_at,
+            `SELECT id,name,phone,role,username,permissions,password_hash,suspended_at,failed_logins,
                (SELECT COALESCE(p.trade_name,p.name) FROM jdatna.producer_profiles p WHERE p.user_id=users.id) AS "familyName"
              FROM jdatna.users WHERE ${phone ? "phone" : "username"}=$1 AND phone_verified_at IS NOT NULL FOR UPDATE`,
             [identifier],
@@ -140,47 +152,49 @@ export async function passwordLogin(
         ).rows[0]
       : null;
     const matches = await verifyPassword(value.password, row?.password_hash);
-    // قفل مؤقت (مراجعة أمنية 2026-11-25): كان دائمًا فيقفل أي غريب حساب غيره بخمس محاولات.
-    // 15 دقيقة بعد 5 محاولات خاطئة، وتتضاعف مع كل خطأ بعد انتهائه (حتى 16 ساعة). استعادة كلمة المرور تفتحه فورًا.
-    if (row?.login_locked_at && lockedUntil(row) > Date.now())
-      return { fail: "locked" as const, userId: row.id as string, just: false };
     if (!row || !matches) {
-      if (!row) return { fail: "wrong" as const, userId: null, just: false };
-      const r = (
+      // المحاولة الخاطئة تُعدّ لهذا الجهاز (وإن لم يوجد الحساب، فلا يُعرف وجوده من الحد).
+      const count = (
         await client.query(
-          `UPDATE jdatna.users SET failed_logins=failed_logins+1,
-             login_locked_at=CASE WHEN failed_logins+1>=$2 THEN now() ELSE NULL END
-           WHERE id=$1 RETURNING login_locked_at`,
-          [row.id, LOGIN_LOCK_AFTER],
+          `INSERT INTO jdatna.rate_limits(key,count,reset_at) VALUES($1,1,now()+$2*interval '1 second')
+           ON CONFLICT(key) DO UPDATE SET count=CASE WHEN rate_limits.reset_at<=now() THEN 1 ELSE rate_limits.count+1 END,
+             reset_at=CASE WHEN rate_limits.reset_at<=now() THEN now()+$2*interval '1 second' ELSE rate_limits.reset_at END
+           RETURNING count`,
+          [wrongKey, LOGIN_WRONG_WINDOW],
         )
-      ).rows[0];
-      return r.login_locked_at
-        ? { fail: "locked" as const, userId: row.id as string, just: true }
-        : { fail: "wrong" as const, userId: row.id as string, just: false };
+      ).rows[0].count as number;
+      if (row)
+        await client.query(
+          "UPDATE jdatna.users SET failed_logins=failed_logins+1 WHERE id=$1",
+          [row.id],
+        );
+      return {
+        fail:
+          count >= LOGIN_WRONG_LIMIT ? ("limit" as const) : ("wrong" as const),
+        userId: (row?.id as string | undefined) ?? null,
+      };
     }
     const {
       password_hash: _,
       suspended_at: suspended,
       failed_logins: __,
-      login_locked_at: ___,
       ...user
     } = row as SessionUser & {
       password_hash: string;
       suspended_at: string | null;
       failed_logins: number;
-      login_locked_at: string | null;
     };
     // دخول صحيح: يُصفَّر عدّاد المحاولات الخاطئة.
-    if (row.failed_logins || row.login_locked_at)
+    if (row.failed_logins)
       await client.query(
-        "UPDATE jdatna.users SET failed_logins=0,login_locked_at=NULL WHERE id=$1",
+        "UPDATE jdatna.users SET failed_logins=0 WHERE id=$1",
         [user.id],
       );
     if (suspended)
       throw new HttpError(403, "هذا الحساب موقوف؛ تواصل مع إدارة المنصة");
     // دخول صحيح: يُصفَّر العداد اليومي، فلا يُقفل صاحب الحساب بدخوله المعتاد.
-    await client.query("DELETE FROM jdatna.rate_limits WHERE key=$1", [
-      "password-login-day:" + hash(identifier + "|" + (source ?? "unknown")),
+    await client.query("DELETE FROM jdatna.rate_limits WHERE key=ANY($1)", [
+      ["password-login-day:" + scope, wrongKey],
     ]);
     // المدير والمشرف يدخلان بخطوتين: كلمة المرور ثم رمز الجوال.
     if (
@@ -204,16 +218,12 @@ export async function passwordLogin(
     return { user, token, next: roleDestination(user.role) };
   });
   if ("fail" in outcome) {
-    // userId وjustLocked للسجل الأمني في الخادم فقط، خارج details فلا تصل للمتصفح.
-    if (outcome.fail === "locked")
-      throw Object.assign(
-        new HttpError(
-          423,
-          "أُوقف الدخول مؤقتًا بعد محاولات خاطئة متتالية. حاول بعد قليل، أو استعد كلمة المرور الآن من «نسيت كلمة المرور» برمز يصل جوالك.",
-          { locked: true },
-        ),
-        { justLocked: outcome.just, userId: outcome.userId },
-      );
+    // userId وjustLimited للسجل الأمني في الخادم فقط، خارج details فلا تصل للمتصفح.
+    if (outcome.fail === "limit")
+      throw Object.assign(tooMany(), {
+        justLimited: true,
+        userId: outcome.userId,
+      });
     throw Object.assign(
       new HttpError(401, "اسم الدخول أو كلمة المرور غير صحيحة"),
       { userId: outcome.userId },
@@ -221,20 +231,20 @@ export async function passwordLogin(
   }
   return outcome;
 }
-/** عدد المحاولات الخاطئة المتتالية الذي يُقفل بعده الحساب (طلب المالك). */
-export const LOGIN_LOCK_AFTER = 5;
-/** مدة القفل الأولى، وتتضاعف مع كل خطأ بعد انتهائها حتى 64 ضعفًا (16 ساعة). */
-export const LOGIN_LOCK_MINUTES = 15;
-export function lockedUntil(row: {
-  login_locked_at: string | Date | null;
-  failed_logins: number;
-}) {
-  if (!row.login_locked_at) return 0;
-  const extra = Math.min(Math.max(row.failed_logins - LOGIN_LOCK_AFTER, 0), 6);
-  return (
-    new Date(row.login_locked_at).getTime() +
-    LOGIN_LOCK_MINUTES * 60_000 * 2 ** extra
-  );
+/**
+ * لا قفل للحساب (قرار المالك 2026-11-25): بعد 5 محاولات خاطئة من الجهاز نفسه خلال ربع ساعة
+ * يتوقف الدخول منه ربع ساعة برسالة «تجاوزت الحد المسموح من محاولات الدخول» وزر الاستعادة.
+ */
+export const LOGIN_WRONG_LIMIT = 5;
+export const LOGIN_WRONG_WINDOW = 900;
+/** مفتاح الحدود: اسم الدخول ثم المصدر، فتمسح الاستعادة حدود الحساب من كل الأجهزة بالبادئة. */
+export function loginScope(identifier: string, source: string | null) {
+  return hash(identifier) + ":" + hash(source ?? "unknown");
+}
+export function tooMany() {
+  return new HttpError(429, "تجاوزت الحد المسموح من محاولات الدخول", {
+    limit: true,
+  });
 }
 export async function setCredentials(request: Request, input: unknown) {
   const token = sessionToken(request);
@@ -285,6 +295,24 @@ export async function setCredentials(request: Request, input: unknown) {
       await client.query("DELETE FROM jdatna.sessions WHERE user_id=$1", [
         user.id,
       ]);
+      // الاستعادة برمز الجوال تمسح حدود محاولات الدخول لهذا الحساب من كل الأجهزة.
+      await client.query(
+        "DELETE FROM jdatna.rate_limits WHERE key LIKE ANY($1::text[]) OR key=ANY($2::text[])",
+        [
+          [user.phone, user.username]
+            .filter((v): v is string => Boolean(v))
+            .flatMap((v) => [
+              "password-wrong:" + hash(v) + ":%",
+              "password-login-day:" + hash(v) + ":%",
+            ]),
+          [user.phone, user.username]
+            .filter((v): v is string => Boolean(v))
+            .flatMap((v) => [
+              "password-login:" + hash(v),
+              "password-login-all:" + hash(v),
+            ]),
+        ],
+      );
       const freshToken = randomBytes(32).toString("hex");
       await client.query(
         `INSERT INTO jdatna.sessions(token_hash,user_id,expires_at) VALUES($1,$2,${SESSION_EXPIRY})`,

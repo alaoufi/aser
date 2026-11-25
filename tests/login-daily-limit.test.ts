@@ -1,7 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import { hashPassword, passwordLogin } from "../src/server/credentials";
+import {
+  hashPassword,
+  loginScope,
+  passwordLogin,
+} from "../src/server/credentials";
 import { hash } from "../src/server/auth";
 import { db } from "../src/server/db";
 
@@ -18,7 +22,7 @@ test(
       phone =
         "+9665" + String(Math.floor(Math.random() * 1e8)).padStart(8, "0");
     // اليومي لكل اسم دخول مع مصدره (مراجعة 2026-11-25): الاختبار بلا عنوان زائر = «unknown».
-    const dayKey = "password-login-day:" + hash(phone + "|unknown"),
+    const dayKey = "password-login-day:" + loginScope(phone, null),
       shortKey = "password-login:" + hash(phone);
     try {
       await pool.query(
@@ -62,7 +66,7 @@ test(
           [
             dayKey,
             shortKey,
-            "password-login-day:" + hash(phone + "|owner-device"),
+            "password-login-day:" + loginScope(phone, "owner-device"),
           ],
         ],
       );
