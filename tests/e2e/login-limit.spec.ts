@@ -30,10 +30,16 @@ test.describe("login attempt limit", () => {
   });
   test.beforeEach(async () => {
     await pool.query(
+      "DELETE FROM jdatna.site_settings WHERE key='text:login.limitBody'",
+    );
+    await pool.query(
       "DELETE FROM jdatna.rate_limits WHERE key LIKE 'password-%'",
     );
   });
   test.afterAll(async () => {
+    await pool.query(
+      "DELETE FROM jdatna.site_settings WHERE key='text:login.limitBody'",
+    );
     await pool.query(
       "DELETE FROM jdatna.rate_limits WHERE key LIKE 'password-%'",
     );
@@ -99,5 +105,28 @@ test.describe("login attempt limit", () => {
         )
       ).rows[0].login_locked_at,
     ).toBeNull();
+  });
+
+  test("the limit message reads its wording from the site texts", async ({
+    page,
+  }) => {
+    // قاعدة المالك: كل جملة في «نصوص الموقع»، وتعديلها يظهر في الرسالة دون برمجة.
+    await pool.query(
+      "INSERT INTO jdatna.site_settings(key,value) VALUES('text:login.limitBody','نص معدّل من نصوص الموقع للاختبار')",
+    );
+    await page.goto("/login");
+    for (let i = 0; i < 5; i++) {
+      await page.getByLabel("اسم المستخدم أو رقم الجوال").fill(local);
+      await page.getByLabel("كلمة المرور", { exact: true }).fill("1111");
+      await page.getByRole("button", { name: "دخول", exact: true }).click();
+      if (i < 4)
+        await expect(
+          page.getByText("اسم الدخول أو كلمة المرور غير صحيحة"),
+        ).toBeVisible();
+    }
+    const dialog = page.getByRole("dialog", {
+      name: "تجاوزت الحد المسموح من محاولات الدخول",
+    });
+    await expect(dialog).toContainText("نص معدّل من نصوص الموقع للاختبار");
   });
 });

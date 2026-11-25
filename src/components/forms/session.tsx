@@ -6,6 +6,11 @@
  */
 import { useEffect, useState, useSyncExternalStore } from "react";
 import type { SessionUser } from "@/lib/types";
+import {
+  siteTextDefaults,
+  type SiteTextKey,
+  type SiteTexts,
+} from "@/lib/site-texts";
 /**
  * قراءات تُطلب مبكرًا (warmApi) ويتشاركها من يطلب العنوان نفسه خلال ثوانٍ: شارة حالة الأسرة وزر
  * المشاركة كانا يطلبان الحالة مرتين، وبطاقات لوحة الأسرة كانت تبدأ بعد وصول الملف لا معه.
@@ -278,4 +283,33 @@ export function MemberNo({ no }: { no?: number | null }) {
       رقم العضو <b dir="ltr">{no}</b>
     </span>
   );
+}
+
+/**
+ * نصوص الموقع في الواجهات التي تُرسم في المتصفح (قاعدة المالك 2026-11-25: كل كلمة أو جملة في
+ * «نصوص الموقع»). tx(المفتاح، {قيم}) يعيد النص المعدَّل أو الأصلي، و«» إن أخفته الإدارة؛
+ * و{اسم} في النص يُستبدل بقيمته. txb للأزرار: لا يُخفى، فيعود للأصل إن حُذف.
+ */
+export function useSiteTexts() {
+  const [texts, setTexts] = useState<Partial<SiteTexts> | null>(null);
+  useEffect(() => {
+    let live = true;
+    api<{ texts: SiteTexts }>("/api/site-texts")
+      .then((d) => live && setTexts(d.texts))
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, []);
+  const fill = (text: string, vars?: Record<string, string | number>) =>
+    vars
+      ? text.replace(/\{(\w+)\}/g, (m, k: string) =>
+          k in vars ? String(vars[k]) : m,
+        )
+      : text;
+  const tx = (key: SiteTextKey, vars?: Record<string, string | number>) =>
+    fill(texts?.[key] ?? siteTextDefaults[key], vars);
+  const txb = (key: SiteTextKey, vars?: Record<string, string | number>) =>
+    fill(texts?.[key] || siteTextDefaults[key], vars);
+  return { tx, txb, ready: texts !== null };
 }

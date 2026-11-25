@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import type { AdminInsights as Data } from "@/server/insights";
-import { api, useSession } from "./session";
+import { api, useSession, useSiteTexts } from "./session";
+import type { SiteTextKey } from "@/lib/site-texts";
 import c from "./admin-insights.module.css";
 
 /**
@@ -9,45 +10,53 @@ import c from "./admin-insights.module.css";
  * وتوزيع الطلبات، والأفضل، وفرص التسويق، وتوقع الأسابيع الأربعة القادمة. «تصدير PDF» يطبع
  * هذا القسم وحده من المتصفح (حفظ بصيغة PDF)، فتبقى العربية والاتجاه سليمين.
  */
-const RANGES: [number, string][] = [
-  [7, "7 أيام"],
-  [30, "30 يومًا"],
-  [90, "90 يومًا"],
-  [365, "سنة"],
+const RANGES: [number, SiteTextKey][] = [
+  [7, "ins.range7"],
+  [30, "ins.range30"],
+  [90, "ins.range90"],
+  [365, "ins.range365"],
 ];
-const MEALS: Record<string, string> = {
-  breakfast: "فطور",
-  lunch: "غداء",
-  dinner: "عشاء",
-  occasion: "مناسبة",
+const MEALS: Record<string, SiteTextKey> = {
+  breakfast: "ins.mealBreakfast",
+  lunch: "ins.mealLunch",
+  dinner: "ins.mealDinner",
+  occasion: "ins.mealOccasion",
 };
-const DAYS = [
-  "الأحد",
-  "الاثنين",
-  "الثلاثاء",
-  "الأربعاء",
-  "الخميس",
-  "الجمعة",
-  "السبت",
+const DAYS: SiteTextKey[] = [
+  "ins.day0",
+  "ins.day1",
+  "ins.day2",
+  "ins.day3",
+  "ins.day4",
+  "ins.day5",
+  "ins.day6",
 ];
+type Tx = ReturnType<typeof useSiteTexts>["tx"];
 const nf = new Intl.NumberFormat("ar-SA-u-nu-latn", {
   maximumFractionDigits: 1,
 });
 const num = (v: number | null | undefined) =>
   v === null || v === undefined ? "—" : nf.format(v);
-const sar = (v: number | null | undefined) =>
-  v === null || v === undefined ? "—" : `${nf.format(Math.round(v))} ر.س`;
-const hourLabel = (h: number) =>
-  `من ${String(h).padStart(2, "0")}:00 إلى ${String(h + 3).padStart(2, "0")}:00`;
+const sar = (tx: Tx, v: number | null | undefined) =>
+  v === null || v === undefined
+    ? "—"
+    : tx("ins.currency", { n: nf.format(Math.round(v)) });
+const hourLabel = (tx: Tx, h: number) =>
+  tx("ins.hourRange", {
+    from: `${String(h).padStart(2, "0")}:00`,
+    to: `${String(h + 3).padStart(2, "0")}:00`,
+  });
 
 type Row = { label: string | number; value: number; amount?: number };
 
 /** الفرق عن الفترة السابقة: سهم ونص، لا لون وحده. */
 function Delta({
+  tx,
   now,
   before,
   lowerIsBetter,
 }: {
+  tx: Tx;
   now: number | null;
   before: number | null;
   lowerIsBetter?: boolean;
@@ -55,14 +64,15 @@ function Delta({
   if (now === null || before === null) return null;
   if (!before)
     return now ? (
-      <small className={c.deltaNew}>جديد في هذه الفترة</small>
+      <small className={c.deltaNew}>{tx("ins.deltaNew")}</small>
     ) : null;
   const pct = Math.round(((now - before) / before) * 100);
-  if (!pct) return <small className={c.deltaFlat}>بلا تغيير</small>;
+  if (!pct) return <small className={c.deltaFlat}>{tx("ins.deltaFlat")}</small>;
   const good = lowerIsBetter ? pct < 0 : pct > 0;
   return (
     <small className={good ? c.deltaUp : c.deltaDown}>
-      {pct > 0 ? "▲" : "▼"} {nf.format(Math.abs(pct))}٪ عن الفترة السابقة
+      {pct > 0 ? "▲" : "▼"}{" "}
+      {tx("ins.deltaPct", { pct: nf.format(Math.abs(pct)) })}
     </small>
   );
 }
@@ -90,11 +100,13 @@ function Tile({
 
 /** أعمدة أفقية لقائمة صغيرة: الاسم والعدد ظاهران، والطول للمقارنة فقط. */
 function Bars({
+  tx,
   title,
   rows,
   label = (r) => String(r.label),
-  empty = "لا بيانات في هذه الفترة",
+  empty,
 }: {
+  tx: Tx;
   title: string;
   rows: Row[];
   label?: (r: Row) => string;
@@ -105,7 +117,7 @@ function Bars({
     <figure className={c.card}>
       <figcaption className={c.cardTitle}>{title}</figcaption>
       {rows.length === 0 ? (
-        <p className={c.empty}>{empty}</p>
+        <p className={c.empty}>{empty ?? tx("ins.empty")}</p>
       ) : (
         <ul className={c.bars}>
           {rows.map((r) => (
@@ -119,7 +131,7 @@ function Bars({
               </span>
               <span className={c.barValue}>
                 {num(r.value)}
-                {r.amount ? <small> · {sar(r.amount)}</small> : null}
+                {r.amount ? <small> · {sar(tx, r.amount)}</small> : null}
               </span>
             </li>
           ))}
@@ -131,10 +143,12 @@ function Bars({
 
 /** أعمدة أسبوعية لسلسلة واحدة (12 أسبوعًا)، مع جدول لقارئ الشاشة. */
 function Weekly({
+  tx,
   title,
   weeks,
   pick,
 }: {
+  tx: Tx;
   title: string;
   weeks: Data["weekly"];
   pick: (w: Data["weekly"][number]) => number;
@@ -148,7 +162,7 @@ function Weekly({
         {last && (
           <small className={c.muted}>
             {" "}
-            · الأسبوع الجاري حتى الآن: {num(pick(last))}
+            · {tx("ins.weekNow", { n: num(pick(last)) })}
           </small>
         )}
       </figcaption>
@@ -157,7 +171,7 @@ function Weekly({
           <span
             key={w.week}
             className={`${c.column} ${i === weeks.length - 1 ? c.columnNow : ""}`}
-            title={`أسبوع ${w.week}: ${num(pick(w))}`}
+            title={`${tx("ins.week", { week: w.week })}: ${num(pick(w))}`}
           >
             <span
               style={{ height: `${Math.max(2, (pick(w) / max) * 100)}%` }}
@@ -174,7 +188,7 @@ function Weekly({
         <tbody>
           {weeks.map((w) => (
             <tr key={w.week}>
-              <th scope="row">أسبوع {w.week}</th>
+              <th scope="row">{tx("ins.week", { week: w.week })}</th>
               <td>{pick(w)}</td>
             </tr>
           ))}
@@ -185,62 +199,77 @@ function Weekly({
 }
 
 /** توصيات تسويقية مستخرجة من الأرقام نفسها، بلا افتراضات. */
-function tips(d: Data) {
+function tips(tx: Tx, d: Data) {
   const out: string[] = [];
   const topDay = [...d.breakdowns.weekdays].sort(
     (a, b) => b.value - a.value,
   )[0];
   if (topDay)
-    out.push(
-      `أكثر يوم طلبًا: ${DAYS[Number(topDay.label)]}. انشر العروض والإعلانات قبله بيوم.`,
-    );
+    out.push(tx("ins.tipDay", { day: tx(DAYS[Number(topDay.label)]) }));
   const topHour = [...d.breakdowns.hours].sort((a, b) => b.value - a.value)[0];
   if (topHour)
     out.push(
-      `ذروة الطلب ${hourLabel(Number(topHour.label))} بتوقيت الرياض: وقت مناسب للإشعارات.`,
+      tx("ins.tipHour", { hours: hourLabel(tx, Number(topHour.label)) }),
     );
   const topCat = d.breakdowns.categories[0];
   if (topCat)
-    out.push(
-      `القسم الأكثر طلبًا: ${topCat.label}. أبرزه في الرئيسية والإعلانات.`,
-    );
+    out.push(tx("ins.tipCategory", { category: String(topCat.label) }));
   const wanted = d.demand.categories[0];
   if (wanted)
     out.push(
-      `العملاء يطلبون «${wanted.label}» في «طلبات العملاء» (${num(wanted.value)}): استقطب أسرًا تقدّمه.`,
+      tx("ins.tipWanted", {
+        category: String(wanted.label),
+        n: num(wanted.value),
+      }),
     );
   for (const g of d.demand.gaps.slice(0, 2))
-    out.push(
-      `منطقة ${g.label} فيها طلبات عملاء ولا أسرة معتمدة: فرصة لتسجيل أسر هناك.`,
-    );
+    out.push(tx("ins.tipGap", { region: String(g.label) }));
   if (d.repeatRate !== null && d.repeatRate < 30)
-    out.push(
-      `العملاء العائدون ${num(d.repeatRate)}٪ فقط: عروض للعميل بعد طلبه الأول ترفع التكرار.`,
-    );
+    out.push(tx("ins.tipRepeat", { n: num(d.repeatRate) }));
   if (d.current.responseHours !== null && Number(d.current.responseHours) > 3)
-    out.push(
-      `متوسط رد الأسر ${num(d.current.responseHours)} ساعة: تذكير الأسر بالرد السريع يرفع الإتمام.`,
-    );
-  return out;
+    out.push(tx("ins.tipResponse", { n: num(d.current.responseHours) }));
+  return out.filter(Boolean);
 }
 
 /** ملخص نصي لواتساب: أهم الأرقام والتوقع والتوصيات. */
-function summaryText(d: Data, period: string) {
+function summaryText(tx: Tx, d: Data, period: string) {
   const cur = d.current;
   const lines = [
-    `*أكلات جدتنا — ملخص الإحصاءات (آخر ${period})*`,
+    `*${tx("ins.waTitle", { period })}*`,
     "",
-    `الطلبات: ${num(cur.orders)} (المكتملة ${num(cur.completed)})`,
-    `القيمة التقديرية: ${sar(cur.value)} · متوسط الطلب ${sar(d.averageValue)}`,
-    `عملاء طلبوا: ${num(cur.customers)} · العائدون ${d.repeatRate === null ? "—" : `${num(d.repeatRate)}٪`}`,
-    `أعضاء جدد: ${num(cur.members)} · أسر جديدة: ${num(cur.families)}`,
-    `متوسط رد الأسرة: ${cur.responseHours === null ? "—" : `${num(cur.responseHours)} ساعة`}`,
+    tx("ins.waOrders", {
+      orders: num(cur.orders),
+      completed: num(cur.completed),
+    }),
+    tx("ins.waValue", {
+      value: sar(tx, cur.value),
+      average: sar(tx, d.averageValue),
+    }),
+    tx("ins.waCustomers", {
+      customers: num(cur.customers),
+      repeat: d.repeatRate === null ? "—" : `${num(d.repeatRate)}٪`,
+    }),
+    tx("ins.waGrowth", {
+      members: num(cur.members),
+      families: num(cur.families),
+    }),
+    tx("ins.waResponse", {
+      hours:
+        cur.responseHours === null
+          ? "—"
+          : tx("ins.responseValue", { n: num(cur.responseHours) }),
+    }),
     "",
-    "*التوقع للأسابيع الأربعة القادمة (تقدير):*",
-    `طلبات ${num(d.forecast.orders)} · أعضاء ${num(d.forecast.members)} · قيمة ${sar(d.forecast.value)}`,
+    `*${tx("ins.waForecastTitle")}*`,
+    tx("ins.waForecast", {
+      orders: num(d.forecast.orders),
+      members: num(d.forecast.members),
+      value: sar(tx, d.forecast.value),
+    }),
   ];
-  const t = tips(d);
-  if (t.length) lines.push("", "*توصيات:*", ...t.map((x) => `• ${x}`));
+  const t = tips(tx, d);
+  if (t.length)
+    lines.push("", `*${tx("ins.waTips")}*`, ...t.map((x) => `• ${x}`));
   return lines.join("\n");
 }
 
@@ -248,6 +277,7 @@ export function AdminInsights() {
   const box = useRef<HTMLElement>(null);
   const [sharing, setSharing] = useState("");
   const { user } = useSession();
+  const { tx, txb } = useSiteTexts();
   const [days, setDays] = useState(30);
   const [data, setData] = useState<Data | null>(null);
   const [error, setError] = useState("");
@@ -276,7 +306,8 @@ export function AdminInsights() {
     x && Number(x.orders) - Number(x.lost) > 0
       ? Math.round((Number(x.completed) / Number(x.orders)) * 100)
       : null;
-  const period = RANGES.find(([n]) => n === days)?.[1] ?? "";
+  const periodKey = RANGES.find(([n]) => n === days)?.[1];
+  const period = periodKey ? tx(periodKey) : "";
   function exportPdf() {
     document.body.classList.add("print-insights");
     window.print();
@@ -284,7 +315,7 @@ export function AdminInsights() {
   function sendWhatsApp() {
     if (!d) return;
     window.open(
-      `https://wa.me/?text=${encodeURIComponent(summaryText(d, period))}`,
+      `https://wa.me/?text=${encodeURIComponent(summaryText(tx, d, period))}`,
       "_blank",
       "noopener",
     );
@@ -296,7 +327,7 @@ export function AdminInsights() {
   async function sharePdf() {
     const el = box.current;
     if (!el || !d) return;
-    setSharing("جارٍ تجهيز الملف…");
+    setSharing(tx("ins.preparing"));
     el.classList.add(c.capturing);
     try {
       const [{ toCanvas }, { jsPDF }] = await Promise.all([
@@ -367,7 +398,7 @@ export function AdminInsights() {
       if (navigator.canShare?.({ files: [file] })) {
         setSharing("");
         await navigator
-          .share({ files: [file], title: "تقرير إحصاءات أكلات جدتنا" })
+          .share({ files: [file], title: tx("ins.shareTitle") })
           .catch(() => {});
       } else {
         const url = URL.createObjectURL(file);
@@ -376,10 +407,10 @@ export function AdminInsights() {
         a.download = name;
         a.click();
         setTimeout(() => URL.revokeObjectURL(url), 10_000);
-        setSharing("حُفظ ملف PDF في جهازك؛ أرفقه في محادثة واتساب.");
+        setSharing(tx("ins.saved"));
       }
     } catch {
-      setSharing("تعذر تجهيز الملف؛ استخدم «تصدير PDF».");
+      setSharing(tx("ins.shareFailed"));
     } finally {
       el.classList.remove(c.capturing);
     }
@@ -391,15 +422,19 @@ export function AdminInsights() {
       aria-labelledby="insights-title"
     >
       <div className={c.printHead}>
-        <strong>أكلات جدتنا — تقرير الإحصاءات</strong>
+        <strong>{tx("ins.printTitle")}</strong>
         <span>
-          آخر {period} · صدر في{" "}
-          {d ? new Date(d.generatedAt).toLocaleString("ar-SA-u-nu-latn") : ""}
+          {tx("ins.printMeta", {
+            period,
+            date: d
+              ? new Date(d.generatedAt).toLocaleString("ar-SA-u-nu-latn")
+              : "",
+          })}
         </span>
       </div>
       <header className={c.head}>
-        <h2 id="insights-title">الإحصاءات</h2>
-        <div className={c.ranges} role="group" aria-label="مدة الإحصاءات">
+        <h2 id="insights-title">{txb("ins.title")}</h2>
+        <div className={c.ranges} role="group" aria-label={txb("ins.title")}>
           {RANGES.map(([n, label]) => (
             <button
               key={n}
@@ -408,7 +443,7 @@ export function AdminInsights() {
               className={days === n ? c.rangeOn : c.range}
               onClick={() => setDays(n)}
             >
-              {label}
+              {txb(label)}
             </button>
           ))}
         </div>
@@ -418,7 +453,7 @@ export function AdminInsights() {
           onClick={exportPdf}
           disabled={!d}
         >
-          تصدير PDF
+          {txb("ins.export")}
         </button>
         <div className={c.share} data-no-capture="1">
           <button
@@ -427,15 +462,15 @@ export function AdminInsights() {
             onClick={sendWhatsApp}
             disabled={!d}
           >
-            ملخص واتساب
+            {txb("ins.whatsapp")}
           </button>
           <button
             type="button"
             className={c.whatsapp}
             onClick={sharePdf}
-            disabled={!d || sharing === "جارٍ تجهيز الملف…"}
+            disabled={!d || sharing === tx("ins.preparing")}
           >
-            مشاركة PDF
+            {txb("ins.sharePdf")}
           </button>
         </div>
       </header>
@@ -449,188 +484,242 @@ export function AdminInsights() {
           {error}
         </p>
       )}
-      {!d && !error && <p role="status">جارٍ حساب الإحصاءات…</p>}
+      {!d && !error && <p role="status">{tx("ins.loading")}</p>}
       {d && cur && prev && (
         <>
-          <h3 className={c.section}>المؤشرات الرئيسية · آخر {period}</h3>
+          <h3 className={c.section}>{tx("ins.secMain", { period })}</h3>
           <div className={c.tiles}>
-            <Tile label="الطلبات" value={num(cur.orders)}>
-              <Delta now={cur.orders} before={prev.orders} />
+            <Tile label={tx("ins.orders")} value={num(cur.orders)}>
+              <Delta tx={tx} now={cur.orders} before={prev.orders} />
             </Tile>
-            <Tile label="طلبات مكتملة" value={num(cur.completed)}>
-              <Delta now={cur.completed} before={prev.completed} />
+            <Tile label={tx("ins.completed")} value={num(cur.completed)}>
+              <Delta tx={tx} now={cur.completed} before={prev.completed} />
             </Tile>
             <Tile
-              label="نسبة الإتمام"
+              label={tx("ins.completion")}
               value={rate(cur) === null ? "—" : `${num(rate(cur))}٪`}
-              hint="المكتمل من كل الطلبات"
+              hint={tx("ins.completionHint")}
             />
             <Tile
-              label="القيمة التقديرية"
-              value={sar(cur.value)}
-              hint="السعر × الكمية × الأيام، بلا المرفوض والملغى"
+              label={tx("ins.value")}
+              value={sar(tx, cur.value)}
+              hint={tx("ins.valueHint")}
             >
-              <Delta now={cur.value} before={prev.value} />
+              <Delta tx={tx} now={cur.value} before={prev.value} />
             </Tile>
-            <Tile label="متوسط قيمة الطلب" value={sar(d.averageValue)} />
-            <Tile label="عملاء طلبوا" value={num(cur.customers)}>
-              <Delta now={cur.customers} before={prev.customers} />
+            <Tile label={tx("ins.average")} value={sar(tx, d.averageValue)} />
+            <Tile label={tx("ins.customers")} value={num(cur.customers)}>
+              <Delta tx={tx} now={cur.customers} before={prev.customers} />
             </Tile>
             <Tile
-              label="العملاء العائدون"
+              label={tx("ins.repeat")}
               value={d.repeatRate === null ? "—" : `${num(d.repeatRate)}٪`}
-              hint="من طلب أكثر من مرة"
+              hint={tx("ins.repeatHint")}
             />
             <Tile
-              label="متوسط رد الأسرة"
+              label={tx("ins.response")}
               value={
-                cur.responseHours === null ? "—" : `${num(cur.responseHours)} س`
+                cur.responseHours === null
+                  ? "—"
+                  : tx("ins.responseValue", { n: num(cur.responseHours) })
               }
-              hint="من الطلب حتى فتحه"
+              hint={tx("ins.responseHint")}
             >
               <Delta
+                tx={tx}
                 now={cur.responseHours}
                 before={prev.responseHours}
                 lowerIsBetter
               />
             </Tile>
-            <Tile label="أعضاء جدد" value={num(cur.members)}>
-              <Delta now={cur.members} before={prev.members} />
+            <Tile label={tx("ins.members")} value={num(cur.members)}>
+              <Delta tx={tx} now={cur.members} before={prev.members} />
             </Tile>
-            <Tile label="أسر جديدة" value={num(cur.families)}>
-              <Delta now={cur.families} before={prev.families} />
+            <Tile label={tx("ins.families")} value={num(cur.families)}>
+              <Delta tx={tx} now={cur.families} before={prev.families} />
             </Tile>
-            <Tile label="دعوات ناجحة" value={num(cur.referrals)}>
-              <Delta now={cur.referrals} before={prev.referrals} />
-            </Tile>
-            <Tile label="محادثات جديدة" value={num(cur.conversations)}>
-              <Delta now={cur.conversations} before={prev.conversations} />
-            </Tile>
-            <Tile label="رسائل" value={num(cur.messages)}>
-              <Delta now={cur.messages} before={prev.messages} />
+            <Tile label={tx("ins.referrals")} value={num(cur.referrals)}>
+              <Delta tx={tx} now={cur.referrals} before={prev.referrals} />
             </Tile>
             <Tile
-              label="تقييمات"
+              label={tx("ins.conversations")}
+              value={num(cur.conversations)}
+            >
+              <Delta
+                tx={tx}
+                now={cur.conversations}
+                before={prev.conversations}
+              />
+            </Tile>
+            <Tile label={tx("ins.messages")} value={num(cur.messages)}>
+              <Delta tx={tx} now={cur.messages} before={prev.messages} />
+            </Tile>
+            <Tile
+              label={tx("ins.ratings")}
               value={num(cur.ratings)}
               hint={
                 cur.stars === null
                   ? undefined
-                  : `المتوسط ${num(cur.stars)} من 5`
+                  : tx("ins.starsHint", { n: num(cur.stars) })
               }
             >
-              <Delta now={cur.ratings} before={prev.ratings} />
-            </Tile>
-            <Tile label="طلبات اشتراك" value={num(cur.subscriptions)}>
-              <Delta now={cur.subscriptions} before={prev.subscriptions} />
+              <Delta tx={tx} now={cur.ratings} before={prev.ratings} />
             </Tile>
             <Tile
-              label="طلبات العملاء"
-              value={num(cur.requests)}
-              hint="ما ينشره العملاء ليطلبوه"
+              label={tx("ins.subscriptions")}
+              value={num(cur.subscriptions)}
             >
-              <Delta now={cur.requests} before={prev.requests} />
+              <Delta
+                tx={tx}
+                now={cur.subscriptions}
+                before={prev.subscriptions}
+              />
+            </Tile>
+            <Tile
+              label={tx("ins.requests")}
+              value={num(cur.requests)}
+              hint={tx("ins.requestsHint")}
+            >
+              <Delta tx={tx} now={cur.requests} before={prev.requests} />
             </Tile>
           </div>
 
-          <h3 className={c.section}>الإجمالي الآن</h3>
+          <h3 className={c.section}>{tx("ins.secTotals")}</h3>
           <div className={c.tiles}>
-            <Tile label="العملاء" value={num(Number(d.totals.customers))} />
-            <Tile label="أسر معتمدة" value={num(Number(d.totals.families))} />
-            <Tile label="منتجات ظاهرة" value={num(Number(d.totals.products))} />
             <Tile
-              label="مندوبون نشطون"
+              label={tx("ins.totCustomers")}
+              value={num(Number(d.totals.customers))}
+            />
+            <Tile
+              label={tx("ins.totFamilies")}
+              value={num(Number(d.totals.families))}
+            />
+            <Tile
+              label={tx("ins.totProducts")}
+              value={num(Number(d.totals.products))}
+            />
+            <Tile
+              label={tx("ins.totCouriers")}
               value={num(Number(d.totals.couriers))}
             />
           </div>
 
-          <h3 className={c.section}>التوقع للأسابيع الأربعة القادمة</h3>
+          <h3 className={c.section}>{tx("ins.secForecast")}</h3>
           <p className={c.muted}>
-            تقدير بخط اتجاه آخر {num(d.forecast.basis)} أسابيع مكتملة؛ يتحسن
-            كلما زادت البيانات، ولا يُعد وعدًا.
+            {tx("ins.forecastNote", { n: num(d.forecast.basis) })}
           </p>
           <div className={c.tiles}>
-            <Tile label="طلبات متوقعة" value={num(d.forecast.orders)} />
-            <Tile label="أعضاء جدد متوقعون" value={num(d.forecast.members)} />
-            <Tile label="قيمة تقديرية متوقعة" value={sar(d.forecast.value)} />
+            <Tile label={tx("ins.fOrders")} value={num(d.forecast.orders)} />
+            <Tile label={tx("ins.fMembers")} value={num(d.forecast.members)} />
+            <Tile label={tx("ins.fValue")} value={sar(tx, d.forecast.value)} />
           </div>
           <div className={c.grid}>
             <Weekly
-              title="الطلبات أسبوعيًا (12 أسبوعًا)"
+              tx={tx}
+              title={tx("ins.weeklyOrders")}
               weeks={d.weekly}
               pick={(w) => w.orders}
             />
             <Weekly
-              title="الأعضاء الجدد أسبوعيًا (12 أسبوعًا)"
+              tx={tx}
+              title={tx("ins.weeklyMembers")}
               weeks={d.weekly}
               pick={(w) => w.members}
             />
           </div>
 
-          <h3 className={c.section}>توزيع الطلبات · آخر {period}</h3>
+          <h3 className={c.section}>{tx("ins.secBreakdown", { period })}</h3>
           <div className={c.grid}>
-            <Bars title="حسب المنطقة" rows={d.breakdowns.regions as Row[]} />
-            <Bars title="حسب القسم" rows={d.breakdowns.categories as Row[]} />
             <Bars
-              title="حسب الوجبة"
+              tx={tx}
+              title={tx("ins.byRegion")}
+              rows={d.breakdowns.regions as Row[]}
+            />
+            <Bars
+              tx={tx}
+              title={tx("ins.byCategory")}
+              rows={d.breakdowns.categories as Row[]}
+            />
+            <Bars
+              tx={tx}
+              title={tx("ins.byMeal")}
               rows={d.breakdowns.meals as Row[]}
-              label={(r) => MEALS[String(r.label)] ?? String(r.label)}
+              label={(r) => {
+                const k = MEALS[String(r.label)];
+                return k ? tx(k) : String(r.label);
+              }}
             />
             <Bars
-              title="حسب يوم الأسبوع"
+              tx={tx}
+              title={tx("ins.byWeekday")}
               rows={d.breakdowns.weekdays as Row[]}
-              label={(r) => DAYS[Number(r.label)] ?? String(r.label)}
+              label={(r) => {
+                const k = DAYS[Number(r.label)];
+                return k ? tx(k) : String(r.label);
+              }}
             />
             <Bars
-              title="حسب وقت الطلب (الرياض)"
+              tx={tx}
+              title={tx("ins.byHour")}
               rows={d.breakdowns.hours as Row[]}
-              label={(r) => hourLabel(Number(r.label))}
+              label={(r) => hourLabel(tx, Number(r.label))}
             />
           </div>
 
-          <h3 className={c.section}>الأفضل</h3>
+          <h3 className={c.section}>{tx("ins.secTop")}</h3>
           <div className={c.grid}>
-            <Bars title="الأسر الأكثر طلبًا" rows={d.top.families as Row[]} />
             <Bars
-              title="المنتجات الأكثر طلبًا"
+              tx={tx}
+              title={tx("ins.topFamilies")}
+              rows={d.top.families as Row[]}
+            />
+            <Bars
+              tx={tx}
+              title={tx("ins.topProducts")}
               rows={d.top.products as Row[]}
             />
             <Bars
-              title="المنتجات الأكثر مشاهدة (كل الوقت)"
+              tx={tx}
+              title={tx("ins.topViewed")}
               rows={d.top.viewed as Row[]}
             />
             <Bars
-              title="الأسر الأعلى تقييمًا (3 مقيّمين فأكثر)"
+              tx={tx}
+              title={tx("ins.topRated")}
               rows={d.top.rated as Row[]}
-              empty="لا توجد أسرة قيّمها 3 أشخاص بعد"
+              empty={tx("ins.topRatedEmpty")}
             />
           </div>
 
-          <h3 className={c.section}>فرص التسويق</h3>
+          <h3 className={c.section}>{tx("ins.secMarketing")}</h3>
           <div className={c.grid}>
             <Bars
-              title="ما يطلبه العملاء (حسب القسم)"
+              tx={tx}
+              title={tx("ins.demandCategory")}
               rows={d.demand.categories as Row[]}
             />
             <Bars
-              title="ما يطلبه العملاء (حسب المدينة)"
+              tx={tx}
+              title={tx("ins.demandCity")}
               rows={d.demand.cities as Row[]}
             />
             <Bars
-              title="مناطق فيها طلبات ولا أسرة معتمدة"
+              tx={tx}
+              title={tx("ins.gaps")}
               rows={d.demand.gaps as Row[]}
-              empty="لا توجد منطقة بطلبات بلا أسرة"
+              empty={tx("ins.gapsEmpty")}
             />
           </div>
           <div className={c.card}>
-            <p className={c.cardTitle}>توصيات من الأرقام</p>
-            {tips(d).length ? (
+            <p className={c.cardTitle}>{tx("ins.tipsTitle")}</p>
+            {tips(tx, d).length ? (
               <ul className={c.tips}>
-                {tips(d).map((t) => (
+                {tips(tx, d).map((t) => (
                   <li key={t}>{t}</li>
                 ))}
               </ul>
             ) : (
-              <p className={c.empty}>تظهر التوصيات مع تراكم الطلبات.</p>
+              <p className={c.empty}>{tx("ins.tipsEmpty")}</p>
             )}
           </div>
         </>
