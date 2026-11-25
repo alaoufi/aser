@@ -3,20 +3,13 @@ import assert from "node:assert/strict";
 import { randomBytes, randomUUID } from "node:crypto";
 import { db } from "../src/server/db";
 import { createAdminSession, hash } from "../src/server/auth";
-import {
-  hashPassword,
-  LOGIN_LOCK_AFTER,
-  LOGIN_LOCK_MINUTES,
-  passwordLogin,
-} from "../src/server/credentials";
 import { ratingSummary } from "../src/server/ratings";
 import { awardIfEligible } from "../src/server/certificates";
 
 /**
  * إصلاحات المراجعة الأمنية 2026-11-25 (قاعدة اختبار معزولة فقط):
- * 1) قفل الحساب مؤقت يتضاعف، لا دائم يقفل به أي غريب حساب غيره.
- * 2) التقييم والشهادة بالمقيِّمين المختلفين: حساب ثانٍ بطلبات متكررة لا يصنع «أسرة مميزة».
- * 3) لوحة الإدارة مع خطوتي الدخول تشترط جلسة كلمة المرور + رمز الجوال، لا «نسيت كلمة المرور» وحده.
+ * 1) التقييم والشهادة بالمقيِّمين المختلفين: حساب ثانٍ بطلبات متكررة لا يصنع «أسرة مميزة».
+ * 2) لوحة الإدارة مع خطوتي الدخول تشترط جلسة كلمة المرور + رمز الجوال، لا «نسيت كلمة المرور» وحده.
  */
 const skip = process.env.JDATNA_TEST_DB !== "true";
 const phoneNo = () =>
@@ -29,60 +22,6 @@ async function isolated() {
   );
   return pool;
 }
-
-test(
-  "a lock is temporary and doubles on each wrong try after it ends",
-  { skip },
-  async () => {
-    const pool = await isolated();
-    const id = randomUUID(),
-      phone = phoneNo();
-    const limits = () =>
-      pool.query(
-        "DELETE FROM jdatna.rate_limits WHERE key LIKE 'password-login%'",
-      );
-    const login = (password: string) =>
-      passwordLogin({ identifier: phone, password }).catch((e) => e);
-    // يرجع وقت القفل للخلف كأن الدقائق مضت.
-    const age = (minutes: number) =>
-      pool.query(
-        "UPDATE jdatna.users SET login_locked_at=now()-$2*interval '1 minute' WHERE id=$1",
-        [id, minutes],
-      );
-    try {
-      await pool.query(
-        "INSERT INTO jdatna.users(id,name,phone,role,phone_verified_at,password_hash) VALUES($1,'قفل مؤقت',$2,'customer',now(),$3)",
-        [id, phone, await hashPassword("2468")],
-      );
-      for (let i = 0; i < LOGIN_LOCK_AFTER; i++) await login("1111");
-      assert.equal((await login("2468")).status, 423);
-      // بعد 15 دقيقة يدخل صاحب الحساب بكلمته الصحيحة، ويُفتح القفل ويُصفّر العداد.
-      await age(LOGIN_LOCK_MINUTES + 1);
-      await limits();
-      assert.ok((await login("2468")).token);
-      const row = (
-        await pool.query(
-          "SELECT failed_logins,login_locked_at FROM jdatna.users WHERE id=$1",
-          [id],
-        )
-      ).rows[0];
-      assert.deepEqual(row, { failed_logins: 0, login_locked_at: null });
-      // قفل ثانٍ، ثم خطأ بعد انتهائه: يُقفل ضعف المدة (30 دقيقة).
-      for (let i = 0; i < LOGIN_LOCK_AFTER; i++) await login("1111");
-      await age(LOGIN_LOCK_MINUTES + 1);
-      await limits();
-      assert.equal((await login("1111")).status, 423);
-      await age(LOGIN_LOCK_MINUTES + 1);
-      assert.equal((await login("2468")).status, 423);
-      await age(LOGIN_LOCK_MINUTES * 2 + 1);
-      assert.ok((await login("2468")).token);
-    } finally {
-      await limits();
-      await pool.query("DELETE FROM jdatna.sessions WHERE user_id=$1", [id]);
-      await pool.query("DELETE FROM jdatna.users WHERE id=$1", [id]);
-    }
-  },
-);
 
 test(
   "ratings and the certificate count distinct raters, not repeated orders",

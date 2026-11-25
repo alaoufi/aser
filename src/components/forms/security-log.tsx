@@ -46,7 +46,7 @@ const kindLabels: Record<Kind, string> = {
   rate_limited: "تجاوز حد المحاولات",
   "access.denied": "محاولة دخول قسم إدارة",
   "origin.rejected": "طلب من موقع آخر",
-  "login.locked": "قفل حساب بعد 5 محاولات خاطئة",
+  "login.locked": "تجاوز حد محاولات الدخول (5 خاطئة من جهاز)",
   "login.while_locked": "دخول إلى حساب مقفل",
   "login.admin": "دخول حساب إدارة",
 };
@@ -137,7 +137,7 @@ export function SecurityLog() {
     ["رموز تحقق خاطئة", c?.otpFailed, "warn"],
     ["تجاوز حد المحاولات", c?.rateLimited, "alert"],
     ["رفض دخول الإدارة أو مصدر غريب", c?.denied, "alert"],
-    ["حسابات قُفلت", c?.locked, "alert"],
+    ["تجاوز حد المحاولات", c?.locked, "alert"],
     ["دخول الإدارة الناجح", c?.adminLogins, "ok"],
   ];
   return (

@@ -298,8 +298,32 @@ export function LoginForm({
   }
   const [username, setUsername] = useState("");
   const [clearUsername, setClearUsername] = useState(false);
+  // تجاوز حد محاولات الدخول (قرار المالك 2026-11-25): اسم الدخول المكتوب، لزر «استعادة كلمة المرور».
+  const [limited, setLimited] = useState("");
+  /** «لاستعادة كلمة المرور اضغط هنا»: إن كان اسم الدخول جوالًا يُرسل الرمز إليه مباشرة. */
+  async function recoverNow() {
+    const id = limited.trim();
+    const isPhone = /^[+0-9٠-٩۰-۹\s-]{9,}$/.test(id);
+    switchMode("recover");
+    if (!isPhone) return;
+    setPhone(id);
+    setBusy(true);
+    try {
+      const d = await api<{ challengeId: string }>("/api/auth/request-otp", {
+        method: "POST",
+        body: JSON.stringify({ phone: id, purpose: "reset" }),
+      });
+      setChallenge(d.challengeId);
+      setResendIn(60);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
   function switchMode(next: typeof mode) {
     setMode(next);
+    setLimited("");
     setChallenge("");
     setAdminChallenge("");
     setVerified(null);
@@ -337,6 +361,7 @@ export function LoginForm({
     e.preventDefault();
     setBusy(true);
     setError("");
+    setLimited("");
     const f = new FormData(e.currentTarget);
     try {
       if (verified) {
@@ -428,6 +453,11 @@ export function LoginForm({
       }
     } catch (e) {
       setError((e as Error).message);
+      if (
+        mode === "password" &&
+        (e as { data?: { limit?: boolean } }).data?.limit
+      )
+        setLimited(String(f.get("identifier") ?? ""));
     } finally {
       setBusy(false);
     }
@@ -482,6 +512,17 @@ export function LoginForm({
         </p>
       )}
       <Message error={error || session.error} />
+      {limited && mode === "password" && (
+        <button
+          type="button"
+          className={s.button}
+          style={{ marginBottom: 12 }}
+          disabled={busy}
+          onClick={recoverNow}
+        >
+          لاستعادة كلمة المرور اضغط هنا
+        </button>
+      )}
       {mode !== "password" && !verified && session.ready && !session.open && (
         <p role="status" className={s.notice}>
           التسجيل والتحقق برقم الجوال غير متاحين حاليًا حتى اكتمال جاهزية

@@ -19,7 +19,7 @@ export const POST = api(async (request) => {
     result = await passwordLogin(body, source);
   } catch (error) {
     if (error instanceof HttpError) {
-      const e = error as HttpError & { userId?: string; justLocked?: boolean };
+      const e = error as HttpError & { userId?: string; justLimited?: boolean };
       const hint = identifierHint(identifier);
       if (e.status === 401 || e.status === 403)
         await recordSecurityEvent("login.failed", {
@@ -28,17 +28,14 @@ export const POST = api(async (request) => {
           subject: identifier.toLowerCase() || null,
           detail: `${e.status === 403 ? "حساب موقوف" : "كلمة مرور خاطئة"} · ${hint}`,
         });
-      else if (e.status === 423)
-        // قفل الحساب عند المحاولة الخامسة، أو محاولة دخول لحساب مقفل.
-        await recordSecurityEvent(
-          e.justLocked ? "login.locked" : "login.while_locked",
-          {
-            request,
-            userId: e.userId ?? null,
-            subject: identifier.toLowerCase() || null,
-            detail: hint,
-          },
-        );
+      else if (e.status === 429 && (e as { justLimited?: boolean }).justLimited)
+        // بلوغ حد المحاولات الخاطئة من هذا الجهاز (لا قفل للحساب).
+        await recordSecurityEvent("login.locked", {
+          request,
+          userId: e.userId ?? null,
+          subject: identifier.toLowerCase() || null,
+          detail: hint,
+        });
     }
     throw error;
   }
