@@ -76,10 +76,14 @@ test(
           ).rows[0].n,
         ) + 1;
       while (!/^(\d)\1+$/.test(String(rep))) rep++;
-      const base = rep - 1;
-      await pool.query("SELECT setval('jdatna.member_no_seq', $1)", [base]);
-      const after = await mk();
-      assert.equal(after.memberNo, base + 2, `بعد ${base} يأتي ${base + 2}`);
+      // المحجوز من الأرقام المتشابهة حتى أربع خانات فقط (11111 غير محجوز أعلاه)؛ إن تجاوز العدّاد
+      // ذلك في قاعدة اختبار قديمة فلا رقم محجوزًا أمامه، ويُفحص التخطي في القاعدة الجديدة (CI).
+      if (await reserved(rep)) {
+        const base = rep - 1;
+        await pool.query("SELECT setval('jdatna.member_no_seq', $1)", [base]);
+        const after = await mk();
+        assert.equal(after.memberNo, base + 2, `بعد ${base} يأتي ${base + 2}`);
+      }
 
       // رابط الدعوة برقم العضو.
       const { memberNo, link, count } = await ref.myInvite(host);

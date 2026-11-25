@@ -141,7 +141,20 @@ export async function requireUser(request: Request, roles?: string[]) {
     throw new HttpError(403, "لا تملك صلاحية الوصول");
   return user;
 }
-export async function rateLimit(key: string, max: number, seconds: number) {
+/**
+ * الحدود العامة (…-global) مشتركة بين كل الزوار. في قاعدة الاختبار فقط يُعطى ملف الاختبار الذي
+ * يستنفدها عمدًا نطاقًا خاصًا (RATE_LIMIT_SCOPE)، فلا يرفض طلبات اختبارات أخرى تعمل معه بالتوازي.
+ */
+function limitKey(key: string) {
+  const scope = process.env.RATE_LIMIT_SCOPE;
+  return process.env.JDATNA_TEST_DB === "true" &&
+    scope &&
+    key.endsWith("-global")
+    ? `${scope}:${key}`
+    : key;
+}
+export async function rateLimit(keyName: string, max: number, seconds: number) {
+  const key = limitKey(keyName);
   const result = await db().query(
     `INSERT INTO jdatna.rate_limits(key,count,reset_at) VALUES($1,1,now()+$2*interval '1 second') ON CONFLICT(key) DO UPDATE SET count=CASE WHEN rate_limits.reset_at<=now() THEN 1 ELSE rate_limits.count+1 END,reset_at=CASE WHEN rate_limits.reset_at<=now() THEN now()+$2*interval '1 second' ELSE rate_limits.reset_at END RETURNING count`,
     [key, seconds],
@@ -152,7 +165,7 @@ export async function rateLimit(key: string, max: number, seconds: number) {
     if (count === max + 1) {
       const { recordSecurityEvent } = await import("./security-events");
       await recordSecurityEvent("rate_limited", {
-        detail: key.split(":")[0],
+        detail: keyName.split(":")[0],
       });
     }
     throw new HttpError(429, "محاولات كثيرة، يرجى المحاولة لاحقًا");

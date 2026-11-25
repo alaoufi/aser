@@ -410,7 +410,10 @@ test(
         "exhausted global OTP limits reject random targets without inserting target rows",
         async () => {
           const env = { ...process.env };
-          const keys = ["otp-global", "verify-global"];
+          // نطاق خاص لهذا الاختبار: استنفاد الحد العام هنا لا يرفض اختبارات الملفات الأخرى.
+          const scope = `it-${randomUUID()}`;
+          process.env.RATE_LIMIT_SCOPE = scope;
+          const keys = [`${scope}:otp-global`, `${scope}:verify-global`];
           const existing = (
             await db().query(
               "SELECT * FROM jdatna.rate_limits WHERE key=ANY($1::text[])",
@@ -441,7 +444,8 @@ test(
               DOCUMENT_ENCRYPTION_KEY: encryptionKey,
             });
             await db().query(
-              "INSERT INTO jdatna.rate_limits(key,count,reset_at) VALUES('otp-global',600,now()+interval '1 hour'),('verify-global',8000,now()+interval '1 hour') ON CONFLICT(key) DO UPDATE SET count=EXCLUDED.count,reset_at=EXCLUDED.reset_at",
+              "INSERT INTO jdatna.rate_limits(key,count,reset_at) VALUES($1,600,now()+interval '1 hour'),($2,8000,now()+interval '1 hour') ON CONFLICT(key) DO UPDATE SET count=EXCLUDED.count,reset_at=EXCLUDED.reset_at",
+              keys,
             );
             await assert.rejects(requestOtp(phone, "signup"), /محاولات كثيرة/);
             for (const id of ids)
