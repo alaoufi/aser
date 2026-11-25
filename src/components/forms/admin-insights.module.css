@@ -143,7 +143,7 @@
 }
 .bars li {
   display: grid;
-  grid-template-columns: minmax(70px, 34%) 1fr auto;
+  grid-template-columns: minmax(70px, 42%) 1fr auto;
   align-items: center;
   gap: 8px;
   font-size: 13.5px;
@@ -258,5 +258,56 @@
   .column span {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+  }
+}
+/* إرسال واتساب: ملخص نصي، وملف PDF للمشاركة. */
+.share {
+  display: flex;
+  gap: 8px;
+}
+.whatsapp {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid #1f7a4d;
+  border-radius: 10px;
+  background: #1f7a4d;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.whatsapp:disabled {
+  opacity: 0.5;
+}
+/* أثناء تصوير الملف: عنوان التقرير ظاهر، والأزرار مخفية. */
+.capturing {
+  padding: 12px;
+  background: #fff;
+}
+.capturing .printHead {
+  display: flex;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--olive);
+}
+.capturing .head {
+  display: none;
+}
+.capturing .section {
+  margin: 0;
+  padding: 6px 0 2px;
+  line-height: 1.6;
+}
+@media print {
+  .share {
+    display: none;
+  }
+}
+@media (max-width: 600px) {
+  .share {
+    width: 100%;
+  }
+  .whatsapp {
+    flex: 1;
   }
 }

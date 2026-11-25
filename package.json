@@ -16,6 +16,8 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.1164.0",
+    "html-to-image": "1.11.13",
+    "jspdf": "4.2.1",
     "leaflet": "^1.9.4",
     "mmdb-lib": "3.0.5",
     "next": "16.4.5",

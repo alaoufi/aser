@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { AdminInsights as Data } from "@/server/insights";
 import { api, useSession } from "./session";
 import c from "./admin-insights.module.css";
@@ -224,7 +224,29 @@ function tips(d: Data) {
   return out;
 }
 
+/** ملخص نصي لواتساب: أهم الأرقام والتوقع والتوصيات. */
+function summaryText(d: Data, period: string) {
+  const cur = d.current;
+  const lines = [
+    `*أكلات جدتنا — ملخص الإحصاءات (آخر ${period})*`,
+    "",
+    `الطلبات: ${num(cur.orders)} (المكتملة ${num(cur.completed)})`,
+    `القيمة التقديرية: ${sar(cur.value)} · متوسط الطلب ${sar(d.averageValue)}`,
+    `عملاء طلبوا: ${num(cur.customers)} · العائدون ${d.repeatRate === null ? "—" : `${num(d.repeatRate)}٪`}`,
+    `أعضاء جدد: ${num(cur.members)} · أسر جديدة: ${num(cur.families)}`,
+    `متوسط رد الأسرة: ${cur.responseHours === null ? "—" : `${num(cur.responseHours)} ساعة`}`,
+    "",
+    "*التوقع للأسابيع الأربعة القادمة (تقدير):*",
+    `طلبات ${num(d.forecast.orders)} · أعضاء ${num(d.forecast.members)} · قيمة ${sar(d.forecast.value)}`,
+  ];
+  const t = tips(d);
+  if (t.length) lines.push("", "*توصيات:*", ...t.map((x) => `• ${x}`));
+  return lines.join("\n");
+}
+
 export function AdminInsights() {
+  const box = useRef<HTMLElement>(null);
+  const [sharing, setSharing] = useState("");
   const { user } = useSession();
   const [days, setDays] = useState(30);
   const [data, setData] = useState<Data | null>(null);
@@ -259,8 +281,112 @@ export function AdminInsights() {
     document.body.classList.add("print-insights");
     window.print();
   }
+  function sendWhatsApp() {
+    if (!d) return;
+    window.open(
+      `https://wa.me/?text=${encodeURIComponent(summaryText(d, period))}`,
+      "_blank",
+      "noopener",
+    );
+  }
+  /**
+   * ملف PDF للمشاركة: صورة القسم بصفحات A4 (تُحمَّل المكتبتان عند الضغط فقط).
+   * الجوال: قائمة المشاركة (واتساب وغيره). الكمبيوتر: يُحفظ الملف ليُرفق في واتساب.
+   */
+  async function sharePdf() {
+    const el = box.current;
+    if (!el || !d) return;
+    setSharing("جارٍ تجهيز الملف…");
+    el.classList.add(c.capturing);
+    try {
+      const [{ toCanvas }, { jsPDF }] = await Promise.all([
+        import("html-to-image"),
+        import("jspdf"),
+      ]);
+      // كل جزء يُصوَّر وحده ويوضع في الصفحة كاملًا (لا يُقسم مربع بين صفحتين).
+      const parts = [...el.children].filter(
+        (n): n is HTMLElement =>
+          n instanceof HTMLElement &&
+          !n.dataset.noCapture &&
+          n.tagName !== "HEADER" &&
+          n.getAttribute("role") !== "status",
+      );
+      const pdf = new jsPDF({ unit: "mm", format: "a4" });
+      const pageW = 210,
+        pageH = 297,
+        margin = 10,
+        gap = 3;
+      const w = pageW - margin * 2;
+      let y = margin;
+      const full = pageH - margin * 2;
+      const shots: { url: string; w: number; h: number; keep: boolean }[] = [];
+      for (const part of parts) {
+        const canvas = await toCanvas(part, {
+          pixelRatio: 2,
+          backgroundColor: "#ffffff",
+        });
+        if (!canvas.width || !canvas.height) continue;
+        // جزء أطول من الصفحة (على الجوال) يُصغَّر ليدخل صفحة واحدة.
+        let h = (canvas.height / canvas.width) * w;
+        let pw = w;
+        if (h > full) {
+          pw = (w * full) / h;
+          h = full;
+        }
+        shots.push({
+          url: canvas.toDataURL("image/jpeg", 0.92),
+          w: pw,
+          h,
+          // العنوان وسطر الشرح يبقيان مع ما بعدهما في الصفحة نفسها.
+          keep: part.tagName === "H3" || part.tagName === "P",
+        });
+      }
+      for (let i = 0; i < shots.length; i++) {
+        let need = shots[i].h;
+        for (let j = i; shots[j]?.keep && shots[j + 1]; j++)
+          need += gap + shots[j + 1].h;
+        if (y + Math.min(need, full) > pageH - margin && y > margin) {
+          pdf.addPage();
+          y = margin;
+        }
+        const shot = shots[i];
+        pdf.addImage(
+          shot.url,
+          "JPEG",
+          margin + (w - shot.w),
+          y,
+          shot.w,
+          shot.h,
+        );
+        y += shot.h + gap;
+      }
+      const name = `jdatna-insights-${days}d-${d.generatedAt.slice(0, 10)}.pdf`;
+      const file = new File([pdf.output("blob")], name, {
+        type: "application/pdf",
+      });
+      if (navigator.canShare?.({ files: [file] })) {
+        setSharing("");
+        await navigator
+          .share({ files: [file], title: "تقرير إحصاءات أكلات جدتنا" })
+          .catch(() => {});
+      } else {
+        const url = URL.createObjectURL(file);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = name;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 10_000);
+        setSharing("حُفظ ملف PDF في جهازك؛ أرفقه في محادثة واتساب.");
+      }
+    } catch {
+      setSharing("تعذر تجهيز الملف؛ استخدم «تصدير PDF».");
+    } finally {
+      el.classList.remove(c.capturing);
+    }
+  }
   return (
     <section
+      ref={box}
       className={`${c.insights} insights-print`}
       aria-labelledby="insights-title"
     >
@@ -294,7 +420,30 @@ export function AdminInsights() {
         >
           تصدير PDF
         </button>
+        <div className={c.share} data-no-capture="1">
+          <button
+            type="button"
+            className={c.whatsapp}
+            onClick={sendWhatsApp}
+            disabled={!d}
+          >
+            ملخص واتساب
+          </button>
+          <button
+            type="button"
+            className={c.whatsapp}
+            onClick={sharePdf}
+            disabled={!d || sharing === "جارٍ تجهيز الملف…"}
+          >
+            مشاركة PDF
+          </button>
+        </div>
       </header>
+      {sharing && (
+        <p role="status" className={c.muted} data-no-capture="1">
+          {sharing}
+        </p>
+      )}
       {error && (
         <p role="alert" className={c.error}>
           {error}

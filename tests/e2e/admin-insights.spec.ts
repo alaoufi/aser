@@ -147,6 +147,38 @@ test.describe("admin statistics", () => {
     ).toBeVisible();
     await expect(stats.getByRole("button", { name: "تصدير PDF" })).toBeHidden();
     await page.emulateMedia({ media: "screen" });
+    await page.evaluate(() => document.body.classList.remove("print-insights"));
+    // واتساب: ملخص نصي جاهز في رابط wa.me.
+    await page.evaluate(() => {
+      (window as unknown as { opened: string[] }).opened = [];
+      window.open = ((url: string) => {
+        (window as unknown as { opened: string[] }).opened.push(url);
+        return null;
+      }) as typeof window.open;
+    });
+    await stats.getByRole("button", { name: "ملخص واتساب" }).click();
+    const opened = await page.evaluate(
+      () => (window as unknown as { opened: string[] }).opened,
+    );
+    expect(opened).toHaveLength(1);
+    expect(opened[0]).toMatch(/^https:\/\/wa\.me\/\?text=/);
+    const text = decodeURIComponent(opened[0].split("text=")[1]);
+    expect(text).toContain("أكلات جدتنا — ملخص الإحصاءات (آخر 90 يومًا)");
+    expect(text).toContain("الطلبات: 4");
+    // ملف PDF: على المتصفح بلا مشاركة ملفات يُحفظ في الجهاز.
+    const [download] = await Promise.all([
+      page.waitForEvent("download"),
+      stats.getByRole("button", { name: "مشاركة PDF" }).click(),
+    ]);
+    expect(download.suggestedFilename()).toMatch(
+      /^jdatna-insights-90d-.*\.pdf$/,
+    );
+    const path = await download.path();
+    const { readFileSync } = await import("node:fs");
+    const bytes = readFileSync(path);
+    expect(bytes.subarray(0, 4).toString()).toBe("%PDF");
+    expect(bytes.length).toBeGreaterThan(20_000);
+    await expect(stats.getByText("حُفظ ملف PDF في جهازك")).toBeVisible();
     // على الجوال: مربعان في السطر.
     const width = page.viewportSize()?.width ?? 1280;
     if (width <= 600) {
