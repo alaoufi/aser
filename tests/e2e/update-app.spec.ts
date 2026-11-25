@@ -34,7 +34,7 @@ test.describe("old app versions are sent to update", () => {
     await page.goto("/update-app?p=ios");
     await expect(
       page.getByRole("link", { name: "حدّث من App Store" }),
-    ).toHaveAttribute("href", /apps\.apple\.com\/sa\/app\/id6833382132/);
+    ).toHaveAttribute("href", "https://apps.apple.com/sa/app/id6833382132");
     // لا مواصلة في الموقع: بلا ترويسة ولا قائمة سفلية ولا تذييل.
     await expect(page.locator(".site-header")).toHaveCount(0);
     await expect(page.locator(".bottom-nav")).toHaveCount(0);
@@ -42,6 +42,9 @@ test.describe("old app versions are sent to update", () => {
     await page.goto("/update-app?p=android");
     await expect(
       page.getByRole("link", { name: "حدّث من Google Play" }),
-    ).toHaveAttribute("href", /play\.google\.com/);
+    ).toHaveAttribute(
+      "href",
+      "https://play.google.com/store/apps/details?id=com.jdatna.app",
+    );
   });
 });
