@@ -139,9 +139,21 @@ test.describe("browse filters show exactly the matching data", () => {
     await page.goto(url);
     const ids: string[] = [];
     for (let n = 1; n < 10; n++) {
+      // ننتظر الصفحة كاملة («صفحة X من Y») قبل القراءة: الرابط يتغير قبل الرسم، واختيار المنطقة
+      // يعيد رسم الصفحة بعد التحميل.
+      const info = page.locator(".pager-info");
+      const paged = await info
+        .waitFor({ timeout: 3000 })
+        .then(() => true)
+        .catch(() => false);
+      if (paged) await expect(info).toContainText(`صفحة ${n} من`);
       ids.push(...(await shown(page)));
+      if (!paged) break;
+      const [, of] =
+        ((await info.textContent()) ?? "").match(/من\s*(\d+)/) ?? [];
+      if (n >= Number(of)) break;
       const next = page.getByRole("link", { name: "التالي", exact: true });
-      if (!(await next.count())) break;
+      await expect(next, "زر «التالي» مفقود وفيه صفحات أخرى").toBeVisible();
       await next.click();
       await expect(page).toHaveURL(new RegExp(`page=${n + 1}`));
     }
