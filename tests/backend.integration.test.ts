@@ -422,7 +422,8 @@ test(
             String(Math.floor(Math.random() * 1e6)).padStart(6, "0");
           const ids = [randomUUID(), randomUUID(), randomUUID()];
           const targets = [
-            "otp-phone:" + hash(phone),
+            "otp-phone:" + hash(phone + "|unknown"),
+            "otp-phone-all:" + hash(phone),
             ...ids.map((id) => "verify:" + id),
           ];
           try {

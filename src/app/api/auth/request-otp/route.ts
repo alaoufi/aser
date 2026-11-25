@@ -10,5 +10,5 @@ export const POST = api(async (request) => {
     .object({ phone: z.string().max(25), purpose: otpPurposeSchema })
     .strict()
     .parse(await jsonBody(request));
-  return json(await requestOtp(phone, purpose));
+  return json(await requestOtp(phone, purpose, source));
 }, true);

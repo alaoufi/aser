@@ -50,6 +50,7 @@ export const POST = api(async (request) => {
       link: refCode ? safeDecode(refCode) || null : null,
       invite: body.invite || null,
     },
+    source,
   );
   if (!result) {
     await recordSecurityEvent("otp.failed", { request, detail: body.purpose });

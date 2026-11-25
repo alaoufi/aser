@@ -289,7 +289,12 @@ test(
         "DELETE FROM jdatna.rate_limits WHERE key=ANY($1::text[])",
         [
           [
-            ...phones.map((phone) => "otp-phone:" + hash(phone)),
+            ...phones.map((phone) => "otp-phone:" + hash(phone + "|unknown")),
+            ...phones.map((phone) => "otp-phone-all:" + hash(phone)),
+            ...phones.map(
+              (phone) => "otp-phone-day:" + hash(phone + "|unknown"),
+            ),
+            ...phones.map((phone) => "otp-phone-day-all:" + hash(phone)),
             ...challengeIds.map((id) => "verify:" + id),
             ...issuedTokens.map((token) => "credentials:" + hash(token)),
           ],

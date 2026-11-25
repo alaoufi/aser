@@ -1,3 +1,4 @@
+import { ratingAverageSql, ratingCountSql } from "./rating-sql";
 import type { Category, City, Producer, Product, Filters } from "../lib/types";
 import { mineConditions } from "./member-scope";
 import { db, databaseConfigured } from "./db";
@@ -63,8 +64,8 @@ export async function getCities(): Promise<City[]> {
 export const producerSelect = `SELECT ${notCookingTodaySql()} AS "notCookingToday",p.id,p.slug,
 (SELECT mu.member_no FROM jdatna.users mu WHERE mu.id=p.user_id) AS "memberNo",COALESCE(p.trade_name,p.name) AS name,p.description,p.city_id AS "cityId",
 c.name AS "cityName",r.name AS "regionName",p.neighborhood,p.verified,
-(SELECT round(avg(g.stars)::numeric,1)::float8 FROM jdatna.ratings g WHERE g.kind='family' AND g.target_id=p.id) AS "ratingAverage",
-(SELECT count(*)::int FROM jdatna.ratings g WHERE g.kind='family' AND g.target_id=p.id) AS "ratingCount",
+${ratingAverageSql("family", "p.id")} AS "ratingAverage",
+${ratingCountSql("family", "p.id")} AS "ratingCount",
 (SELECT json_build_object('palette',b.palette,'pattern',b.pattern,'effect',b.effect,'scale',b.scale) FROM jdatna.producer_brand b WHERE b.producer_id=p.id) AS brand,
 CASE WHEN p.show_phone THEN p.phone END AS phone,
 CASE WHEN p.show_location THEN p.pickup_location END AS "publicLocation",

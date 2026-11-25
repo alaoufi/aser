@@ -1,3 +1,4 @@
+import { ratingAverageSql, ratingCountSql } from "./rating-sql";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import type { SessionUser } from "../lib/types";
@@ -44,8 +45,8 @@ export async function ratingSummary(
   if (!z.uuid().safeParse(targetId).success) return { average: null, count: 0 };
   const row = (
     await db().query(
-      "SELECT round(avg(stars)::numeric,1)::float8 AS average,count(*)::int AS count FROM jdatna.ratings WHERE kind=$1 AND target_id=$2",
-      [k, targetId],
+      `SELECT ${ratingAverageSql(k, "$1::uuid")} AS average,${ratingCountSql(k, "$1::uuid")} AS count`,
+      [targetId],
     )
   ).rows[0];
   return { average: row.average, count: row.count };

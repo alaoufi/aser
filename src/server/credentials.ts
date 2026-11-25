@@ -90,7 +90,10 @@ export function roleDestination(role: SessionUser["role"]) {
         ? "/courier"
         : "/orders";
 }
-export async function passwordLogin(input: unknown) {
+export async function passwordLogin(
+  input: unknown,
+  source: string | null = null,
+) {
   const value = z
     .object({
       identifier: z.string().trim().min(1).max(160),
@@ -117,7 +120,12 @@ export async function passwordLogin(input: unknown) {
   await Promise.all([
     rateLimit("password-login-global", 6000, 3600),
     rateLimit("password-login:" + hash(identifier), 10, 900),
-    rateLimit("password-login-day:" + hash(identifier), 30, 86400),
+    // اليومي لكل اسم دخول مع مصدره: غريبٌ لا يوقف دخول صاحب الحساب يومًا كاملًا (مراجعة 2026-11-25).
+    rateLimit(
+      "password-login-day:" + hash(identifier + "|" + (source ?? "unknown")),
+      30,
+      86400,
+    ),
   ]);
   // المحاولة الخاطئة تُحفظ (لا تتراجع مع الخطأ)، ثم يُرمى الخطأ بعد إنهاء المعاملة.
   const outcome = await transaction(async (client) => {
@@ -132,8 +140,9 @@ export async function passwordLogin(input: unknown) {
         ).rows[0]
       : null;
     const matches = await verifyPassword(value.password, row?.password_hash);
-    // حساب مقفل: لا دخول حتى بكلمة المرور الصحيحة؛ يُفتح باستعادة كلمة المرور.
-    if (row?.login_locked_at)
+    // قفل مؤقت (مراجعة أمنية 2026-11-25): كان دائمًا فيقفل أي غريب حساب غيره بخمس محاولات.
+    // 15 دقيقة بعد 5 محاولات خاطئة، وتتضاعف مع كل خطأ بعد انتهائه (حتى 16 ساعة). استعادة كلمة المرور تفتحه فورًا.
+    if (row?.login_locked_at && lockedUntil(row) > Date.now())
       return { fail: "locked" as const, userId: row.id as string, just: false };
     if (!row || !matches) {
       if (!row) return { fail: "wrong" as const, userId: null, just: false };
@@ -162,16 +171,16 @@ export async function passwordLogin(input: unknown) {
       login_locked_at: string | null;
     };
     // دخول صحيح: يُصفَّر عدّاد المحاولات الخاطئة.
-    if (row.failed_logins)
+    if (row.failed_logins || row.login_locked_at)
       await client.query(
-        "UPDATE jdatna.users SET failed_logins=0 WHERE id=$1",
+        "UPDATE jdatna.users SET failed_logins=0,login_locked_at=NULL WHERE id=$1",
         [user.id],
       );
     if (suspended)
       throw new HttpError(403, "هذا الحساب موقوف؛ تواصل مع إدارة المنصة");
     // دخول صحيح: يُصفَّر العداد اليومي، فلا يُقفل صاحب الحساب بدخوله المعتاد.
     await client.query("DELETE FROM jdatna.rate_limits WHERE key=$1", [
-      "password-login-day:" + hash(identifier),
+      "password-login-day:" + hash(identifier + "|" + (source ?? "unknown")),
     ]);
     // المدير والمشرف يدخلان بخطوتين: كلمة المرور ثم رمز الجوال.
     if (
@@ -200,7 +209,7 @@ export async function passwordLogin(input: unknown) {
       throw Object.assign(
         new HttpError(
           423,
-          "قُفل الحساب بعد 5 محاولات دخول خاطئة. استعد كلمة المرور من «نسيت كلمة المرور» برمز يصل جوالك.",
+          "أُوقف الدخول مؤقتًا بعد محاولات خاطئة متتالية. حاول بعد قليل، أو استعد كلمة المرور الآن من «نسيت كلمة المرور» برمز يصل جوالك.",
           { locked: true },
         ),
         { justLocked: outcome.just, userId: outcome.userId },
@@ -214,6 +223,19 @@ export async function passwordLogin(input: unknown) {
 }
 /** عدد المحاولات الخاطئة المتتالية الذي يُقفل بعده الحساب (طلب المالك). */
 export const LOGIN_LOCK_AFTER = 5;
+/** مدة القفل الأولى، وتتضاعف مع كل خطأ بعد انتهائها حتى 64 ضعفًا (16 ساعة). */
+export const LOGIN_LOCK_MINUTES = 15;
+export function lockedUntil(row: {
+  login_locked_at: string | Date | null;
+  failed_logins: number;
+}) {
+  if (!row.login_locked_at) return 0;
+  const extra = Math.min(Math.max(row.failed_logins - LOGIN_LOCK_AFTER, 0), 6);
+  return (
+    new Date(row.login_locked_at).getTime() +
+    LOGIN_LOCK_MINUTES * 60_000 * 2 ** extra
+  );
+}
 export async function setCredentials(request: Request, input: unknown) {
   const token = sessionToken(request);
   if (!token) throw new HttpError(401, "يرجى تسجيل الدخول");

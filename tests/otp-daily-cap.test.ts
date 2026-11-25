@@ -5,8 +5,8 @@ import { hash, requestOtp, verifyOtp } from "../src/server/auth";
 import { db } from "../src/server/db";
 
 /**
- * رمز التحقق أربعة أرقام: سقف يومي لكل جوال يمنع التخمين المتواصل طوال اليوم
- * (8 رموز و10 محاولات إدخال في اليوم)، حتى لو جاء المهاجم من عناوين كثيرة.
+ * سقف يومي لكل جوال من كل مصدر (8 رموز و10 إدخالات)، وسقف أوسع للجوال كله (20 و30):
+ * يمنع التخمين المتواصل، ولا يستنفد غريبٌ من جهازه حصة صاحب الجوال (مراجعة أمنية 2026-11-25).
  */
 test(
   "a phone gets at most 8 codes and 10 code attempts a day, even with the right code",
@@ -39,10 +39,16 @@ test(
     );
     const originalFetch = globalThis.fetch;
     let code = "";
+    const src = (k: string, from = "unknown") => k + hash(phone + "|" + from);
     const keys = [
-      "otp-phone:" + hash(phone),
-      "otp-phone-day:" + hash(phone),
-      "verify-phone-day:" + hash(phone),
+      src("otp-phone:"),
+      src("otp-phone-day:"),
+      src("verify-phone-day:"),
+      "otp-phone-all:" + hash(phone),
+      "otp-phone-day-all:" + hash(phone),
+      "verify-phone-day-all:" + hash(phone),
+      src("otp-phone:", "owner"),
+      src("otp-phone-day:", "owner"),
     ];
     try {
       Object.assign(process.env, overrides);
@@ -82,6 +88,18 @@ test(
         keys[1],
       ]);
       await assert.rejects(requestOtp(phone, "reset"), { status: 429 });
+      // صاحب الجوال من جهاز آخر يطلب رمز الاستعادة رغم استنفاد غيره حصته.
+      assert.ok((await requestOtp(phone, "reset", "owner")).challengeId);
+      // والسقف الأوسع للجوال كله يبقى: 20 رمزًا في اليوم من كل المصادر.
+      await pool.query("DELETE FROM jdatna.rate_limits WHERE key=ANY($1)", [
+        [src("otp-phone:", "owner"), "otp-phone-all:" + hash(phone)],
+      ]);
+      await pool.query("UPDATE jdatna.rate_limits SET count=20 WHERE key=$1", [
+        "otp-phone-day-all:" + hash(phone),
+      ]);
+      await assert.rejects(requestOtp(phone, "reset", "owner"), {
+        status: 429,
+      });
     } finally {
       globalThis.fetch = originalFetch;
       for (const [key, value] of Object.entries(prior))

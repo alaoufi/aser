@@ -215,7 +215,7 @@ const adInput = z
       .string()
       .trim()
       .max(500)
-      .refine((v) => v === "" || /^(https:\/\/|\/)/.test(v), {
+      .refine((v) => v === "" || /^(https:\/\/|\/(?![\/\\]))/.test(v), {
         message: "الرابط يبدأ بـ https:// أو / (صفحة في الموقع)",
       })
       .optional()
