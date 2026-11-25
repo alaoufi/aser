@@ -8,5 +8,7 @@ import { usePathname } from "next/navigation";
 export function SiteOnly({ children }: { children: React.ReactNode }) {
   const path = usePathname() ?? "";
   if (path === "/admin" || path.startsWith("/admin/")) return null;
+  // شاشة تحديث التطبيق القديم: بلا ترويسة ولا تذييل ولا روابط، فلا يواصل إلا بالتحديث.
+  if (path === "/update-app") return null;
   return children;
 }
