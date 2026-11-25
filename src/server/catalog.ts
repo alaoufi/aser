@@ -31,7 +31,7 @@ export async function publicCategories(region = ""): Promise<Category[]> {
     db().query(
       `SELECT DISTINCT pc.category_id AS id
        FROM jdatna.product_categories pc
-       JOIN jdatna.products x ON x.id=pc.product_id AND x.visible=true AND x.status<>'unavailable'
+       JOIN jdatna.products x ON x.id=pc.product_id AND x.visible=true AND x.deleted_at IS NULL AND x.status<>'unavailable'
        JOIN jdatna.producer_profiles p ON p.id=x.producer_id AND p.status='approved' AND NOT p.review_only
        WHERE EXISTS(SELECT 1 FROM jdatna.producer_categories f
          JOIN jdatna.producer_profiles fp ON fp.id=f.producer_id AND fp.status='approved' AND NOT fp.review_only
@@ -117,7 +117,8 @@ function conditions(f: Filters, products: boolean) {
   const where = [
     // أسرة مراجعة المتاجر لا تظهر في البحث والقوائم العامة.
     "p.status='approved' AND NOT p.review_only",
-    ...(products ? ["x.visible=true"] : []),
+    // المحذوف لا يظهر ولو أُعيد إظهاره خطأً (فحص الفلاتر 2026-11-25).
+    ...(products ? ["x.visible=true", "x.deleted_at IS NULL"] : []),
   ];
   const add = (sql: string, value: unknown) => {
     args.push(value);
@@ -160,7 +161,7 @@ function conditions(f: Filters, products: boolean) {
   // الأسرة «تشحن لكل المناطق» إن كان نطاقها المملكة أو لها منتج منشور يُشحن للمملكة.
   if (!products && f.scope === "kingdom")
     where.push(
-      "(p.delivery_scope='kingdom' OR EXISTS(SELECT 1 FROM jdatna.products k WHERE k.producer_id=p.id AND k.visible AND k.delivery_scope='kingdom' AND k.status<>'unavailable'))",
+      "(p.delivery_scope='kingdom' OR EXISTS(SELECT 1 FROM jdatna.products k WHERE k.producer_id=p.id AND k.visible AND k.deleted_at IS NULL AND k.delivery_scope='kingdom' AND k.status<>'unavailable'))",
     );
   if (f.notRegion)
     add(
@@ -193,10 +194,22 @@ export async function searchProducts(
   args.push((Math.max(1, Math.min(1000, Number(filters.page) || 1)) - 1) * 24);
   return (
     await db().query(
-      `${productSelect} WHERE ${where} ORDER BY (x.status='available' AND NOT ${notCookingTodaySql()}) DESC,(x.status='preorder') DESC,x.featured DESC,x.created_at DESC LIMIT 24 OFFSET $${args.length}`,
+      `${productSelect} WHERE ${where} ORDER BY (x.status='available' AND NOT ${notCookingTodaySql()}) DESC,(x.status='preorder') DESC,x.featured DESC,x.created_at DESC,x.id LIMIT 24 OFFSET $${args.length}`,
       args,
     )
   ).rows.map(mapProduct);
+}
+/** عدد المنتجات المطابقة كلها (لا صفحة واحدة): للعدد الظاهر وللترقيم في «تصفح». */
+export const PAGE_SIZE = 24;
+export async function countProducts(filters: Filters = {}): Promise<number> {
+  if (!databaseConfigured()) return 0;
+  const { args, where } = conditions(filters, true);
+  return (
+    await db().query(
+      `SELECT count(*)::int AS n FROM jdatna.products x JOIN jdatna.producer_profiles p ON p.id=x.producer_id WHERE ${where}`,
+      args,
+    )
+  ).rows[0].n as number;
 }
 /**
  * أطباق «مائدة اليوم»: المتوفر اليوم في المنطقة، والأكثر طلبًا أولًا
@@ -211,7 +224,7 @@ export async function todayProducts(
   args.push(Math.max(1, Math.min(200, limit)));
   return (
     await db().query(
-      `${productSelect} WHERE ${where} ORDER BY (SELECT count(*) FROM jdatna.order_requests o WHERE o.product_id=x.id AND o.status NOT IN ('declined','cancelled')) DESC,x.featured DESC,x.created_at DESC LIMIT $${args.length}`,
+      `${productSelect} WHERE ${where} ORDER BY (SELECT count(*) FROM jdatna.order_requests o WHERE o.product_id=x.id AND o.status NOT IN ('declined','cancelled')) DESC,x.featured DESC,x.created_at DESC,x.id LIMIT $${args.length}`,
       args,
     )
   ).rows.map(mapProduct);
@@ -224,7 +237,7 @@ export async function searchProducers(
   args.push((Math.max(1, Math.min(1000, Number(filters.page) || 1)) - 1) * 24);
   return (
     await db().query(
-      `${producerSelect} WHERE ${where} ORDER BY p.created_at DESC LIMIT 24 OFFSET $${args.length}`,
+      `${producerSelect} WHERE ${where} ORDER BY p.created_at DESC,p.id LIMIT 24 OFFSET $${args.length}`,
       args,
     )
   ).rows;
@@ -244,7 +257,7 @@ export async function getProduct(id: string): Promise<Product | null> {
   if (!databaseConfigured() || !/^[a-f0-9-]{36}$/i.test(id)) return null;
   const row = (
     await db().query(
-      `${productSelect} WHERE x.id=$1 AND x.visible=true AND p.status='approved'`,
+      `${productSelect} WHERE x.id=$1 AND x.visible=true AND x.deleted_at IS NULL AND p.status='approved'`,
       [id],
     )
   ).rows[0];
@@ -256,7 +269,7 @@ export async function getProducerProducts(
   if (!databaseConfigured() || !/^[a-f0-9-]{36}$/i.test(producerId)) return [];
   return (
     await db().query(
-      `${productSelect} WHERE p.id=$1 AND p.status='approved' AND x.visible=true ORDER BY x.created_at DESC LIMIT 100`,
+      `${productSelect} WHERE p.id=$1 AND p.status='approved' AND x.visible=true AND x.deleted_at IS NULL ORDER BY x.created_at DESC,x.id LIMIT 100`,
       [producerId],
     )
   ).rows.map(mapProduct);
@@ -267,7 +280,7 @@ export async function countProducerProducts(producerId: string) {
   if (!databaseConfigured() || !/^[a-f0-9-]{36}$/i.test(producerId)) return 0;
   return (
     await db().query(
-      "SELECT count(*)::int AS n FROM jdatna.products x JOIN jdatna.producer_profiles p ON p.id=x.producer_id WHERE p.id=$1 AND p.status='approved' AND x.visible=true",
+      "SELECT count(*)::int AS n FROM jdatna.products x JOIN jdatna.producer_profiles p ON p.id=x.producer_id WHERE p.id=$1 AND p.status='approved' AND x.visible=true AND x.deleted_at IS NULL",
       [producerId],
     )
   ).rows[0].n as number;
@@ -302,10 +315,10 @@ export async function browseLists(f: { region?: string; city?: string } = {}) {
       `SELECT p.slug,COALESCE(p.trade_name,p.name) AS name,c.name AS "cityName",
         count(x.id) FILTER (WHERE x.status<>'unavailable' AND ${reach})::int AS available
        FROM jdatna.producer_profiles p JOIN jdatna.cities c ON c.id=p.city_id
-       LEFT JOIN jdatna.products x ON x.producer_id=p.id AND x.visible=true
+       LEFT JOIN jdatna.products x ON x.producer_id=p.id AND x.visible=true AND x.deleted_at IS NULL
        WHERE p.status='approved' AND NOT p.review_only
          AND (${inPlace} OR p.delivery_scope='kingdom' OR EXISTS(SELECT 1 FROM jdatna.products k
-           WHERE k.producer_id=p.id AND k.visible AND k.delivery_scope='kingdom' AND k.status<>'unavailable'))
+           WHERE k.producer_id=p.id AND k.visible AND k.deleted_at IS NULL AND k.delivery_scope='kingdom' AND k.status<>'unavailable'))
        GROUP BY p.id,c.name ORDER BY ${place.length ? `(${inPlace}) DESC,` : ""}available DESC,name LIMIT 300`,
       args,
     ),

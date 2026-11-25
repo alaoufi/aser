@@ -13,6 +13,8 @@ import { regionsOf } from "@/components/public/today-table";
 import Link from "next/link";
 import {
   browseLists,
+  countProducts,
+  PAGE_SIZE,
   getCategories,
   publicCategories,
   getCities,
@@ -143,6 +145,16 @@ export default async function Browse({
     producer: val("producer"),
     mine: scope.filters,
   };
+  // الترقيم: كانت الصفحة تعرض أول 24 منتجًا فقط بلا انتقال، والعدد الظاهر 24 وإن زادت المطابقة
+  // (فحص الفلاتر 2026-11-25).
+  const pageNo = Math.max(
+    1,
+    Math.min(1000, Number.parseInt(val("page"), 10) || 1),
+  );
+  const productFilters = {
+    ...(request ? { ...filters, match: "any" } : filters),
+    page: pageNo,
+  };
   const texts = await getSiteTexts();
   const showFamilyDirectory = by === "family" && !filters.producer;
   const showCategoryDirectory = by === "category" && !filters.category;
@@ -161,14 +173,13 @@ export default async function Browse({
     families,
     family,
     nationwide,
+    total,
   ] = await Promise.all([
     getCategories(),
     publicCategories(),
     getCities(),
     browseLists({ region: filters.region, city: filters.city }),
-    listProducts
-      ? searchProducts(request ? { ...filters, match: "any" } : filters)
-      : Promise.resolve([]),
+    listProducts ? searchProducts(productFilters) : Promise.resolve([]),
     by === "word" && filters.q && !filters.producer
       ? searchProducers({
           q: filters.q,
@@ -189,12 +200,22 @@ export default async function Browse({
           notCity: filters.city,
         })
       : Promise.resolve([]),
+    listProducts ? countProducts(productFilters) : Promise.resolve(0),
   ]);
   const regions = regionsOf(cities);
   const regionName =
     cities.find((c) => c.id === filters.city)?.name ??
     regions.find((r) => r.id === filters.region)?.name ??
     "";
+  const pages = Math.ceil(total / PAGE_SIZE);
+  const pageHref = (n: number) => {
+    const qs = new URLSearchParams();
+    for (const [k, v] of Object.entries(raw))
+      if (typeof v === "string" && v && k !== "page") qs.set(k, v);
+    if (n > 1) qs.set("page", String(n));
+    const s = qs.toString();
+    return s ? `/browse?${s}` : "/browse";
+  };
   // توسيع الدائرة: لا نتائج بكل الكلمات ← يكفي تطابق أي كلمة، ويشمل غير المتوفر.
   const widened =
     listProducts && filters.q && !products.length
@@ -599,7 +620,7 @@ export default async function Browse({
             <div className="results-heading">
               <h2>
                 {products.length
-                  ? `${products.length} ${filters.include ? "منتج مطابق" : "منتج متاح"}${focus === "category" && currentCategory ? ` في ${currentCategory.name}` : ""}${scoped && regionName ? ` في ${regionName}` : ""}`
+                  ? `${total} ${filters.include ? "منتج مطابق" : "منتج متاح"}${focus === "category" && currentCategory ? ` في ${currentCategory.name}` : ""}${scoped && regionName ? ` في ${regionName}` : ""}`
                   : widened.length
                     ? "لا تطابق تام — نتائج قريبة"
                     : scoped && regionName
@@ -622,7 +643,7 @@ export default async function Browse({
               </Link>
             </div>
             {products.length || widened.length ? (
-              <div className="product-grid">
+              <div className="product-grid" data-results="products">
                 {(products.length ? products : widened).map((p) => (
                   <ProductCard
                     key={p.id}
@@ -644,6 +665,33 @@ export default async function Browse({
                     : "جرّب «حسب القسم» أو «حسب الأسرة المنتجة»، أو كلمة أقصر، أو امسح فلتر البحث. تظهر المنتجات المعتمدة والمنشورة فقط."
                 }
               />
+            )}
+            {products.length > 0 && pages > 1 && (
+              <nav className="pager" aria-label="صفحات النتائج">
+                {pageNo > 1 ? (
+                  <Link
+                    className="button secondary"
+                    href={pageHref(pageNo - 1)}
+                  >
+                    السابق
+                  </Link>
+                ) : (
+                  <span />
+                )}
+                <span className="pager-info">
+                  صفحة {pageNo} من {pages}
+                </span>
+                {pageNo < pages ? (
+                  <Link
+                    className="button secondary"
+                    href={pageHref(pageNo + 1)}
+                  >
+                    التالي
+                  </Link>
+                ) : (
+                  <span />
+                )}
+              </nav>
             )}
             {nationwide.length > 0 && (
               <section aria-label="يُشحن لكل المناطق" className="nationwide">

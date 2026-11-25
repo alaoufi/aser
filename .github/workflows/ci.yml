@@ -55,6 +55,57 @@ jobs:
             playwright-report/
           retention-days: 7
 
+  db-tests:
+    # اختبارات قاعدة البيانات: كانت تُتخطى في CI (بلا JDATNA_TEST_DB)، فلم تُشغَّل اختبارات الفلاتر
+    # والصلاحيات والبيانات إلا محليًا (فحص الفلاتر 2026-11-25). قاعدة مؤقتة معزولة لكل تشغيل،
+    # ومفتاح التشفير يُولَّد في التشغيل نفسه (لا أسرار في المستودع).
+    name: اختبارات قاعدة البيانات والفلاتر
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: jdatna
+          POSTGRES_PASSWORD: jdatna
+          POSTGRES_DB: jdatna_test_ci
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U jdatna -d jdatna_test_ci" --health-interval 5s
+          --health-timeout 5s --health-retries 20
+    env:
+      DATABASE_URL: postgres://jdatna:jdatna@127.0.0.1:5432/jdatna_test_ci
+      JDATNA_TEST_DB: "true"
+      APP_ORIGIN: http://127.0.0.1:3000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: مفاتيح مؤقتة لهذا التشغيل
+        run: |
+          otp=$(openssl rand -hex 32); key=$(openssl rand -hex 32)
+          echo "::add-mask::$otp"; echo "::add-mask::$key"
+          echo "OTP_HASH_SECRET=$otp" >> "$GITHUB_ENV"
+          echo "DOCUMENT_ENCRYPTION_KEY=$key" >> "$GITHUB_ENV"
+      # كما في الخادم: المخطط يُنشأ مسبقًا مملوكًا لمستخدم الترحيل، ثم تُطبَّق الترحيلات.
+      - name: مخطط قاعدة الاختبار
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "CREATE SCHEMA IF NOT EXISTS jdatna AUTHORIZATION jdatna"
+      - run: npx tsx scripts/migrate.ts
+      - name: اختبارات الخادم وقاعدة البيانات (منها كل تركيبات الفلاتر)
+        run: npm test
+      - run: npx playwright install --with-deps chromium
+      - name: فلاتر «تصفح» في المتصفح (كمبيوتر وجوال وتابلت)
+        run: npx playwright test tests/e2e/filters.spec.ts --trace off
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: db-tests-report
+          path: test-results/
+          retention-days: 7
+
   lighthouse:
     name: السرعة وسهولة الوصول (Lighthouse)
     runs-on: ubuntu-latest

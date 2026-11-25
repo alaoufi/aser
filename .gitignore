@@ -15,3 +15,6 @@ playwright-report/
 .superpowers/
 artifacts/
 .lighthouseci/
+
+# لقطات Playwright MCP المؤقتة
+.playwright-mcp/
