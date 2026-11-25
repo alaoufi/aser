@@ -10,14 +10,18 @@ test.describe("old app versions are sent to update", () => {
       maxRedirects: 0,
     });
     expect(res.status()).toBe(302);
-    expect(res.headers().location).toBe("https://jdatna.com/update-app?p=android");
+    expect(res.headers().location).toBe(
+      "https://jdatna.com/update-app?p=android",
+    );
   });
   test("old iPhone app goes to the App Store update", async ({ request }) => {
     const res = await request.get("/?source=ios", {
       headers: { host: "www.jdatna.com" },
       maxRedirects: 0,
     });
-    expect(res.headers().location).toBe("https://www.jdatna.com/update-app?p=ios");
+    expect(res.headers().location).toBe(
+      "https://www.jdatna.com/update-app?p=ios",
+    );
   });
   test("the new apps on jdtna.sa open normally", async ({ request }) => {
     const res = await request.get("/?source=app", {
