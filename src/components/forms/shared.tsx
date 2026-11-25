@@ -300,6 +300,14 @@ export function LoginForm({
   const [clearUsername, setClearUsername] = useState(false);
   // تجاوز حد محاولات الدخول (قرار المالك 2026-11-25): اسم الدخول المكتوب، لزر «استعادة كلمة المرور».
   const [limited, setLimited] = useState("");
+  // رسالة منبثقة واضحة عند تجاوز الحد (طلب المالك 2026-11-25)، تبقى بعد إغلاقها رسالةً وزرًا في الصفحة.
+  const limitDialog = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const el = limitDialog.current;
+    if (!el) return;
+    if (limited && !el.open) el.showModal?.();
+    if (!limited && el.open) el.close();
+  }, [limited]);
   /** «لاستعادة كلمة المرور اضغط هنا»: إن كان اسم الدخول جوالًا يُرسل الرمز إليه مباشرة. */
   async function recoverNow() {
     const id = limited.trim();
@@ -512,6 +520,45 @@ export function LoginForm({
         </p>
       )}
       <Message error={error || session.error} />
+      <dialog
+        ref={limitDialog}
+        className="order-alert login-limit"
+        aria-labelledby="login-limit-title"
+        aria-describedby="login-limit-text"
+        onCancel={(event) => {
+          event.preventDefault();
+          limitDialog.current?.close();
+        }}
+      >
+        <div className="order-alert-head">
+          <span className="order-alert-mark" aria-hidden="true" />
+          <h2 id="login-limit-title">تجاوزت الحد المسموح من محاولات الدخول</h2>
+        </div>
+        <p id="login-limit-text" className="login-limit-text">
+          لحماية حسابك أوقفنا محاولات الدخول من هذا الجهاز مؤقتًا. استعد كلمة
+          المرور برمز تحقق يصل إلى جوالك، ثم ادخل فورًا.
+        </p>
+        <div className="order-alert-actions">
+          <button
+            type="button"
+            className="button"
+            disabled={busy}
+            onClick={() => {
+              limitDialog.current?.close();
+              recoverNow();
+            }}
+          >
+            لاستعادة كلمة المرور اضغط هنا
+          </button>
+          <button
+            type="button"
+            className="button light"
+            onClick={() => limitDialog.current?.close()}
+          >
+            إغلاق
+          </button>
+        </div>
+      </dialog>
       {limited && mode === "password" && (
         <button
           type="button"
