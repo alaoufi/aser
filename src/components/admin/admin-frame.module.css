@@ -85,7 +85,7 @@
   color: #fff;
 }
 .item:focus-visible {
-  outline: 2px solid #d6a35c;
+  outline: 2px solid var(--gold);
   outline-offset: -2px;
 }
 .item svg {
@@ -100,7 +100,7 @@
 .itemActive {
   background: rgb(255 255 255 / 0.13);
   color: #fff;
-  box-shadow: inset -3px 0 0 #d6a35c;
+  box-shadow: inset -3px 0 0 var(--gold);
 }
 .badge {
   min-width: 22px;

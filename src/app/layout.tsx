@@ -20,6 +20,7 @@ import Image from "next/image";
 import "./globals.css";
 import "./heritage.css";
 import "./najdi.css";
+import "./palettes.css";
 import {
   APP_STORE_URL,
   PLAY_STORE_URL,
@@ -34,6 +35,10 @@ import { VerifiedStore } from "@/components/public/verified-store";
 import { VerifiedStoreGate } from "@/components/public/verified-store-gate";
 import { dishPath, findDish } from "@/lib/dishes";
 import { TemplateSwitcher } from "@/components/public/template-switcher";
+import {
+  AppearancePicker,
+  PALETTE_SCRIPT,
+} from "@/components/public/appearance-picker";
 import { VisitStats } from "@/components/public/visit-stats";
 import { JsonLd } from "@/components/public/json-ld";
 import {
@@ -158,6 +163,8 @@ export default async function RootLayout({
       dir="rtl"
       data-scroll-behavior="smooth"
       data-template={template}
+      // data-palette يضعه سكربت «ألوان الموقع» قبل التحميل من اختيار الزائر في جهازه.
+      suppressHydrationWarning
     >
       {/*
         وسم إثبات الملكية حرفيًا كما تكتبه منصة المركز السعودي للأعمال، بلا «/» في آخره
@@ -178,6 +185,11 @@ export default async function RootLayout({
         </head>
       )}
       <body>
+        {/* لون الزائر قبل رسم الصفحة (نص ثابت من الكود، لا مدخلات). */}
+        <script
+          // biome-ignore lint/security/noDangerouslySetInnerHtml: نص ثابت من الكود يقرأ اختيار الزائر من جهازه
+          dangerouslySetInnerHTML={{ __html: PALETTE_SCRIPT }}
+        />
         <StarDefs />
         <JsonLd
           data={{
@@ -249,6 +261,19 @@ export default async function RootLayout({
               <Link href="/subscriptions">الاشتراكات</Link>
               <Link href="/about">حكايتنا</Link>
             </nav>
+            <AppearancePicker
+              texts={{
+                button: texts["palette.button"] || "ألوان الموقع",
+                title: texts["palette.title"] || "ألوان الموقع",
+                note: texts["palette.note"],
+                sadu: texts["palette.sadu"] || "السدو",
+                nakheel: texts["palette.nakheel"] || "النخيل",
+                teen: texts["palette.teen"] || "الطين",
+                qahwa: texts["palette.qahwa"] || "القهوة والهيل",
+                zafaran: texts["palette.zafaran"] || "الزعفران",
+                neel: texts["palette.neel"] || "النيلة",
+              }}
+            />
             <div className="header-actions">
               <TemplateSwitcher current={template} className="desktop-only" />
               <FamilyStatusChip place="header" />

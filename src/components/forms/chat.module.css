@@ -347,8 +347,8 @@
   cursor: pointer;
 }
 .reportActions button[type="submit"] {
-  background: #9c2f1e;
-  border-color: #9c2f1e;
+  background: var(--rust);
+  border-color: var(--rust);
   color: #fff;
 }
 .safetyNotice {

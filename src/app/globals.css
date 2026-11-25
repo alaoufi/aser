@@ -1762,7 +1762,7 @@ hr {
   margin: 0;
 }
 .menu-greeting small {
-  color: #4f5d36;
+  color: var(--olive);
   display: block;
   font-size: 13px;
   font-weight: 700;
@@ -1796,8 +1796,8 @@ hr {
   display: none;
 }
 .share-menu[open] > summary {
-  background: #4f5d36;
-  border-color: #4f5d36;
+  background: var(--olive);
+  border-color: var(--olive);
   color: #fff;
 }
 .share-panel {
@@ -1842,7 +1842,7 @@ hr {
 .share-panel button:hover,
 .share-panel a:focus-visible,
 .share-panel button:focus-visible {
-  background: #f4ead9;
+  background: var(--paper);
 }
 .share-panel a > span,
 .share-panel button > span {
@@ -1982,14 +1982,14 @@ hr {
 .mobile-nav nav a:hover,
 .mobile-nav nav a:focus-visible {
   background: var(--cream);
-  border-color: var(--rust, #9c2f1e);
+  border-color: var(--rust, var(--rust));
 }
 /* الروابط داخل النصوص في كل الموقع: لون مميز وخط تحتها لتُعرف أنها روابط. */
 main p a:not([class]),
 main li a:not([class]),
 main small a:not([class]),
 .prose a:not([class]) {
-  color: var(--rust, #9c2f1e);
+  color: var(--rust, var(--rust));
   font-weight: 700;
   text-decoration: underline;
   text-underline-offset: 4px;
@@ -2550,7 +2550,7 @@ main {
   gap: 6px;
   padding: 0 14px;
   border-radius: 8px;
-  background: #4f5d36;
+  background: var(--olive);
   color: #fff;
   text-decoration: none;
 }
@@ -2584,11 +2584,11 @@ main {
   background: #fff;
 }
 .suggestion-sent {
-  color: var(--olive, #4f5d36);
+  color: var(--olive, var(--olive));
   font-weight: 700;
 }
 .suggestion-error {
-  color: var(--rust, #9c2f1e);
+  color: var(--rust, var(--rust));
   font-weight: 700;
 }
 /* 5.8.2.0: بطاقة الأسرة أصغر، والتقييم مكان «تمت مراجعتها». */
@@ -2803,7 +2803,7 @@ main {
   border-radius: 26px !important;
 }
 .frame-gold {
-  border: var(--fw) solid #d6a35c;
+  border: var(--fw) solid var(--gold);
   outline: var(--fw) solid rgba(214, 163, 92, 0.7);
   outline-offset: -7px;
 }
@@ -2991,7 +2991,7 @@ main {
   background: #fff4f1;
   border: 1.5px solid rgba(156, 47, 30, 0.45);
   border-radius: 10px;
-  color: #9c2f1e;
+  color: var(--rust);
   cursor: pointer;
   display: flex;
   font: inherit;
@@ -3026,8 +3026,8 @@ main {
   display: none;
 }
 .filter-wrap.browse-search[open] > summary {
-  background: var(--ink, #2e1d12);
-  border-color: var(--ink, #2e1d12);
+  background: var(--ink, var(--ink));
+  border-color: var(--ink, var(--ink));
   color: #fff;
 }
 .filter-wrap.browse-search .search-modes {
@@ -3158,10 +3158,10 @@ main {
   gap: 6px;
 }
 .subscription-tags span {
-  background: #f4ead9;
+  background: var(--paper);
   border: 1px solid rgba(46, 29, 18, 0.2);
   border-radius: 999px;
-  color: #4f5d36;
+  color: var(--olive);
   font-size: 12px;
   font-weight: 700;
   padding: 2px 10px;
@@ -3218,7 +3218,7 @@ main {
   gap: 6px;
 }
 .subscription-menu dt {
-  color: #4f5d36;
+  color: var(--olive);
   flex: none;
   font-weight: 700;
 }
@@ -3242,7 +3242,7 @@ main {
   margin: 0;
 }
 .contract-lock {
-  color: #4f5d36;
+  color: var(--olive);
   font-weight: 700;
   margin: 0;
 }
@@ -4180,7 +4180,7 @@ button.mine-seg {
 }
 .member-no b {
   font-variant-numeric: tabular-nums;
-  color: var(--olive, #4f5d36);
+  color: var(--olive, var(--olive));
   font-weight: 800;
   letter-spacing: 0.02em;
 }
@@ -4249,11 +4249,11 @@ button.mine-seg {
   font-size: 0.92rem;
 }
 .offer-state[data-state="expired"] {
-  color: #9c2f1e;
+  color: var(--rust);
   font-weight: 700;
 }
 .offer-state[data-state="active"] {
-  color: #4f5d36;
+  color: var(--olive);
   font-weight: 700;
 }
 .duration-mode {
@@ -4352,7 +4352,7 @@ button.mine-seg {
   height: 3px;
   z-index: 100;
   pointer-events: none;
-  background: linear-gradient(90deg, #d6a35c, #9c2f1e);
+  background: linear-gradient(90deg, var(--gold), var(--rust));
   transform-origin: right;
   animation: nav-progress 1.6s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
 }
@@ -4416,7 +4416,7 @@ button.mine-seg {
   min-height: 40px;
   display: flex;
   align-items: center;
-  color: #4f5d36;
+  color: var(--olive);
 }
 .form-more[open] {
   padding-bottom: 12px;

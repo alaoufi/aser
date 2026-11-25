@@ -1,0 +1,233 @@
+/* ألوان الموقع التراثية (طلب المالك 2026-11-25): يختارها الزائر من «ألوان الموقع» وتُحفظ في جهازه.
+   كل لوحة تغيّر متغيرات الألوان وحزام السدو وزخرفة الخلفية؛ «السدو» هي الأصلية (بلا سمة).
+   النصوص على الخلفيات تحقق تباين 4.5:1 على الأقل (tests/palettes.test.ts). */
+/* السدو — الأصلية: الزخرفة الخفيفة والتدرج للجميع */
+:root {
+  --page-zakhrafa: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Cg fill='%239c2f1e' fill-opacity='0.07'%3E%3Cpolygon points='32%2C6 40%2C14 32%2C22 24%2C14'/%3E%3Cpolygon points='0%2C40 8%2C32 16%2C40 8%2C48'/%3E%3Cpolygon points='48%2C40 56%2C32 64%2C40 56%2C48'/%3E%3Cpolygon points='26%2C58 32%2C52 38%2C58'/%3E%3C/g%3E%3C/svg%3E");
+}
+/* النخيل */
+:root[data-palette="nakheel"] {
+  --paper: #eef0e1;
+  --surface: #f8f9f1;
+  --cream: #e2e7cc;
+  --ink: #1f2a1c;
+  --muted: #55604a;
+  --olive: #2f5d3a;
+  --rust: #8a4b22;
+  --gold: #c9a04a;
+  --line: #cdd5b4;
+  --line-strong: #a9b58a;
+  --line-soft: #d9dfc2;
+  --header-bg: #dde4c6;
+  --sadu-black: #1c2418;
+  --sadu-white: #eef0de;
+  --sage-panel: #1f2a1c;
+  --footer: #1c2418;
+  --sadu-band: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='52' height='22'%3E%3Crect width='52' height='22' fill='%238a4b22'/%3E%3Crect width='52' height='3' fill='%231c2418'/%3E%3Crect y='19' width='52' height='3' fill='%231c2418'/%3E%3Cpolygon points='0%2C19 13%2C6 26%2C19' fill='%231c2418'/%3E%3Cpolygon points='26%2C3 39%2C16 52%2C3' fill='%23eef0de'/%3E%3Cpolygon points='13%2C14 16%2C11 19%2C14 16%2C17' fill='%23eef0de'/%3E%3Cpolygon points='36%2C8 39%2C5 42%2C8 39%2C11' fill='%238a4b22'/%3E%3C/svg%3E");
+  --sadu-thin: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='16'%3E%3Crect width='36' height='16' fill='%238a4b22'/%3E%3Cpolygon points='0%2C16 9%2C3 18%2C16' fill='%23eef0de'/%3E%3Cpolygon points='18%2C0 27%2C13 36%2C0' fill='%231c2418'/%3E%3C/svg%3E");
+  --page-zakhrafa: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Cg fill='%238a4b22' fill-opacity='0.07'%3E%3Cpolygon points='32%2C6 40%2C14 32%2C22 24%2C14'/%3E%3Cpolygon points='0%2C40 8%2C32 16%2C40 8%2C48'/%3E%3Cpolygon points='48%2C40 56%2C32 64%2C40 56%2C48'/%3E%3Cpolygon points='26%2C58 32%2C52 38%2C58'/%3E%3C/g%3E%3C/svg%3E");
+}
+/* الطين */
+:root[data-palette="teen"] {
+  --paper: #f3e4d0;
+  --surface: #fcf4ea;
+  --cream: #ecd6ba;
+  --ink: #3a2416;
+  --muted: #6e4d37;
+  --olive: #8b4a2b;
+  --rust: #5a6b34;
+  --gold: #d39b55;
+  --line: #e2c6a2;
+  --line-strong: #c79f74;
+  --line-soft: #e9d2b4;
+  --header-bg: #e8cfae;
+  --sadu-black: #2a170d;
+  --sadu-white: #f4e6d2;
+  --sage-panel: #3a2416;
+  --footer: #2a170d;
+  --sadu-band: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='52' height='22'%3E%3Crect width='52' height='22' fill='%235a6b34'/%3E%3Crect width='52' height='3' fill='%232a170d'/%3E%3Crect y='19' width='52' height='3' fill='%232a170d'/%3E%3Cpolygon points='0%2C19 13%2C6 26%2C19' fill='%232a170d'/%3E%3Cpolygon points='26%2C3 39%2C16 52%2C3' fill='%23f4e6d2'/%3E%3Cpolygon points='13%2C14 16%2C11 19%2C14 16%2C17' fill='%23f4e6d2'/%3E%3Cpolygon points='36%2C8 39%2C5 42%2C8 39%2C11' fill='%235a6b34'/%3E%3C/svg%3E");
+  --sadu-thin: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='16'%3E%3Crect width='36' height='16' fill='%235a6b34'/%3E%3Cpolygon points='0%2C16 9%2C3 18%2C16' fill='%23f4e6d2'/%3E%3Cpolygon points='18%2C0 27%2C13 36%2C0' fill='%232a170d'/%3E%3C/svg%3E");
+  --page-zakhrafa: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Cg fill='%235a6b34' fill-opacity='0.07'%3E%3Cpolygon points='32%2C6 40%2C14 32%2C22 24%2C14'/%3E%3Cpolygon points='0%2C40 8%2C32 16%2C40 8%2C48'/%3E%3Cpolygon points='48%2C40 56%2C32 64%2C40 56%2C48'/%3E%3Cpolygon points='26%2C58 32%2C52 38%2C58'/%3E%3C/g%3E%3C/svg%3E");
+}
+/* القهوة والهيل */
+:root[data-palette="qahwa"] {
+  --paper: #f1e8dc;
+  --surface: #faf6ef;
+  --cream: #e7dac8;
+  --ink: #2b1d16;
+  --muted: #64544a;
+  --olive: #5b3a29;
+  --rust: #5e7a3a;
+  --gold: #c8a165;
+  --line: #dccbb5;
+  --line-strong: #bfa585;
+  --line-soft: #e4d6c4;
+  --header-bg: #e2d2bd;
+  --sadu-black: #24170f;
+  --sadu-white: #f2e8da;
+  --sage-panel: #2b1d16;
+  --footer: #24170f;
+  --sadu-band: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='52' height='22'%3E%3Crect width='52' height='22' fill='%235e7a3a'/%3E%3Crect width='52' height='3' fill='%2324170f'/%3E%3Crect y='19' width='52' height='3' fill='%2324170f'/%3E%3Cpolygon points='0%2C19 13%2C6 26%2C19' fill='%2324170f'/%3E%3Cpolygon points='26%2C3 39%2C16 52%2C3' fill='%23f2e8da'/%3E%3Cpolygon points='13%2C14 16%2C11 19%2C14 16%2C17' fill='%23f2e8da'/%3E%3Cpolygon points='36%2C8 39%2C5 42%2C8 39%2C11' fill='%235e7a3a'/%3E%3C/svg%3E");
+  --sadu-thin: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='16'%3E%3Crect width='36' height='16' fill='%235e7a3a'/%3E%3Cpolygon points='0%2C16 9%2C3 18%2C16' fill='%23f2e8da'/%3E%3Cpolygon points='18%2C0 27%2C13 36%2C0' fill='%2324170f'/%3E%3C/svg%3E");
+  --page-zakhrafa: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Cg fill='%235e7a3a' fill-opacity='0.07'%3E%3Cpolygon points='32%2C6 40%2C14 32%2C22 24%2C14'/%3E%3Cpolygon points='0%2C40 8%2C32 16%2C40 8%2C48'/%3E%3Cpolygon points='48%2C40 56%2C32 64%2C40 56%2C48'/%3E%3Cpolygon points='26%2C58 32%2C52 38%2C58'/%3E%3C/g%3E%3C/svg%3E");
+}
+/* الزعفران */
+:root[data-palette="zafaran"] {
+  --paper: #f7ecd5;
+  --surface: #fdf7ea;
+  --cream: #f0dfbb;
+  --ink: #3a1a1a;
+  --muted: #6c4a3a;
+  --olive: #7a1f2b;
+  --rust: #9a5716;
+  --gold: #e0a526;
+  --line: #e8cfa1;
+  --line-strong: #d1ac6c;
+  --line-soft: #eed9b2;
+  --header-bg: #efdcb5;
+  --sadu-black: #2a1010;
+  --sadu-white: #f8ecd2;
+  --sage-panel: #3a1a1a;
+  --footer: #2a1010;
+  --sadu-band: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='52' height='22'%3E%3Crect width='52' height='22' fill='%239a5716'/%3E%3Crect width='52' height='3' fill='%232a1010'/%3E%3Crect y='19' width='52' height='3' fill='%232a1010'/%3E%3Cpolygon points='0%2C19 13%2C6 26%2C19' fill='%232a1010'/%3E%3Cpolygon points='26%2C3 39%2C16 52%2C3' fill='%23f8ecd2'/%3E%3Cpolygon points='13%2C14 16%2C11 19%2C14 16%2C17' fill='%23f8ecd2'/%3E%3Cpolygon points='36%2C8 39%2C5 42%2C8 39%2C11' fill='%239a5716'/%3E%3C/svg%3E");
+  --sadu-thin: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='16'%3E%3Crect width='36' height='16' fill='%239a5716'/%3E%3Cpolygon points='0%2C16 9%2C3 18%2C16' fill='%23f8ecd2'/%3E%3Cpolygon points='18%2C0 27%2C13 36%2C0' fill='%232a1010'/%3E%3C/svg%3E");
+  --page-zakhrafa: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Cg fill='%239a5716' fill-opacity='0.07'%3E%3Cpolygon points='32%2C6 40%2C14 32%2C22 24%2C14'/%3E%3Cpolygon points='0%2C40 8%2C32 16%2C40 8%2C48'/%3E%3Cpolygon points='48%2C40 56%2C32 64%2C40 56%2C48'/%3E%3Cpolygon points='26%2C58 32%2C52 38%2C58'/%3E%3C/g%3E%3C/svg%3E");
+}
+/* النيلة */
+:root[data-palette="neel"] {
+  --paper: #eeece6;
+  --surface: #f9f8f4;
+  --cream: #e3e1da;
+  --ink: #1c2233;
+  --muted: #4e556a;
+  --olive: #2c3e66;
+  --rust: #a3402a;
+  --gold: #c9a45c;
+  --line: #d4d1ca;
+  --line-strong: #b2ada3;
+  --line-soft: #dedbd4;
+  --header-bg: #e2dfd7;
+  --sadu-black: #151a28;
+  --sadu-white: #efeee8;
+  --sage-panel: #1c2233;
+  --footer: #151a28;
+  --sadu-band: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='52' height='22'%3E%3Crect width='52' height='22' fill='%23a3402a'/%3E%3Crect width='52' height='3' fill='%23151a28'/%3E%3Crect y='19' width='52' height='3' fill='%23151a28'/%3E%3Cpolygon points='0%2C19 13%2C6 26%2C19' fill='%23151a28'/%3E%3Cpolygon points='26%2C3 39%2C16 52%2C3' fill='%23efeee8'/%3E%3Cpolygon points='13%2C14 16%2C11 19%2C14 16%2C17' fill='%23efeee8'/%3E%3Cpolygon points='36%2C8 39%2C5 42%2C8 39%2C11' fill='%23a3402a'/%3E%3C/svg%3E");
+  --sadu-thin: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='16'%3E%3Crect width='36' height='16' fill='%23a3402a'/%3E%3Cpolygon points='0%2C16 9%2C3 18%2C16' fill='%23efeee8'/%3E%3Cpolygon points='18%2C0 27%2C13 36%2C0' fill='%23151a28'/%3E%3C/svg%3E");
+  --page-zakhrafa: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Cg fill='%23a3402a' fill-opacity='0.07'%3E%3Cpolygon points='32%2C6 40%2C14 32%2C22 24%2C14'/%3E%3Cpolygon points='0%2C40 8%2C32 16%2C40 8%2C48'/%3E%3Cpolygon points='48%2C40 56%2C32 64%2C40 56%2C48'/%3E%3Cpolygon points='26%2C58 32%2C52 38%2C58'/%3E%3C/g%3E%3C/svg%3E");
+}
+/* خلفية الصفحة: تدرج خفيف من لون اللوحة مع زخرفة نجدية شبه شفافة. */
+body {
+  background:
+    var(--page-zakhrafa) 0 0 / 64px 64px,
+    radial-gradient(1200px 520px at 50% -120px, var(--cream), transparent 70%),
+    linear-gradient(180deg, var(--paper), var(--surface) 60%, var(--paper));
+  background-attachment: scroll;
+}
+
+/* زر «ألوان الموقع» ونافذته */
+.appearance {
+  position: relative;
+  display: inline-flex;
+}
+.appearance-button {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  cursor: pointer;
+}
+.appearance-dot {
+  display: block;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  box-shadow:
+    0 0 0 2px var(--surface),
+    0 0 0 3px var(--line-strong);
+}
+.appearance-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  inset-inline-end: 0;
+  z-index: 60;
+  width: min(300px, calc(100vw - 24px));
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background:
+    var(--sadu-thin) repeat-x top / auto 8px,
+    var(--surface);
+  padding-top: 20px;
+  box-shadow: 0 18px 40px #2e1d1233;
+  color: var(--ink);
+}
+.appearance-title {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 15px;
+}
+.appearance-swatches {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.appearance-swatch {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  min-height: 76px;
+  padding: 8px 4px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.appearance-swatch .appearance-dot {
+  width: 34px;
+  height: 34px;
+}
+.appearance-swatch[aria-pressed="true"] {
+  border-color: var(--olive);
+  box-shadow: inset 0 0 0 2px var(--olive);
+  font-weight: 700;
+}
+.appearance-note {
+  display: block;
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 12px;
+}
+@media (max-width: 850px) {
+  .site-header .appearance {
+    order: -1;
+    flex: none;
+  }
+  .appearance-panel {
+    position: fixed;
+    top: 96px;
+    inset-inline: 12px;
+    width: auto;
+  }
+}
+/* بين 851 و1100: زر الألوان يضيف 44px للترويسة، فتتقارب العناصر قليلًا لئلا تخرج عن الشاشة. */
+@media (min-width: 851px) and (max-width: 1100px) {
+  body > header.site-header,
+  .site-header {
+    gap: 10px;
+    padding-inline: 14px;
+  }
+  .site-header .desktop-nav {
+    gap: 12px;
+    font-size: 14px;
+  }
+  .site-header .header-actions {
+    gap: 6px;
+  }
+}

@@ -24,7 +24,10 @@ test(
   { skip: process.env.JDATNA_TEST_DB !== "true" },
   async () => {
     const cities = await getCities();
-    const regions = [...new Set(cities.map((c) => c.regionId))];
+    // المناطق الرسمية فقط: اختبارات أخرى تعمل معه بالتوازي قد تضيف مناطق مؤقتة للاختبار.
+    const regions = [...new Set(cities.map((c) => c.regionId))].filter((r) =>
+      regionOrder.includes(r),
+    );
     assert.deepEqual(
       regions,
       regionOrder.filter((r) => regions.includes(r)),

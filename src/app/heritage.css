@@ -43,6 +43,9 @@
   --sadu-black: #1f1a17;
   --sadu-white: #efe3cc;
   --gold: #d6a35c;
+  --line-strong: #c9a87c;
+  --line-soft: #e3cfae;
+  --header-bg: #e9d7bb;
   --display: "Noto Sans Arabic", "Segoe UI", Tahoma, sans-serif;
   --accent-serif: "Amiri", "Noto Sans Arabic", serif;
   --mud-texture:
@@ -124,8 +127,8 @@ body > header.site-header,
   max-width: none;
   padding-inline: max(24px, calc((100% - 1300px) / 2));
   box-sizing: border-box;
-  background: var(--mud-texture), #e9d7bb;
-  border-bottom: 1px solid #c9a87c;
+  background: var(--mud-texture), var(--header-bg);
+  border-bottom: 1px solid var(--line-strong);
   height: auto;
   min-height: 92px;
   padding-block: 6px;
@@ -173,9 +176,9 @@ main::before {
 }
 .hero-search {
   border-radius: 6px;
-  border-color: #c9a87c;
+  border-color: var(--line-strong);
   background: var(--surface);
-  box-shadow: 0 6px 0 -3px #e3cfae;
+  box-shadow: 0 6px 0 -3px var(--line-soft);
 }
 .hero-notes {
   margin-top: 10px;
@@ -199,7 +202,7 @@ main::before {
   aspect-ratio: 0.95;
   border-radius: 999px 999px 8px 8px;
   border: 2px solid #b48a5c;
-  background: var(--mud-texture), #e9d7bb;
+  background: var(--mud-texture), var(--header-bg);
   box-shadow:
     inset 0 0 0 10px var(--paper),
     inset 0 0 0 12px #b48a5c;
@@ -234,7 +237,7 @@ main::before {
 }
 .food-dish-visual {
   border-radius: 50%;
-  background: #efe0c6;
+  background: var(--cream);
   border: 2px solid #d6b98d;
 }
 .dish-number {
@@ -308,7 +311,7 @@ main::before {
   width: 42px;
   height: 42px;
   font-size: 0;
-  border: 1px solid #c9a87c;
+  border: 1px solid var(--line-strong);
 }
 /* رمز موحد لكل الأقسام: معيّن السدو بدل رموز مختلطة الأشكال */
 .category-icon::before {
@@ -371,7 +374,7 @@ main::before {
 }
 
 .empty-state {
-  border: 2px dashed #c9a87c;
+  border: 2px dashed var(--line-strong);
   background: var(--surface);
   border-radius: 6px;
   padding: 22px 18px;
@@ -877,7 +880,7 @@ main::before {
 }
 .table-region select {
   min-height: 40px;
-  border: 1.5px solid #c9a87c;
+  border: 1.5px solid var(--line-strong);
   border-radius: 8px;
   background: var(--surface);
   font: inherit;
@@ -928,9 +931,9 @@ main::before {
   overflow: hidden;
   background: radial-gradient(
     circle,
-    #fbf5ea 0 58%,
+    var(--surface) 0 58%,
     #e9dcc4 58% 63%,
-    #fbf5ea 63%
+    var(--surface) 63%
   );
   box-shadow:
     0 0 0 3px #d6b98d,
@@ -1065,7 +1068,7 @@ main::before {
   width: 100%;
   height: 340px;
   border-radius: 10px;
-  border: 1.5px solid #c9a87c;
+  border: 1.5px solid var(--line-strong);
   background: #e9e4da;
   z-index: 0;
 }
@@ -1107,9 +1110,9 @@ main::before {
   gap: 4px;
   margin: 0;
   padding: 3px;
-  border: 1px solid #c9a87c;
+  border: 1px solid var(--line-strong);
   border-radius: 999px;
-  background: #fbf5ea;
+  background: var(--surface);
 }
 .template-switcher legend {
   position: absolute;
@@ -1131,7 +1134,7 @@ main::before {
 }
 .template-switcher button[aria-pressed="true"] {
   background: var(--olive);
-  color: #f4ead9;
+  color: var(--paper);
 }
 .mobile-nav nav .template-switcher {
   margin-top: 8px;
@@ -1243,14 +1246,14 @@ main::before {
   color: var(--ink);
   background:
     radial-gradient(circle at 20% 0%, #fffaf0 0, transparent 55%),
-    linear-gradient(160deg, #fbf5ea, #efe0c6);
+    linear-gradient(160deg, var(--surface), var(--cream));
   border: 1px solid #d6b98d;
   transform: rotateX(8deg) rotateY(-6deg);
   transform-style: preserve-3d;
   box-shadow:
     0 1px 0 #fff inset,
     0 2px 0 #d6b98d,
-    0 6px 0 -1px #c9a87c,
+    0 6px 0 -1px var(--line-strong),
     0 22px 30px #2e1d1240,
     0 40px 60px -20px #2e1d1255;
 }
@@ -1306,8 +1309,8 @@ main::before {
   padding: 10px 14px;
   border-radius: 12px;
   background: #fffdf8;
-  border: 1px solid #e3cfae;
-  box-shadow: 0 3px 0 #e3cfae;
+  border: 1px solid var(--line-soft);
+  box-shadow: 0 3px 0 var(--line-soft);
   color: var(--ink);
   text-align: start;
   transform: translateZ(18px);
@@ -1447,7 +1450,7 @@ main::before {
 .rating-box {
   margin-block: 14px;
   padding: 12px 14px;
-  border: 1px solid #e3cfae;
+  border: 1px solid var(--line-soft);
   border-radius: 12px;
   background: #fffdf8;
 }
@@ -1531,7 +1534,7 @@ main::before {
   width: 22px;
   height: 22px;
   margin-top: 2px;
-  accent-color: var(--olive, #4f5d36);
+  accent-color: var(--olive, var(--olive));
 }
 .rating-ok {
   margin: 0;
@@ -1540,7 +1543,7 @@ main::before {
 }
 /* «سبق لك تقييم…»: بدل النموذج حين لا تعامل جديد يتيح التقييم */
 .rating-done {
-  color: #4f5d36;
+  color: var(--olive);
   font-size: 14px;
   font-weight: 700;
   margin: 6px 0 0;
@@ -1606,7 +1609,7 @@ button.food-dish:focus-visible .food-dish-visual {
   font-weight: 800;
   font-size: var(--wm);
   line-height: 1;
-  color: #f4ead9;
+  color: var(--paper);
   opacity: 0.24;
   animation: table-watermark-float 7s ease-in-out infinite;
 }
@@ -1778,7 +1781,7 @@ button.food-dish:focus-visible .food-dish-visual {
 }
 .table-region-note {
   font-size: 12px;
-  color: var(--olive, #4f5d36);
+  color: var(--olive, var(--olive));
   line-height: 1.3;
 }
 .table-region-note::before {
@@ -1806,7 +1809,7 @@ button.food-dish:focus-visible .food-dish-visual {
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  background: var(--rust, #9c2f1e);
+  background: var(--rust, var(--rust));
   color: #fff;
 }
 .push-bar-text {
@@ -1849,8 +1852,8 @@ button.food-dish:focus-visible .food-dish-visual {
   font: inherit;
 }
 .delete-account .button.danger {
-  background: var(--rust, #9c2f1e);
-  border-color: var(--rust, #9c2f1e);
+  background: var(--rust, var(--rust));
+  border-color: var(--rust, var(--rust));
   color: #fff;
 }
 .delete-account .button.danger:disabled {
@@ -1874,7 +1877,7 @@ button.food-dish:focus-visible .food-dish-visual {
   border: 1px solid #e3b9ae;
   border-radius: 10px;
   background: transparent;
-  color: var(--rust, #9c2f1e);
+  color: var(--rust, var(--rust));
   font: inherit;
   cursor: pointer;
 }
@@ -1906,7 +1909,7 @@ button.food-dish:focus-visible .food-dish-visual {
   gap: 8px;
   padding: 12px 22px;
   border-radius: 999px;
-  background: #4f5d36;
+  background: var(--olive);
   color: #fff;
   font-weight: 700;
   font-size: 16px;
@@ -1920,7 +1923,7 @@ button.food-dish:focus-visible .food-dish-visual {
   height: 24px;
   border-radius: 50%;
   background: #fff;
-  color: #4f5d36;
+  color: var(--olive);
   font-size: 15px;
 }
 @keyframes save-toast-in {

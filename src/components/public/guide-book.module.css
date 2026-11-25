@@ -319,7 +319,7 @@
   color: #fff;
 }
 .gold {
-  background: #d6a35c;
+  background: var(--gold);
   color: #2c2015;
 }
 .sage {
