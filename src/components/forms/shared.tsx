@@ -18,6 +18,7 @@ import {
   MemberNo,
   primeSession,
   useSession,
+  useSiteTexts,
 } from "./session";
 export function Message({
   error,
@@ -300,6 +301,7 @@ export function LoginForm({
   const [clearUsername, setClearUsername] = useState(false);
   // تجاوز حد محاولات الدخول (قرار المالك 2026-11-25): اسم الدخول المكتوب، لزر «استعادة كلمة المرور».
   const [limited, setLimited] = useState("");
+  const { tx, txb } = useSiteTexts();
   // رسالة منبثقة واضحة عند تجاوز الحد (طلب المالك 2026-11-25)، تبقى بعد إغلاقها رسالةً وزرًا في الصفحة.
   const limitDialog = useRef<HTMLDialogElement>(null);
   useEffect(() => {
@@ -460,12 +462,12 @@ export function LoginForm({
         );
       }
     } catch (e) {
-      setError((e as Error).message);
-      if (
+      const limit =
         mode === "password" &&
-        (e as { data?: { limit?: boolean } }).data?.limit
-      )
-        setLimited(String(f.get("identifier") ?? ""));
+        Boolean((e as { data?: { limit?: boolean } }).data?.limit);
+      // رسالة الحد من «نصوص الموقع»، وغيرها كما يرسلها الخادم.
+      setError(limit ? txb("login.limitTitle") : (e as Error).message);
+      if (limit) setLimited(String(f.get("identifier") ?? ""));
     } finally {
       setBusy(false);
     }
@@ -532,11 +534,10 @@ export function LoginForm({
       >
         <div className="order-alert-head">
           <span className="order-alert-mark" aria-hidden="true" />
-          <h2 id="login-limit-title">تجاوزت الحد المسموح من محاولات الدخول</h2>
+          <h2 id="login-limit-title">{txb("login.limitTitle")}</h2>
         </div>
         <p id="login-limit-text" className="login-limit-text">
-          لحماية حسابك أوقفنا محاولات الدخول من هذا الجهاز مؤقتًا. استعد كلمة
-          المرور برمز تحقق يصل إلى جوالك، ثم ادخل فورًا.
+          {tx("login.limitBody")}
         </p>
         <div className="order-alert-actions">
           <button
@@ -548,14 +549,14 @@ export function LoginForm({
               recoverNow();
             }}
           >
-            لاستعادة كلمة المرور اضغط هنا
+            {txb("login.limitRecover")}
           </button>
           <button
             type="button"
             className="button light"
             onClick={() => limitDialog.current?.close()}
           >
-            إغلاق
+            {txb("login.limitClose")}
           </button>
         </div>
       </dialog>
@@ -567,7 +568,7 @@ export function LoginForm({
           disabled={busy}
           onClick={recoverNow}
         >
-          لاستعادة كلمة المرور اضغط هنا
+          {txb("login.limitRecover")}
         </button>
       )}
       {mode !== "password" && !verified && session.ready && !session.open && (
