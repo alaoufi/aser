@@ -1807,4 +1807,61 @@
     grid-column: 3;
     grid-row: 1;
   }
+/* مائدة الأسرة: المعاينة والاختيارات (طلب المالك 2026-11-26) */
+.ftPreview {
+  margin-block: 8px 14px;
+  padding: 12px 8px 4px;
+  border: 1px dashed var(--line-strong, #c9b28a);
+  border-radius: 12px;
+  background: var(--cream, #f4ead9);
+}
+.ftChoices {
+  margin: 0 0 10px;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.ftChoices legend {
+  margin-bottom: 6px;
+  font-weight: 700;
+}
+.ftChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ftChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong, #c9b28a);
+  border-radius: 999px;
+  background: var(--surface, #fff);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.92rem;
+  cursor: pointer;
+}
+.ftChip input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.ftChip:has(input:checked),
+.ftChip[aria-pressed="true"] {
+  border-color: var(--olive);
+  background: var(--olive);
+  color: #fff;
+}
+.ftChip:has(input:focus-visible) {
+  outline: 2px solid var(--gold, #d6a35c);
+  outline-offset: 2px;
+}
+.ftSwatch {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px #00000030;
 }

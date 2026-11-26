@@ -17,6 +17,8 @@ import { LocationLink } from "@/components/forms/location-share";
 import { LocationCheck } from "@/components/maps/location-check";
 import { RatingBox } from "@/components/forms/rating-box";
 import { getSiteTexts } from "@/server/settings";
+import { getFamilyTable } from "@/server/family-table";
+import { FamilyTable } from "@/components/public/family-table";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import {
@@ -81,12 +83,18 @@ export default async function ProducerDetail({
 }) {
   const p = await getProducer((await params).slug);
   if (!p) notFound();
-  const [products, shown, texts, share] = await Promise.all([
+  const [products, shown, texts, share, table] = await Promise.all([
     getProducerProducts(p.id),
     countProducerProducts(p.id),
     getSiteTexts(),
     shortLink("family", p.id),
+    getFamilyTable(p.id),
   ]);
+  // مائدة الأسرة: المتوفر أولًا ثم الطلب المسبق ثم غير المتوفر.
+  const order = { available: 0, preorder: 1, unavailable: 2 } as const;
+  const onTable = [...products].sort(
+    (a, b) => (order[a.status] ?? 3) - (order[b.status] ?? 3),
+  );
   const coverage = p.delivery ? await getPublicCoverage(p.id) : [];
   const phone = p.phone ? phoneNumber(p.phone) : null;
   const whatsapp = p.whatsapp ? phoneNumber(p.whatsapp) : null;
@@ -193,9 +201,31 @@ export default async function ProducerDetail({
             <p className="profile-description">{p.description}</p>
           </div>
         </section>
+        <section
+          className="family-table-section"
+          aria-labelledby="family-table-title"
+        >
+          {texts["ftable.title"] && (
+            <h2 id="family-table-title">
+              {texts["ftable.title"].replace("{name}", p.name)}
+            </h2>
+          )}
+          <FamilyTable
+            design={table}
+            dishes={onTable}
+            welcome={texts["ftable.welcome"]}
+            empty={texts["ftable.empty"]}
+            label={texts["ftable.title"].replace("{name}", p.name) || p.name}
+          />
+          {products.length > 0 && texts["ftable.more"] && (
+            <a className="text-link" href="#family-products">
+              {texts["ftable.more"]}
+            </a>
+          )}
+        </section>
         <AdSlot placement="producer_page" />
         <div className="detail-grid">
-          <section>
+          <section id="family-products">
             <h2>
               <T k="p.family.t3" />
             </h2>
