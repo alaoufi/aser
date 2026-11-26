@@ -98,7 +98,7 @@ jobs:
         run: npm test
       - run: npx playwright install --with-deps chromium
       - name: فلاتر «تصفح» في المتصفح (كمبيوتر وجوال وتابلت)
-        run: npx playwright test tests/e2e/filters.spec.ts --trace off
+        run: npx playwright test tests/e2e/filters.spec.ts tests/e2e/appearance-family.spec.ts --trace off
       - uses: actions/upload-artifact@v7
         if: failure()
         with:

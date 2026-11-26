@@ -1,0 +1,94 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ج — سوق الحي</title><link rel="stylesheet" href="base.css"></head><body data-screen="home"><svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="m16 16 4.5 4.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+<symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-6.5-6-6.5-11a6.5 6.5 0 0 1 13 0c0 5-6.5 11-6.5 11z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="10" r="2.3" fill="currentColor"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="M12 2.8 14.3 5l3.1-.4.9 3 2.8 1.5-.9 3 .9 3-2.8 1.5-.9 3-3.1-.4L12 21.2 9.7 19l-3.1.4-.9-3L2.9 15l.9-3-.9-3 2.8-1.5.9-3 3.1.4z" fill="currentColor"/><path d="m8.3 12.2 2.4 2.4 5-5" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7.5V12l3 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+<symbol id="i-arrow" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+<symbol id="i-wa" viewBox="0 0 24 24"><path d="M12 3a9 9 0 0 0-7.8 13.5L3 21l4.6-1.2A9 9 0 1 0 12 3z" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M8.7 7.9c.3-.6.6-.6.9-.6h.6c.2 0 .4.1.5.4l.8 1.9c.1.3 0 .5-.1.7l-.5.6c-.2.2-.2.4 0 .6.6 1 1.4 1.8 2.4 2.4.2.1.4.1.6-.1l.6-.7c.2-.2.4-.3.7-.2l1.8.9c.3.1.4.3.4.5 0 .5-.2 1.2-.7 1.6-.6.5-1.4.7-2.4.4-1.5-.5-3-1.5-4.2-2.7-1.3-1.3-2.1-2.7-2.4-4-.2-.8 0-1.5.4-1.9z" fill="currentColor"/></symbol>
+<symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+<symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M10 20a2 2 0 0 0 4 0" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+</svg>
+<style>
+/* اتجاه ج «سوق الحي»: عملي يقود للطلب. شريط زيتوني بحافة سدو، والمدينة أول قرار، ثم «وش ينطبخ اليوم» بالأسعار. */
+body { background: var(--paper); }
+.c-top { background: var(--olive-deep); color: #fff; padding: var(--s3) var(--s4) var(--s6); position: relative; }
+.c-top::after { content: ""; position: absolute; inset-inline: 0; bottom: -12px; height: 14px; background: var(--sadu) repeat-x center / auto 14px; }
+.c-top .topbar { padding: 0 0 var(--s4); }
+.c-top .brand { color: #fff; }
+.c-top .menu { background: #ffffff14; border-color: #ffffff2e; color: #fff; }
+.c-city { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 999px; background: #ffffff1a; font-weight: 700; font-size: var(--t-sm); }
+.c-top h1 { font-size: 34px; line-height: 1.35; margin: var(--s4) 0 var(--s2); }
+.c-top p { margin: 0 0 var(--s5); color: #e7e2d3; font-size: var(--t-md); max-width: 21em; line-height: 1.8; }
+.c-search { display: grid; grid-template-columns: 1fr 52px; background: #fff; border-radius: 16px; padding: 6px; gap: 6px; }
+.c-search span { display: flex; align-items: center; gap: var(--s2); padding-inline: var(--s3); color: #8d7c67; font-size: var(--t-md); }
+.c-search span b { color: var(--ink); }
+.c-search i { background: var(--rust); color: #fff; border-radius: 12px; display: grid; place-items: center; min-height: 52px; }
+.c-chips { display: flex; gap: var(--s2); padding: var(--s6) var(--s4) 0; overflow: hidden; }
+.c-chip { flex: none; padding: 10px 16px; min-height: 44px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--surface); font-weight: 700; font-size: var(--t-sm); display: flex; align-items: center; gap: 8px; }
+.c-chip.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+.c-chip .dot { width: 9px; height: 9px; border-radius: 50%; background: #3fb36a; }
+.c-head { display: flex; justify-content: space-between; align-items: baseline; padding: var(--s5) var(--s4) var(--s3); }
+.c-head h2 { font-family: "Amiri"; font-size: var(--t-xl); margin: 0; }
+.c-head a { color: var(--olive); font-weight: 700; font-size: var(--t-sm); }
+.c-dish { display: grid; grid-template-columns: 104px 1fr; gap: var(--s4); align-items: center; margin: 0 var(--s4) var(--s3); padding: var(--s3); background: var(--surface); border-radius: 18px; box-shadow: 0 6px 16px #2b1f1712; }
+.c-dish .ph { width: 104px; height: 104px; border-radius: 14px; background: #f1e6d3; display: grid; place-items: center; }
+.c-dish img { width: 92%; filter: drop-shadow(0 6px 8px #2b1f1733); }
+.c-dish strong { display: block; font-size: var(--t-md); }
+.c-dish small { color: var(--muted); display: block; font-size: var(--t-sm); }
+.c-foot { display: flex; justify-content: space-between; align-items: center; margin-top: var(--s2); }
+.c-tag { position: relative; padding: 4px 12px 4px 10px; background: var(--cream); color: var(--rust); font-weight: 800; font-size: var(--t-sm); border-radius: 6px; border-inline-start: 6px solid transparent; border-image: var(--sadu) 0 0 0 6 / 0 0 0 6px repeat; }
+.c-st { font-size: var(--t-xs); font-weight: 700; color: #2f6b3e; display: flex; align-items: center; gap: 5px; }
+.c-st .dot { width: 8px; height: 8px; border-radius: 50%; background: #2f8a4b; }
+.c-trust { margin: var(--s4); padding: var(--s4); border-radius: 16px; background: #e4ead9; color: var(--olive-deep); display: flex; gap: var(--s3); align-items: center; font-weight: 700; font-size: var(--t-sm); }
+.c-trust .ico { width: 26px; height: 26px; color: var(--olive); }
+/* الأسرة */
+.cf-top { background: var(--olive-deep); color: #fff; padding: var(--s3) var(--s4) var(--s6); position: relative; }
+.cf-top::after { content: ""; position: absolute; inset-inline: 0; bottom: -12px; height: 14px; background: var(--sadu) repeat-x center / auto 14px; }
+.cf-top .topbar { padding: 0 0 var(--s4); } .cf-top .brand { color: #fff; } .cf-top .menu { background: #ffffff14; border-color: #ffffff2e; color: #fff; }
+.cf-id { display: grid; grid-template-columns: 64px 1fr; gap: var(--s3); align-items: center; }
+.cf-av { width: 64px; height: 64px; border-radius: 18px; background: var(--gold); color: var(--ink); display: grid; place-items: center; font-family: "Amiri"; font-size: 26px; }
+.cf-id h1 { margin: 0; font-size: 30px; line-height: 1.3; }
+.cf-id small { color: #e7e2d3; }
+.cf-badge { display: inline-flex; gap: 6px; align-items: center; margin-top: var(--s3); padding: 5px 12px; border-radius: 999px; background: #ffffff1c; font-size: var(--t-xs); font-weight: 700; }
+.cf-badge .ico { width: 18px; height: 18px; color: #cfe3b6; }
+.cf-empty { margin: var(--s7) var(--s4) 0; padding: var(--s5); background: var(--surface); border-radius: 20px; border: 1.5px dashed #d2bf9f; }
+.cf-empty h2 { font-family: "Amiri"; font-size: var(--t-xl); margin: 0 0 var(--s2); }
+.cf-empty p { color: var(--muted); margin: 0 0 var(--s4); line-height: 1.8; }
+.cf-empty .btn { width: 100%; min-height: 54px; }
+.cf-sticky { position: fixed; inset-inline: 0; bottom: 0; padding: var(--s3) var(--s4) var(--s4); background: linear-gradient(180deg, #f6efe300, var(--paper) 30%); }
+.cf-sticky .btn { width: 100%; min-height: 54px; box-shadow: 0 10px 24px #1f6f4340; }
+</style>
+<div class="screen" id="home">
+  <section class="c-top">
+    <header class="topbar"><span class="brand"><img src="../../../../public/brand/jdatna-white.webp" alt="" style="height:40px">أكلات جدتنا</span><span class="menu"><svg class="ico"><use href="#i-menu"/></svg></span></header>
+    <span class="c-city"><svg class="ico" style="width:18px"><use href="#i-pin"/></svg>الرياض ▾</span>
+    <h1 class="amiri">وش تطبخ الأسر اليوم<br>في مدينتك؟</h1>
+    <p>أكل بيت من أسر تُراجَع مستنداتها. شوف السعر، واطلب منهم مباشرة.</p>
+    <div class="c-search"><span><b>أحب أكلات</b> مرقوق، جريش…</span><i><svg class="ico"><use href="#i-search"/></svg></i></div>
+  </section>
+  <div class="c-chips"><span class="c-chip on"><i class="dot"></i>متوفر الآن</span><span class="c-chip"><svg class="ico" style="width:18px"><use href="#i-clock"/></svg>اطلبها مسبقًا</span><span class="c-chip">أكلات شعبية</span></div>
+  <div class="c-head"><h2>ينطبخ اليوم قريب منك</h2><a>الكل</a></div>
+  <article class="c-dish"><div class="ph"><img src="../../../../public/food/clay-pot-floating-v2.webp" alt=""></div><div><strong>مرقوق باللحم</strong><small>مطبخ أم سالم · الرياض</small><div class="c-foot"><span class="c-tag">40 ر.س</span><span class="c-st"><i class="dot"></i>جاهز اليوم</span></div></div></article>
+  <article class="c-dish"><div class="ph"><img src="../../../../public/food/traditional-platter-floating-v2.webp" alt=""></div><div><strong>مطازيز</strong><small>بيت القرصان · الخرج</small><div class="c-foot"><span class="c-tag">45 ر.س</span><span class="c-st"><i class="dot"></i>جاهز اليوم</span></div></div></article>
+  <div class="c-trust"><svg class="ico"><use href="#i-check"/></svg>كل أسرة تُراجَع مستنداتها قبل الظهور.</div>
+  <div class="c-head"><h2>أسر تطبخ قريب منك</h2><a>كل الأسر</a></div>
+  <article class="c-dish"><div class="ph"><img src="../../../../public/food/rice-plate-floating-v2.webp" alt=""></div><div><strong>سفرة أم فهد</strong><small>الرياض · كبسة، مندي، سمك</small><div class="c-foot"><span class="c-st" style="color:var(--muted)">تطبخ حسب الطلب</span></div></div></article>
+</div>
+<div class="screen" id="family">
+  <section class="cf-top">
+    <header class="topbar"><span class="brand"><img src="../../../../public/brand/jdatna-white.webp" alt="" style="height:40px">أكلات جدتنا</span><span class="menu"><svg class="ico"><use href="#i-menu"/></svg></span></header>
+    <div class="cf-id"><div class="cf-av">أس</div><div><h1 class="amiri">مطبخ أم سالم</h1><small>الرياض · حي النسيم</small></div></div>
+    <span class="cf-badge"><svg class="ico"><use href="#i-check"/></svg>مستنداتها مراجَعة</span>
+  </section>
+  <div class="cf-empty">
+    <h2>القائمة لم تُنشر هنا بعد</h2>
+    <p>كثير من الأسر تطبخ حسب الطلب؛ اسألهم بالواتساب أو شوف أسرًا قريبة نشرت أطباقها.</p>
+    <span class="btn btn-ghost"><svg class="ico"><use href="#i-bell"/></svg>نبّهني إذا نشرت أطباقها</span>
+  </div>
+  <div class="c-head"><h2>أسر قريبة نشرت أطباقها</h2><a>الكل</a></div>
+  <article class="c-dish"><div class="ph"><img src="../../../../public/food/grain-plate-floating-v2.webp" alt=""></div><div><strong>جريش أحمر</strong><small>بيت القرصان · الخرج</small><div class="c-foot"><span class="c-tag">35 ر.س</span><span class="c-st"><i class="dot"></i>جاهز اليوم</span></div></div></article>
+  <article class="c-dish"><div class="ph"><img src="../../../../public/food/fish-tray-floating-v2.webp" alt=""></div><div><strong>صينية سمك</strong><small>سفرة أم فهد · الرياض</small><div class="c-foot"><span class="c-tag">90 ر.س</span><span class="c-st" style="color:var(--rust)">اطلبها مسبقًا</span></div></div></article>
+  <div style="height:110px"></div>
+  <div class="cf-sticky"><span class="btn btn-wa"><svg class="ico"><use href="#i-wa"/></svg>اسأل عن قائمة اليوم بالواتساب</span></div>
+</div>
+<span class="mock-note">نموذج اتجاه ج — سوق الحي — أسماء وأسعار توضيحية</span></body></html>

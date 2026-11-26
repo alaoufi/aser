@@ -24,6 +24,9 @@ export function FoodPhotos() {
           fill
           sizes="(max-width:600px) 55vw, (max-width:850px) 40vw, 400px"
           preload={main[0] === "rice-plate"}
+          // صورة البطل هي أكبر عنصر في أول الشاشة (LCP الجوال): تُطلب أولًا.
+          fetchPriority={main[0] === "rice-plate" ? "high" : "auto"}
+          loading="eager"
         />
       </div>
       <div

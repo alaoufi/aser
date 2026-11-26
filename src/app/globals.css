@@ -230,7 +230,7 @@ img {
   justify-content: center;
   gap: 20px;
   background: var(--olive);
-  color: #fff;
+  color: var(--on-accent, #fff);
   border: 1px solid var(--olive);
   border-radius: 7px;
   padding: 12px 25px;
@@ -241,7 +241,7 @@ img {
     transform 0.2s;
 }
 .button:hover {
-  background: #3e4c34;
+  background: var(--olive-hover, #3e4c34);
   transform: translateY(-1px);
 }
 .button.small {
@@ -251,7 +251,7 @@ img {
   gap: 12px;
 }
 .button.light {
-  background: #f4eddf;
+  background: var(--tint, #f4eddf);
   color: var(--ink);
   border-color: #f4eddf;
 }
@@ -315,7 +315,7 @@ img {
 }
 .hero-search {
   padding: 10px;
-  background: #fff;
+  background: var(--tint, #fff);
   border: 1px solid var(--line);
   box-shadow: 0 10px 32px #44341b06;
   display: flex;
@@ -466,22 +466,22 @@ img {
   justify-content: center;
   width: 48px;
   height: 48px;
-  background: #eee3d1;
-  color: #886348;
+  background: var(--tint, #eee3d1);
+  color: var(--tint-ink, #886348);
   border-radius: 50%;
   font-size: 26px;
 }
 .tone-1 {
-  background: #e7e9dd;
-  color: #687448;
+  background: var(--tint, #e7e9dd);
+  color: var(--tint-ink, #687448);
 }
 .tone-2 {
-  background: #f1dfd5;
-  color: #a3674c;
+  background: var(--tint, #f1dfd5);
+  color: var(--tint-ink, #a3674c);
 }
 .tone-3 {
-  background: #ece4d8;
-  color: #7b6250;
+  background: var(--tint, #ece4d8);
+  color: var(--tint-ink, #7b6250);
 }
 .category-arrow {
   color: #a89b86;
@@ -502,12 +502,12 @@ img {
 }
 .availability-card {
   padding: 28px;
-  background: #e8efde;
+  background: var(--tint, #e8efde);
   border-radius: 9px;
   position: relative;
 }
 .availability-card.warm {
-  background: #f5e4d5;
+  background: var(--tint, #f5e4d5);
 }
 .availability-card h3 {
   font-size: 23px;
@@ -529,7 +529,7 @@ img {
 }
 .empty-state {
   border: 1px dashed #cec3b1;
-  background: #fff5e5;
+  background: var(--tint, #fff5e5);
   text-align: center;
   padding: 28px 20px;
   border-radius: 9px;
@@ -563,11 +563,11 @@ img {
   border: 1px solid var(--line);
   border-radius: 10px;
   overflow: hidden;
-  background: #fff;
+  background: var(--tint, #fff);
 }
 .card-image {
   height: 220px;
-  background: #eee6d6;
+  background: var(--tint, #eee6d6);
   position: relative;
   display: flex;
   align-items: center;
@@ -583,7 +583,7 @@ img {
 }
 .badge {
   font-size: 11px;
-  background: #f9f6eff2;
+  background: var(--tint, #f9f6eff2);
   color: var(--olive);
   padding: 4px 12px;
   border-radius: 5px;
@@ -594,12 +594,12 @@ img {
 .badge.inline {
   position: static;
   display: inline-block;
-  background: #e8ecdf;
+  background: var(--tint, #e8ecdf);
 }
 /* شارة «أسرة مميزة» الذهبية في صفحة الأسرة، رابط لشهادتها */
 .badge.inline.distinguished-badge {
   background: linear-gradient(180deg, #f3d58b, #d9a94e);
-  color: #4a2f08;
+  color: var(--tint-ink, #4a2f08);
   border-color: #b8862e;
   text-decoration: none;
   font-weight: 800;
@@ -631,7 +631,7 @@ img {
   display: flex;
   align-items: center;
   gap: 18px;
-  background: #fcfaf5;
+  background: var(--tint, #fcfaf5);
 }
 .producer-card > div:nth-child(2) {
   flex: 1;
@@ -649,7 +649,7 @@ img {
   height: 65px;
   width: 65px;
   border-radius: 50%;
-  background: #e9e2d1;
+  background: var(--tint, #e9e2d1);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -667,7 +667,7 @@ img {
   padding: 36px 44px;
   border-radius: 12px;
   background: var(--olive);
-  color: #fff;
+  color: var(--on-accent, #fff);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -856,7 +856,7 @@ img {
   border: 1px solid #cfc6b7;
   border-radius: 5px;
   padding: 11px;
-  background: #fff;
+  background: var(--tint, #fff);
   color: var(--ink);
   min-height: 48px;
   margin-top: 6px;
@@ -886,7 +886,7 @@ img {
   margin-bottom: 14px;
 }
 .profile-symbol {
-  background: #e4ddcd;
+  background: var(--tint, #e4ddcd);
   min-width: 130px;
   height: 130px;
   border-radius: 50%;
@@ -910,7 +910,7 @@ img {
 }
 .info-panel {
   padding: 28px;
-  background: #eee8db;
+  background: var(--tint, #eee8db);
   border: 1px solid var(--line);
   border-radius: 10px;
   align-self: start;
@@ -962,7 +962,7 @@ hr {
 }
 .product-portrait {
   border-radius: 12px;
-  background: #e8e0cf;
+  background: var(--tint, #e8e0cf);
   overflow: hidden;
   min-height: 450px;
 }
@@ -977,7 +977,7 @@ hr {
   justify-content: center;
   flex-direction: column;
   min-height: 450px;
-  color: #827357;
+  color: var(--tint-ink, #827357);
 }
 .portrait-placeholder span {
   font-size: 100px;
@@ -1024,7 +1024,7 @@ hr {
   grid-template-columns: repeat(3, 1fr);
   gap: 30px;
   padding: 30px;
-  background: #eee8db;
+  background: var(--tint, #eee8db);
   border-radius: 10px;
 }
 .information-grid p {
@@ -1781,7 +1781,7 @@ hr {
 }
 .share-menu > summary {
   align-items: center;
-  background: #fff;
+  background: var(--tint, #fff);
   border: 1px solid rgba(46, 29, 18, 0.25);
   border-radius: 999px;
   cursor: pointer;
@@ -1798,10 +1798,10 @@ hr {
 .share-menu[open] > summary {
   background: var(--olive);
   border-color: var(--olive);
-  color: #fff;
+  color: var(--on-accent, #fff);
 }
 .share-panel {
-  background: #fff;
+  background: var(--tint, #fff);
   border: 1px solid rgba(46, 29, 18, 0.18);
   border-radius: 14px;
   box-shadow: 0 12px 28px rgba(46, 29, 18, 0.18);
@@ -1856,7 +1856,7 @@ hr {
   justify-self: center;
 }
 .share-qr img {
-  background: #fff;
+  background: var(--tint, #fff);
   border: 1px solid rgba(46, 29, 18, 0.15);
   border-radius: 10px;
   display: block;
@@ -1869,7 +1869,7 @@ hr {
 }
 /* الرابط المختصر ظاهرًا ويُنسخ باللمس المطوّل */
 .share-link {
-  background: #fbf6ec;
+  background: var(--tint, #fbf6ec);
   border: 1px dashed rgba(46, 29, 18, 0.35);
   border-radius: 10px;
   font-family: ui-monospace, monospace;
@@ -1904,7 +1904,7 @@ hr {
   padding: 22px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #f5f0e6;
+  background: var(--tint, #f5f0e6);
   max-width: 650px;
 }
 .report-panel h3 {
@@ -1919,7 +1919,7 @@ hr {
   display: block;
   width: 100%;
   border: 1px solid #cfc6b7;
-  background: #fff;
+  background: var(--tint, #fff);
   color: var(--ink);
   border-radius: 6px;
   padding: 12px;
@@ -1943,7 +1943,7 @@ hr {
 }
 .report-message {
   font-size: 13px;
-  color: #8f352b;
+  color: var(--tint-ink, #8f352b);
   margin-block: 15px 0;
 }
 .report-success {
@@ -1957,7 +1957,7 @@ hr {
   justify-content: center;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: #fff9;
+  background: var(--tint, #fff9);
 }
 .mobile-nav summary .menu-close-icon {
   display: none;
@@ -1972,7 +1972,7 @@ hr {
 .mobile-nav nav a {
   border-radius: 10px;
   border: 1.5px solid #e3cfa9;
-  background: #fffaf1;
+  background: var(--tint, #fffaf1);
   font-weight: 700;
   margin-block: 4px;
   min-height: 44px;
@@ -2013,7 +2013,7 @@ main small a:not([class]),
   padding: 20px;
   gap: 14px;
   border-radius: 16px;
-  background: #fff;
+  background: var(--tint, #fff);
   transition:
     border-color 0.18s,
     box-shadow 0.18s;
@@ -2066,12 +2066,12 @@ main small a:not([class]),
 .producer-tags > span {
   border-radius: 6px;
   padding: 4px 8px;
-  background: #f5f3ed;
+  background: var(--tint, #f5f3ed);
   color: var(--muted);
 }
 .producer-tags .producer-verified {
-  color: #3c5636;
-  background: #edf2e7;
+  color: var(--tint-ink, #3c5636);
+  background: var(--tint, #edf2e7);
 }
 .producer-card-arrow {
   color: var(--olive);
@@ -2406,7 +2406,7 @@ main {
   height: 28px;
   border-radius: 50%;
   background: var(--olive);
-  color: #fff;
+  color: var(--on-accent, #fff);
   font-size: 14px;
   line-height: 1;
   font-weight: 700;
@@ -2528,7 +2528,7 @@ main {
   border: 1px solid #b8862e;
   border-radius: 12px;
   background: linear-gradient(135deg, #fff8e6, #f3dfae);
-  color: #4a2f08;
+  color: var(--tint-ink, #4a2f08);
   font-weight: 700;
   line-height: 1.5;
 }
@@ -2551,7 +2551,7 @@ main {
   padding: 0 14px;
   border-radius: 8px;
   background: var(--olive);
-  color: #fff;
+  color: var(--on-accent, #fff);
   text-decoration: none;
 }
 @media (max-width: 640px) {
@@ -2581,7 +2581,7 @@ main {
   border: 1px solid var(--line, #ab9d88);
   border-radius: 9px;
   font: inherit;
-  background: #fff;
+  background: var(--tint, #fff);
 }
 .suggestion-sent {
   color: var(--olive, var(--olive));
@@ -2656,7 +2656,7 @@ main {
 }
 /* اسم «أكلات جدتنا» بارز ثلاثي الأبعاد: طبقات بلون الخشب تحت الحروف وظل عائم. */
 .site-header .brand > span {
-  color: #3a2414;
+  color: var(--tint-ink, #3a2414);
   text-shadow:
     0 1px 0 #f6e7c8,
     0 2px 0 #c9a46a,
@@ -2988,7 +2988,7 @@ main {
 /* «خروج» آخر قائمة الجوال: بشكل روابط القائمة، وبلون مميز. */
 .mobile-nav nav .logout-link {
   align-items: center;
-  background: #fff4f1;
+  background: var(--tint, #fff4f1);
   border: 1.5px solid rgba(156, 47, 30, 0.45);
   border-radius: 10px;
   color: var(--rust);
@@ -3138,7 +3138,7 @@ main {
   padding: 0;
 }
 .subscription-card {
-  background: #fff;
+  background: var(--tint, #fff);
   border: 1px solid rgba(46, 29, 18, 0.15);
   border-radius: 14px;
   display: grid;
@@ -3230,7 +3230,7 @@ main {
 }
 /* عقد الاشتراك: مقروء ومطبوع */
 .contract {
-  background: #fff;
+  background: var(--tint, #fff);
   border: 1px solid rgba(46, 29, 18, 0.2);
   border-radius: 14px;
   display: grid;
@@ -3253,7 +3253,7 @@ main {
   margin: 0;
 }
 .contract dt {
-  color: #6b5a48;
+  color: var(--tint-ink, #6b5a48);
   font-weight: 700;
 }
 .contract dd {
@@ -3267,19 +3267,19 @@ main {
   padding: 0;
 }
 .contract-transcript li {
-  background: #fbf6ec;
+  background: var(--tint, #fbf6ec);
   border-radius: 10px;
   padding: 8px 10px;
 }
 .contract-transcript li.family {
-  background: #eef1e6;
+  background: var(--tint, #eef1e6);
 }
 .contract-transcript p {
   margin: 4px 0 0;
   white-space: pre-line;
 }
 .contract-hash {
-  color: #6b5a48;
+  color: var(--tint-ink, #6b5a48);
   font-size: 11px;
   overflow-wrap: anywhere;
 }
@@ -3564,8 +3564,8 @@ main {
 /* المفعّل: لون زيتوني خفيف ونصه زيتوني، بدل تعبئة داكنة. */
 .mine-seg[aria-checked="true"] {
   /* لون ثابت خفيف (القالب التراثي يجعل --sage-panel داكنًا). */
-  background: #e8efde;
-  color: #3f4d2f;
+  background: var(--tint, #e8efde);
+  color: var(--tint-ink, #3f4d2f);
 }
 /* مربع الاختيار: فارغ، أو ✓ حين يُفعَّل. */
 .mine-box {
@@ -3588,7 +3588,7 @@ main {
 .mine-seg[aria-checked="true"] .mine-box {
   background: var(--olive);
   border-color: var(--olive);
-  color: #fff;
+  color: var(--on-accent, #fff);
   font-weight: 900;
 }
 .mine-seg:focus-visible {
@@ -3729,7 +3729,7 @@ main {
   }
   .hero-chip {
     align-items: center;
-    background: #eef3e6;
+    background: var(--tint, #eef3e6);
     border: 1px solid #d7e0c8;
     border-radius: 12px;
     color: var(--ink);
@@ -3740,12 +3740,12 @@ main {
     text-decoration: none;
   }
   .hero-chip.warm {
-    background: #f8ebdf;
+    background: var(--tint, #f8ebdf);
     border-color: #ecd3bd;
   }
   .hero-chip-icon {
     align-items: center;
-    background: #fff;
+    background: var(--tint, #fff);
     border-radius: 50%;
     display: inline-flex;
     flex: 0 0 auto;
@@ -4001,7 +4001,7 @@ main {
     color: var(--olive);
   }
   .bottom-nav-item[aria-current="page"] .bottom-nav-icon {
-    background: #e8efde;
+    background: var(--tint, #e8efde);
   }
   .bottom-nav-icon {
     border-radius: 12px;
@@ -4012,7 +4012,7 @@ main {
   .bottom-nav-badge {
     background: var(--rust);
     border-radius: 999px;
-    color: #fff;
+    color: var(--on-accent, #fff);
     font-size: 10px;
     inset-inline-end: 2px;
     line-height: 1;
@@ -4031,7 +4031,7 @@ main {
     border: 4px solid var(--surface);
     border-radius: 50%;
     box-shadow: 0 4px 12px rgb(56 41 31 / 0.25);
-    color: #fff;
+    color: var(--on-accent, #fff);
     display: inline-flex;
     height: 58px;
     justify-content: center;
@@ -4324,7 +4324,7 @@ button.mine-seg {
   justify-content: center;
   width: 26px;
   height: 26px;
-  background: #fff;
+  background: var(--tint, #fff);
   border-radius: 7px;
   box-shadow: 0 1px 3px rgb(0 0 0 / 0.35);
   flex: none;

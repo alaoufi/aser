@@ -17,8 +17,11 @@ test("a visitor picks a heritage palette and it stays after reload", async ({
         .trim(),
     );
   expect(await olive()).toBe("#4f5d36");
-  await page.getByRole("button", { name: "ألوان الموقع" }).click();
-  const panel = page.getByRole("dialog", { name: "ألوان الموقع" });
+  await page
+    .locator(".site-header")
+    .getByRole("button", { name: "المظهر" })
+    .click();
+  const panel = page.getByRole("dialog", { name: "المظهر" });
   await expect(panel).toBeVisible();
   await panel.getByRole("button", { name: "النخيل" }).click();
   await expect(html).toHaveAttribute("data-palette", "nakheel");
@@ -40,9 +43,12 @@ test("a visitor picks a heritage palette and it stays after reload", async ({
     ),
   ).toBe(true);
   // العودة للأصل.
-  await page.getByRole("button", { name: "ألوان الموقع" }).click();
   await page
-    .getByRole("dialog", { name: "ألوان الموقع" })
+    .locator(".site-header")
+    .getByRole("button", { name: "المظهر" })
+    .click();
+  await page
+    .getByRole("dialog", { name: "المظهر" })
     .getByRole("button", { name: "السدو" })
     .click();
   await expect(html).not.toHaveAttribute("data-palette");

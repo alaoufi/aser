@@ -390,3 +390,26 @@ export async function regionalProducers(
   ]);
   return { local, nationwide };
 }
+
+/**
+ * أسر قريبة نشرت أطباقها (صفحة أسرة بلا منتجات، القالب المبسّط): معتمدة، لها منتج ظاهر غير «غير متوفر»،
+ * من مدينة الأسرة أولًا ثم منطقتها، ثم من يشحن للمملكة. بيانات حقيقية فقط؛ لا شيء إن لم يوجد.
+ */
+export async function nearbyProducersWithProducts(
+  producer: Pick<Producer, "id" | "cityId">,
+  limit = 6,
+): Promise<Producer[]> {
+  if (!databaseConfigured()) return [];
+  return (
+    await db().query(
+      `${producerSelect}
+       WHERE p.status='approved' AND NOT p.review_only AND p.id<>$1
+         AND EXISTS(SELECT 1 FROM jdatna.products x WHERE x.producer_id=p.id AND x.visible AND x.deleted_at IS NULL AND x.status<>'unavailable')
+         AND (p.city_id=$2 OR c.region_id=(SELECT region_id FROM jdatna.cities WHERE id=$2)
+           OR p.delivery_scope='kingdom' OR EXISTS(SELECT 1 FROM jdatna.products k WHERE k.producer_id=p.id AND k.visible AND k.deleted_at IS NULL AND k.delivery_scope='kingdom' AND k.status<>'unavailable'))
+       ORDER BY (p.city_id=$2) DESC,(c.region_id=(SELECT region_id FROM jdatna.cities WHERE id=$2)) DESC,p.created_at DESC,p.id
+       LIMIT $3`,
+      [producer.id, producer.cityId, Math.max(1, Math.min(24, limit))],
+    )
+  ).rows;
+}

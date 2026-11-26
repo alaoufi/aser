@@ -15,7 +15,14 @@ import {
   siteTextTitleKeys,
   type SiteTextKey,
 } from "@/lib/site-texts";
-import { api, Message, s } from "./shared";
+import { api, Message, s, useSiteTexts } from "./shared";
+import { MaedaAdmin } from "./maeda-admin";
+import {
+  paletteKeys,
+  siteTemplates,
+  type AppearanceSettings,
+  type PaletteKey,
+} from "@/lib/appearance";
 import { PasswordField } from "./password-field";
 import { adminCache, fetchAdmin } from "./admin-cache";
 import { SectionIcon as AdminIcon } from "./section-icon";
@@ -1019,11 +1026,13 @@ export function OrdersAdmin() {
     </section>
   );
 }
-/** قالب الواجهة: الباب النجدي أو الكلاسيكي، ويسري فورًا على كل الصفحات. */
+/**
+ * قالب الواجهة وألوانها: القالب الافتراضي، والقوالب والألوان التي يختار منها الزائر من «المظهر»،
+ * واللون الافتراضي. يسري فورًا على كل الصفحات لمن لم يختر بنفسه.
+ */
 export function TemplateAdmin() {
-  const r = useResource<{ template: "najdi" | "classic" }>(
-    "/api/admin/settings",
-  );
+  const r = useResource<Partial<AppearanceSettings>>("/api/admin/settings");
+  const { tx } = useSiteTexts();
   const options = [
     [
       "najdi",
@@ -1035,7 +1044,16 @@ export function TemplateAdmin() {
       "الكلاسيكي",
       "القوس النجدي وطبق الخوص وصور الأطباق، كما كان الموقع.",
     ],
+    ["simple", tx("template.simple"), tx("template.simpleHint")],
   ] as const;
+  const template = r.data?.template;
+  const templates = r.data?.templates ?? [...siteTemplates];
+  const palette = r.data?.palette ?? "sadu";
+  const palettes = r.data?.palettes ?? [...paletteKeys];
+  const paletteName = (k: PaletteKey) =>
+    tx(`palette.${k}` as Parameters<typeof tx>[0]);
+  const toggle = <T extends string>(list: T[], v: T) =>
+    list.includes(v) ? list.filter((x) => x !== v) : [...list, v];
   return (
     <section>
       <h2>قالب الموقع</h2>
@@ -1043,26 +1061,91 @@ export function TemplateAdmin() {
       {!r.data && !r.error ? (
         <p role="status">جارٍ تحميل القالب…</p>
       ) : (
-        <fieldset className={`${s.card} ${s.form}`}>
-          <legend>اختر قالب الواجهة</legend>
-          {options.map(([id, label, hint]) => (
-            <label key={id} className={s.field}>
-              <span>
-                <input
-                  type="radio"
-                  name="template"
-                  value={id}
-                  checked={r.data?.template === id}
-                  disabled={r.busy}
-                  onChange={() => r.write("PUT", { template: id })}
-                />{" "}
-                <strong>{label}</strong>
-                {r.data?.template === id ? " (المفعّل)" : ""}
-              </span>
-              <small>{hint}</small>
-            </label>
-          ))}
-        </fieldset>
+        <>
+          <fieldset className={`${s.card} ${s.form}`}>
+            <legend>اختر قالب الواجهة</legend>
+            {options.map(([id, label, hint]) => (
+              <label key={id} className={s.field}>
+                <span>
+                  <input
+                    type="radio"
+                    name="template"
+                    value={id}
+                    checked={template === id}
+                    disabled={r.busy}
+                    onChange={() => r.write("PUT", { template: id })}
+                  />{" "}
+                  <strong>{label}</strong>
+                  {template === id ? " (المفعّل)" : ""}
+                </span>
+                <small>{hint}</small>
+              </label>
+            ))}
+          </fieldset>
+          {template && (
+            <fieldset className={`${s.card} ${s.form}`}>
+              <legend>{tx("admin.lookTemplates")}</legend>
+              {options.map(([id, label]) => (
+                <label key={id} className={s.field}>
+                  <span>
+                    <input
+                      type="checkbox"
+                      checked={templates.includes(id)}
+                      disabled={r.busy || id === template}
+                      onChange={() =>
+                        r.write("PUT", {
+                          template,
+                          templates: toggle(templates, id),
+                        })
+                      }
+                    />{" "}
+                    {label}
+                    {id === template ? ` ${tx("admin.lookDefaultAlways")}` : ""}
+                  </span>
+                </label>
+              ))}
+            </fieldset>
+          )}
+          {template && (
+            <fieldset className={`${s.card} ${s.form}`}>
+              <legend>{tx("admin.lookPalettes")}</legend>
+              {paletteKeys.map((k) => (
+                <div key={k} className={s.field}>
+                  <span>
+                    <label>
+                      <input
+                        type="radio"
+                        name="palette"
+                        checked={palette === k}
+                        disabled={r.busy}
+                        onChange={() =>
+                          r.write("PUT", { template, palette: k })
+                        }
+                      />{" "}
+                      <strong>{paletteName(k)}</strong>
+                      {palette === k ? ` ${tx("admin.lookDefault")}` : ""}
+                    </label>{" "}
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={palettes.includes(k)}
+                        disabled={r.busy || palette === k}
+                        onChange={() =>
+                          r.write("PUT", {
+                            template,
+                            palettes: toggle(palettes, k),
+                          })
+                        }
+                      />{" "}
+                      {tx("admin.lookAvailable")}
+                    </label>
+                  </span>
+                </div>
+              ))}
+            </fieldset>
+          )}
+          {template && <MaedaAdmin />}
+        </>
       )}
     </section>
   );

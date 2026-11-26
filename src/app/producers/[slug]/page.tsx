@@ -15,16 +15,20 @@ import { MemberNo } from "@/components/forms/session";
 import { LocationLink } from "@/components/forms/location-share";
 import { LocationCheck } from "@/components/maps/location-check";
 import { RatingBox } from "@/components/forms/rating-box";
-import { getSiteTexts } from "@/server/settings";
+import { getSiteTexts, visitorTemplate } from "@/server/settings";
+import { MaedaTable } from "@/components/public/maeda-table";
+import { publicMaeda } from "@/server/maeda";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import {
   countProducerProducts,
   getProducer,
   getProducerProducts,
+  nearbyProducersWithProducts,
 } from "@/server/catalog";
 import {
   ProductCard,
+  ProducerCard,
   EmptyState,
   phoneNumber,
   safeUrl,
@@ -80,12 +84,17 @@ export default async function ProducerDetail({
 }) {
   const p = await getProducer((await params).slug);
   if (!p) notFound();
-  const [products, shown, texts, share] = await Promise.all([
+  const [products, shown, texts, share, template, maeda] = await Promise.all([
     getProducerProducts(p.id),
     countProducerProducts(p.id),
     getSiteTexts(),
     shortLink("family", p.id),
+    visitorTemplate(),
+    publicMaeda(p.id),
   ]);
+  // القالب المبسّط، أسرة بلا منتجات منشورة: سؤال القائمة بالواتساب وأسر قريبة نشرت أطباقها.
+  const simpleEmpty = template === "simple" && products.length === 0;
+  const nearby = simpleEmpty ? await nearbyProducersWithProducts(p) : [];
   const coverage = p.delivery ? await getPublicCoverage(p.id) : [];
   const phone = p.phone ? phoneNumber(p.phone) : null;
   const whatsapp = p.whatsapp ? phoneNumber(p.whatsapp) : null;
@@ -193,9 +202,33 @@ export default async function ProducerDetail({
             <p className="profile-description">{p.description}</p>
           </div>
         </section>
+        {/* القالب المبسّط: مائدة الأسرة — أطباقها الجاهزة اليوم على مائدتها، واسمها على المفرش. */}
+        {template === "simple" && products.length > 0 && (
+          <div className="family-maeda">
+            <MaedaTable
+              id="family-maeda"
+              title={texts["family.table"]}
+              hint={texts["family.tableHint"].replace("{family}", p.name)}
+              owner={p.name}
+              maeda={maeda}
+              showFamily={false}
+              dishes={products.filter(
+                (x) => x.status === "available" && !x.notCookingToday,
+              )}
+              empty={{
+                title: texts["family.tableEmptyTitle"],
+                text: texts["family.tableEmpty"],
+                cta: {
+                  href: "#family-menu",
+                  label: texts["family.tableEmptyCta"],
+                },
+              }}
+            />
+          </div>
+        )}
         <AdSlot placement="producer_page" />
         <div className="detail-grid">
-          <section>
+          <section id="family-menu">
             <h2>من مائدة الأسرة المنتجة</h2>
             {products.length ? (
               <div className="product-grid two">
@@ -208,11 +241,56 @@ export default async function ProducerDetail({
                   />
                 ))}
               </div>
+            ) : simpleEmpty ? (
+              <div className="simple-empty">
+                <span className="simple-empty-plate" aria-hidden="true">
+                  {texts["family.menuPlate"]}
+                </span>
+                {texts["family.noMenuTitle"] && (
+                  <h3>{texts["family.noMenuTitle"]}</h3>
+                )}
+                {texts["family.noMenu"] && <p>{texts["family.noMenu"]}</p>}
+                {whatsapp ? (
+                  <a
+                    href={`https://wa.me/${whatsapp}?text=${encodeURIComponent(
+                      (
+                        texts["family.askMenuMessage"] ||
+                        "السلام عليكم، وصلت لكم من أكلات جدتنا\n{link}"
+                      ).replace("{link}", share || SITE_URL),
+                    )}`}
+                    className="button simple-empty-ask"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {texts["family.askMenu"] || "اسأل عن قائمة اليوم بالواتساب"}{" "}
+                    <span aria-hidden="true">↗</span>
+                  </a>
+                ) : (
+                  <div className="simple-empty-ask">
+                    <ChatButton producerSlug={p.slug} />
+                  </div>
+                )}
+              </div>
             ) : (
               <EmptyState
                 title="لم تُنشر منتجات بعد"
                 text="تابع هذه الصفحة للتعرف على منتجات الأسرة المنتجة عند نشرها."
               />
+            )}
+            {nearby.length > 0 && (
+              <section
+                className="simple-nearby"
+                aria-labelledby="family-nearby"
+              >
+                <h2 id="family-nearby">
+                  {texts["family.nearby"] || "أسر قريبة نشرت أطباقها"}
+                </h2>
+                <div className="producer-grid compact">
+                  {nearby.map((n) => (
+                    <ProducerCard key={n.id} producer={n} />
+                  ))}
+                </div>
+              </section>
             )}
           </section>
           <aside className="info-panel">

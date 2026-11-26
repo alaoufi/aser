@@ -192,11 +192,19 @@ test("visitors pick the site look themselves and it is remembered", async ({
   await page.goto("/");
   const initial = await page.locator("html").getAttribute("data-template");
   const mobile = (page.viewportSize()?.width ?? 1280) <= 850;
+  // الجوال: «شكل الموقع» في القائمة. الكمبيوتر: زر «المظهر» في الترويسة (2026-11-26).
   if (mobile) await page.locator(".mobile-nav summary").click();
-  const switcher = page
-    .getByRole("group", { name: "شكل الموقع" })
-    .filter({ visible: true })
-    .first();
+  else
+    await page
+      .locator(".site-header")
+      .getByRole("button", { name: "المظهر" })
+      .click();
+  const switcher = mobile
+    ? page
+        .getByRole("group", { name: "شكل الموقع" })
+        .filter({ visible: true })
+        .first()
+    : page.getByRole("dialog", { name: "المظهر" });
   const target = initial === "najdi" ? "الكلاسيكي" : "الباب النجدي";
   await switcher.getByRole("button", { name: target }).click();
   const expected = initial === "najdi" ? "classic" : "najdi";

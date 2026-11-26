@@ -46,7 +46,8 @@ export function StoreBadges({
             href={playStore}
             target="_blank"
             rel="noopener noreferrer"
-            aria-label={texts.googlePlay}
+            // الاسم المقروء يبدأ بالنص الظاهر على الشارة (WCAG 2.5.3) ثم وصفه بالعربية.
+            aria-label={`GET IT ON Google Play، ${texts.googlePlay}`}
             dir="ltr"
           >
             <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">
@@ -68,8 +69,7 @@ export function StoreBadges({
               />
             </svg>
             <span className="store-badge-text">
-              <small>GET IT ON</small>
-              <strong>Google Play</strong>
+              <small>GET IT ON</small> <strong>Google Play</strong>
             </span>
           </a>
         )}
@@ -79,7 +79,7 @@ export function StoreBadges({
             href={appStore}
             target="_blank"
             rel="noopener noreferrer"
-            aria-label={texts.appStore}
+            aria-label={`Download on the App Store، ${texts.appStore}`}
             dir="ltr"
           >
             <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">
@@ -89,8 +89,7 @@ export function StoreBadges({
               />
             </svg>
             <span className="store-badge-text">
-              <small>Download on the</small>
-              <strong>App Store</strong>
+              <small>Download on the</small> <strong>App Store</strong>
             </span>
           </a>
         )}

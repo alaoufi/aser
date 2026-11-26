@@ -1,0 +1,981 @@
+/* «المظهر» والقالب المبسّط (طلب المالك 2026-11-26).
+   قواعد القالب كلها تحت [data-template="simple"]؛ الكلاسيكي والباب النجدي لا يتغيران.
+   والإصلاحات العامة (تباين التذييل، والمسافة تحت الشارة العائمة والقائمة السفلية) في آخر الملف. */
+
+/* نافذة «المظهر»: القالب ثم الألوان */
+.appearance-subtitle {
+  display: block;
+  margin: 12px 0 6px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+.appearance-templates {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.appearance-template {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  min-height: 72px;
+  padding: 8px 4px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.appearance-template[aria-pressed="true"] {
+  border-color: var(--olive);
+  box-shadow: inset 0 0 0 2px var(--olive);
+  font-weight: 700;
+}
+.appearance-template-mark {
+  display: block;
+  width: 44px;
+  height: 30px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background:
+    linear-gradient(90deg, var(--olive) 0 26%, transparent 26%),
+    linear-gradient(180deg, var(--surface), var(--cream));
+}
+.look-najdi .appearance-template-mark {
+  background: repeating-linear-gradient(
+    45deg,
+    var(--rust) 0 5px,
+    var(--sadu-black) 5px 10px,
+    var(--paper) 10px 15px
+  );
+}
+.look-simple .appearance-template-mark {
+  border-radius: 22px 22px 8px 8px;
+  background:
+    radial-gradient(circle at 50% 115%, var(--olive) 0 34%, transparent 35%),
+    var(--surface);
+}
+.appearance-footer .appearance-button {
+  display: inline-flex;
+  align-items: center;
+  width: auto;
+  height: 44px;
+  gap: 8px;
+  padding: 0 14px 0 8px;
+  border-color: #ffffff40;
+  background: transparent;
+  color: #e3d0b7;
+  font: inherit;
+  font-size: 14px;
+}
+.appearance-footer .appearance-dot {
+  width: 22px;
+  height: 22px;
+}
+.appearance-footer .appearance-panel {
+  top: auto;
+  bottom: calc(100% + 8px);
+  inset-inline-end: auto;
+  inset-inline-start: 0;
+}
+.footer-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid rgb(255 255 255 / 12%);
+}
+@media (max-width: 850px) {
+  .appearance-footer .appearance-panel {
+    position: absolute;
+    top: auto;
+    bottom: calc(100% + 8px);
+    inset-inline: 0 auto;
+    width: min(300px, calc(100vw - 24px));
+  }
+}
+
+/* الرئيسية المبسّطة — «المائدة» (اختيار المالك 2026-11-26)
+   «مائدة اليوم» روح التصميم: أكبر عنصر ومحور الصفحة بعد العنوان، والبحث وطرق الطلب تخدمها.
+   سلّم الطباعة 13/15/17/20/26/34/44/56، وإيقاع المسافات 8/12/16/24/32/48/64. */
+.maeda-hero {
+  padding-top: 24px;
+}
+.maeda-kicker {
+  margin: 0;
+  color: var(--rust);
+  font-size: 15px;
+  font-weight: 700;
+}
+.maeda-title {
+  margin: 8px 0 8px;
+  max-width: 12em;
+  font-family: "Amiri", serif;
+  font-size: clamp(34px, 9.4vw, 56px);
+  font-weight: 700;
+  line-height: 1.3;
+  text-wrap: balance;
+  color: var(--ink);
+}
+.maeda-lead {
+  margin: 0;
+  max-width: 26em;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.8;
+}
+/* «السُّفرة الممدودة» (2026-11-26): المفرش أرضٌ تقف عليها الصحون، لا شريط خلفها.
+   يبدأ المفرش من منتصف الصحن ويمتد تحت البطاقات واسم الأسرة. كل شكل يعرّف مادته في --cloth
+   وحافته في --cloth-edge، وما سواه مشترك. ألوان الموائد غير السدو ثابتة لأنها ألوان مادتها. */
+.maeda {
+  --plate: 180px;
+  --cloth-top: calc(24px + var(--plate) / 2 + 8px);
+  --cloth:
+    var(--sadu-band) repeat-x top / auto 26px,
+    var(--sadu-band) repeat-x bottom / auto 26px,
+    repeating-linear-gradient(
+      180deg,
+      var(--sadu-black) 0 22px,
+      var(--rust) 22px 26px,
+      var(--sadu-black) 26px 30px,
+      var(--sadu-white) 30px 31px
+    );
+  --cloth-edge: 0 16px 28px -10px rgb(43 31 23 / 0.45);
+  --tag-bg: var(--surface);
+  --tag-ink: var(--ink);
+  margin-top: 24px;
+  padding-bottom: 8px;
+  overflow: hidden;
+}
+.maeda-top {
+  display: grid;
+  gap: 8px;
+}
+.maeda-name {
+  margin: 0;
+  font-family: "Amiri", serif;
+  font-size: clamp(34px, 9vw, 48px);
+  line-height: 1.5;
+  color: var(--ink);
+}
+.maeda-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.6;
+}
+.maeda-board {
+  position: relative;
+  padding: 16px 0 32px;
+}
+.maeda-cloth {
+  position: absolute;
+  inset-inline: 0;
+  top: var(--cloth-top);
+  bottom: 0;
+  background: var(--cloth);
+  box-shadow: var(--cloth-edge);
+}
+.maeda-dishes {
+  position: relative;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 204px;
+  gap: 8px;
+  margin: 0;
+  padding: 0 16px 8px;
+  list-style: none;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 16px;
+  scrollbar-width: none;
+}
+.maeda-dishes::-webkit-scrollbar {
+  display: none;
+}
+.maeda-dishes li {
+  scroll-snap-align: start;
+}
+.maeda-dish {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 8px 0 8px;
+  text-align: center;
+  color: var(--ink);
+  border-radius: 16px;
+}
+.maeda-dish:focus-visible {
+  outline: 3px solid var(--olive);
+  outline-offset: 2px;
+}
+.maeda-dish-plate {
+  display: grid;
+  place-items: center;
+  width: var(--plate);
+  height: var(--plate);
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow:
+    0 0 0 7px var(--surface),
+    0 0 0 8px var(--line-strong),
+    0 24px 22px -10px rgb(20 12 6 / 0.55);
+}
+.maeda-dish-plate img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.maeda-dish-initial {
+  font-family: "Amiri", serif;
+  font-size: 56px;
+  color: var(--olive);
+}
+/* بطاقة الطبق على المفرش: فاتحة دائمًا فيبقى الاسم والسعر مقروءين على أي مادة. */
+.maeda-tag {
+  display: grid;
+  justify-items: center;
+  gap: 0;
+  min-width: 132px;
+  max-width: 188px;
+  padding: 8px 16px;
+  border-radius: 12px;
+  background: var(--tag-bg);
+  color: var(--tag-ink);
+  box-shadow: 0 6px 14px -6px rgb(20 12 6 / 0.5);
+}
+.maeda-dish strong {
+  font-size: 17px;
+  line-height: 1.5;
+}
+.maeda-dish small {
+  color: var(--muted);
+  font-size: 13px;
+}
+.maeda-price {
+  color: var(--rust);
+  font-weight: 800;
+  font-size: 16px;
+}
+.maeda-price small {
+  color: var(--muted);
+  font-weight: 400;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .maeda-dish-plate {
+    transition: transform 0.2s ease;
+  }
+  .maeda-dish:hover .maeda-dish-plate,
+  .maeda-dish:focus-visible .maeda-dish-plate {
+    transform: translateY(-4px);
+  }
+}
+.maeda-all {
+  display: flex;
+  justify-content: flex-end;
+  padding: 12px 16px 8px;
+}
+/* المائدة بلا أطباق اليوم: الصحن المعتمد على المفرش، والرسالة على بطاقة فاتحة. */
+.maeda-board.is-empty {
+  --cloth-top: 150px;
+}
+.maeda-empty {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 16px;
+  padding: 0 16px;
+  text-align: center;
+}
+.maeda-empty-dish {
+  width: 260px;
+  height: auto;
+  filter: drop-shadow(0 22px 22px rgb(20 12 6 / 0.45));
+}
+.maeda-empty-text {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  max-width: 26em;
+  padding: 20px;
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 10px 24px -10px rgb(20 12 6 / 0.45);
+}
+.maeda-empty strong {
+  font-family: "Amiri", serif;
+  font-size: 26px;
+  line-height: 1.4;
+}
+.maeda-empty p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.8;
+}
+/* اسم الأسرة مكتوب على المائدة نفسها، بمادتها (السدو: شريط بحافتي سدو). */
+.maeda-owner {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  margin: 16px 0 0;
+  padding: 0 16px;
+}
+.maeda-owner span {
+  padding: 12px 32px;
+  background:
+    var(--sadu-thin) repeat-x top / auto 6px,
+    var(--sadu-thin) repeat-x bottom / auto 6px,
+    var(--surface);
+  box-shadow: 0 8px 16px -6px rgb(20 12 6 / 0.5);
+  font-family: "Amiri", serif;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.5;
+  color: var(--ink);
+  text-align: center;
+}
+
+/* ——— «مكتبة الموائد»: كل شكل مادته واسمه ——— */
+/* المفرش الأبيض: قطن بنسيج ناعم وغرزة حمراء، والاسم مطرّز. */
+.maeda[data-cloth="abyad"] {
+  --cloth:
+    repeating-linear-gradient(90deg, #9c2f1e0d 0 1px, transparent 1px 7px),
+    repeating-linear-gradient(0deg, #9c2f1e0d 0 1px, transparent 1px 7px),
+    #fbf8f1;
+  --cloth-edge:
+    inset 0 0 0 10px #fbf8f1, inset 0 0 0 12px #b3352399,
+    0 16px 26px -12px rgb(43 31 23 / 0.35);
+  --tag-bg: #fffdf9;
+}
+.maeda[data-cloth="abyad"] .maeda-cloth::after {
+  content: "";
+  position: absolute;
+  inset: 18px 18px 18px;
+  border: 2px dashed #b33523;
+  pointer-events: none;
+}
+.maeda[data-cloth="abyad"] .maeda-tag {
+  box-shadow: 0 0 0 1px #b3352333;
+}
+.maeda[data-cloth="abyad"] .maeda-owner span {
+  padding: 4px 24px 8px;
+  background: none;
+  box-shadow: none;
+  color: #9c2f1e;
+  font-size: 30px;
+  text-decoration: underline dashed #b33523;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 12px;
+}
+/* صينية النحاس: سطح مطروق بحلقات وحافة لامعة، والاسم على لوحة نحاس. */
+.maeda[data-cloth="nahas"] {
+  --cloth:
+    radial-gradient(ellipse at 50% 10%, #fff1c2a6, transparent 55%),
+    repeating-radial-gradient(
+      ellipse at 50% 30%,
+      #d9a441 0 9px,
+      #9a6a1c 9px 10px,
+      #e8b955 10px 18px,
+      #c48d2e 18px 20px
+    );
+  --cloth-edge:
+    inset 0 0 0 6px #8f5d22, inset 0 0 0 9px #e7bd6f,
+    0 18px 28px -10px rgb(43 31 23 / 0.5);
+}
+.maeda[data-cloth="nahas"] .maeda-cloth {
+  inset-inline: 8px;
+  border-radius: 48% / 64px;
+}
+.maeda[data-cloth="nahas"] .maeda-owner span {
+  padding: 8px 32px;
+  border: 1px solid #7a4d1a;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #f0c878, #c58d3e 55%, #a8742c);
+  box-shadow:
+    inset 0 1px 0 #fff2c8,
+    0 6px 12px -4px rgb(43 31 23 / 0.55);
+  color: #3a2410;
+}
+/* سفرة الخوص: خوص نخل مجدول بخطوط حمراء وزيتونية، والاسم على بطاقة بإطار خوص. */
+.maeda[data-cloth="khoos"] {
+  --cloth:
+    repeating-linear-gradient(
+      180deg,
+      transparent 0 44px,
+      #9c2f1ecc 44px 50px,
+      transparent 50px 56px,
+      #4f5d36cc 56px 62px,
+      transparent 62px 96px
+    ),
+    repeating-linear-gradient(45deg, #dcbc80 0 6px, #c8a062 6px 12px), #d4b072;
+  --cloth-edge:
+    inset 0 6px 0 #b8894b, inset 0 -6px 0 #b8894b,
+    0 16px 26px -10px rgb(43 31 23 / 0.45);
+}
+.maeda[data-cloth="khoos"] .maeda-owner span {
+  border: 5px solid #c8a062;
+  border-radius: 999px;
+  background: var(--surface);
+  outline: 2px solid #9c6b33;
+}
+/* القط العسيري: مثلثات وخطوط ملونة مرسومة باليد، والاسم في إطار بألوانها. */
+.maeda[data-cloth="qatt"] {
+  --cloth: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='64'%3E%3Crect width='48' height='64' fill='%23f5efe1'/%3E%3Crect y='2' width='48' height='5' fill='%232b4f8c'/%3E%3Cpath d='M0 34 12 10 24 34Z' fill='%23c2412d' stroke='%231f1a17' stroke-width='1.2'/%3E%3Cpath d='M24 34 36 10 48 34Z' fill='%23d9a52b' stroke='%231f1a17' stroke-width='1.2'/%3E%3Cpath d='M12 10 24 34 36 10Z' fill='%232f6b4f' stroke='%231f1a17' stroke-width='1.2'/%3E%3Crect y='37' width='48' height='4' fill='%23c2412d'/%3E%3Cpath d='M0 52 6 46 12 52 18 46 24 52 30 46 36 52 42 46 48 52' fill='none' stroke='%232f6b4f' stroke-width='3'/%3E%3Crect y='58' width='48' height='2' fill='%231f1a17'/%3E%3C/svg%3E")
+    repeat 0 0 / 48px 64px;
+  --cloth-edge: inset 0 0 0 4px #1f1a17, 0 16px 26px -10px rgb(43 31 23 / 0.4);
+}
+.maeda[data-cloth="qatt"] .maeda-owner span {
+  border: 6px solid transparent;
+  background:
+    linear-gradient(#fffdf8, #fffdf8) padding-box,
+    repeating-linear-gradient(
+        90deg,
+        #d9a52b 0 12px,
+        #2f6b4f 12px 24px,
+        #c2412d 24px 36px,
+        #2b4f8c 36px 48px
+      )
+      border-box;
+}
+/* الزل النجدي: سجاد أحمر بشبكة معينات وحاشية كحلية، والاسم على الحاشية. */
+.maeda[data-cloth="zal"] {
+  --cloth:
+    repeating-linear-gradient(45deg, transparent 0 20px, #e8c98a40 20px 22px),
+    repeating-linear-gradient(-45deg, transparent 0 20px, #e8c98a40 20px 22px),
+    radial-gradient(ellipse at 50% 50%, #a3261f, #7d1a16);
+  --cloth-edge:
+    inset 0 0 0 10px #1f2a44, inset 0 0 0 12px #e8c98a,
+    inset 0 0 0 16px #7d1a16, 0 16px 26px -10px rgb(43 31 23 / 0.5);
+}
+.maeda[data-cloth="zal"] .maeda-owner span {
+  border: 2px solid #e8c98a;
+  background: #1f2a44;
+  box-shadow: 0 0 0 4px #1f2a44;
+  color: #f5e6c4;
+}
+/* طبلية الخشب: خشب دافئ بعروق، والاسم محروق على لوح فاتح. */
+.maeda[data-cloth="tabliya"] {
+  --cloth:
+    repeating-linear-gradient(
+      178deg,
+      #0000000f 0 2px,
+      transparent 2px 11px,
+      #ffffff0d 11px 13px,
+      transparent 13px 23px
+    ),
+    linear-gradient(180deg, #94603a, #6f4326);
+  --cloth-edge: inset 0 5px 0 #b07a4c, 0 20px 24px -12px rgb(43 31 23 / 0.6);
+}
+.maeda[data-cloth="tabliya"] .maeda-cloth {
+  inset-inline: 12px;
+  border-radius: 20px;
+}
+.maeda[data-cloth="tabliya"] .maeda-owner span {
+  border-radius: 8px;
+  background: linear-gradient(180deg, #e2bf93, #cfa271);
+  box-shadow:
+    inset 0 0 12px #8a552b66,
+    0 6px 12px -4px rgb(43 31 23 / 0.6);
+  color: #4a2a12;
+}
+.maeda-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 16px;
+}
+.maeda-head h2 {
+  margin: 0;
+  font-family: "Amiri", serif;
+  font-size: clamp(26px, 7vw, 34px);
+  line-height: 1.3;
+}
+/* البحث: يخدم المائدة بعدها. */
+.maeda-search {
+  display: grid;
+  gap: 16px;
+  margin-top: 24px;
+  padding: 24px 16px 16px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--surface);
+}
+.maeda-sentence {
+  display: grid;
+  gap: 4px;
+}
+.maeda-row {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: end;
+  gap: 12px;
+  min-height: 56px;
+}
+.maeda-word {
+  font-family: "Amiri", serif;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.6;
+  white-space: nowrap;
+  color: var(--ink);
+}
+.maeda-row input,
+.maeda-row select {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 4px;
+  border: 0;
+  border-bottom: 2px solid var(--olive);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  font-size: 18px;
+  font-weight: 600;
+}
+.maeda-row input::placeholder {
+  color: var(--muted);
+  font-weight: 400;
+}
+.maeda-row .table-region-wrap,
+.maeda-row .table-region {
+  display: block;
+  min-width: 0;
+  margin: 0;
+}
+.maeda-go {
+  width: 100%;
+  min-height: 54px;
+  gap: 10px;
+  border-radius: 12px;
+  font-size: 17px;
+}
+/* طرق الطلب: فهرس تحريري بخطوط فاصلة */
+.maeda-index {
+  display: grid;
+  margin-top: 32px;
+  border-top: 1px solid var(--line);
+}
+.maeda-index a {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 72px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+}
+.maeda-index strong {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 20px;
+}
+.maeda-index small {
+  display: block;
+  color: var(--muted);
+  font-size: 15px;
+}
+.maeda-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #2f8a4b;
+  box-shadow: 0 0 0 5px rgb(47 138 75 / 0.14);
+}
+.maeda-clock {
+  color: var(--rust);
+}
+.maeda-trust {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-block: 24px 0;
+  color: var(--olive);
+  font-weight: 700;
+  font-size: 15px;
+}
+.maeda-families {
+  margin-block: 48px 32px;
+}
+.maeda-family-list {
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--line);
+}
+.maeda-family {
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
+  align-items: center;
+  gap: 16px;
+  min-height: 80px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+}
+.maeda-family-mark {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--olive);
+  color: var(--on-accent, #fff);
+  font-family: "Amiri", serif;
+  font-size: 26px;
+}
+.maeda-family-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.maeda-family strong {
+  display: block;
+  font-size: 17px;
+}
+.maeda-family small {
+  color: var(--muted);
+  font-size: 15px;
+}
+@media (min-width: 1000px) {
+  .maeda-hero {
+    padding-top: 48px;
+    text-align: center;
+  }
+  .maeda-title,
+  .maeda-lead {
+    margin-inline: auto;
+  }
+  .maeda {
+    margin-top: 32px;
+  }
+  .maeda-top {
+    text-align: center;
+  }
+  .maeda {
+    --plate: 204px;
+  }
+  /* صف واحد في وسط السفرة؛ إن زادت الأطباق عن العرض يُسحب أفقيًا كالجوال. */
+  .maeda-dishes {
+    grid-auto-columns: 228px;
+    justify-content: safe center;
+    gap: 16px;
+    padding-inline: 32px;
+  }
+  .maeda-board.is-empty {
+    --cloth-top: 170px;
+  }
+  .maeda-empty {
+    grid-template-columns: 340px minmax(0, 26em);
+    justify-content: center;
+    align-items: center;
+    gap: 48px;
+    text-align: start;
+  }
+  .maeda-empty-dish {
+    width: 340px;
+  }
+  .maeda-empty-text {
+    justify-items: start;
+    padding: 24px;
+    border-radius: 20px;
+    background: var(--surface);
+  }
+  .maeda-all {
+    justify-content: center;
+  }
+  .maeda-search {
+    grid-template-columns: minmax(0, 1fr) 260px;
+    align-items: end;
+    gap: 32px;
+    max-width: 920px;
+    margin-inline: auto;
+  }
+  .maeda-sentence {
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+  .maeda-index {
+    grid-template-columns: 1fr 1fr;
+    column-gap: 48px;
+  }
+  .maeda-family-list {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    column-gap: 32px;
+  }
+}
+
+/* صفحة الأسرة بلا منتجات (المبسّط — «المائدة») */
+.simple-empty {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  overflow: hidden;
+  padding: 40px 24px 24px;
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: 0 14px 34px rgb(43 31 23 / 0.1);
+  text-align: center;
+}
+.simple-empty::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 10px;
+  background: var(--sadu-band) repeat-x center / auto 10px;
+}
+.simple-empty-plate {
+  display: grid;
+  place-items: center;
+  width: 120px;
+  height: 120px;
+  border: 2px dashed var(--line-strong);
+  border-radius: 50%;
+  color: var(--muted);
+  font-family: "Amiri", serif;
+  font-size: 18px;
+}
+.simple-empty h3 {
+  margin: 0;
+  font-family: "Amiri", serif;
+  font-size: 26px;
+}
+.simple-empty p {
+  margin: 0;
+  max-width: 24em;
+  color: var(--muted);
+  line-height: 1.8;
+}
+.simple-empty .button,
+.simple-empty-ask {
+  width: 100%;
+  min-height: 54px;
+}
+.simple-nearby {
+  margin-top: 32px;
+}
+.simple-nearby h2 {
+  font-family: "Amiri", serif;
+  font-size: 26px;
+}
+
+/* القالب المبسّط: الشارة في التذييل بدل العائمة */
+.footer-verified .verified-seal {
+  position: static;
+}
+.footer-verified .verified-store {
+  min-height: 40px;
+}
+
+/* تقرير الفحص (2026-11-26) — في كل القوالب:
+   روابط «يبحث الناس عن» بلون فاتح على التذييل الداكن (كانت بلون النص الثانوي: تباين منخفض). */
+.site-footer .footer-searches a {
+  color: #e3d0b7;
+  text-decoration: underline;
+  text-decoration-color: #e3d0b766;
+  text-underline-offset: 3px;
+}
+.site-footer .footer-searches a:hover {
+  color: #fff4d6;
+}
+/* الشارة العائمة لا تغطي آخر التذييل: مسافة تحتها بقدرها. */
+body:has(:not(.footer-verified) > .verified-seal) .site-footer {
+  padding-bottom: 72px;
+}
+@media (max-width: 760px) {
+  /* فوق القائمة السفلية تقف الشارة على يسار الشاشة؛ يبقى آخر سطر ظاهرًا فوقهما معًا. */
+  body:has(.bottom-nav) .site-footer {
+    padding-bottom: calc(24px + env(safe-area-inset-bottom));
+  }
+  body:has(.bottom-nav):has(:not(.footer-verified) > .verified-seal)
+    .site-footer {
+    padding-bottom: calc(76px + env(safe-area-inset-bottom));
+  }
+}
+
+/* المبسّط على الجوال: قسم المائدة (أو سؤال القائمة) قبل لوحة التواصل الطويلة. */
+@media (max-width: 850px) {
+  /* .detail-grid على الجوال column-reverse، فالترتيب الأعلى يظهر أولًا. */
+  [data-template="simple"] .detail-grid > section {
+    order: 1;
+  }
+}
+
+/* مائدة الأسرة في صفحتها (المبسّط): بعرض الشاشة داخل حاوية الصفحة، واسم الأسرة على المفرش. */
+.family-maeda {
+  margin: 8px calc(50% - 50vw) 32px;
+}
+.family-maeda .maeda-board {
+  padding-bottom: 32px;
+}
+.family-maeda .maeda-dishes {
+  padding-top: 0;
+}
+
+/* ——— «صانع المائدة» (تفصيل المالك 2026-11-26؛ نموذج للاعتماد، بلا اختيار الأسرة بعد) ———
+   تركيب حر من أربعة محاور على .maeda: data-shape (الشكل)، data-finish (الخامة)، data-edge (الحافة)،
+   data-runner (مفرش فوق المائدة)، واللون --tc. اسم الأسرة على لوحة فاتحة دائمًا فيبقى تباينه ثابتًا
+   مهما كان اللون. */
+.maeda[data-finish] {
+  --tc: #6b4226;
+  --tc2: color-mix(in srgb, var(--tc) 72%, black);
+  --tc3: color-mix(in srgb, var(--tc) 55%, white);
+  --runner-layer: linear-gradient(transparent, transparent);
+  --cloth: var(--runner-layer), var(--finish);
+  --cloth-edge:
+    var(--edge, 0 0 0 0 transparent), var(--depth, 0 0 0 0 transparent),
+    0 16px 26px -10px rgb(43 31 23 / 0.45);
+}
+.maeda[data-finish] .maeda-cloth {
+  overflow: hidden;
+  inset-inline: var(--inset, 0);
+  border-radius: var(--radius, 0);
+}
+/* الخامة */
+.maeda[data-finish="plain"] {
+  --finish:
+    radial-gradient(ellipse at 50% 0%, var(--tc3), transparent 70%), var(--tc);
+}
+.maeda[data-finish="sadu"] {
+  --finish:
+    var(--sadu-band) repeat-x top / auto 24px,
+    var(--sadu-band) repeat-x bottom / auto 24px,
+    repeating-linear-gradient(
+      180deg,
+      var(--tc2) 0 20px,
+      var(--tc) 20px 26px,
+      var(--tc2) 26px 30px,
+      #efe3cc 30px 31px
+    );
+}
+.maeda[data-finish="najdi"] {
+  --finish:
+    repeating-linear-gradient(45deg, transparent 0 16px, #efe3cc59 16px 18px),
+    repeating-linear-gradient(-45deg, transparent 0 16px, #efe3cc59 16px 18px),
+    radial-gradient(circle, #efe3cc80 0 3px, transparent 3.5px) 0 0 / 24px 24px,
+    var(--tc);
+}
+.maeda[data-finish="embroidered"] {
+  --finish:
+    repeating-linear-gradient(90deg, #00000008 0 1px, transparent 1px 7px),
+    repeating-linear-gradient(0deg, #00000008 0 1px, transparent 1px 7px),
+    #fbf8f1;
+}
+.maeda[data-finish="embroidered"] .maeda-cloth::after {
+  content: "";
+  position: absolute;
+  inset: 14px;
+  border: 2px dashed var(--tc);
+  border-radius: inherit;
+}
+.maeda[data-finish="wood"] {
+  --finish:
+    repeating-linear-gradient(
+      178deg,
+      #0000001a 0 2px,
+      transparent 2px 11px,
+      #ffffff12 11px 13px,
+      transparent 13px 23px
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--tc) 60%, #a0683c),
+      color-mix(in srgb, var(--tc) 60%, #5e3820)
+    );
+}
+.maeda[data-finish="brass"] {
+  --finish:
+    radial-gradient(ellipse at 50% 10%, #fff1c2a6, transparent 55%),
+    repeating-radial-gradient(
+      ellipse at 50% 30%,
+      #d9a441 0 9px,
+      #9a6a1c 9px 10px,
+      #e8b955 10px 18px,
+      #c48d2e 18px 20px
+    );
+}
+.maeda[data-finish="khoos"] {
+  --finish:
+    repeating-linear-gradient(
+      180deg,
+      transparent 0 44px,
+      var(--tc) 44px 50px,
+      transparent 50px 96px
+    ),
+    repeating-linear-gradient(45deg, #dcbc80 0 6px, #c8a062 6px 12px);
+}
+.maeda[data-finish="marble"] {
+  --finish:
+    linear-gradient(115deg, transparent 30%, #8a7f7426 31%, transparent 33%),
+    linear-gradient(160deg, transparent 55%, #8a7f741f 56%, transparent 58%),
+    linear-gradient(
+      70deg,
+      transparent 70%,
+      color-mix(in srgb, var(--tc) 25%, transparent) 71%,
+      transparent 72%
+    ),
+    radial-gradient(ellipse at 30% 20%, #ffffff, #ebe6df);
+}
+/* الشكل */
+.maeda[data-shape="rect"] {
+  --inset: 12px;
+  --radius: 16px;
+}
+.maeda[data-shape="square"] {
+  --inset: 12px;
+  --radius: 4px;
+}
+.maeda[data-shape="oval"] {
+  --inset: 6px;
+  --radius: 50%;
+}
+.maeda[data-shape="round"] {
+  --inset: max(6px, calc(50% - 560px));
+  --radius: 999px;
+}
+.maeda[data-shape="sufra"] {
+  --inset: 16px;
+  --radius: 6px;
+  --depth: 0 12px 0 var(--tc2);
+}
+.maeda[data-shape="sufra"] .maeda-cloth {
+  bottom: 14px;
+}
+/* الحافة */
+.maeda[data-edge="gold"] {
+  --edge: inset 0 0 0 5px #c48d2e, inset 0 0 0 7px #f3d58e;
+}
+.maeda[data-edge="double"] {
+  --edge: inset 0 0 0 4px #efe3cc, inset 0 0 0 8px var(--tc2);
+}
+.maeda[data-edge="sadu"] .maeda-cloth::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    var(--sadu-thin) repeat-x top / auto 12px,
+    var(--sadu-thin) repeat-x bottom / auto 12px;
+}
+/* مفرش فوق المائدة: شريط قماش فاتح بحافتين في وسطها تحت الصحون. */
+.maeda[data-runner="on"] {
+  --runner-layer: linear-gradient(
+    180deg,
+    transparent 6%,
+    var(--tc2) 6% 7.5%,
+    #f6eddc 7.5% 54%,
+    var(--tc2) 54% 55.5%,
+    transparent 55.5%
+  );
+}

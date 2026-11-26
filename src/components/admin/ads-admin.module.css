@@ -48,7 +48,7 @@
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 14px;
-  background: #fff;
+  background: var(--tint, #fff);
 }
 .cardHead {
   display: flex;
@@ -102,11 +102,11 @@
 .st_paused,
 .st_requested,
 .st_approved {
-  background: #fbf1dc;
-  color: #6b4a12;
+  background: var(--tint, #fbf1dc);
+  color: var(--tint-ink, #6b4a12);
 }
 .st_cancelled {
-  background: #f7e6df;
+  background: var(--tint, #f7e6df);
   color: var(--rust);
 }
 .why {
@@ -162,7 +162,7 @@ fieldset.row {
 .bad,
 fieldset.bad {
   border-color: var(--rust);
-  background: #fff3ef;
+  background: var(--tint, #fff3ef);
 }
 .two,
 .three {
@@ -215,7 +215,7 @@ fieldset.bad {
   margin-top: 4px;
   padding: 8px 10px;
   border-radius: 10px;
-  background: #fff;
+  background: var(--tint, #fff);
   color: var(--ink);
 }
 .hint {
@@ -246,7 +246,7 @@ fieldset.bad {
   padding: 12px;
   border: 1px dashed var(--rust);
   border-radius: 12px;
-  background: #fff;
+  background: var(--tint, #fff);
 }
 .fit p {
   margin: 0;
@@ -292,7 +292,7 @@ fieldset.bad {
   padding: 8px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: #fff;
+  background: var(--tint, #fff);
 }
 .bars span {
   flex: 1;
@@ -306,7 +306,7 @@ fieldset.bad {
 .table {
   width: 100%;
   border-collapse: collapse;
-  background: #fff;
+  background: var(--tint, #fff);
   font-size: 14px;
 }
 .table th,

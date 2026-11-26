@@ -4,7 +4,20 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { FolderTabs } from "./folder-tabs";
-import { AccountShell, Guard, Message, api, s, useSession } from "./shared";
+import {
+  AccountShell,
+  Guard,
+  Message,
+  api,
+  s,
+  useSession,
+  useSiteTexts,
+} from "./shared";
+import {
+  TEMPLATE_COOKIE,
+  appearanceCookie,
+  type SiteTemplate,
+} from "@/lib/appearance";
 import type { SessionUser } from "@/lib/types";
 
 const TABS = [
@@ -192,17 +205,23 @@ export function MyAccount() {
   );
 }
 
-/** «المظهر»: شكل الموقع لهذا الجهاز، يسري فورًا على كل الصفحات. */
+/** «المظهر»: شكل الموقع لهذا الجهاز ولحساب العضو، يسري فورًا على كل الصفحات. */
 function Appearance() {
   const router = useRouter();
+  const { tx } = useSiteTexts();
   const [current, setCurrent] = useState<string>("");
   useEffect(
     () => setCurrent(document.documentElement.dataset.template ?? "classic"),
     [],
   );
-  const pick = (template: "classic" | "najdi") => {
-    document.cookie = `jdatna_template=${template}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
+  const pick = (template: SiteTemplate) => {
+    document.cookie = appearanceCookie(TEMPLATE_COOKIE, template);
     setCurrent(template);
+    api("/api/me/appearance", {
+      method: "PUT",
+      body: JSON.stringify({ template }),
+      saved: false,
+    }).catch(() => {});
     router.refresh();
   };
   return (
@@ -215,8 +234,9 @@ function Appearance() {
         <legend className="sr-only">شكل الموقع</legend>
         {(
           [
-            ["classic", "الكلاسيكي", "ألوان الورق والزيتون، هادئ وواضح."],
-            ["najdi", "الباب النجدي", "زخارف الباب النجدي ونقوشه التراثية."],
+            ["classic", tx("template.classic"), tx("template.classicHint")],
+            ["najdi", tx("template.najdi"), tx("template.najdiHint")],
+            ["simple", tx("template.simple"), tx("template.simpleHint")],
           ] as const
         ).map(([id, label, hint]) => (
           <button

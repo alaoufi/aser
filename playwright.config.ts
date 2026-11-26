@@ -3,7 +3,14 @@ export default defineConfig({
   testDir: "./tests/e2e",
   fullyParallel: false,
   workers: 1,
-  use: { baseURL: "http://127.0.0.1:3000", trace: "retain-on-failure" },
+  use: {
+    baseURL: "http://127.0.0.1:3000",
+    trace: "retain-on-failure",
+    // متصفح مثبّت مسبقًا بإصدار آخر (بيئات التطوير السحابية)؛ في CI يبقى متصفح Playwright نفسه.
+    launchOptions: process.env.PW_CHROMIUM_PATH
+      ? { executablePath: process.env.PW_CHROMIUM_PATH }
+      : {},
+  },
   projects: [
     { name: "desktop", use: { ...devices["Desktop Chrome"] } },
     {

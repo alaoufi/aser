@@ -531,7 +531,7 @@ main::before {
   padding: 10px 12px;
   border: 1px solid var(--line);
   border-radius: 6px;
-  background: #fff;
+  background: var(--tint, #fff);
   line-height: 1.35;
 }
 .order-alert-list span {
@@ -632,7 +632,7 @@ main::before {
   padding: 1px 7px;
   border-radius: 999px;
   background: var(--olive);
-  color: #fff;
+  color: var(--on-accent, #fff);
   font-size: 11.5px;
 }
 .search-suggestions {
@@ -1069,7 +1069,7 @@ main::before {
   height: 340px;
   border-radius: 10px;
   border: 1.5px solid var(--line-strong);
-  background: #e9e4da;
+  background: var(--tint, #e9e4da);
   z-index: 0;
 }
 .map-tools {
@@ -1091,16 +1091,16 @@ main::before {
   font-weight: 600;
 }
 .coverage-result.ok {
-  background: #e7f1df;
-  color: #2f4a1f;
+  background: var(--tint, #e7f1df);
+  color: var(--tint-ink, #2f4a1f);
 }
 .coverage-result.no {
-  background: #fbe9e5;
-  color: #7c2416;
+  background: var(--tint, #fbe9e5);
+  color: var(--tint-ink, #7c2416);
 }
 .coverage-result.unknown {
-  background: #f3ece0;
-  color: #5b4630;
+  background: var(--tint, #f3ece0);
+  color: var(--tint-ink, #5b4630);
 }
 
 /* اختيار شكل الموقع للزائر */
@@ -1308,7 +1308,7 @@ main::before {
   gap: 1px;
   padding: 10px 14px;
   border-radius: 12px;
-  background: #fffdf8;
+  background: var(--tint, #fffdf8);
   border: 1px solid var(--line-soft);
   box-shadow: 0 3px 0 var(--line-soft);
   color: var(--ink);
@@ -1397,8 +1397,8 @@ main::before {
   font-size: 11px;
   padding: 1px 8px;
   border-radius: 999px;
-  background: #fbf3e4;
-  color: #5c3518;
+  background: var(--tint, #fbf3e4);
+  color: var(--tint-ink, #5c3518);
 }
 @media (max-width: 600px) {
   .table-arrow {
@@ -1415,8 +1415,8 @@ main::before {
   margin-top: 4px;
   padding: 1px 8px;
   border-radius: 999px;
-  background: #eef3e8;
-  color: #3b4628;
+  background: var(--tint, #eef3e8);
+  color: var(--tint-ink, #3b4628);
   font-size: 12px;
 }
 
@@ -1452,7 +1452,7 @@ main::before {
   padding: 12px 14px;
   border: 1px solid var(--line-soft);
   border-radius: 12px;
-  background: #fffdf8;
+  background: var(--tint, #fffdf8);
 }
 .rating-box.compact {
   margin-block: 8px;
@@ -1514,7 +1514,7 @@ main::before {
   border-radius: 8px;
   padding: 8px;
   font: inherit;
-  background: #fff;
+  background: var(--tint, #fff);
 }
 /* القسم قبل التقييم: مربع موافقة واضح بخط مقروء */
 .rating-oath {
@@ -1524,7 +1524,7 @@ main::before {
   padding: 10px 12px;
   border: 1px solid #d6b98d;
   border-radius: 10px;
-  background: #fff8ec;
+  background: var(--tint, #fff8ec);
   font-size: 15px;
   line-height: 1.6;
   cursor: pointer;
@@ -1538,7 +1538,7 @@ main::before {
 }
 .rating-ok {
   margin: 0;
-  color: #2f4a1f;
+  color: var(--tint-ink, #2f4a1f);
   font-weight: 600;
 }
 /* «سبق لك تقييم…»: بدل النموذج حين لا تعامل جديد يتيح التقييم */
@@ -1549,13 +1549,13 @@ main::before {
   margin: 6px 0 0;
 }
 .rating-new-deal {
-  color: #6b5a48;
+  color: var(--tint-ink, #6b5a48);
   display: block;
   font-size: 12px;
 }
 .rating-error {
   margin: 0;
-  color: #7c2416;
+  color: var(--tint-ink, #7c2416);
 }
 /* الصحون الصغيرة أزرار تكبّر الصحن المختار */
 button.food-dish {
@@ -1698,7 +1698,7 @@ button.food-dish:focus-visible .food-dish-visual {
   place-items: center;
   border-radius: 999px;
   background: var(--rust);
-  color: #fff;
+  color: var(--on-accent, #fff);
   font-size: 12px;
   font-weight: 800;
   line-height: 1;
@@ -1735,7 +1735,7 @@ button.food-dish:focus-visible .food-dish-visual {
   height: 48px;
   border-radius: 50%;
   background: var(--rust);
-  color: #fff;
+  color: var(--on-accent, #fff);
   animation: message-alert-shake 0.6s ease-in-out 3;
 }
 @keyframes message-alert-shake {
@@ -1799,7 +1799,7 @@ button.food-dish:focus-visible .food-dish-visual {
   padding: 10px 14px;
   border: 1px solid #e3c9a3;
   border-radius: 12px;
-  background: #fff8ee;
+  background: var(--tint, #fff8ee);
   box-shadow: 0 4px 14px #2e1d1214;
 }
 .push-bar-icon {
@@ -1810,7 +1810,7 @@ button.food-dish:focus-visible .food-dish-visual {
   height: 38px;
   border-radius: 50%;
   background: var(--rust, var(--rust));
-  color: #fff;
+  color: var(--on-accent, #fff);
 }
 .push-bar-text {
   flex: 1 1 200px;
@@ -1839,7 +1839,7 @@ button.food-dish:focus-visible .food-dish-visual {
   padding: 18px;
   border: 1px solid #e3b9ae;
   border-radius: 12px;
-  background: #fff6f3;
+  background: var(--tint, #fff6f3);
 }
 .delete-account h2 {
   margin: 0;
@@ -1854,13 +1854,13 @@ button.food-dish:focus-visible .food-dish-visual {
 .delete-account .button.danger {
   background: var(--rust, var(--rust));
   border-color: var(--rust, var(--rust));
-  color: #fff;
+  color: var(--on-accent, #fff);
 }
 .delete-account .button.danger:disabled {
   opacity: 0.5;
 }
 .delete-account-error {
-  color: #9d2929;
+  color: var(--tint-ink, #9d2929);
   margin: 0;
 }
 
@@ -1910,7 +1910,7 @@ button.food-dish:focus-visible .food-dish-visual {
   padding: 12px 22px;
   border-radius: 999px;
   background: var(--olive);
-  color: #fff;
+  color: var(--on-accent, #fff);
   font-weight: 700;
   font-size: 16px;
   box-shadow: 0 10px 24px rgb(46 29 18 / 0.3);
@@ -1922,7 +1922,7 @@ button.food-dish:focus-visible .food-dish-visual {
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: #fff;
+  background: var(--tint, #fff);
   color: var(--olive);
   font-size: 15px;
 }
@@ -2088,14 +2088,14 @@ button.food-dish:focus-visible .food-dish-visual {
   }
   html:has(body.print-insights),
   body.print-insights {
-    background: #fff !important;
+    background: var(--tint, #fff) !important;
   }
   body.print-insights .insights-print {
     position: absolute;
     inset: 0 0 auto;
     margin: 0;
     padding: 0 8mm;
-    background: #fff;
+    background: var(--tint, #fff);
   }
   @page {
     size: A4;
