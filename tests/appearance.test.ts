@@ -75,5 +75,8 @@ test("the simplified template's sentences live in site texts", () => {
     siteTextDefaults["family.askMenu"],
     "اسأل عن قائمة اليوم بالواتساب",
   );
-  assert.match(siteTextDefaults["simple.lead"], /\{regions\} منطقة/);
+  // «المائدة» (اختيار المالك): لا رقم ثابت للمناطق في السطر الفرعي.
+  assert.doesNotMatch(siteTextDefaults["simple.lead"], /[0-9٠-٩]/);
+  assert.equal(siteTextDefaults["simple.table"], "مائدة اليوم");
+  assert.ok(siteTextDefaults["simple.tableEmptyTitle"]);
 });

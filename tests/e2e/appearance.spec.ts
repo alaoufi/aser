@@ -56,7 +56,7 @@ test.describe("templates × palettes × sizes", () => {
               }),
             ).toBeVisible();
             await expect(
-              page.getByRole("button", { name: "ابحث عن أكلة في مدينتي" }),
+              page.getByRole("button", { name: "شوف الأكلات" }),
             ).toBeVisible();
             await expect(
               page.getByText("كل أسرة تُراجَع مستنداتها قبل الظهور."),
@@ -66,26 +66,31 @@ test.describe("templates × palettes × sizes", () => {
               page.getByRole("searchbox", { name: "أحب أكلات" }),
             ).toBeVisible();
             const fit = await page.evaluate(() =>
-              [...document.querySelectorAll(".simple-search-row")].map(
-                (row) => {
-                  const label = row.querySelector(".simple-search-label")!;
-                  const field = row.querySelector("input, select")!;
-                  const l = label.getBoundingClientRect();
-                  const f = field.getBoundingClientRect();
-                  const line =
-                    parseFloat(getComputedStyle(label).lineHeight) || 24;
-                  return {
-                    oneLine: l.height <= line * 1.2,
-                    apart: l.right <= f.left + 1 || f.right <= l.left + 1,
-                  };
-                },
-              ),
+              [...document.querySelectorAll(".maeda-row")].map((row) => {
+                const label = row.querySelector(".maeda-word")!;
+                const field = row.querySelector("input, select")!;
+                const l = label.getBoundingClientRect();
+                const f = field.getBoundingClientRect();
+                const line =
+                  parseFloat(getComputedStyle(label).lineHeight) || 24;
+                return {
+                  oneLine: l.height <= line * 1.2,
+                  apart: l.right <= f.left + 1 || f.right <= l.left + 1,
+                };
+              }),
             );
             for (const r of fit)
               expect(r, `${template}/${palette}/${w}`).toEqual({
                 oneLine: true,
                 apart: true,
               });
+            // «مائدة اليوم»: أطباق اليوم من القاعدة، أو حالتها الفارغة اللائقة (بلا قاعدة في هذا الاختبار).
+            const table = page.getByRole("region", { name: "مائدة اليوم" });
+            await expect(table).toBeVisible();
+            if (!(await table.locator(".maeda-dish").count()))
+              await expect(
+                table.getByText("المائدة فاضية اليوم في منطقتك"),
+              ).toBeVisible();
             // بلا الطاولة الخشبية وبلا الشارة العائمة.
             await expect(page.locator(".today-table")).toHaveCount(0);
             await expect(
@@ -94,7 +99,7 @@ test.describe("templates × palettes × sizes", () => {
               ),
             ).toHaveCount(0);
           } else {
-            await expect(page.locator(".simple-hero")).toHaveCount(0);
+            await expect(page.locator(".maeda-hero")).toHaveCount(0);
           }
           expect(await noOverflow(page), `${template}/${palette}/${w}`).toBe(
             true,
@@ -128,7 +133,7 @@ test("the visitor picks template and colour from «المظهر» with instant p
   expect(bg).not.toBe("rgb(252, 248, 240)");
   await panel.getByRole("button", { name: "المبسّط" }).click();
   await expect(html).toHaveAttribute("data-template", "simple");
-  await expect(page.locator(".simple-title")).toBeVisible();
+  await expect(page.locator(".maeda-title")).toBeVisible();
   const cookies = await page.context().cookies();
   expect(cookies.find((c) => c.name === "jdatna_palette")?.value).toBe("lail");
   expect(cookies.find((c) => c.name === "jdatna_template")?.value).toBe(

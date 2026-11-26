@@ -216,6 +216,12 @@ export default async function ProducerDetail({
               </div>
             ) : simpleEmpty ? (
               <div className="simple-empty">
+                <span className="simple-empty-plate" aria-hidden="true">
+                  {texts["family.menuPlate"]}
+                </span>
+                {texts["family.noMenuTitle"] && (
+                  <h3>{texts["family.noMenuTitle"]}</h3>
+                )}
                 {texts["family.noMenu"] && <p>{texts["family.noMenu"]}</p>}
                 {whatsapp ? (
                   <a

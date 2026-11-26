@@ -16,6 +16,7 @@ test.describe("simplified family page without dishes", () => {
   const users: string[] = [];
   const fams: { id: string; slug: string; products: number }[] = [];
   let phone = "";
+  let dish = "";
 
   test.beforeAll(async () => {
     pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 2 });
@@ -48,11 +49,14 @@ test.describe("simplified family page without dishes", () => {
          VALUES($1,$2,$3,$4,$5,$6,$6,true,'approved')`,
         [id, user, slug, `أسرة المظهر ${slug}`, city, ph],
       );
-      if (products)
+      if (products) {
+        dish = randomUUID();
+        // متوفر اليوم بسعر: يظهر على «مائدة اليوم» في الرئيسية المبسّطة.
         await pool.query(
-          "INSERT INTO jdatna.products(id,producer_id,name,description,unit,status) VALUES($1,$2,'صحن المظهر','','صحن','preorder')",
-          [randomUUID(), id],
+          "INSERT INTO jdatna.products(id,producer_id,name,description,unit,status,price) VALUES($1,$2,$3,'','صحن','available',35)",
+          [dish, id, `مطازيز المائدة ${slug}`],
         );
+      }
     }
   });
   test.afterAll(async () => {
@@ -84,7 +88,10 @@ test.describe("simplified family page without dishes", () => {
     ]);
     await page.goto(`/producers/${empty.slug}`);
     await expect(
-      page.getByText("القائمة لم تُنشر هنا بعد. كثير من الأسر تطبخ حسب الطلب"),
+      page.getByRole("heading", { name: "القائمة لم تُنشر هنا بعد" }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("كثير من الأسر تطبخ حسب الطلب؛ اسألهم بالواتساب"),
     ).toBeVisible();
     const ask = page.getByRole("link", {
       name: /اسأل عن قائمة اليوم بالواتساب/,
@@ -93,6 +100,14 @@ test.describe("simplified family page without dishes", () => {
     expect(await ask.getAttribute("href")).toContain(
       `https://wa.me/${phone.replace("+", "")}`,
     );
+    // الإجراء الأساسي قبل لوحة التواصل الطويلة (على الجوال أيضًا).
+    const askTop = (await ask.boundingBox())!.y;
+    const panelTop = (await page
+      .getByRole("heading", { name: "تواصل مع الأسرة المنتجة" })
+      .boundingBox())!.y;
+    // على الشاشات الضيقة يتتابعان عموديًا؛ على الكمبيوتر يتجاوران.
+    if ((page.viewportSize()?.width ?? 1280) <= 850)
+      expect(askTop).toBeLessThan(panelTop);
     const nearby = page.getByRole("region", { name: "أسر قريبة نشرت أطباقها" });
     await expect(
       nearby.locator(`a[href="/producers/${withDish.slug}"]`),
@@ -121,5 +136,29 @@ test.describe("simplified family page without dishes", () => {
     await expect(
       page.getByRole("link", { name: /اسأل عن قائمة اليوم/ }),
     ).toHaveCount(0);
+  });
+
+  test("«مائدة اليوم» on the simplified home shows a real dish available today with its price and family", async ({
+    page,
+  }) => {
+    await page.context().addCookies([
+      {
+        name: "jdatna_template",
+        value: "simple",
+        url: "http://127.0.0.1:3000",
+      },
+    ]);
+    await page.goto("/");
+    const table = page.getByRole("region", { name: "مائدة اليوم" });
+    const card = table.locator(`a[href="/products/${dish}"]`);
+    await expect(card).toBeVisible();
+    await expect(card).toContainText("مطازيز المائدة");
+    await expect(card).toContainText(/35|٣٥/);
+    await expect(card).toContainText("أسرة المظهر");
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
   });
 });

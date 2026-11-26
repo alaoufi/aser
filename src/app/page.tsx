@@ -53,9 +53,11 @@ export default async function Home({
   const mine = scope.filters;
   // القالب المبسّط: يطلب ما يعرضه فقط (النصوص والأسر القريبة).
   if ((await visitorTemplate()) === "simple") {
-    const [texts, near] = await Promise.all([
+    const [texts, near, today] = await Promise.all([
       getSiteTexts(),
       regionalProducers({ region, mine }),
+      // «مائدة اليوم»: المتوفر اليوم في منطقة الزائر، الأكثر طلبًا أولًا.
+      todayProducts({ region, mine }, 8),
     ]);
     return (
       <>
@@ -65,6 +67,7 @@ export default async function Home({
           regions={regions}
           region={region}
           producers={[...near.local, ...near.nationwide].slice(0, 6)}
+          today={today}
         />
       </>
     );
