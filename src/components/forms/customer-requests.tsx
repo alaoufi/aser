@@ -3,6 +3,8 @@ import { telHref, whatsappHref } from "@/lib/phone-links";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { enterNext } from "./enter-next";
+import { FolderTabs } from "./folder-tabs";
+import { useTx } from "@/components/site-texts";
 import {
   AccountShell,
   Guard,
@@ -54,13 +56,62 @@ export function CustomerRequests({
       <Guard {...session} />
       {session.user &&
         (family ? (
-          <FamilyBoard />
+          <FamilyRequests cities={cities} categories={categories} />
         ) : session.user.role === "courier" ? (
           <p className={s.notice}>طلبات العملاء للأسر المنتجة والعملاء.</p>
         ) : (
           <CustomerSide cities={cities} categories={categories} />
         ))}
     </AccountShell>
+  );
+}
+
+/**
+ * الأسرة في «الطلبات» (قرار المالك 2026-11-26): ترى طلبات العملاء لتعرض عليهم، وتطلب هي
+ * من الأسر الأخرى كأي عميل («اطلب من الأسر»؛ رابط مباشر /requests#ask).
+ */
+function FamilyRequests({
+  cities,
+  categories,
+}: {
+  cities: (Option & { regionName: string })[];
+  categories: Option[];
+}) {
+  const { txb } = useTx();
+  const [tab, setTab] = useState<"board" | "ask">("board");
+  useEffect(() => {
+    const fromHash = () => setTab(location.hash === "#ask" ? "ask" : "board");
+    fromHash();
+    window.addEventListener("hashchange", fromHash);
+    window.addEventListener("popstate", fromHash);
+    return () => {
+      window.removeEventListener("hashchange", fromHash);
+      window.removeEventListener("popstate", fromHash);
+    };
+  }, []);
+  return (
+    <FolderTabs
+      label={txb("asCustomer.requestsTabs")}
+      tabs={[
+        { id: "board", label: txb("asCustomer.board") },
+        { id: "ask", label: txb("asCustomer.ask") },
+      ]}
+      active={tab}
+      onSelect={(id) => {
+        setTab(id as "board" | "ask");
+        history.replaceState(
+          null,
+          "",
+          id === "ask" ? "#ask" : location.pathname + location.search,
+        );
+      }}
+    >
+      {tab === "board" ? (
+        <FamilyBoard />
+      ) : (
+        <CustomerSide cities={cities} categories={categories} />
+      )}
+    </FolderTabs>
   );
 }
 

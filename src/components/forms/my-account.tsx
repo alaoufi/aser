@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { FolderTabs } from "./folder-tabs";
+import { useTx } from "@/components/site-texts";
 import { AccountShell, Guard, Message, api, s, useSession } from "./shared";
 import type { SessionUser } from "@/lib/types";
 
@@ -14,6 +15,27 @@ const TABS = [
   { id: "look", label: "المظهر" },
   { id: "delete", label: "حذف الحساب" },
 ];
+
+/**
+ * تحويل حساب العميل إلى أسرة منتجة (قرار المالك 2026-11-26): بالحساب نفسه وجواله، وتبقى
+ * طلباته واشتراكاته ومحادثاته، ويستطيع بعدها الشراء من الأسر الأخرى كأي عميل.
+ */
+function BecomeFamily() {
+  const { tx, txb } = useTx();
+  return (
+    <section
+      className={s.card}
+      aria-labelledby="become-family-title"
+      id="become-family"
+    >
+      <h2 id="become-family-title">{txb("asCustomer.becomeTitle")}</h2>
+      <p className={s.muted}>{tx("asCustomer.becomeBody")}</p>
+      <Link className={s.button} href="/register">
+        {txb("asCustomer.becomeButton")}
+      </Link>
+    </section>
+  );
+}
 
 /** «معلوماتي»: بيانات الحساب الشخصي (طالب خدمة أو أسرة)، منفصلة عن حساب الإدارة. */
 export function MyAccount() {
@@ -122,6 +144,10 @@ export function MyAccount() {
                 </button>
               </form>
             )}
+            {tab === "profile" &&
+              me.role === "customer" &&
+              !me.familyName &&
+              !me.adminAccess && <BecomeFamily />}
             {tab === "password" && (
               <form
                 className={`${s.form} ${s.card}`}

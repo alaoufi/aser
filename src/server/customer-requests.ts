@@ -130,7 +130,8 @@ export async function openCustomerRequests(
     throw new HttpError(403, "طلبات العملاء تراها الأسر المنتجة المعتمدة");
   return (
     await db().query<CustomerRequest>(
-      `${select} WHERE r.status='open' AND r.expires_at>now()
+      // الأسرة تطلب من الأسر الأخرى كعميل (قرار المالك 2026-11-26): طلبها لا يظهر في لوحتها.
+      `${select} WHERE r.status='open' AND r.expires_at>now() AND r.user_id<>$1
          AND ($2::text IS NULL OR c.region_id=$2)
          AND ($3::text[] IS NULL OR r.category_id=ANY($3::text[]))
          AND u.suspended_at IS NULL AND u.deleted_at IS NULL
