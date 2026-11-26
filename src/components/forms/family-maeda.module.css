@@ -129,3 +129,11 @@
 .actions button {
   min-height: 52px;
 }
+.used {
+  color: var(--muted);
+  font-size: 13px;
+}
+.option:has(input[type="checkbox"]:not(:checked)) {
+  border-style: dashed;
+  color: var(--muted);
+}

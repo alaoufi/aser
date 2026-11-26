@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { maedaAxes, maedaOptionKey, type MaedaAxis } from "@/lib/maeda";
 import type { SiteTextKey } from "@/lib/site-texts";
 import { Message, api, s, useSiteTexts } from "./shared";
+import m from "./family-maeda.module.css";
 
 type Data = { hidden: string[]; used: Record<string, number> };
 
@@ -51,38 +52,38 @@ export function MaedaAdmin() {
     <section aria-labelledby="maeda-admin" className={`${s.card} ${s.form}`}>
       <h3 id="maeda-admin">{tx("maeda.adminTitle")}</h3>
       <p className={s.muted}>{tx("maeda.adminHint")}</p>
+      <p className={s.muted}>{tx("maeda.adminShown")}</p>
       <Message error={error} success={success} />
       {data &&
         groups.map(({ axis, values }) => (
-          <fieldset key={axis}>
+          <fieldset key={axis} className={m.axis}>
             <legend>{tx(`maeda.axis.${axis}` as SiteTextKey)}</legend>
-            {values.map((v) => {
-              const key = maedaOptionKey(axis, v);
-              const used = data.used[key] ?? 0;
-              return (
-                <label key={key} className={s.field}>
-                  <span>
+            <div className={m.options}>
+              {values.map((v) => {
+                const key = maedaOptionKey(axis, v);
+                const used = data.used[key] ?? 0;
+                return (
+                  <label key={key} className={m.option}>
                     <input
                       type="checkbox"
                       checked={!data.hidden.includes(key)}
                       disabled={busy}
                       onChange={() => toggle(key)}
-                    />{" "}
-                    <strong>
-                      {tx(
-                        (axis === "runner"
-                          ? "maeda.runner.on"
-                          : `maeda.${axis}.${v}`) as SiteTextKey,
-                      )}
-                    </strong>{" "}
-                    {tx("maeda.adminShown")}
-                  </span>
-                  {used > 0 && (
-                    <small>{tx("maeda.adminUsed", { count: used })}</small>
-                  )}
-                </label>
-              );
-            })}
+                    />
+                    {tx(
+                      (axis === "runner"
+                        ? "maeda.runner.on"
+                        : `maeda.${axis}.${v}`) as SiteTextKey,
+                    )}
+                    {used > 0 && (
+                      <small className={m.used}>
+                        {tx("maeda.adminUsed", { count: used })}
+                      </small>
+                    )}
+                  </label>
+                );
+              })}
+            </div>
           </fieldset>
         ))}
     </section>
