@@ -7,7 +7,20 @@ import { priceLabel, safeMediaUrl } from "@/components/public/ui";
  * «المائدة» — روح القالب المبسّط (قرار المالك 2026-11-26): أطباق اليوم الحقيقية صحونًا كبيرة على مفرش سدو
  * يمتد بعرض الشاشة. أكبر عنصر في الصفحة ومحورها؛ تُستعمل في الرئيسية ومائدة كل أسرة في صفحتها.
  * بلا أطباق: الصحن المعتمد على المفرش مع رسالة لائقة وزر. النصوص كلها تُمرَّر من «نصوص الموقع».
+ * «السُّفرة الممدودة» (2026-11-26): الصحون تقف **على** المفرش وأسماؤها على بطاقات فوقه، واسم الأسرة
+ * مكتوب على المائدة نفسها بمادتها. `cloth` يختار شكل المائدة من «مكتبة الموائد» (السدو افتراضيًا).
  */
+export const maedaCloths = [
+  "sadu",
+  "abyad",
+  "nahas",
+  "khoos",
+  "qatt",
+  "zal",
+  "tabliya",
+] as const;
+export type MaedaCloth = (typeof maedaCloths)[number];
+
 export function MaedaTable({
   id,
   title,
@@ -17,6 +30,7 @@ export function MaedaTable({
   all,
   empty,
   owner,
+  cloth = "sadu",
 }: {
   id: string;
   title: string;
@@ -32,9 +46,10 @@ export function MaedaTable({
   };
   /** اسم صاحب المائدة مكتوبًا على المفرش (مائدة الأسرة). */
   owner?: string;
+  cloth?: MaedaCloth;
 }) {
   return (
-    <section className="maeda" aria-labelledby={id}>
+    <section className="maeda" data-cloth={cloth} aria-labelledby={id}>
       <div className="maeda-top wrap">
         <h2 id={id} className="maeda-name">
           {title}
@@ -63,11 +78,13 @@ export function MaedaTable({
                         </span>
                       )}
                     </span>
-                    <strong>{p.name}</strong>
-                    {showFamily && <small>{p.producerName}</small>}
-                    <span className="maeda-price">
-                      {priceLabel(p.price)}
-                      {p.price !== null && <small> / {p.unit}</small>}
+                    <span className="maeda-tag">
+                      <strong>{p.name}</strong>
+                      {showFamily && <small>{p.producerName}</small>}
+                      <span className="maeda-price">
+                        {priceLabel(p.price)}
+                        {p.price !== null && <small> / {p.unit}</small>}
+                      </span>
                     </span>
                   </Link>
                 </li>
@@ -98,13 +115,13 @@ export function MaedaTable({
             </div>
           </div>
         )}
+        {/* اسم صاحب المائدة مكتوب عليها بمادتها، تحت الصحون فلا يتداخل معها. */}
+        {owner && (
+          <p className="maeda-owner">
+            <span>{owner}</span>
+          </p>
+        )}
       </div>
-      {/* اسم صاحب المائدة على شريط مطرّز تحتها، لا يتداخل مع الأطباق. */}
-      {owner && (
-        <p className="maeda-owner">
-          <span>{owner}</span>
-        </p>
-      )}
       {all && dishes.length > 0 && (
         <div className="wrap maeda-all">
           <Link className="text-link" href={all.href}>

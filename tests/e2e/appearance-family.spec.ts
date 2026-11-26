@@ -179,14 +179,37 @@ test.describe("simplified family page without dishes", () => {
     await expect(table.locator(".maeda-owner")).toHaveText(
       `أسرة المظهر ${withDish.slug}`,
     );
-    // الاسم لا يتداخل مع الأطباق.
-    const name = (await table.locator(".maeda-owner span").boundingBox())!;
-    const plate = (await table.locator(".maeda-dish").first().boundingBox())!;
-    expect(name.y).toBeGreaterThanOrEqual(plate.y + plate.height - 1);
-    expect(
-      await page.evaluate(
-        () => document.documentElement.scrollWidth <= innerWidth,
-      ),
-    ).toBe(true);
+    await expect(table).toHaveAttribute("data-cloth", "sadu");
+    // «مكتبة الموائد» (2026-11-26): في كل شكل يبقى الاسم مكتوبًا على المائدة نفسها تحت الصحون بلا
+    // تداخل، والصحن يقف على المفرش (المفرش يبدأ قبل نهاية الصحن)، ولا تمرير أفقي للصفحة.
+    for (const cloth of [
+      "sadu",
+      "abyad",
+      "nahas",
+      "khoos",
+      "qatt",
+      "zal",
+      "tabliya",
+    ]) {
+      await table.evaluate((el, c) => el.setAttribute("data-cloth", c), cloth);
+      const name = (await table.locator(".maeda-owner span").boundingBox())!;
+      const dish = (await table.locator(".maeda-dish").first().boundingBox())!;
+      const plate = (await table
+        .locator(".maeda-dish-plate")
+        .first()
+        .boundingBox())!;
+      const cloth_ = (await table.locator(".maeda-cloth").boundingBox())!;
+      expect(name.y, cloth).toBeGreaterThanOrEqual(dish.y + dish.height - 1);
+      expect(name.y + name.height, cloth).toBeLessThanOrEqual(
+        cloth_.y + cloth_.height,
+      );
+      expect(cloth_.y, cloth).toBeLessThan(plate.y + plate.height);
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= innerWidth,
+        ),
+        cloth,
+      ).toBe(true);
+    }
   });
 });
