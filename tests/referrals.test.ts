@@ -82,7 +82,20 @@ test(
         const base = rep - 1;
         await pool.query("SELECT setval('jdatna.member_no_seq', $1)", [base]);
         const after = await mk();
-        assert.equal(after.memberNo, base + 2, `بعد ${base} يأتي ${base + 2}`);
+        // اختبارات أخرى تعمل بالتوازي قد تأخذ الرقم التالي، فالمهم: المحجوز لا يُعطى لأحد،
+        // والرقم الجديد بعده وغير محجوز.
+        assert.ok(after.memberNo > rep, `بعد ${rep} المحجوز`);
+        assert.equal(await reserved(after.memberNo), false);
+        assert.equal(
+          (
+            await pool.query(
+              "SELECT count(*)::int AS n FROM jdatna.users WHERE member_no=$1",
+              [rep],
+            )
+          ).rows[0].n,
+          0,
+          `${rep} محجوز لا يُعطى`,
+        );
       }
 
       // رابط الدعوة برقم العضو.
