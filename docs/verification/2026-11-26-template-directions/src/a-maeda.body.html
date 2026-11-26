@@ -1,0 +1,111 @@
+<style>
+/* اتجاه أ «المائدة»: صحن كبير يقطعه طرف الشاشة على مفرش سدو. تحريري، الصورة هي العنصر اللافت الوحيد. */
+.a-hero { position: relative; overflow: hidden; padding: var(--s5) var(--s4) 0; min-height: 600px; background: linear-gradient(180deg, var(--paper) 0 62%, var(--cream) 62%); }
+.a-runner { position: absolute; inset-inline: 0; top: 392px; height: 26px; background: var(--sadu) repeat-x center / auto 26px; box-shadow: 0 6px 14px #2b1f1726; }
+.a-plate { position: absolute; width: 430px; inset-inline-start: -150px; top: 214px; filter: drop-shadow(0 26px 30px #2b1f1740); }
+.a-kicker { margin: 0; color: var(--rust); font-weight: 700; font-size: var(--t-sm); letter-spacing: .2px; }
+.a-hero h1 { margin: var(--s2) 0 var(--s3); font-size: 42px; line-height: 1.3; max-width: 11em; }
+.a-lead { margin: 0; max-width: 21em; color: var(--muted); font-size: var(--t-md); line-height: 1.8; }
+.a-search { position: relative; margin: -86px var(--s4) 0; padding: var(--s5) var(--s4) var(--s4); background: var(--surface); border-radius: 20px; box-shadow: 0 18px 40px #2b1f1722; }
+.a-sentence { font-family: "Amiri"; font-weight: 700; font-size: var(--t-xl); line-height: 2.1; margin: 0 0 var(--s4); }
+.a-slot { display: inline-flex; align-items: center; gap: 6px; padding: 0 4px; border-bottom: 2px solid var(--olive); color: var(--olive-deep); font-family: "Noto Sans Arabic"; font-weight: 600; font-size: var(--t-lg); }
+.a-slot.soft { color: #9a8a75; }
+.a-search .btn { width: 100%; min-height: 54px; font-size: var(--t-md); }
+.a-index { margin: var(--s6) var(--s4) 0; border-top: 1px solid var(--line); }
+.a-index a { display: grid; grid-template-columns: 1fr auto; align-items: center; padding: var(--s4) 0; border-bottom: 1px solid var(--line); color: inherit; text-decoration: none; }
+.a-index strong { font-size: var(--t-lg); display: block; }
+.a-index small { color: var(--muted); font-size: var(--t-sm); }
+.a-index .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #2f8a4b; box-shadow: 0 0 0 5px #2f8a4b22; margin-inline-end: 10px; vertical-align: middle; }
+.a-trust { display: flex; gap: var(--s2); align-items: center; margin: var(--s5) var(--s4); color: var(--olive-deep); font-weight: 700; font-size: var(--t-sm); }
+.a-trust .ico { color: var(--olive); width: 22px; height: 22px; }
+.a-sec { padding: var(--s6) var(--s4) var(--s7); }
+.a-sec h2 { font-family: "Amiri"; font-size: var(--t-2xl); margin: 0 0 var(--s4); line-height: 1.3; }
+.a-fam { display: grid; grid-template-columns: 72px 1fr 20px; gap: var(--s4); align-items: center; padding: var(--s4) 0; border-bottom: 1px solid var(--line); }
+.a-fam img { width: 72px; height: 72px; object-fit: contain; filter: drop-shadow(0 6px 8px #2b1f172e); }
+.a-fam strong { display: block; font-size: var(--t-md); }
+.a-fam small { color: var(--muted); font-size: var(--t-sm); display: block; }
+.a-fam .ico { color: var(--muted); }
+/* صفحة الأسرة */
+.f-head { padding: var(--s4) var(--s4) var(--s5); }
+.f-back { display: inline-flex; gap: 4px; align-items: center; color: var(--muted); font-size: var(--t-sm); text-decoration: none; }
+.f-head h1 { font-size: 40px; margin: var(--s3) 0 var(--s1); line-height: 1.3; }
+.f-meta { color: var(--muted); display: flex; gap: var(--s2); align-items: center; font-size: var(--t-sm); }
+.f-badge { display: inline-flex; gap: 6px; align-items: center; margin-top: var(--s3); padding: 6px 12px; border-radius: 999px; background: #e4ead9; color: var(--olive-deep); font-weight: 700; font-size: var(--t-xs); }
+.f-badge .ico { width: 18px; height: 18px; color: var(--olive); }
+.f-empty { margin: 0 var(--s4); padding: var(--s6) var(--s5); text-align: center; background: var(--surface); border-radius: 20px; box-shadow: 0 14px 34px #2b1f171a; position: relative; overflow: hidden; }
+.f-empty::before { content: ""; position: absolute; inset-inline: 0; top: 0; height: 10px; background: var(--sadu) repeat-x center / auto 10px; }
+.f-plate { width: 120px; height: 120px; margin: var(--s2) auto var(--s4); border-radius: 50%; border: 2px dashed #cbb89b; display: grid; place-items: center; color: #b5a081; font-family: "Amiri"; font-size: var(--t-lg); }
+.f-empty h2 { font-family: "Amiri"; font-size: var(--t-xl); margin: 0 0 var(--s2); }
+.f-empty p { margin: 0 auto var(--s5); color: var(--muted); max-width: 20em; line-height: 1.8; }
+.f-empty .btn { width: 100%; min-height: 54px; }
+.f-empty .btn + .btn { margin-top: var(--s3); }
+.f-near { display: grid; grid-auto-flow: column; grid-auto-columns: 62%; gap: var(--s3); overflow: hidden; }
+.f-card { background: var(--surface); border-radius: 18px; padding: var(--s3); box-shadow: 0 8px 20px #2b1f1714; }
+.f-card img { width: 100%; aspect-ratio: 1.3; object-fit: contain; }
+.f-card strong { display: block; } .f-card small { color: var(--muted); }
+.f-price { color: var(--rust); font-weight: 700; }
+@media (min-width: 1000px) {
+  #home { max-width: 1280px; margin: 0 auto; }
+  .topbar { padding: var(--s4) var(--s8); }
+  .a-hero { min-height: 640px; padding: var(--s7) var(--s8) 0; background: linear-gradient(180deg, var(--paper) 0 70%, var(--cream) 70%); }
+  .a-hero h1 { font-size: var(--t-4xl); max-width: 9em; }
+  .a-lead { font-size: var(--t-lg); max-width: 24em; }
+  .a-runner { top: 470px; height: 34px; background-size: auto 34px; }
+  .a-plate { width: 640px; inset-inline-start: auto; inset-inline-end: -40px; top: 40px; }
+  .a-search { position: absolute; top: 380px; inset-inline-start: var(--s8); width: 520px; margin: 0; }
+  #home > .a-search { position: relative; top: auto; margin: -250px var(--s8) 0; width: 540px; }
+  .a-index { display: grid; grid-template-columns: 1fr 1fr; gap: 0 var(--s7); margin: var(--s7) var(--s8) 0; }
+  .a-trust { margin: var(--s5) var(--s8); }
+  .a-sec { padding: var(--s6) var(--s8) var(--s8); }
+  .a-sec > .a-fam { display: inline-grid; width: calc(33.3% - 22px); margin-inline-end: 28px; vertical-align: top; }
+  .a-sec > .a-fam:nth-of-type(3n) { margin-inline-end: 0; }
+}
+</style>
+<div class="screen" id="home">
+  <header class="topbar"><span class="brand"><img src="../../../../public/brand/jdatna-symbol.webp" alt="">أكلات جدتنا</span><span class="menu"><svg class="ico"><use href="#i-menu"/></svg></span></header>
+  <section class="a-hero">
+    <p class="a-kicker">أكلات شعبية من بيوت أهلنا</p>
+    <h1 class="amiri">أكل بيت جدتك،<br>من أسرة في حيّك</h1>
+    <p class="a-lead">أسر منتجة تُراجَع مستنداتها، تطبخ في مدينتك. شوف الأطباق والأسعار، واطلب منهم مباشرة.</p>
+    <div class="a-runner"></div>
+    <img class="a-plate" src="../../../../public/food/traditional-platter-floating-v2.webp" alt="صحن مطازيز">
+  </section>
+  <form class="a-search">
+    <p class="a-sentence">أحب أكلات <span class="a-slot soft">مرقوق، جريش…</span><br>في <span class="a-slot">الرياض <svg class="ico" style="transform:rotate(-90deg)"><use href="#i-arrow"/></svg></span></p>
+    <span class="btn btn-primary"><svg class="ico"><use href="#i-search"/></svg> شوف الأكلات</span>
+  </form>
+  <nav class="a-index">
+    <a><span><strong><span class="dot"></span>متوفر الآن</strong><small>أطباق جاهزة اليوم، تستلمها أو توصلك</small></span><svg class="ico"><use href="#i-arrow"/></svg></a>
+    <a><span><strong><svg class="ico" style="vertical-align:-4px;margin-inline-end:8px;color:var(--rust)"><use href="#i-clock"/></svg>اطلبها مسبقًا</strong><small>حدّد يومك، والأسرة تجهزها لك</small></span><svg class="ico"><use href="#i-arrow"/></svg></a>
+  </nav>
+  <p class="a-trust"><svg class="ico"><use href="#i-check"/></svg>كل أسرة تُراجَع مستنداتها قبل الظهور.</p>
+  <section class="a-sec">
+    <h2>أسر تطبخ قريب منك</h2>
+    <div class="a-fam"><img src="../../../../public/food/clay-pot-floating-v2.webp" alt=""><span><strong>مطبخ أم سالم</strong><small>الرياض · مرقوق، جريش</small></span><svg class="ico"><use href="#i-arrow"/></svg></div>
+    <div class="a-fam"><img src="../../../../public/food/rice-plate-floating-v2.webp" alt=""><span><strong>سفرة أم فهد</strong><small>الرياض · كبسة، مندي</small></span><svg class="ico"><use href="#i-arrow"/></svg></div>
+    <div class="a-fam"><img src="../../../../public/food/grain-plate-floating-v2.webp" alt=""><span><strong>بيت القرصان</strong><small>الخرج · قرصان، معصوب</small></span><svg class="ico"><use href="#i-arrow"/></svg></div>
+  </section>
+</div>
+<div class="screen" id="family">
+  <header class="topbar"><span class="brand"><img src="../../../../public/brand/jdatna-symbol.webp" alt="">أكلات جدتنا</span><span class="menu"><svg class="ico"><use href="#i-menu"/></svg></span></header>
+  <div class="f-head">
+    <a class="f-back"><svg class="ico" style="transform:scaleX(-1)"><use href="#i-arrow"/></svg>الأسر المنتجة</a>
+    <h1 class="amiri">مطبخ أم سالم</h1>
+    <div class="f-meta"><svg class="ico"><use href="#i-pin"/></svg>الرياض · حي النسيم</div>
+    <span class="f-badge"><svg class="ico"><use href="#i-check"/></svg>مستنداتها مراجَعة</span>
+  </div>
+  <div class="f-empty">
+    <div class="f-plate">قائمة اليوم</div>
+    <h2>القائمة لم تُنشر هنا بعد</h2>
+    <p>كثير من الأسر تطبخ حسب الطلب؛ اسألهم بالواتساب أو شوف أسرًا قريبة نشرت أطباقها.</p>
+    <span class="btn btn-wa"><svg class="ico"><use href="#i-wa"/></svg>اسأل عن قائمة اليوم بالواتساب</span>
+    <span class="btn btn-ghost"><svg class="ico"><use href="#i-bell"/></svg>نبّهني إذا نشرت أطباقها</span>
+  </div>
+  <section class="a-sec">
+    <h2>أسر قريبة نشرت أطباقها</h2>
+    <div class="f-near">
+      <div class="f-card"><img src="../../../../public/food/grain-plate-floating-v2.webp" alt=""><strong>جريش أحمر</strong><small>بيت القرصان</small><div class="f-price">35 ر.س</div></div>
+      <div class="f-card"><img src="../../../../public/food/fish-tray-floating-v2.webp" alt=""><strong>صينية سمك</strong><small>سفرة أم فهد</small><div class="f-price">90 ر.س</div></div>
+    </div>
+  </section>
+</div>

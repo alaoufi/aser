@@ -1,0 +1,98 @@
+<style>
+/* اتجاه ب «القوس»: نافذة قوس نجدي واحدة كبيرة، عتبتها نسيج سدو، وكل الصفحة متناظرة هادئة حولها. */
+body { background: #efe4d1; }
+.b-wrap { text-align: center; padding: var(--s4) var(--s4) 0; }
+.b-kicker { display: inline-flex; align-items: center; gap: var(--s2); color: var(--rust); font-weight: 700; font-size: var(--t-sm); }
+.b-kicker::before, .b-kicker::after { content: ""; width: 26px; height: 1.5px; background: var(--rust); opacity: .5; }
+.b-wrap h1 { font-size: 38px; line-height: 1.35; margin: var(--s2) auto var(--s3); }
+.b-lead { color: var(--muted); max-width: 20em; margin: 0 auto var(--s5); line-height: 1.8; }
+.b-arch { position: relative; width: 300px; height: 330px; margin: 0 auto; border-radius: 150px 150px 0 0; background: radial-gradient(120% 80% at 50% 100%, #f9f1e2 0 55%, #e9d9bd 100%); box-shadow: inset 0 0 0 10px #fffaf2, inset 0 0 0 11px #d7c3a2, 0 30px 40px -22px #2b1f1755; overflow: hidden; }
+.b-arch img { position: absolute; width: 270px; left: 15px; bottom: 26px; filter: drop-shadow(0 18px 18px #2b1f1745); }
+.b-sill { width: 340px; height: 22px; margin: 0 auto; background: var(--sadu) repeat-x center / auto 22px; border-radius: 4px; box-shadow: 0 8px 16px #2b1f172e; }
+.b-search { margin: var(--s5) var(--s4) 0; background: var(--surface); border-radius: 22px; padding: var(--s4); box-shadow: 0 16px 34px #2b1f171f; text-align: start; }
+.b-field { display: grid; grid-template-columns: 92px 1fr; align-items: center; min-height: 56px; border-bottom: 1px solid var(--line); }
+.b-field:nth-of-type(2) { border-bottom: 0; }
+.b-field b { color: var(--muted); font-size: var(--t-sm); }
+.b-field span { font-size: var(--t-md); color: #9a8a75; display: flex; justify-content: space-between; align-items: center; }
+.b-field span.val { color: var(--ink); font-weight: 600; }
+.b-search .btn { width: 100%; margin-top: var(--s3); min-height: 54px; border-radius: 14px; }
+.b-seg { display: grid; grid-template-columns: 1fr 1fr; margin: var(--s4) var(--s4) 0; background: #e3d4bb; border-radius: 16px; padding: 5px; }
+.b-seg span { min-height: 48px; display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 12px; font-weight: 700; font-size: var(--t-sm); color: var(--muted); }
+.b-seg span.on { background: var(--surface); color: var(--ink); box-shadow: 0 3px 8px #2b1f1722; }
+.b-seg .dot { width: 9px; height: 9px; border-radius: 50%; background: #2f8a4b; }
+.b-trust { margin: var(--s5) auto 0; display: flex; gap: var(--s2); justify-content: center; align-items: center; color: var(--olive-deep); font-weight: 700; font-size: var(--t-sm); }
+.b-trust .ico { color: var(--olive); width: 22px; height: 22px; }
+.b-sec { padding: var(--s7) var(--s4); }
+.b-sec h2 { font-family: "Amiri"; font-size: var(--t-2xl); text-align: center; margin: 0 0 var(--s5); }
+.b-row { display: grid; grid-auto-flow: column; grid-auto-columns: 46%; gap: var(--s3); overflow: hidden; }
+.b-card { text-align: center; }
+.b-card .win { height: 150px; border-radius: 80px 80px 14px 14px; background: #f9f1e2; box-shadow: inset 0 0 0 6px #fffaf2, inset 0 0 0 7px #d7c3a2; display: grid; place-items: center; }
+.b-card img { width: 78%; filter: drop-shadow(0 8px 10px #2b1f173a); }
+.b-card strong { display: block; margin-top: var(--s2); }
+.b-card small { color: var(--muted); }
+/* الأسرة */
+.bf-head { text-align: center; padding: var(--s5) var(--s4) var(--s4); }
+.bf-avatar { width: 96px; height: 106px; margin: 0 auto var(--s3); border-radius: 48px 48px 12px 12px; background: var(--olive); color: #fff; display: grid; place-items: center; font-family: "Amiri"; font-size: 34px; box-shadow: inset 0 0 0 5px #ffffff30; }
+.bf-head h1 { font-size: 36px; margin: 0; line-height: 1.3; }
+.bf-meta { color: var(--muted); font-size: var(--t-sm); margin-top: 4px; }
+.bf-badge { display: inline-flex; gap: 6px; align-items: center; margin-top: var(--s3); color: var(--olive-deep); font-weight: 700; font-size: var(--t-xs); }
+.bf-badge .ico { width: 18px; height: 18px; color: var(--olive); }
+.bf-empty { margin: var(--s4) var(--s4) 0; text-align: center; }
+.bf-empty .b-arch { width: 220px; height: 200px; border-radius: 110px 110px 0 0; display: grid; place-items: center; }
+.bf-empty .b-sill { width: 250px; }
+.bf-empty .lines { color: #b5a081; font-family: "Amiri"; font-size: var(--t-lg); line-height: 2.2; }
+.bf-empty h2 { font-family: "Amiri"; font-size: var(--t-xl); margin: var(--s5) 0 var(--s2); }
+.bf-empty p { color: var(--muted); margin: 0 auto var(--s5); max-width: 20em; line-height: 1.8; }
+.bf-empty .btn { width: 100%; min-height: 54px; border-radius: 14px; }
+</style>
+<div class="screen" id="home">
+  <header class="topbar"><span class="brand"><img src="../../../../public/brand/jdatna-symbol.webp" alt="">أكلات جدتنا</span><span class="menu"><svg class="ico"><use href="#i-menu"/></svg></span></header>
+  <div class="sadu-band"></div>
+  <section class="b-wrap">
+    <span class="b-kicker">من بيت لبيت</span>
+    <h1 class="amiri">طبخ البيت على أصوله،<br>من أسرة قريبة</h1>
+    <p class="b-lead">أسر منتجة تُراجَع مستنداتها. شوف أطباقها وأسعارها، واتفق معها مباشرة.</p>
+    <div class="b-arch"><img src="../../../../public/food/rice-plate-floating-v2.webp" alt="طبق أرز"></div>
+    <div class="b-sill"></div>
+  </section>
+  <form class="b-search">
+    <label class="b-field"><b>أحب أكلات</b><span>مرقوق، جريش، كبسة…</span></label>
+    <label class="b-field"><b>في</b><span class="val">الرياض <svg class="ico" style="transform:rotate(-90deg);color:var(--muted)"><use href="#i-arrow"/></svg></span></label>
+    <span class="btn btn-primary"><svg class="ico"><use href="#i-search"/></svg> ابحث عن أكلة في مدينتي</span>
+  </form>
+  <div class="b-seg"><span class="on"><i class="dot"></i>متوفر الآن</span><span><svg class="ico" style="width:18px"><use href="#i-clock"/></svg>اطلبها مسبقًا</span></div>
+  <p class="b-trust"><svg class="ico"><use href="#i-check"/></svg>كل أسرة تُراجَع مستنداتها قبل الظهور.</p>
+  <section class="b-sec">
+    <h2>أسر تطبخ قريب منك</h2>
+    <div class="b-row">
+      <div class="b-card"><div class="win"><img src="../../../../public/food/clay-pot-floating-v2.webp" alt=""></div><strong>مطبخ أم سالم</strong><small>الرياض · مرقوق</small></div>
+      <div class="b-card"><div class="win"><img src="../../../../public/food/grain-plate-floating-v2.webp" alt=""></div><strong>بيت القرصان</strong><small>الخرج · جريش</small></div>
+      <div class="b-card"><div class="win"><img src="../../../../public/food/fish-tray-floating-v2.webp" alt=""></div><strong>سفرة أم فهد</strong><small>الرياض</small></div>
+    </div>
+  </section>
+</div>
+<div class="screen" id="family">
+  <header class="topbar"><span class="brand"><img src="../../../../public/brand/jdatna-symbol.webp" alt="">أكلات جدتنا</span><span class="menu"><svg class="ico"><use href="#i-menu"/></svg></span></header>
+  <div class="sadu-band"></div>
+  <div class="bf-head">
+    <div class="bf-avatar">أس</div>
+    <h1 class="amiri">مطبخ أم سالم</h1>
+    <div class="bf-meta">الرياض · حي النسيم</div>
+    <span class="bf-badge"><svg class="ico"><use href="#i-check"/></svg>مستنداتها مراجَعة</span>
+  </div>
+  <div class="bf-empty">
+    <div class="b-arch"><span class="lines">قائمة اليوم<br>…</span></div>
+    <div class="b-sill"></div>
+    <h2>القائمة لم تُنشر هنا بعد</h2>
+    <p>كثير من الأسر تطبخ حسب الطلب؛ اسألهم بالواتساب أو شوف أسرًا قريبة نشرت أطباقها.</p>
+    <span class="btn btn-wa"><svg class="ico"><use href="#i-wa"/></svg>اسأل عن قائمة اليوم بالواتساب</span>
+  </div>
+  <section class="b-sec">
+    <h2>أسر قريبة نشرت أطباقها</h2>
+    <div class="b-row">
+      <div class="b-card"><div class="win"><img src="../../../../public/food/grain-plate-floating-v2.webp" alt=""></div><strong>جريش أحمر</strong><small>35 ر.س · بيت القرصان</small></div>
+      <div class="b-card"><div class="win"><img src="../../../../public/food/fish-tray-floating-v2.webp" alt=""></div><strong>صينية سمك</strong><small>90 ر.س · سفرة أم فهد</small></div>
+      <div class="b-card"><div class="win"><img src="../../../../public/food/clay-pot-floating-v2.webp" alt=""></div><strong>مرقوق</strong><small>40 ر.س</small></div>
+    </div>
+  </section>
+</div>

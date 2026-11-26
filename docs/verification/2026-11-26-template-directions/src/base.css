@@ -1,0 +1,29 @@
+/* نماذج اتجاهات القالب المبسّط (2026-11-26) — ليست كود الموقع. الأصول المعتمدة من public/. */
+@font-face { font-family: "Amiri"; src: url(../../../../public/fonts/amiri-arabic-400.woff2) format("woff2"); }
+@font-face { font-family: "Noto Sans Arabic"; font-weight: 400 700; src: url(../../../../public/fonts/noto-sans-arabic-arabic.woff2) format("woff2"); }
+:root {
+  --paper: #f6efe3; --surface: #fffaf2; --cream: #efe3cc; --ink: #2b1f17; --muted: #6b5a48;
+  --olive: #4f5d36; --olive-deep: #3b4628; --rust: #9c2f1e; --gold: #c9a04a; --line: #e3d5bf;
+  --sadu: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='52' height='22'%3E%3Crect width='52' height='22' fill='%239c2f1e'/%3E%3Crect width='52' height='3' fill='%231f1a17'/%3E%3Crect y='19' width='52' height='3' fill='%231f1a17'/%3E%3Cpolygon points='0,19 13,6 26,19' fill='%231f1a17'/%3E%3Cpolygon points='26,3 39,16 52,3' fill='%23efe3cc'/%3E%3Cpolygon points='13,14 16,11 19,14 16,17' fill='%23efe3cc'/%3E%3Cpolygon points='36,8 39,5 42,8 39,11' fill='%239c2f1e'/%3E%3C/svg%3E");
+  /* سلّم الطباعة: 13 / 15 / 17 / 20 / 26 / 34 / 44 / 56 */
+  --t-xs: 13px; --t-sm: 15px; --t-md: 17px; --t-lg: 20px; --t-xl: 26px; --t-2xl: 34px; --t-3xl: 44px; --t-4xl: 56px;
+  /* إيقاع المسافات: 4 / 8 / 12 / 16 / 24 / 32 / 48 / 64 */
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 32px; --s7: 48px; --s8: 64px;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { font-family: "Noto Sans Arabic", sans-serif; color: var(--ink); background: var(--paper); line-height: 1.7; font-size: var(--t-md); -webkit-font-smoothing: antialiased; }
+.screen { display: none; }
+body[data-screen="home"] #home, body[data-screen="family"] #family { display: block; }
+.amiri { font-family: "Amiri", serif; font-weight: 700; }
+.ico { width: 20px; height: 20px; flex: none; }
+button, .btn { font: inherit; min-height: 48px; border-radius: 12px; border: 0; padding: 0 var(--s5); font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: var(--s2); cursor: pointer; text-decoration: none; }
+.btn-primary { background: var(--olive); color: #fff; }
+.btn-wa { background: #1f6f43; color: #fff; }
+.btn-ghost { background: transparent; color: var(--olive-deep); border: 1.5px solid var(--olive); }
+.topbar { display: flex; align-items: center; justify-content: space-between; padding: var(--s3) var(--s4); }
+.topbar img { height: 44px; }
+.brand { display: flex; align-items: center; gap: var(--s2); font-family: "Amiri"; font-weight: 700; font-size: var(--t-lg); }
+.menu { width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); display: grid; place-items: center; }
+.sadu-band { height: 14px; background: var(--sadu) repeat-x center / auto 14px; }
+.mock-note { display: block; width: fit-content; margin: 24px auto 16px; font-size: 11px; color: #8b7a66; background: #fffaf2cc; padding: 2px 8px; border-radius: 6px; }
