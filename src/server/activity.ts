@@ -1,4 +1,4 @@
-import { db } from "./db";
+import { databaseConfigured, db } from "./db";
 
 /**
  * أرقام الحركة (قرار المالك 2026-11-26): أرقام فقط، بلا أسماء عملاء ولا أسعار.
@@ -16,15 +16,22 @@ export type ActivityTotals = {
 
 /** مجموع الحركة في الموقع كله، للأسر والمنتجات الظاهرة للعملاء فقط. */
 export async function activityTotals(): Promise<ActivityTotals> {
-  const row = (
-    await db().query<ActivityTotals>(
-      `SELECT count(*)::int AS orders,
+  const none = { orders: 0, families: 0, products: 0 };
+  // بلا قاعدة (فحص السرعة) أو عند خطأ: لا يظهر الشريط، ولا تتعطل الرئيسية.
+  if (!databaseConfigured()) return none;
+  try {
+    const row = (
+      await db().query<ActivityTotals>(
+        `SELECT count(*)::int AS orders,
               count(DISTINCT o.producer_id)::int AS families,
               count(DISTINCT o.product_id)::int AS products
          FROM jdatna.order_requests o
-         JOIN jdatna.producer_profiles p ON p.id=o.producer_id AND p.status='approved'
+         JOIN jdatna.producer_profiles p ON p.id=o.producer_id AND p.status='approved' AND NOT p.review_only
         WHERE ${countedOrderSql()}`,
-    )
-  ).rows[0];
-  return row ?? { orders: 0, families: 0, products: 0 };
+      )
+    ).rows[0];
+    return row ?? none;
+  } catch {
+    return none;
+  }
 }

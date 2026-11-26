@@ -140,7 +140,7 @@ test.describe("activity numbers", () => {
     const db = (
       await pool!.query(
         `SELECT count(*)::int AS orders,count(DISTINCT o.producer_id)::int AS families,count(DISTINCT o.product_id)::int AS products
-           FROM jdatna.order_requests o JOIN jdatna.producer_profiles p ON p.id=o.producer_id AND p.status='approved'
+           FROM jdatna.order_requests o JOIN jdatna.producer_profiles p ON p.id=o.producer_id AND p.status='approved' AND NOT p.review_only
           WHERE o.status IN ('accepted','completed') AND o.request_hash<>'store-review'`,
       )
     ).rows[0];
