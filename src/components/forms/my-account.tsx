@@ -358,28 +358,27 @@ function InviteFriend() {
       .then(setD)
       .catch((e) => setError(e.message));
   }, []);
-  const text = "سجّل في أكلات جدتنا، أكل البيت من الأسر المنتجة:";
+  // كلمات البطاقة ونص الدعوة من «نصوص الموقع» (طلب المالك 2026-11-26).
+  const { tx, txb } = useTx();
+  const text = txb("invite.message");
   return (
-    <section className={`${s.form} ${s.card}`} aria-label="ادعُ صديقًا">
-      <h2>ادعُ صديقًا</h2>
-      <p className={s.muted}>
-        أرسل رابطك لصديق، فإذا سجّل به وأكّد جواله يُحسب لك. ويُحسب لك أيضًا إن
-        كتب رقمك في خانة «رقم الدعوة» عند تسجيله.
-      </p>
+    <section className={`${s.form} ${s.card}`} aria-label={txb("invite.title")}>
+      <h2>{txb("invite.title")}</h2>
+      <p className={s.muted}>{tx("invite.body")}</p>
       <Message error={error} success={msg} />
       {!d ? (
         !error && <p role="status">جارٍ التحميل…</p>
       ) : (
         <>
           <p className="invite-number">
-            رقم دعوتك: <strong dir="ltr">{d.memberNo}</strong>
+            {txb("invite.number")} <strong dir="ltr">{d.memberNo}</strong>
           </p>
           <p className="invite-balance" data-testid="invite-balance">
-            رصيدك: <strong>{d.count}</strong>{" "}
-            {d.count === 1 ? "مسجل" : "مسجلين"} عن طريقك
+            {txb("invite.balance")} <strong>{d.count}</strong>{" "}
+            {txb(d.count === 1 ? "invite.one" : "invite.many")}
           </p>
           <label className={s.field}>
-            رابط دعوتك
+            {txb("invite.link")}
             <input
               value={d.link}
               dir="ltr"
@@ -407,13 +406,13 @@ function InviteFriend() {
                 }
                 try {
                   await navigator.clipboard.writeText(`${text} ${d.link}`);
-                  setMsg("تم نسخ الرابط ✓");
+                  setMsg(txb("invite.copied"));
                 } catch {
-                  setMsg("انسخ الرابط من الخانة أعلاه.");
+                  setMsg(txb("invite.copyFallback"));
                 }
               }}
             >
-              شارك الرابط
+              {txb("invite.share")}
             </button>
             <a
               className={s.buttonSecondary}
@@ -421,7 +420,7 @@ function InviteFriend() {
               target="_blank"
               rel="noopener noreferrer"
             >
-              واتساب
+              {txb("invite.whatsapp")}
             </a>
           </div>
         </>

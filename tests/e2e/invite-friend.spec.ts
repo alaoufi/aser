@@ -65,6 +65,11 @@ test.describe("invite a friend", () => {
     await expect(box.getByTestId("invite-balance")).toContainText("رصيدك: 0");
     const link = await box.getByLabel("رابط دعوتك").inputValue();
     expect(link).toBe(`https://jdtna.sa/r/${no}`);
+    // رسالة الدعوة (طلب المالك 2026-11-26) ثم الرابط.
+    await expect(box.getByRole("link", { name: "واتساب" })).toHaveAttribute(
+      "href",
+      `https://wa.me/?text=${encodeURIComponent(`نرحب بدعوتكم للانضمام في منصة #اكلات_جدتنا\n${link}`)}`,
+    );
     await expect(box).toContainText(`رقم دعوتك: ${no}`);
     code = String(no);
     // رقم العضو فوق الاسم في قائمة الجوال (☰) أيضًا.
