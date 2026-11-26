@@ -136,6 +136,26 @@ test(
         assert.ok(visit.today >= 1 && visit.total >= visit.today);
         assert.ok(visit.online >= 1);
       }
+      // قرار المالك 2026-11-26: كل فتح أو تحديث زيارة، ولو من الزائر نفسه.
+      const again = await recordVisit(req(browser, "203.0.113.72"), null);
+      const third = await recordVisit(req(browser, "203.0.113.72"), null);
+      if (visit.visible && again.visible && third.visible) {
+        assert.ok(third.today >= visit.today + 2, "كل تحديث زيارة");
+        assert.ok(third.total >= visit.total + 2);
+      }
+      // نبضة «ما زال هنا» لا تُحسب زيارة.
+      const count = async () =>
+        Number(
+          (
+            await pool.query(
+              "SELECT visits FROM jdatna.site_visits_daily WHERE day=(now() AT TIME ZONE 'Asia/Riyadh')::date",
+            )
+          ).rows[0].visits,
+        );
+      const beforeBeat = await count();
+      const beat = await recordVisit(req(browser, "203.0.113.73"), null, false);
+      assert.equal(beat.visible, true);
+      assert.equal(await count(), beforeBeat);
       await setViewsPublic(admin, { public: false });
       assert.deepEqual(await recordVisit(req(browser), null), {
         visible: false,
