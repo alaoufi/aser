@@ -167,7 +167,7 @@ test.describe("member filters at the top of the page", () => {
     await expect(bar.getByText("عدّل خياراتي")).toBeVisible();
     await expect(food).toBeHidden();
     // «منطقتي» بلا منطقة محددة: يُطلب تحديدها في اللوحة نفسها.
-    await context.clearCookies({ name: "jdatna_region" });
+    await context.clearCookies({ name: "jdatna_visit_region" });
     await bar.getByRole("checkbox", { name: "خياراتي" }).click();
     await expect(page).not.toHaveURL(/mine=/);
     await bar.getByRole("checkbox", { name: "منطقتي" }).click();

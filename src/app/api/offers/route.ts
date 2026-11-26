@@ -1,3 +1,4 @@
+import { REGION_COOKIE } from "@/lib/region-cookie";
 import { api, json } from "@/server/http";
 import { sessionUser } from "@/server/auth";
 import { listOffers } from "@/server/offers";
@@ -15,8 +16,8 @@ export const GET = api(async (request) => {
       .get("cookie")
       ?.split(";")
       .map((s) => s.trim())
-      .find((s) => s.startsWith("jdatna_region="))
-      ?.slice("jdatna_region=".length) ?? "";
+      .find((s) => s.startsWith(`${REGION_COOKIE}=`))
+      ?.slice(REGION_COOKIE.length + 1) ?? "";
   const scope = await memberScope(
     user,
     parseMine(url.searchParams.get("mine") ?? ""),

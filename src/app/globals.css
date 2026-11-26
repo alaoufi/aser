@@ -3882,14 +3882,6 @@ main {
     display: block;
     position: relative;
   }
-  /* «حسب موقعك» سطر صغير تحت خانة المنطقة لا يُنزل السطر ولا يُزيح البحث. */
-  .hero-region .table-region-note {
-    font-size: 11px;
-    inset-inline-start: 4px;
-    position: absolute;
-    top: calc(100% + 2px);
-    white-space: nowrap;
-  }
   .hero-region select {
     font-size: 15px;
     padding-inline: 10px 26px;
@@ -3926,17 +3918,6 @@ main {
     border: 1px solid var(--line);
     box-sizing: border-box;
     height: 44px;
-  }
-  .hero-region .table-region-note {
-    background: var(--paper);
-    border-radius: 6px;
-    font-size: 10px;
-    inset-inline-end: 10px;
-    inset-inline-start: auto;
-    line-height: 1;
-    padding: 1px 4px;
-    pointer-events: none;
-    top: -7px;
   }
   .hero .food-showcase {
     align-items: stretch;

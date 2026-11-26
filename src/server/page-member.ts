@@ -1,3 +1,4 @@
+import { REGION_COOKIE } from "@/lib/region-cookie";
 import { cookies, headers } from "next/headers";
 import { sessionUser } from "./auth";
 import { getCategories, getCities } from "./catalog";
@@ -31,7 +32,7 @@ export async function pageMemberScope(
   const scope = await memberScope(
     user,
     parseMine(mine),
-    jar.get("jdatna_region")?.value ?? "",
+    jar.get(REGION_COOKIE)?.value ?? "",
     texts,
   );
   const choices: MineChoices = {};

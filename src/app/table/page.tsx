@@ -1,3 +1,4 @@
+import { REGION_COOKIE } from "@/lib/region-cookie";
 import { cookies } from "next/headers";
 import type { Metadata } from "next";
 import { getCities, todayProducts } from "@/server/catalog";
@@ -18,7 +19,7 @@ export default async function TablePage({
   const cities = await getCities();
   const regions = regionsOf(cities);
   const asked = typeof raw.region === "string" ? raw.region : undefined;
-  const saved = (await cookies()).get("jdatna_region")?.value ?? "";
+  const saved = (await cookies()).get(REGION_COOKIE)?.value ?? "";
   const region =
     [asked ?? saved].find((r) => r && regions.some((x) => x.id === r)) ?? "";
   const products = await todayProducts({ region });

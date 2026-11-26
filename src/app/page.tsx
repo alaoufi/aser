@@ -1,3 +1,4 @@
+import { REGION_COOKIE } from "@/lib/region-cookie";
 import { T } from "@/components/site-texts";
 import { productStatusLabels } from "@/lib/site-texts";
 import { MineBar } from "@/components/public/mine-bar";
@@ -35,6 +36,8 @@ import {
 import { ProductCard, ProducerCard } from "@/components/public/ui";
 import { ForYou } from "@/components/public/for-you";
 import { recentCertificates } from "@/server/certificates";
+import { activityTotals } from "@/server/activity";
+import { countLabel } from "@/components/public/ui";
 export const dynamic = "force-dynamic";
 export default async function Home({
   searchParams,
@@ -42,11 +45,11 @@ export default async function Home({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const raw = await searchParams;
-  // المنطقة أولًا (المختارة في الرابط، وإلا المحفوظة في الجهاز)، ثم كل ما يُعرض يتبعها.
+  // المنطقة: المختارة في الرابط أو في هذه الزيارة، وإلا «كل المناطق» (قرار المالك 2026-11-26).
   const [cities, jar] = await Promise.all([getCities(), cookies()]);
   const regions = regionsOf(cities);
   const asked = typeof raw.region === "string" ? raw.region : undefined;
-  const saved = jar.get("jdatna_region")?.value ?? "";
+  const saved = jar.get(REGION_COOKIE)?.value ?? "";
   const region =
     [asked ?? saved].find((r) => r && regions.some((x) => x.id === r)) ?? "";
   const scope = await pageMemberScope(raw.mine);
@@ -59,6 +62,7 @@ export default async function Home({
     producers,
     certificates,
     today,
+    activity,
   ] = await Promise.all([
     visitorTemplate(),
     getSiteTexts(),
@@ -69,6 +73,7 @@ export default async function Home({
     regionalProducers({ region, mine }),
     recentCertificates(),
     todayProducts({ region, mine }),
+    activityTotals(),
   ]);
   const homeProducts = [...products.local, ...products.nationwide].slice(0, 4);
   const homeProducers = [...producers.local, ...producers.nationwide].slice(
@@ -143,8 +148,6 @@ export default async function Home({
               }))}
               value={region}
               path="/"
-              autoLabel={texts["region.auto"]}
-              detectingLabel={texts["region.detecting"]}
             />
           </div>
         </div>
@@ -312,6 +315,33 @@ export default async function Home({
         </section>
       )}
       <AdSlot placement="home_bottom" className="wrap" />
+      {/* أرقام الحركة أسفل الرئيسية (قرار المالك 2026-11-26): أرقام فقط، بلا أسماء ولا أسعار. */}
+      {activity.orders > 0 && (
+        <section
+          className="wrap activity-stats"
+          aria-labelledby="activity-stats-title"
+        >
+          <h2 id="activity-stats-title">
+            <T k="stats.title" />
+          </h2>
+          <dl>
+            {(
+              [
+                ["orders", "stats.orders"],
+                ["families", "stats.families"],
+                ["products", "stats.products"],
+              ] as const
+            ).map(([key, label]) => (
+              <div key={key}>
+                <dt>
+                  <T k={label} />
+                </dt>
+                <dd>{countLabel(activity[key])}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      )}
     </>
   );
 }

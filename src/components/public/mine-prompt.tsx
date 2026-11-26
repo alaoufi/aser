@@ -3,10 +3,9 @@ import { T } from "@/components/site-texts";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { api } from "@/components/forms/session";
+import { setVisitRegion } from "@/lib/region-cookie";
 import type { MineChoices } from "@/server/page-member";
 import type { MemberScope } from "@/server/member-scope";
-
-const year = 60 * 60 * 24 * 365;
 
 /**
  * ما يحتاجه الخيار ليعمل، داخل لوحة «اعرض لي» نفسها:
@@ -37,7 +36,7 @@ export function MinePrompt({
           defaultValue=""
           onChange={(e) => {
             if (!e.target.value) return;
-            document.cookie = `jdatna_region=${encodeURIComponent(e.target.value)}; path=/; max-age=${year}; samesite=lax`;
+            setVisitRegion(e.target.value);
             router.refresh();
           }}
         >
