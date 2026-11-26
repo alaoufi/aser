@@ -1,5 +1,10 @@
 "use client";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import type { SiteTextKey } from "@/lib/site-texts";
+import { useTx } from "@/components/site-texts";
+import { isFamilyAccount, useSession } from "@/components/forms/session";
 
 /**
  * «ألوان الموقع» (طلب المالك 2026-11-25): لوحات ألوان تراثية يختارها الزائر، تُحفظ في جهازه
@@ -26,7 +31,33 @@ type Texts = { button: string; title: string; note: string } & Record<
 const swatch = (p: (typeof PALETTES)[number]) =>
   `linear-gradient(135deg, ${p.from} 0 50%, ${p.to} 50% 100%)`;
 
-export function AppearancePicker({ texts }: { texts: Texts }) {
+/** أقسام «هوية الأسرة» كما في لوحة الأسرة (/dashboard/identity#القسم). */
+const IDENTITY_PARTS = [
+  "data",
+  "brand",
+  "table",
+  "location",
+  "contact",
+] as const;
+
+/**
+ * زر الألوان (طلب المالك 2026-11-26): نافذة بتبويبات واضحة: «ألوان الموقع» و«القالب»، وللأسرة
+ * «هوية الأسرة» بأقسامها (بيانات الأسرة، الألوان والزخرفة، المائدة، الموقع، ظهور التواصل).
+ */
+export function AppearancePicker({
+  texts,
+  template,
+}: {
+  texts: Texts;
+  template: "classic" | "najdi";
+}) {
+  const { tx, txb } = useTx();
+  const router = useRouter();
+  const { user } = useSession();
+  const family = isFamilyAccount(user);
+  const [tab, setTab] = useState<"palette" | "template" | "identity">(
+    "palette",
+  );
   const [open, setOpen] = useState(false);
   const [current, setCurrent] = useState<PaletteKey>("sadu");
   const box = useRef<HTMLDivElement>(null);
@@ -59,6 +90,15 @@ export function AppearancePicker({ texts }: { texts: Texts }) {
     }
   }
   const now = PALETTES.find((p) => p.key === current) ?? PALETTES[0];
+  const pickTemplate = (t: "classic" | "najdi") => {
+    document.cookie = `jdatna_template=${t}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
+    router.refresh();
+  };
+  const tabs = [
+    ["palette", texts.title],
+    ["template", txb("appearance.tab.template")],
+    ...(family ? [["identity", txb("fidentity.title")]] : []),
+  ] as [typeof tab, string][];
   return (
     <div className="appearance" ref={box}>
       <button
@@ -76,29 +116,101 @@ export function AppearancePicker({ texts }: { texts: Texts }) {
         <div
           className="appearance-panel"
           role="dialog"
-          aria-label={texts.title}
+          aria-label={txb("appearance.title")}
         >
-          <strong className="appearance-title">{texts.title}</strong>
-          <div className="appearance-swatches">
-            {PALETTES.map((p) => (
+          <strong className="appearance-title">
+            {txb("appearance.title")}
+          </strong>
+          <div
+            className="appearance-tabs"
+            role="tablist"
+            aria-label={txb("appearance.title")}
+          >
+            {tabs.map(([id, label]) => (
               <button
-                key={p.key}
+                key={id}
                 type="button"
-                className="appearance-swatch"
-                aria-pressed={current === p.key}
-                onClick={() => choose(p.key)}
+                role="tab"
+                id={`appearance-tab-${id}`}
+                aria-selected={tab === id}
+                aria-controls="appearance-tabpanel"
+                className="appearance-tab"
+                onClick={() => setTab(id)}
               >
-                <span
-                  className="appearance-dot"
-                  style={{ background: swatch(p) }}
-                />
-                <span>{texts[p.key]}</span>
+                {label}
               </button>
             ))}
           </div>
-          {texts.note && (
-            <small className="appearance-note">{texts.note}</small>
-          )}
+          <div
+            id="appearance-tabpanel"
+            role="tabpanel"
+            aria-labelledby={`appearance-tab-${tab}`}
+          >
+            {tab === "palette" && (
+              <>
+                <div className="appearance-swatches">
+                  {PALETTES.map((p) => (
+                    <button
+                      key={p.key}
+                      type="button"
+                      className="appearance-swatch"
+                      aria-pressed={current === p.key}
+                      onClick={() => choose(p.key)}
+                    >
+                      <span
+                        className="appearance-dot"
+                        style={{ background: swatch(p) }}
+                      />
+                      <span>{texts[p.key]}</span>
+                    </button>
+                  ))}
+                </div>
+                {texts.note && (
+                  <small className="appearance-note">{texts.note}</small>
+                )}
+              </>
+            )}
+            {tab === "template" && (
+              <div className="appearance-templates">
+                {(["classic", "najdi"] as const).map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    className="appearance-swatch"
+                    aria-pressed={template === t}
+                    onClick={() => pickTemplate(t)}
+                  >
+                    <span
+                      className={`appearance-template-mark is-${t}`}
+                      aria-hidden="true"
+                    />
+                    <span>
+                      {txb(`appearance.template.${t}` as SiteTextKey)}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+            {tab === "identity" && family && (
+              <ul className="appearance-identity">
+                {IDENTITY_PARTS.map((part) => (
+                  <li key={part}>
+                    <Link
+                      href={`/dashboard/identity${part === "data" ? "" : `#${part}`}`}
+                      onClick={() => setOpen(false)}
+                    >
+                      <strong>
+                        {txb(`fidentity.tab.${part}` as SiteTextKey)}
+                      </strong>
+                      <small>
+                        {tx(`appearance.hint.${part}` as SiteTextKey)}
+                      </small>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
       )}
     </div>

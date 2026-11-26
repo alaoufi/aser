@@ -231,3 +231,80 @@ body {
     gap: 6px;
   }
 }
+
+/* تبويبات نافذة زر الألوان (طلب المالك 2026-11-26) */
+.appearance-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 12px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+}
+.appearance-tab {
+  flex: 1;
+  min-height: 38px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 9px;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.appearance-tab[aria-selected="true"] {
+  background: var(--olive);
+  color: #fff;
+}
+.appearance-templates {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+.appearance-template-mark {
+  display: block;
+  width: 44px;
+  height: 34px;
+  border-radius: 8px;
+  border: 2px solid var(--line-strong);
+  background: var(--paper);
+}
+.appearance-template-mark.is-najdi {
+  border-radius: 22px 22px 6px 6px;
+  background:
+    var(--sadu-thin) repeat-x bottom / auto 6px,
+    var(--cream);
+}
+.appearance-identity {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.appearance-identity a {
+  display: grid;
+  gap: 2px;
+  min-height: 48px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+  color: var(--ink);
+  text-decoration: none;
+}
+.appearance-identity a:hover,
+.appearance-identity a:focus-visible {
+  border-color: var(--olive);
+}
+.appearance-identity strong {
+  font-size: 14px;
+}
+.appearance-identity small {
+  color: var(--muted);
+  font-size: 12px;
+}
