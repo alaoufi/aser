@@ -2177,11 +2177,17 @@ button.food-dish:focus-visible .food-dish-visual {
   box-shadow: 0 3px 10px #38291f26;
 }
 .food-showcase-main > img:not([data-nimg]) {
+  aspect-ratio: 1;
   border-radius: 50%;
-  inset: 8% 12% 22%;
-  height: auto;
-  width: auto;
   box-shadow: 0 10px 28px #38291f30;
+  height: auto;
+  inset: 6% auto auto 50%;
+  transform: translateX(-50%);
+  width: 62%;
+}
+/* البيانات فوق الصورة دائمًا، أسفل القوس. */
+.food-showcase-main:has(.food-showcase-caption) > img {
+  max-height: 72%;
 }
 .food-dish.is-active .food-dish-visual {
   outline: 3px solid var(--olive);
@@ -2192,7 +2198,8 @@ button.food-dish:focus-visible .food-dish-visual {
   outline: 3px solid var(--rust);
   outline-offset: 3px;
 }
-.food-showcase-caption {
+.food-showcase .food-showcase-caption {
+  z-index: 3;
   position: absolute;
   inset-inline: 14%;
   bottom: 4%;
@@ -2206,7 +2213,7 @@ button.food-dish:focus-visible .food-dish-visual {
   line-height: 1.45;
   text-align: center;
 }
-.food-showcase-caption strong {
+.food-showcase .food-showcase-caption strong {
   font-size: 12.5px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2276,12 +2283,12 @@ button.food-dish:focus-visible .food-dish-visual {
     margin-top: 10px;
     max-width: none;
   }
-  .food-showcase-caption {
+  .food-showcase .food-showcase-caption {
     inset-inline: 6%;
     padding: 4px 6px;
     font-size: 10px;
   }
-  .food-showcase-caption strong {
+  .food-showcase .food-showcase-caption strong {
     font-size: 11px;
   }
 }
