@@ -291,6 +291,7 @@ export default async function RootLayout({
                   zafaran: texts["palette.zafaran"] || "الزعفران",
                   neel: texts["palette.neel"] || "النيلة",
                 }}
+                template={template}
               />
               <div className="header-actions">
                 <TemplateSwitcher current={template} className="desktop-only" />
