@@ -61,6 +61,31 @@ test.describe("templates × palettes × sizes", () => {
             await expect(
               page.getByText("كل أسرة تُراجَع مستنداتها قبل الظهور."),
             ).toBeVisible();
+            // «أحب أكلات» في سطر واحد، ولا تتداخل التسمية مع حقلها (تعديل المالك 2026-11-26).
+            await expect(
+              page.getByRole("searchbox", { name: "أحب أكلات" }),
+            ).toBeVisible();
+            const fit = await page.evaluate(() =>
+              [...document.querySelectorAll(".simple-search-row")].map(
+                (row) => {
+                  const label = row.querySelector(".simple-search-label")!;
+                  const field = row.querySelector("input, select")!;
+                  const l = label.getBoundingClientRect();
+                  const f = field.getBoundingClientRect();
+                  const line =
+                    parseFloat(getComputedStyle(label).lineHeight) || 24;
+                  return {
+                    oneLine: l.height <= line * 1.2,
+                    apart: l.right <= f.left + 1 || f.right <= l.left + 1,
+                  };
+                },
+              ),
+            );
+            for (const r of fit)
+              expect(r, `${template}/${palette}/${w}`).toEqual({
+                oneLine: true,
+                apart: true,
+              });
             // بلا الطاولة الخشبية وبلا الشارة العائمة.
             await expect(page.locator(".today-table")).toHaveCount(0);
             await expect(

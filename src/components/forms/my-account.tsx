@@ -234,8 +234,8 @@ function Appearance() {
         <legend className="sr-only">شكل الموقع</legend>
         {(
           [
-            ["classic", "الكلاسيكي", "ألوان الورق والزيتون، هادئ وواضح."],
-            ["najdi", "الباب النجدي", "زخارف الباب النجدي ونقوشه التراثية."],
+            ["classic", tx("template.classic"), tx("template.classicHint")],
+            ["najdi", tx("template.najdi"), tx("template.najdiHint")],
             ["simple", tx("template.simple"), tx("template.simpleHint")],
           ] as const
         ).map(([id, label, hint]) => (

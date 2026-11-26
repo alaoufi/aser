@@ -7,7 +7,7 @@ import { ProducerCard } from "@/components/public/ui";
 
 /**
  * الرئيسية في القالب المبسّط (طلب المالك 2026-11-26): عنوان كبير، وبطاقة بحث بسطرين
- * («أشتهي» و«في» المنطقة)، وبطاقتا التوفر، وقوس بطبق واحد، وسطر ثقة، ثم أسر حقيقية قريبة.
+ * («أحب أكلات» و«في» المنطقة)، وبطاقتا التوفر، وقوس بطبق واحد، وسطر ثقة، ثم أسر حقيقية قريبة.
  * بلا الطاولة الخشبية وبلا الشارة العائمة. كل النصوص من «نصوص الموقع».
  */
 export function SimpleHome({
@@ -85,7 +85,7 @@ export function SimpleHome({
         <figure className="simple-arch">
           <Image
             src="/food/rice-plate-floating-v2.webp"
-            alt="طبق أرز"
+            alt={t("simple.archAlt")}
             width={560}
             height={560}
             sizes="(max-width:600px) 70vw, 380px"

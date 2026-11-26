@@ -1083,7 +1083,7 @@ export function TemplateAdmin() {
           </fieldset>
           {template && (
             <fieldset className={`${s.card} ${s.form}`}>
-              <legend>القوالب التي يختار منها الزائر في «المظهر»</legend>
+              <legend>{tx("admin.lookTemplates")}</legend>
               {options.map(([id, label]) => (
                 <label key={id} className={s.field}>
                   <span>
@@ -1099,7 +1099,7 @@ export function TemplateAdmin() {
                       }
                     />{" "}
                     {label}
-                    {id === template ? " (الافتراضي، متاح دائمًا)" : ""}
+                    {id === template ? ` ${tx("admin.lookDefaultAlways")}` : ""}
                   </span>
                 </label>
               ))}
@@ -1107,7 +1107,7 @@ export function TemplateAdmin() {
           )}
           {template && (
             <fieldset className={`${s.card} ${s.form}`}>
-              <legend>ألوان الموقع: الافتراضي والمتاح للزائر</legend>
+              <legend>{tx("admin.lookPalettes")}</legend>
               {paletteKeys.map((k) => (
                 <div key={k} className={s.field}>
                   <span>
@@ -1122,7 +1122,7 @@ export function TemplateAdmin() {
                         }
                       />{" "}
                       <strong>{paletteName(k)}</strong>
-                      {palette === k ? " (الافتراضي)" : ""}
+                      {palette === k ? ` ${tx("admin.lookDefault")}` : ""}
                     </label>{" "}
                     <label>
                       <input
@@ -1136,7 +1136,7 @@ export function TemplateAdmin() {
                           })
                         }
                       />{" "}
-                      متاح للزائر
+                      {tx("admin.lookAvailable")}
                     </label>
                   </span>
                 </div>

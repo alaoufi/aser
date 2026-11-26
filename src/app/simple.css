@@ -135,7 +135,8 @@
 }
 .simple-search-row {
   display: grid;
-  grid-template-columns: 64px minmax(0, 1fr);
+  /* عمود التسمية بعرض «أحب أكلات» كاملة في سطر واحد، والسطران متحاذيان. */
+  grid-template-columns: 6.2em minmax(0, 1fr);
   align-items: center;
   gap: 10px;
   min-height: 52px;
@@ -147,6 +148,7 @@
 .simple-search-label {
   color: var(--muted);
   font-weight: 700;
+  white-space: nowrap;
 }
 .simple-search-row input {
   width: 100%;
@@ -244,7 +246,7 @@
     font-size: 16px;
   }
   .simple-search-row {
-    grid-template-columns: 54px minmax(0, 1fr);
+    grid-template-columns: 5.6em minmax(0, 1fr);
     padding-inline: 10px;
   }
   .simple-arch {
