@@ -186,6 +186,10 @@ export async function deleteAccount(user: SessionUser, input: unknown) {
       "DELETE FROM jdatna.apns_devices WHERE user_id=$1",
       "DELETE FROM jdatna.member_interests WHERE user_id=$1",
       "DELETE FROM jdatna.member_product_views WHERE user_id=$1",
+      // «تنبيهات الأسرة»: متابعاته وما وصله.
+      "DELETE FROM jdatna.family_follows WHERE user_id=$1",
+      "DELETE FROM jdatna.family_alerts_sent WHERE user_id=$1",
+      "DELETE FROM jdatna.member_alerts WHERE user_id=$1",
       // «دليلي» له، وهو في «دليلي» عند الآخرين.
       "DELETE FROM jdatna.directory_entries WHERE owner_id=$1 OR customer_id=$1",
       // طلباته المنشورة للأسر.

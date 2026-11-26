@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   AdminSummary,
   AppLinksAdmin,
+  AlertsLimitAdmin,
   DomainVerificationAdmin,
   StoreReviewAdmin,
   SuggestionsAdmin,
@@ -327,7 +328,10 @@ export function Admin({ section }: { section?: string } = {}) {
           ) : active === "texts" ? (
             <TextsAdmin />
           ) : active === "app" ? (
-            <AppLinksAdmin />
+            <>
+              <AppLinksAdmin />
+              <AlertsLimitAdmin />
+            </>
           ) : active === "verification" ? (
             <DomainVerificationAdmin />
           ) : active === "review" ? (

@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
  * الثابتة تغطي ما تحتها، فلا تظهر.
  */
 const PRIVATE =
-  /^\/(admin|dashboard|me|messages|courier|couriers|directory|requests|orders|contracts|my-subscriptions|register|login|account)(\/|$)/;
+  /^\/(admin|dashboard|me|messages|courier|couriers|directory|requests|orders|contracts|my-subscriptions|alerts|register|login|account)(\/|$)/;
 
 export function VerifiedStoreGate({ children }: { children: React.ReactNode }) {
   const path = usePathname() || "/";

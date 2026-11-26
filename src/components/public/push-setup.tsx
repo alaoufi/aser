@@ -115,6 +115,33 @@ async function subscribe() {
   });
 }
 
+/**
+ * يطلب إذن إشعارات الجهاز ويربطه بالحساب (من ضغطة الزائر نفسه، مثل «تفعيل التنبيهات»).
+ * يعيد true إن صار الجهاز مربوطًا؛ الرفض أو المتصفح غير الداعم لا يرمي.
+ */
+export async function enableDevicePush(): Promise<boolean> {
+  try {
+    const push = nativePush();
+    if (push) {
+      const { receive } = await push.requestPermissions();
+      if (receive !== "granted") return false;
+      await registerNative(push);
+      return true;
+    }
+    if (!("Notification" in window) || !("serviceWorker" in navigator))
+      return false;
+    const permission =
+      Notification.permission === "default"
+        ? await Notification.requestPermission()
+        : Notification.permission;
+    if (permission !== "granted") return false;
+    await subscribe();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** عند الخروج: يوقف إشعارات الحساب على هذا الجهاز. */
 export async function stopPushOnLogout() {
   try {

@@ -15,7 +15,7 @@ import {
   siteTextTitleKeys,
   type SiteTextKey,
 } from "@/lib/site-texts";
-import { api, Message, s } from "./shared";
+import { api, Message, s, useSiteTexts } from "./shared";
 import { PasswordField } from "./password-field";
 import { adminCache, fetchAdmin } from "./admin-cache";
 import { SectionIcon as AdminIcon } from "./section-icon";
@@ -1806,6 +1806,49 @@ export function DomainVerificationAdmin() {
           </button>
         </form>
       ) : null}
+    </section>
+  );
+}
+
+/** «تنبيهات الأسرة»: الحد اليومي لما يصل العضو من تنبيهات (الافتراضي 10)؛ ما زاد يُكتم ولا يتكرر. */
+export function AlertsLimitAdmin() {
+  const r = useResource<{ dailyLimit: number }>("/api/admin/alerts-settings");
+  const { tx } = useSiteTexts();
+  return (
+    <section aria-labelledby="alerts-limit-title">
+      <h2 id="alerts-limit-title">{tx("admin.alertsTitle")}</h2>
+      <p className={s.muted}>{tx("admin.alertsIntro")}</p>
+      <Message error={r.error} success={r.success} />
+      {r.data && (
+        <form
+          key={r.data.dailyLimit}
+          className={`${s.card} ${s.form}`}
+          onSubmit={(e) => {
+            e.preventDefault();
+            const v = Number(
+              new FormData(e.currentTarget).get("dailyLimit") ?? 0,
+            );
+            r.write("PUT", { dailyLimit: v });
+          }}
+        >
+          <label className={s.field}>
+            <span>{tx("admin.alertsLimit")}</span>
+            <input
+              type="number"
+              name="dailyLimit"
+              min={1}
+              max={100}
+              step={1}
+              required
+              defaultValue={r.data.dailyLimit}
+              inputMode="numeric"
+            />
+          </label>
+          <button className={s.button} disabled={r.busy}>
+            {tx("admin.alertsSave")}
+          </button>
+        </form>
+      )}
     </section>
   );
 }

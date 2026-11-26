@@ -583,6 +583,19 @@ export async function saveProduct(
     fieldShown(await getProductFields(), "description")
   )
     throw new HttpError(400, "اكتب تفاصيل المنتج في خمسة أحرف على الأقل");
+  const saved = await saveProductRow(user, value, editing);
+  // «تنبيهات الأسرة»: المنتج الجديد ينتظر مهلة التجميع ثم يُبلَّغ به المتابعون (بعد الحفظ فقط).
+  if (!editing) {
+    const { queueNewProduct } = await import("./family-alerts");
+    await queueNewProduct(saved.id);
+  }
+  return saved;
+}
+async function saveProductRow(
+  user: SessionUser,
+  value: z.infer<typeof productSchema>,
+  editing: boolean,
+) {
   return transaction(async (client) => {
     const producer = (
       await client.query(

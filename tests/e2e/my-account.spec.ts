@@ -45,6 +45,8 @@ test("admin's personal account is separate from the admin account and edits name
   await personal.getByText("قائمة حسابي").click();
   await expect(personal.getByRole("link", { name: "طلباتي" })).toBeVisible();
   await expect(personal.getByRole("link", { name: "معلوماتي" })).toBeVisible();
+  // تُغلق القائمة كما يفعل المستخدم (بعد «تنبيهاتي» صارت أطول فتغطي النموذج على الجوال وهي مفتوحة).
+  await personal.getByText("قائمة حسابي").click();
   // الحساب الشخصي منفصل: «لوحة الإدارة» في قائمة الحساب أعلى الموقع فقط.
   await expect(
     page.locator("main").getByRole("button", { name: "لوحة الإدارة" }),
