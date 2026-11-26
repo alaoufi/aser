@@ -102,12 +102,15 @@ test("site texts can be searched by place, label or wording", async ({
   const search = page.getByLabel("بحث في النصوص");
   // بالهمزة أو دونها.
   await search.fill("إعتماد");
-  await expect(page.getByLabel(/رسالة المباركة بعد الاعتماد/)).toHaveValue(
-    /نسأل الله لنا ولكم التوفيق/,
-  );
+  // القائمة مضغوطة: كل نص سطر باسم وصفه يعرض نصه الحالي (تعديله من زر ⋮).
+  await expect(
+    page.getByRole("group", { name: /رسالة المباركة بعد الاعتماد/ }),
+  ).toContainText(/نسأل الله لنا ولكم التوفيق/);
   await expect(page.getByLabel("نص خانة البحث")).toHaveCount(0);
   await search.fill("مائدة");
-  await expect(page.getByLabel("عنوان المائدة")).toBeVisible();
+  await expect(
+    page.getByRole("group", { name: "عنوان المائدة", exact: true }),
+  ).toBeVisible();
   await expect(page.getByText("1 نتيجة")).toBeVisible();
   await search.fill("كلمة غير موجودة");
   await expect(page.getByText("لا توجد نصوص مطابقة.")).toBeVisible();
