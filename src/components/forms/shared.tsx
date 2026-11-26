@@ -185,17 +185,20 @@ export const FAMILY_TABS: FolderTab[] = [
 ];
 function FamilyTabs({ children }: { children: React.ReactNode }) {
   const { user } = useSession();
+  const { tx } = useSiteTexts();
   const path = usePathname();
   const tab = FAMILY_TABS.find((t) => t.href === path);
   if (!user || !isFamilyAccount(user) || !tab) return <>{children}</>;
   return (
     <FolderTabs
       label="أقسام الأسرة المنتجة"
-      tabs={
-        familyPending(user)
-          ? FAMILY_TABS.filter((t) => t.id !== "couriers")
-          : FAMILY_TABS
-      }
+      tabs={(familyPending(user)
+        ? FAMILY_TABS.filter((t) => t.id !== "couriers")
+        : FAMILY_TABS
+      ).map((t) =>
+        // اسم التبويب الجديد من «نصوص الموقع».
+        t.id === "schedules" ? { ...t, label: tx("schedule.title") } : t,
+      )}
       active={tab.id}
     >
       {children}

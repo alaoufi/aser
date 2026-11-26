@@ -291,6 +291,16 @@ export const siteTextDefaults = {
   "schedule.none": "لا جداول توزيع بعد.",
   "schedule.public": "يُوزَّع {frequency} من {date}",
   "schedule.publicDate": "يُوزَّع يوم {date}",
+  "schedule.dayNames": "الأحد،الاثنين،الثلاثاء،الأربعاء،الخميس،الجمعة،السبت",
+  "schedule.saved": "تم حفظ الجدول",
+  "schedule.errFamily": "جدول التوزيع للأسرة المعتمدة فقط",
+  "schedule.errProduct": "المنتج غير موجود",
+  "schedule.errDays": "اختر يومًا واحدًا على الأقل",
+  "alerts.open": "فتح",
+  "alerts.errFamily": "الأسرة غير موجودة",
+  "alerts.errOwn": "لا تتابع أسرتك؛ متابعوك يرون منتجاتك",
+  "alerts.errKind": "اختر نوع التنبيه",
+  "alerts.errProducts": "اختر منتجًا واحدًا على الأقل من منتجات الأسرة",
 } as const;
 export type SiteTextKey = keyof typeof siteTextDefaults;
 export type SiteTexts = Record<SiteTextKey, string>;
@@ -370,6 +380,22 @@ export const siteTextLabels: Record<
   "schedule.add": ["جدول التوزيع (لوحة الأسرة)", "زر الإضافة"],
   "schedule.remove": ["جدول التوزيع (لوحة الأسرة)", "زر الحذف"],
   "schedule.none": ["جدول التوزيع (لوحة الأسرة)", "لا جداول"],
+  "schedule.dayNames": [
+    "جدول التوزيع (لوحة الأسرة)",
+    "أسماء الأيام من الأحد إلى السبت (بفاصلة عربية)",
+  ],
+  "schedule.saved": ["جدول التوزيع (لوحة الأسرة)", "رسالة الحفظ"],
+  "schedule.errFamily": ["جدول التوزيع (لوحة الأسرة)", "خطأ: ليست أسرة معتمدة"],
+  "schedule.errProduct": [
+    "جدول التوزيع (لوحة الأسرة)",
+    "خطأ: المنتج غير موجود",
+  ],
+  "schedule.errDays": ["جدول التوزيع (لوحة الأسرة)", "خطأ: لا أيام للأسبوعي"],
+  "alerts.open": ["تنبيهات الأسرة", "رابط فتح التنبيه"],
+  "alerts.errFamily": ["تنبيهات الأسرة", "خطأ: الأسرة غير موجودة"],
+  "alerts.errOwn": ["تنبيهات الأسرة", "خطأ: متابعة الأسرة نفسها"],
+  "alerts.errKind": ["تنبيهات الأسرة", "خطأ: لا نوع تنبيه"],
+  "alerts.errProducts": ["تنبيهات الأسرة", "خطأ: لا منتجات مختارة"],
   "schedule.publicDate": [
     "جدول التوزيع (لوحة الأسرة)",
     "سطر الجدول بتاريخ واحد ({date})",

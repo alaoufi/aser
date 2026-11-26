@@ -76,12 +76,12 @@ const followSchema = z
     /** موافقة صريحة على الاستلام: لا متابعة بدونها. */
     consent: z.literal(true),
   })
-  .strict()
-  .refine((v) => v.notifyNew || v.notifySchedule, "اختر نوع التنبيه")
-  .refine(
-    (v) => v.scope === "all" || v.productIds.length > 0,
-    "اختر منتجًا واحدًا على الأقل",
-  );
+  .strict();
+
+/** رسائل الأخطاء من «نصوص الموقع». */
+async function t() {
+  return (await import("./settings")).getSiteTexts();
+}
 
 async function approvedProducer(slug: string) {
   const row = (
@@ -90,7 +90,7 @@ async function approvedProducer(slug: string) {
       [slug],
     )
   ).rows[0];
-  if (!row) throw new HttpError(404, "الأسرة غير موجودة");
+  if (!row) throw new HttpError(404, (await t())["alerts.errFamily"]);
   return row;
 }
 
@@ -131,9 +131,14 @@ export async function myFollow(user: SessionUser, slug: string) {
 /** متابعة أسرة أو تعديلها (بالموافقة الصريحة كل مرة). */
 export async function saveFollow(user: SessionUser, input: unknown) {
   const v = followSchema.parse(input);
+  const texts = await t();
+  if (!v.notifyNew && !v.notifySchedule)
+    throw new HttpError(400, texts["alerts.errKind"]);
+  if (v.scope === "selected" && !v.productIds.length)
+    throw new HttpError(400, texts["alerts.errProducts"]);
   const producer = await approvedProducer(v.producer);
   if (producer.userId === user.id)
-    throw new HttpError(400, "لا تتابع أسرتك؛ متابعوك يرون منتجاتك");
+    throw new HttpError(400, texts["alerts.errOwn"]);
   return transaction(async (c) => {
     // المنتجات المختارة من منتجات هذه الأسرة الظاهرة فقط.
     const products =
@@ -146,7 +151,7 @@ export async function saveFollow(user: SessionUser, input: unknown) {
           ).rows.map((r) => r.id)
         : [];
     if (v.scope === "selected" && !products.length)
-      throw new HttpError(400, "اختر منتجًا من منتجات الأسرة");
+      throw new HttpError(400, texts["alerts.errProducts"]);
     await c.query(
       `INSERT INTO jdatna.family_follows(user_id,producer_id,notify_new,notify_schedule,scope,consented_at,unsubscribe_token)
        VALUES($1,$2,$3,$4,$5,now(),$6)
@@ -192,7 +197,7 @@ export async function changeFollow(user: SessionUser, input: unknown) {
         [v.producer],
       )
     ).rows[0]?.id;
-  if (!id) throw new HttpError(404, "الأسرة غير موجودة");
+  if (!id) throw new HttpError(404, (await t())["alerts.errFamily"]);
   if (v.action === "cancel")
     await db().query(
       "DELETE FROM jdatna.family_follows WHERE user_id=$1 AND producer_id=$2",
@@ -253,11 +258,7 @@ const scheduleSchema = z
     weekdays: z.array(z.number().int().min(0).max(6)).max(7).default([]),
     startsOn: z.iso.date(),
   })
-  .strict()
-  .refine(
-    (v) => v.kind !== "weekly" || v.weekdays.length > 0,
-    "اختر يومًا واحدًا على الأقل",
-  );
+  .strict();
 
 async function familyOf(user: SessionUser) {
   const row = (
@@ -266,7 +267,7 @@ async function familyOf(user: SessionUser) {
       [user.id],
     )
   ).rows[0];
-  if (!row) throw new HttpError(403, "جدول التوزيع للأسرة المعتمدة فقط");
+  if (!row) throw new HttpError(403, (await t())["schedule.errFamily"]);
   return row.id;
 }
 
@@ -295,6 +296,8 @@ export async function mySchedules(user: SessionUser) {
 
 export async function addSchedule(user: SessionUser, input: unknown) {
   const v = scheduleSchema.parse(input);
+  if (v.kind === "weekly" && !v.weekdays.length)
+    throw new HttpError(400, (await t())["schedule.errDays"]);
   const producerId = await familyOf(user);
   const owned = (
     await db().query(
@@ -302,7 +305,7 @@ export async function addSchedule(user: SessionUser, input: unknown) {
       [v.productId, producerId],
     )
   ).rowCount;
-  if (!owned) throw new HttpError(404, "المنتج غير موجود");
+  if (!owned) throw new HttpError(404, (await t())["schedule.errProduct"]);
   const id = randomUUID();
   await db().query(
     `INSERT INTO jdatna.product_schedules(id,product_id,producer_id,kind,weekdays,starts_on)

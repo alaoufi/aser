@@ -70,15 +70,7 @@ export default async function ProductDetail({
     shortLink("product", p.id),
     productSchedules(p.id),
   ]);
-  const days = [
-    "الأحد",
-    "الاثنين",
-    "الثلاثاء",
-    "الأربعاء",
-    "الخميس",
-    "الجمعة",
-    "السبت",
-  ];
+  const days = texts["schedule.dayNames"].split("،");
   const familyPhone = family?.phone ? phoneNumber(family.phone) : null;
   const familyWhatsapp = family?.whatsapp ? phoneNumber(family.whatsapp) : null;
   const image = p.imageUrl && safeMediaUrl(p.imageUrl);

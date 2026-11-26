@@ -122,7 +122,7 @@ export function MyFamilyAlerts() {
                   <small>
                     <bdi>{new Date(a.createdAt).toLocaleString("ar-SA")}</bdi>
                     {" · "}
-                    <a href={a.url}>فتح ←</a>
+                    <a href={a.url}>{tx("alerts.open")} ←</a>
                   </small>
                 </li>
               ))}
@@ -143,20 +143,12 @@ type Schedule = {
   startsOn: string;
   announced: boolean;
 };
-const DAYS = [
-  "الأحد",
-  "الاثنين",
-  "الثلاثاء",
-  "الأربعاء",
-  "الخميس",
-  "الجمعة",
-  "السبت",
-];
 
 /** «جدول التوزيع» في لوحة الأسرة: جداول منتجاتها، وعدد متابعي تنبيهاتها فقط. */
 export function FamilySchedules() {
   const session = useSession();
   const { tx } = useSiteTexts();
+  const DAYS = tx("schedule.dayNames").split("،");
   const [data, setData] = useState<{
     schedules: Schedule[];
     products: { id: string; name: string }[];
@@ -189,7 +181,7 @@ export function FamilySchedules() {
           startsOn,
         }),
       });
-      setSaved("تم الحفظ");
+      setSaved(tx("schedule.saved"));
       await load();
     } catch (err) {
       setError((err as Error).message);
