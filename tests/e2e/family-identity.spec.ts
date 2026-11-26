@@ -115,7 +115,8 @@ test("the family identity tab holds data, colours, table, location and contact",
     await expect(page).toHaveURL(new RegExp(`#${hash}$`));
     await expect(page.getByRole("region", { name: region })).toBeVisible();
   }
-  // الرابط المباشر يفتح القسم نفسه.
+  // الرابط المباشر يفتح القسم نفسه، قادمًا من صفحة أخرى (تحميل جديد للصفحة).
+  await page.goto("/dashboard");
   await page.goto("/dashboard/identity#table");
   await expect(
     page.getByRole("tab", { name: "المائدة", selected: true }),

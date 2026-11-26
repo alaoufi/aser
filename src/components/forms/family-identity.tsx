@@ -28,8 +28,13 @@ export function FamilyIdentity() {
       if (PARTS.includes(id)) setPart(id);
     };
     fromHash();
+    // الرابط المباشر (#table) أو التنقل بالرجوع والتقدم يفتح القسم نفسه.
     window.addEventListener("hashchange", fromHash);
-    return () => window.removeEventListener("hashchange", fromHash);
+    window.addEventListener("popstate", fromHash);
+    return () => {
+      window.removeEventListener("hashchange", fromHash);
+      window.removeEventListener("popstate", fromHash);
+    };
   }, []);
   const choose = (id: string) => {
     setPart(id as Part);
