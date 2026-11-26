@@ -403,6 +403,9 @@ async function saveProfileRecord(user: SessionUser, input: unknown) {
         "UPDATE jdatna.producer_profiles SET docs_pledged_at=COALESCE(docs_pledged_at,now()),docs_due_at=COALESCE(docs_due_at,now()+interval '15 days') WHERE id=$1",
         [id],
       );
+    // رفعت المستند والمنتجات مخفية لتأخره: تعود كما كانت (قرار المالك 2026-11-26).
+    if (value.documentId && !sameDocument && existing?.docs_hidden_at)
+      await restoreDocsHold(client, id);
     if (encrypted)
       await client.query(
         "INSERT INTO jdatna.producer_private(producer_id,encrypted_payload) VALUES($1,$2) ON CONFLICT(producer_id) DO UPDATE SET encrypted_payload=EXCLUDED.encrypted_payload,updated_at=now()",
@@ -684,8 +687,11 @@ export async function saveProduct(
         args,
       );
     else
+      // منتج جديد أثناء إخفاء المنتجات لتأخر المستندات يُخفى مثلها، ويعود معها.
       await client.query(
-        `INSERT INTO jdatna.products(id,producer_id,name,description,price,unit,status,ingredients,storage,shelf_life,preparation_time,story) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+        `INSERT INTO jdatna.products(id,producer_id,name,description,price,unit,status,ingredients,storage,shelf_life,preparation_time,story,visible,hidden_by)
+         SELECT $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,p.docs_hidden_at IS NULL,CASE WHEN p.docs_hidden_at IS NULL THEN NULL ELSE 'docs' END
+         FROM jdatna.producer_profiles p WHERE p.id=$2`,
         args,
       );
     await client.query(
@@ -744,7 +750,7 @@ export async function adminProducers(user: SessionUser) {
     throw new HttpError(403, "لا تملك صلاحية المراجعة");
   const profiles = (
     await db().query(
-      `SELECT p.*,p.trade_name AS "tradeName",p.city_id AS "cityId",c.name AS "cityName",u.name AS "ownerName",p.docs_due_at AS "docsDueAt",v.document_id AS "documentId",v.document_type AS "documentType",v.reason AS "reviewReason",v.document_number AS "documentNumber",v.document_expires_at::text AS "documentExpiresAt",ARRAY(SELECT category_id FROM jdatna.producer_categories WHERE producer_id=p.id) AS "categoryIds" FROM jdatna.producer_profiles p JOIN jdatna.users u ON u.id=p.user_id JOIN jdatna.cities c ON c.id=p.city_id LEFT JOIN LATERAL(SELECT document_id,document_type,reason,document_number,document_expires_at FROM jdatna.producer_verifications WHERE producer_id=p.id ORDER BY created_at DESC LIMIT 1)v ON true ORDER BY (p.status='pending') DESC,(p.status='rejected') DESC,p.created_at DESC LIMIT 200`,
+      `SELECT p.*,p.trade_name AS "tradeName",p.city_id AS "cityId",c.name AS "cityName",u.name AS "ownerName",p.docs_due_at AS "docsDueAt",p.docs_hidden_at AS "docsHiddenAt",v.document_id AS "documentId",v.document_type AS "documentType",v.reason AS "reviewReason",v.document_number AS "documentNumber",v.document_expires_at::text AS "documentExpiresAt",ARRAY(SELECT category_id FROM jdatna.producer_categories WHERE producer_id=p.id) AS "categoryIds" FROM jdatna.producer_profiles p JOIN jdatna.users u ON u.id=p.user_id JOIN jdatna.cities c ON c.id=p.city_id LEFT JOIN LATERAL(SELECT document_id,document_type,reason,document_number,document_expires_at FROM jdatna.producer_verifications WHERE producer_id=p.id ORDER BY created_at DESC LIMIT 1)v ON true ORDER BY (p.status='pending') DESC,(p.status='rejected') DESC,p.created_at DESC LIMIT 200`,
     )
   ).rows;
   if (!profiles.length) return profiles;
@@ -898,6 +904,11 @@ export async function manageProduct(user: SessionUser, input: unknown) {
     }
     if (product.hidden_by === "admin")
       throw new HttpError(403, "أخفت الإدارة هذا المنتج؛ تواصل معها لإظهاره");
+    if (product.hidden_by === "docs")
+      throw new HttpError(
+        403,
+        "منتجاتك مخفية حتى ترفع المستندات الرسمية من «هوية الأسرة» ← «بيانات الأسرة»، فتعود كما كانت",
+      );
     await client.query(
       `UPDATE jdatna.products SET visible=$2,hidden_by=$3,updated_at=now() WHERE id=$1`,
       [id, action === "show", action === "show" ? null : "family"],
@@ -919,15 +930,134 @@ export async function notifyLateDocuments(limit = 50) {
          WHERE x.docs_due_at<now() AND x.docs_late_notified_at IS NULL AND x.status='approved'
            AND NOT EXISTS(SELECT 1 FROM jdatna.producer_verifications v WHERE v.producer_id=x.id AND v.document_id IS NOT NULL)
          ORDER BY x.docs_due_at LIMIT $1)
-       RETURNING p.id,COALESCE(p.trade_name,p.name) AS name`,
+       RETURNING p.id,p.user_id AS "userId",COALESCE(p.trade_name,p.name) AS name`,
       [limit],
     )
-  ).rows;
-  for (const f of late)
+  ).rows as { id: string; userId: string; name: string }[];
+  const { notifyUser } = await import("./push");
+  for (const f of late) {
+    // الأسرة نفسها تُنبَّه أيضًا (قرار المالك 2026-11-26).
+    await notifyUser(f.userId, {
+      title: "انتهت مهلة المستندات",
+      body: "مضت 15 يومًا على تعهدك. ارفع المستندات الرسمية لممارسة النشاط من «هوية الأسرة» ← «بيانات الأسرة».",
+      url: "/dashboard/identity",
+      tag: "family-docs",
+    }).catch(() => {});
     await notifyApprovers(
       f.name,
       `«${f.name}» مضت 15 يومًا على تعهدها ولم ترفع المستندات الرسمية. تجدها في «تأخرت في المستندات».`,
       "أسرة تأخرت في المستندات",
     );
+  }
   return late.length;
+}
+
+/** يعيد منتجات الأسرة المخفية لتأخر المستندات كما كانت. */
+async function restoreDocsHold(client: PoolClient, producerId: string) {
+  await client.query(
+    "UPDATE jdatna.products SET visible=true,hidden_by=NULL,updated_at=now() WHERE producer_id=$1 AND hidden_by='docs' AND deleted_at IS NULL",
+    [producerId],
+  );
+  await client.query(
+    "UPDATE jdatna.producer_profiles SET docs_hidden_at=NULL WHERE id=$1",
+    [producerId],
+  );
+}
+
+const docsActionSchema = z.discriminatedUnion("action", [
+  z
+    .object({
+      action: z.literal("extend"),
+      days: z.union([z.literal(7), z.literal(15), z.literal(30)]),
+    })
+    .strict(),
+  z.object({ action: z.literal("hide") }).strict(),
+  z.object({ action: z.literal("show") }).strict(),
+]);
+
+/**
+ * مهلة المستندات (قرار المالك 2026-11-26): بعد انتهائها تختار الإدارة «تمديد» (7 أو 15 أو 30 يومًا،
+ * وتعود المنتجات إن كانت مخفية)، أو «إخفاء المنتجات حتى رفع المستندات» (الظاهرة منها فقط، فتعود كما
+ * كانت عند رفع المستند)، أو «إظهار المنتجات». الأسرة تُنبَّه بكل قرار.
+ */
+export async function producerDocsAction(
+  user: SessionUser,
+  id: string,
+  input: unknown,
+) {
+  if (!canAny(user, "approvals", "producers"))
+    throw new HttpError(403, "لا تملك صلاحية المراجعة");
+  const v = docsActionSchema.parse(input);
+  const result = await transaction(async (client) => {
+    const producer = (
+      await client.query(
+        "SELECT id,user_id,docs_due_at FROM jdatna.producer_profiles WHERE id=$1 FOR UPDATE",
+        [id],
+      )
+    ).rows[0] as
+      { id: string; user_id: string; docs_due_at: Date | null } | undefined;
+    if (!producer) throw new HttpError(404, "الأسرة المنتجة غير موجودة");
+    if (!producer.docs_due_at)
+      throw new HttpError(400, "هذه الأسرة لم تتعهد بتقديم المستندات");
+    let hidden = 0;
+    if (v.action === "extend") {
+      await client.query(
+        "UPDATE jdatna.producer_profiles SET docs_due_at=now()+make_interval(days=>$2),docs_late_notified_at=NULL WHERE id=$1",
+        [id, v.days],
+      );
+      await restoreDocsHold(client, id);
+    } else if (v.action === "hide") {
+      hidden =
+        (
+          await client.query(
+            "UPDATE jdatna.products SET visible=false,hidden_by='docs',updated_at=now() WHERE producer_id=$1 AND visible AND deleted_at IS NULL",
+            [id],
+          )
+        ).rowCount ?? 0;
+      await client.query(
+        "UPDATE jdatna.producer_profiles SET docs_hidden_at=COALESCE(docs_hidden_at,now()) WHERE id=$1",
+        [id],
+      );
+    } else await restoreDocsHold(client, id);
+    await client.query(
+      "INSERT INTO jdatna.admin_audit_logs(id,actor_id,action,target_id,details) VALUES($1,$2,$3,$4,$5)",
+      [randomUUID(), user.id, "producer.docs", id, JSON.stringify(v)],
+    );
+    const after = (
+      await client.query(
+        'SELECT docs_due_at AS "docsDueAt",docs_hidden_at AS "docsHiddenAt" FROM jdatna.producer_profiles WHERE id=$1',
+        [id],
+      )
+    ).rows[0];
+    return { userId: producer.user_id, hidden, ...after };
+  });
+  try {
+    const { notifyUser } = await import("./push");
+    const due = result.docsDueAt
+      ? new Date(result.docsDueAt).toLocaleDateString("ar-SA-u-nu-latn", {
+          timeZone: "Asia/Riyadh",
+        })
+      : "";
+    await notifyUser(result.userId, {
+      title:
+        v.action === "extend"
+          ? "مُدّدت مهلة المستندات"
+          : v.action === "hide"
+            ? "أُخفيت منتجاتك حتى رفع المستندات"
+            : "عادت منتجاتك ظاهرة",
+      body:
+        v.action === "extend"
+          ? `ارفع المستندات الرسمية لممارسة النشاط قبل ${due}.`
+          : v.action === "hide"
+            ? "ارفع المستندات الرسمية من «هوية الأسرة» ← «بيانات الأسرة»، فتعود منتجاتك كما كانت."
+            : "أعادت الإدارة منتجاتك ظاهرة للعملاء.",
+      url: "/dashboard/identity",
+      tag: "family-docs",
+    });
+  } catch {}
+  return {
+    docsDueAt: result.docsDueAt,
+    docsHiddenAt: result.docsHiddenAt,
+    hidden: result.hidden,
+  };
 }

@@ -1,4 +1,5 @@
 "use client";
+import { useTx } from "@/components/site-texts";
 import { AdminInsights } from "./admin-insights";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -57,6 +58,8 @@ type Application = {
   reviewReason?: string;
   /** تعهدت بتقديم المستندات حتى هذا التاريخ (قرار المالك 2026-11-26). */
   docsDueAt?: string | null;
+  /** منتجاتها مخفية حتى ترفع المستندات. */
+  docsHiddenAt?: string | null;
   nationalId?: string | null;
   workLocation?: string | null;
 };
@@ -95,6 +98,87 @@ const documentLabels: Record<string, string> = {
   other_document: "شهادة أو مستند آخر",
   exception: "طلب استثناء إداري",
 };
+/**
+ * مهلة المستندات (قرار المالك 2026-11-26): تمديدها، أو إخفاء منتجات الأسرة حتى ترفعها (تعود كما كانت
+ * عند الرفع)، أو إظهارها. الأسرة تُنبَّه بكل قرار.
+ */
+function DocsControls({
+  producer,
+  onSaved,
+}: {
+  producer: Application;
+  onSaved: () => Promise<void>;
+}) {
+  const { tx, txb } = useTx();
+  const [days, setDays] = useState(15);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const act = async (body: Record<string, unknown>) => {
+    setBusy(true);
+    setError("");
+    try {
+      await api(`/api/admin/producers/${producer.id}/docs`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+      await onSaved();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <fieldset className={s.docsControls} disabled={busy}>
+      <legend>{txb("docs.admin.title")}</legend>
+      {producer.docsHiddenAt && (
+        <p className={s.notice}>{tx("docs.admin.hiddenNow")}</p>
+      )}
+      <Message error={error} />
+      <div className={s.actions}>
+        <label className={s.inlineField}>
+          <span className="sr-only">{tx("docs.admin.days")}</span>
+          <select
+            aria-label={tx("docs.admin.days")}
+            value={days}
+            onChange={(e) => setDays(Number(e.target.value))}
+          >
+            {[7, 15, 30].map((d) => (
+              <option key={d} value={d}>
+                {tx("docs.admin.daysOption", { n: d })}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button
+          type="button"
+          className={s.button}
+          onClick={() => act({ action: "extend", days })}
+        >
+          {txb("docs.admin.extend")}
+        </button>
+        {producer.docsHiddenAt ? (
+          <button
+            type="button"
+            className={s.buttonSecondary}
+            onClick={() => act({ action: "show" })}
+          >
+            {txb("docs.admin.show")}
+          </button>
+        ) : (
+          <button
+            type="button"
+            className={s.danger}
+            onClick={() => act({ action: "hide" })}
+          >
+            {txb("docs.admin.hide")}
+          </button>
+        )}
+      </div>
+    </fieldset>
+  );
+}
+
 function Review({
   producer,
   onSaved,
@@ -172,6 +256,9 @@ function Review({
             timeZone: "Asia/Riyadh",
           })}
         </p>
+      )}
+      {producer.docsDueAt && !producer.documentId && (
+        <DocsControls producer={producer} onSaved={onSaved} />
       )}
       {producer.documentType === "exception" && (
         <p>تفاصيل طلب الاستثناء: {producer.reviewReason || "دون تفاصيل"}</p>

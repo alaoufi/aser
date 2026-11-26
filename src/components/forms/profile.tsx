@@ -59,6 +59,8 @@ type Profile = AdvancedProfile & {
   workLocation?: string | null;
   /** تعهدت بتقديم المستندات حتى هذا التاريخ (قرار المالك 2026-11-26). */
   docs_due_at?: string | null;
+  /** منتجاتها مخفية حتى ترفع المستندات (قرار المالك 2026-11-26). */
+  docs_hidden_at?: string | null;
 };
 // المرفق اختياري: التسجيل يُقبل دونه، والإدارة تفعّل الحساب وتطلب النواقص في ملاحظتها.
 const documentTypes = [
@@ -289,6 +291,11 @@ export function ProfileForm({
           <p className={s.muted}>
             البيانات الأساسية فقط؛ يمكنك إضافة التفاصيل الأخرى لاحقًا.
           </p>
+          {profile?.docs_hidden_at && (
+            <p className={s.notice} role="alert">
+              {tx("docs.family.hidden")}
+            </p>
+          )}
           {profile?.docs_due_at && !profile.documentId && (
             <p className={s.notice} role="status">
               {tx("pledge.reminder", {

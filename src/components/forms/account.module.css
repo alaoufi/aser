@@ -1886,3 +1886,22 @@
   margin-top: 3px;
   accent-color: var(--olive);
 }
+/* مهلة المستندات في بطاقة الأسرة عند الإدارة */
+.docsControls {
+  margin: 10px 0;
+  padding: 10px 12px;
+  border: 1px dashed var(--line-strong, #c9b28a);
+  border-radius: 10px;
+}
+.docsControls legend {
+  font-weight: 700;
+  padding-inline: 6px;
+}
+.inlineField select {
+  min-height: 44px;
+  padding-inline: 10px;
+  border: 1px solid var(--line-strong, #c9b28a);
+  border-radius: 8px;
+  background: var(--surface, #fff);
+  font: inherit;
+}

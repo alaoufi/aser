@@ -1,7 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import { notifyLateDocuments, saveProfile } from "../src/server/management";
+import {
+  manageProduct,
+  notifyLateDocuments,
+  producerDocsAction,
+  saveProfile,
+} from "../src/server/management";
 import { setPushTransport, subscribePush } from "../src/server/push";
 import { db } from "../src/server/db";
 
@@ -140,6 +145,10 @@ test(
       // 5) مضت المدة بلا مستند: تنبيه الإدارة مرة واحدة، والأسرة تبقى معتمدة ظاهرة.
       const late = await mk("customer");
       users.push(late.id);
+      await subscribePush(late, {
+        endpoint: `https://push.invalid/pledge-family-${late.id}`,
+        keys: { p256dh: "p".repeat(40), auth: "a".repeat(16) },
+      });
       const name3 = `متأخرة ${tag}`;
       const p3 = await saveProfile(late, {
         ...form(late, name3),
@@ -168,7 +177,109 @@ test(
         before,
         "مرة واحدة فقط",
       );
+      // والأسرة نفسها تُنبَّه (قرار المالك 2026-11-26).
+      assert.ok(
+        sent.some(
+          (x) =>
+            x.endpoint.includes(`pledge-family-${late.id}`) &&
+            x.title === "انتهت مهلة المستندات",
+        ),
+      );
+
+      // 6) قرار الإدارة: إخفاء المنتجات حتى رفع المستندات، ثم تمديد، ثم رفع المستند.
+      const visibleProduct = randomUUID(),
+        familyHidden = randomUUID();
+      await pool.query(
+        `INSERT INTO jdatna.products(id,producer_id,name,description,unit,status,visible,hidden_by)
+         VALUES($1,$3,'شاهي','fixture','إبريق','available',true,NULL),($2,$3,'قهوة','fixture','دلة','available',false,'family')`,
+        [visibleProduct, familyHidden, p3.id],
+      );
+      const state = async () =>
+        (
+          await pool.query(
+            "SELECT id,visible,hidden_by FROM jdatna.products WHERE producer_id=$1 ORDER BY name",
+            [p3.id],
+          )
+        ).rows.map(
+          (r) =>
+            `${r.id === visibleProduct ? "v" : "f"}:${r.visible}:${r.hidden_by}`,
+        );
+      const original = await state();
+      // غير المخوّل لا يقرر.
+      await assert.rejects(
+        producerDocsAction(late, p3.id, { action: "hide" }),
+        {
+          status: 403,
+        },
+      );
+      const hid = await producerDocsAction(admin, p3.id, { action: "hide" });
+      assert.equal(hid.hidden, 1, "الظاهر فقط يُخفى");
+      assert.ok(hid.docsHiddenAt);
+      assert.deepEqual(
+        (await state()).sort(),
+        ["f:false:family", "v:false:docs"].sort(),
+      );
+      assert.ok(await reached("أُخفيت منتجاتك حتى رفع المستندات", ""));
+      // الأسرة لا تُظهر المنتج المخفي لتأخر المستندات بنفسها.
+      await assert.rejects(
+        manageProduct(late, { id: visibleProduct, action: "show" }),
+        { status: 403 },
+      );
+      // التمديد: مهلة جديدة، والمنتجات تعود كما كانت.
+      const ext = await producerDocsAction(admin, p3.id, {
+        action: "extend",
+        days: 7,
+      });
+      assert.equal(ext.docsHiddenAt, null);
+      assert.equal(
+        Math.round((new Date(ext.docsDueAt).getTime() - Date.now()) / 86400000),
+        7,
+      );
+      assert.deepEqual((await state()).sort(), original.sort());
+      assert.equal(
+        (
+          await pool.query(
+            "SELECT docs_late_notified_at FROM jdatna.producer_profiles WHERE id=$1",
+            [p3.id],
+          )
+        ).rows[0].docs_late_notified_at,
+        null,
+        "يُنبَّه من جديد إن انتهت المهلة الممددة",
+      );
+      await assert.rejects(
+        producerDocsAction(admin, p3.id, { action: "extend", days: 9 }),
+      );
+      // إخفاء ثم رفع المستند: تعود المنتجات تلقائيًا.
+      await producerDocsAction(admin, p3.id, { action: "hide" });
+      const doc3 = randomUUID();
+      await pool.query(
+        "INSERT INTO jdatna.producer_documents(id,user_id,type,object_key,mime,size) VALUES($1,$2,'producer_certificate',$3,'application/pdf',1000)",
+        [doc3, late.id, `test/${doc3}`],
+      );
+      const back = await saveProfile(late, {
+        ...form(late, name3),
+        documentId: doc3,
+      });
+      assert.equal(back.status, "approved");
+      assert.deepEqual((await state()).sort(), original.sort());
+      assert.equal(
+        (
+          await pool.query(
+            "SELECT docs_hidden_at FROM jdatna.producer_profiles WHERE id=$1",
+            [p3.id],
+          )
+        ).rows[0].docs_hidden_at,
+        null,
+      );
     } finally {
+      await pool.query(
+        "DELETE FROM jdatna.admin_audit_logs WHERE target_id=ANY($1::uuid[])",
+        [producers],
+      );
+      await pool.query(
+        "DELETE FROM jdatna.products WHERE producer_id=ANY($1::uuid[])",
+        [producers],
+      );
       setPushTransport(null);
       await pool.query(
         "DELETE FROM jdatna.push_subscriptions WHERE user_id=ANY($1::uuid[])",

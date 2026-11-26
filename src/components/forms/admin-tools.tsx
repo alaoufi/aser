@@ -447,7 +447,7 @@ type ModeratedProduct = {
   cityName: string;
   status: string;
   visible: boolean;
-  hiddenBy?: "admin" | "family" | null;
+  hiddenBy?: "admin" | "family" | "docs" | null;
   featured: boolean;
   categoryIds?: string[];
 };
@@ -512,6 +512,7 @@ function ProductCategories({
  * عرض، إخفاء/إظهار، تمييز، نقل القسم، حذف، وإيقاف الأسرة المخالفة.
  */
 export function ProductsAdmin() {
+  const { tx } = useTx();
   const r = useResource<{ products: ModeratedProduct[] }>(
     "/api/admin/products",
   );
@@ -626,7 +627,9 @@ export function ProductsAdmin() {
                           <em className={s.hiddenTag}>
                             {p.hiddenBy === "family"
                               ? "أخفته الأسرة"
-                              : "مخفي من الإدارة"}
+                              : p.hiddenBy === "docs"
+                                ? tx("docs.admin.productTag")
+                                : "مخفي من الإدارة"}
                           </em>
                         )}
                         {p.featured && <em className={s.hiddenTag}>مميز</em>}
