@@ -6,6 +6,7 @@ import { adminPermissions, type AdminPermission } from "@/lib/permissions";
 import { NAV_GROUPS } from "@/lib/admin-nav";
 import { Message, api, s, useSession } from "./shared";
 import { useTx } from "@/components/site-texts";
+import { TypedConfirm } from "./typed-confirm";
 
 type Member = {
   id: string;
@@ -475,6 +476,7 @@ function MemberContact({
   const [type, setType] = useState<"customer" | "family">(
     family ? "family" : "customer",
   );
+  const [confirming, setConfirming] = useState(false);
   return (
     <div className={s.form}>
       <form
@@ -526,19 +528,37 @@ function MemberContact({
             ))}
           </div>
           <small className={s.muted}>{tx("members.typeHint")}</small>
-          <button
-            type="button"
-            className={s.buttonSecondary}
-            disabled={busy || type === (family ? "family" : "customer")}
-            onClick={() =>
-              void onSave(
-                { action: "type", id: m.id, type },
-                tx("members.typeSaved", { name: m.name }),
-              )
-            }
-          >
-            {txb("members.typeSave")}
-          </button>
+          {!confirming ? (
+            <button
+              type="button"
+              className={s.buttonSecondary}
+              disabled={busy || type === (family ? "family" : "customer")}
+              onClick={() => setConfirming(true)}
+            >
+              {txb("members.typeSave")}
+            </button>
+          ) : (
+            <TypedConfirm
+              word={tx("members.confirmWord")}
+              prompt={tx("members.typeToConfirm", {
+                word: tx("members.confirmWord"),
+                name: m.name,
+              })}
+              confirmLabel={txb("members.typeSave")}
+              cancelLabel={txb("asCustomer.cancel")}
+              busy={busy}
+              onCancel={() => setConfirming(false)}
+              onConfirm={async () => {
+                if (
+                  await onSave(
+                    { action: "type", id: m.id, type },
+                    tx("members.typeSaved", { name: m.name }),
+                  )
+                )
+                  setConfirming(false);
+              }}
+            />
+          )}
         </fieldset>
       )}
     </div>

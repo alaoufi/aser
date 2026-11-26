@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { FolderTabs } from "./folder-tabs";
+import { TypedConfirm } from "./typed-confirm";
 import { useTx } from "@/components/site-texts";
 import { AccountShell, Guard, Message, api, s, useSession } from "./shared";
 import type { SessionUser } from "@/lib/types";
@@ -86,36 +87,30 @@ function BecomeCustomer() {
           {txb("asCustomer.toCustomerButton")}
         </button>
       ) : (
-        <div className={s.actions}>
-          <button
-            type="button"
-            className={s.danger}
-            disabled={busy}
-            onClick={async () => {
-              setBusy(true);
-              setError("");
-              try {
-                await api("/api/account/type", {
-                  method: "POST",
-                  body: JSON.stringify({ type: "customer" }),
-                });
-                window.location.assign("/me");
-              } catch (e) {
-                setError((e as Error).message);
-                setBusy(false);
-              }
-            }}
-          >
-            {txb("asCustomer.toCustomerConfirm")}
-          </button>
-          <button
-            type="button"
-            className={s.buttonSecondary}
-            onClick={() => setConfirming(false)}
-          >
-            {txb("asCustomer.cancel")}
-          </button>
-        </div>
+        <TypedConfirm
+          word={tx("asCustomer.confirmWord")}
+          prompt={tx("asCustomer.typeToConfirm", {
+            word: tx("asCustomer.confirmWord"),
+          })}
+          confirmLabel={txb("asCustomer.toCustomerConfirm")}
+          cancelLabel={txb("asCustomer.cancel")}
+          busy={busy}
+          onCancel={() => setConfirming(false)}
+          onConfirm={async () => {
+            setBusy(true);
+            setError("");
+            try {
+              await api("/api/account/type", {
+                method: "POST",
+                body: JSON.stringify({ type: "customer" }),
+              });
+              window.location.assign("/me");
+            } catch (e) {
+              setError((e as Error).message);
+              setBusy(false);
+            }
+          }}
+        />
       )}
     </section>
   );

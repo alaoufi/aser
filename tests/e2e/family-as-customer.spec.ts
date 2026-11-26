@@ -158,10 +158,18 @@ test.describe("a family buys from other families like a customer", () => {
       page.getByRole("region", { name: "حوّل حسابك إلى أسرة منتجة" }),
     ).toHaveCount(0);
     await card.getByRole("button", { name: "تحويل حسابي إلى عميل" }).click();
-    // تأكيد قبل التحويل، ويمكن التراجع (لا نحوّل هنا: الحساب مشترك بين الاختبارات).
-    await expect(
-      card.getByRole("button", { name: "تأكيد التحويل إلى عميل" }),
-    ).toBeVisible();
+    // تأكيد بالكتابة (قرار المالك 2026-11-26): لا يعمل الزر حتى يكتب «عميل».
+    // لا نحوّل هنا فعلًا: الحساب مشترك بين الاختبارات.
+    const confirm = card.getByRole("button", {
+      name: "تأكيد التحويل إلى عميل",
+    });
+    await expect(confirm).toBeDisabled();
+    const word = card.getByLabel("للتأكيد اكتب «عميل»");
+    await word.fill("عمي");
+    await expect(confirm).toBeDisabled();
+    await word.fill(" عَميل ");
+    await expect(confirm).toBeEnabled();
+    await page.screenshot({ path: "test-results/typed-confirm.png" });
     await card.getByRole("button", { name: "تراجع" }).click();
     await expect(
       card.getByRole("button", { name: "تحويل حسابي إلى عميل" }),
