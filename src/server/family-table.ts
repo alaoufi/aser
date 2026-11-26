@@ -27,11 +27,16 @@ const tableSchema = z
  * الفارغة تعني الافتراضية «حياكم الله».
  */
 export function cleanWelcome(input: string | undefined): string | null {
-  const v = (input ?? "")
-    .replace(
-      /[\u0000-\u001f\u007f\u200b-\u200f\u202a-\u202e\u2066-\u2069]/g,
-      "",
-    )
+  // تُحذف رموز التحكم والرموز الخفية (اتجاه النص والمسافات الصفرية) قبل الفحص.
+  const hidden = (c: number) =>
+    c < 32 ||
+    c === 127 ||
+    (c >= 0x200b && c <= 0x200f) ||
+    (c >= 0x202a && c <= 0x202e) ||
+    (c >= 0x2066 && c <= 0x2069);
+  const v = Array.from(input ?? "")
+    .filter((ch) => !hidden(ch.codePointAt(0) ?? 0) || /\s/.test(ch))
+    .join("")
     .replace(/\s+/g, " ")
     .trim();
   if (!v) return null;

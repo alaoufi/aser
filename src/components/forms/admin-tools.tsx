@@ -1329,14 +1329,16 @@ function TextRow({
           </button>
         </div>
       ) : (
-        <p
+        // مجموعة باسم الوصف: يقرأ قارئ الشاشة «الوصف» ثم النص الحالي.
+        <div
           id={id}
+          role="group"
           aria-labelledby={id + "-label"}
           className={s.textValue}
           data-empty={!item.value || undefined}
         >
           {item.value || tx("admin.texts.deletedValue")}
-        </p>
+        </div>
       )}
     </div>
   );
