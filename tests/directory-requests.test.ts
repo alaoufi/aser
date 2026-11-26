@@ -146,6 +146,22 @@ test(
       assert.ok((await req.myCustomerRequests(customer))[0].phone);
       // العميل لا يرى لوحة الطلبات.
       await assert.rejects(req.openCustomerRequests(other), { status: 403 });
+      // الأسرة تطلب من الأسر الأخرى كعميل (قرار المالك 2026-11-26): طلبها في «طلباتي» لا في لوحتها.
+      const own = await req.createCustomerRequest(familyUser, {
+        body: "أبي كبسة لخمسة",
+        cityId: city,
+      });
+      assert.ok(
+        (await req.myCustomerRequests(familyUser)).some((r) => r.id === own.id),
+      );
+      assert.equal(
+        (await req.openCustomerRequests(familyUser)).some(
+          (r) => r.id === own.id,
+        ),
+        false,
+        "لا ترى طلبها في لوحة طلبات العملاء",
+      );
+      await req.closeCustomerRequest(familyUser, own.id);
       // بموافقة على الاسم والواتساب فقط.
       const second = await req.createCustomerRequest(customer, {
         body: "مرقوق",

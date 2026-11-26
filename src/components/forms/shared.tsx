@@ -49,6 +49,7 @@ export function Message({
 }
 function AccountNavigation() {
   const { user } = useSession();
+  const { txb } = useTx();
   const path = usePathname();
   if (!user) return null;
   // حساب أسرة: دوره أسرة منتجة، أو المدير الكامل الذي له ملف أسرة.
@@ -74,6 +75,10 @@ function AccountNavigation() {
           [
             ["/dashboard", "لوحتي"],
             ...(pending ? [] : [["/dashboard/couriers", "مندوبي الخاص"]]),
+            // الأسرة تشتري من الأسر الأخرى كأي عميل (قرار المالك 2026-11-26).
+            ...(pending ? [] : [["/requests#ask", txb("asCustomer.ask")]]),
+            ["/offers", "العروض الخاصة"],
+            ["/couriers", "المندوبين"],
           ]
         : [
             ["/offers", "العروض الخاصة"],
