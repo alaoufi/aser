@@ -211,9 +211,9 @@ export default async function ProducerDetail({
             </h2>
           )}
           <FamilyTable
-            design={table}
+            design={table.design}
             dishes={onTable}
-            welcome={texts["ftable.welcome"]}
+            welcome={table.welcome || texts["ftable.welcome"]}
             empty={texts["ftable.empty"]}
             label={texts["ftable.title"].replace("{name}", p.name) || p.name}
           />

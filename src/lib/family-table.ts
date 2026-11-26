@@ -12,10 +12,22 @@ export const tableShapes = [
   "square",
   "round",
   "oval",
+  "stadium",
+  "cushion",
+  "arch",
+  "diamond",
+  "pent",
   "hex",
   "oct",
+  "dodeca",
+  "scallop",
+  "flower",
+  "star",
+  "petal",
+  "shield",
+  "drum",
 ] as const;
-export const tableHeights = ["raised", "floor"] as const;
+export const tableHeights = ["raised", "low", "floor"] as const;
 export const tableFinishes = [
   "walnut",
   "sidr",
@@ -197,10 +209,158 @@ const frameColors: Record<TableFrame, string> = {
     "repeating-conic-gradient(from 45deg,var(--ft-dark) 0 25%,var(--ft-wood) 0 50%) 0 0/12px 12px",
 };
 
+/** نقاط مضلع (نسب مئوية) من دالة نصف قطر حول المركز؛ rx وry لنسبة الشكل. */
+function radial(n: number, r: (t: number) => number, turn = -Math.PI / 2) {
+  const pts: string[] = [];
+  for (let i = 0; i < n; i++) {
+    const t = turn + (i * 2 * Math.PI) / n;
+    const k = r(t - turn);
+    pts.push(
+      `${(50 + Math.cos(t) * k).toFixed(2)}% ${(50 + Math.sin(t) * k).toFixed(2)}%`,
+    );
+  }
+  return `polygon(${pts.join(",")})`;
+}
+const regular = (n: number) =>
+  radial(n, () => 50, -Math.PI / 2 + (n % 2 ? 0 : Math.PI / n));
+/** قوس أعلى ومستطيل أسفل (مثل باب المجلس). */
+function arch() {
+  const pts = ["0% 100%", "0% 42%"];
+  for (let i = 0; i <= 24; i++) {
+    const t = Math.PI + (i * Math.PI) / 24;
+    pts.push(
+      `${(50 + Math.cos(t) * 50).toFixed(2)}% ${(42 + Math.sin(t) * 42).toFixed(2)}%`,
+    );
+  }
+  pts.push("100% 100%");
+  return `polygon(${pts.join(",")})`;
+}
+/** درع: أعلى مستقيم وأسفل مدبب منحنٍ. */
+function shield() {
+  const pts = ["0% 0%", "100% 0%", "100% 45%"];
+  for (let i = 1; i < 12; i++) {
+    const f = i / 12;
+    pts.push(
+      `${(100 - f * 50).toFixed(2)}% ${(45 + Math.sin((f * Math.PI) / 2) * 55).toFixed(2)}%`,
+    );
+  }
+  pts.push("50% 100%");
+  for (let i = 11; i >= 1; i--) {
+    const f = i / 12;
+    pts.push(
+      `${(f * 50).toFixed(2)}% ${(45 + Math.sin((f * Math.PI) / 2) * 55).toFixed(2)}%`,
+    );
+  }
+  pts.push("0% 45%");
+  return `polygon(${pts.join(",")})`;
+}
+type Geometry = {
+  clip: string;
+  /** العرض ÷ الارتفاع. */
+  ratio: number;
+  /** أقصى عرض بالبكسل. */
+  max: number;
+  /** مساحة المحتوى داخل الشكل (نسبة من كل جهة: أعلى، جانب، أسفل). */
+  pad: [number, number, number];
+  /** عريضة: الأطباق أصغر وأكثر. */
+  wide?: boolean;
+};
+export const shapeGeometry: Record<TableShape, Geometry> = {
+  rect: {
+    clip: "inset(0 round 18px)",
+    ratio: 2,
+    max: 760,
+    pad: [8, 6, 8],
+    wide: true,
+  },
+  square: { clip: "inset(0 round 18px)", ratio: 1, max: 520, pad: [9, 9, 9] },
+  round: { clip: "circle(50%)", ratio: 1, max: 520, pad: [15, 15, 15] },
+  oval: {
+    clip: "ellipse(50% 50%)",
+    ratio: 1.75,
+    max: 760,
+    pad: [15, 14, 15],
+    wide: true,
+  },
+  stadium: {
+    clip: "inset(0 round 22.7% / 50%)",
+    ratio: 2.2,
+    max: 780,
+    pad: [10, 13, 10],
+    wide: true,
+  },
+  cushion: {
+    clip: "inset(0 round 32%)",
+    ratio: 1.15,
+    max: 560,
+    pad: [11, 11, 11],
+  },
+  arch: { clip: arch(), ratio: 1.25, max: 560, pad: [22, 9, 7] },
+  diamond: {
+    clip: "polygon(50% 0,100% 50%,50% 100%,0 50%)",
+    ratio: 1.6,
+    max: 640,
+    pad: [20, 22, 20],
+  },
+  pent: { clip: regular(5), ratio: 1.05, max: 540, pad: [22, 18, 12] },
+  hex: {
+    clip: "polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%)",
+    ratio: 1.15,
+    max: 560,
+    pad: [9, 16, 9],
+  },
+  oct: { clip: regular(8), ratio: 1, max: 520, pad: [11, 11, 11] },
+  dodeca: { clip: regular(12), ratio: 1, max: 520, pad: [12, 12, 12] },
+  scallop: {
+    clip: radial(144, (t) => 47 + 3 * Math.cos(16 * t)),
+    ratio: 1,
+    max: 520,
+    pad: [15, 15, 15],
+  },
+  flower: {
+    clip: radial(160, (t) => 39 + 11 * Math.abs(Math.cos(4 * t))),
+    ratio: 1,
+    max: 520,
+    pad: [20, 20, 20],
+  },
+  star: { clip: starClip(), ratio: 1, max: 520, pad: [22, 22, 22] },
+  petal: {
+    clip: radial(120, (t) => 44 + 6 * Math.cos(6 * t)),
+    ratio: 1,
+    max: 520,
+    pad: [16, 16, 16],
+  },
+  shield: { clip: shield(), ratio: 1.05, max: 520, pad: [9, 12, 24] },
+  drum: {
+    clip: "polygon(8% 0,92% 0,100% 50%,92% 100%,8% 100%,0 50%)",
+    ratio: 2,
+    max: 760,
+    pad: [9, 10, 9],
+    wide: true,
+  },
+};
+/** نجمة ثمانية الرؤوس ناعمة (رؤوس 50 وتجاويف 40). */
+function starClip() {
+  const pts: string[] = [];
+  for (let i = 0; i < 16; i++) {
+    const t = -Math.PI / 2 + (i * Math.PI) / 8;
+    const k = i % 2 ? 41 : 50;
+    pts.push(
+      `${(50 + Math.cos(t) * k).toFixed(2)}% ${(50 + Math.sin(t) * k).toFixed(2)}%`,
+    );
+  }
+  return `polygon(${pts.join(",")})`;
+}
+
 /** متغيرات العرض: الألوان والإطار. الشكل والارتفاع والزخرفة والعرض بخصائص data-*. */
 export function tableStyle(d: FamilyTableDesign): CSSProperties {
   const [wood, dark, ink] = finishColors[d.finish];
+  const g = shapeGeometry[d.shape];
   return {
+    "--ft-clip": g.clip,
+    "--ft-ratio": String(g.ratio),
+    "--ft-max": `${g.max}px`,
+    "--ft-pad": g.pad.map((n) => `${n}%`).join(" "),
     "--ft-wood": wood,
     "--ft-dark": dark,
     "--ft-ink": ink,
@@ -210,6 +370,7 @@ export function tableStyle(d: FamilyTableDesign): CSSProperties {
 export function tableData(d: FamilyTableDesign) {
   return {
     "data-shape": d.shape,
+    "data-wide": shapeGeometry[d.shape].wide ? "" : undefined,
     "data-height": d.height,
     "data-ornament": d.ornament,
     "data-frame": d.frame,

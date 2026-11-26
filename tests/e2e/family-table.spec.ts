@@ -4,6 +4,7 @@ import { Pool } from "pg";
 import {
   tablePresetIds,
   tablePresets,
+  tableShapes,
   type FamilyTableDesign,
 } from "../../src/lib/family-table";
 
@@ -47,6 +48,7 @@ test("a family picks its table from the library and saves it", async ({
     name: family.name,
     chosen: false,
     table: { ...tablePresets.classic } as FamilyTableDesign,
+    welcome: "",
     dishes: [
       { id: "11111111-1111-4111-8111-111111111111", name: "جريش" },
       { id: "22222222-2222-4222-8222-222222222222", name: "مرقوق" },
@@ -57,13 +59,14 @@ test("a family picks its table from the library and saves it", async ({
   await page.route("**/api/producer/table", (r) => {
     if (r.request().method() === "PUT") {
       sent = r.request().postDataJSON();
-      Object.assign(own, { table: sent, chosen: true });
+      const { welcome, ...table } = sent as Record<string, string>;
+      Object.assign(own, { table, welcome, chosen: true });
     }
     return r.fulfill({ json: own });
   });
   await page.goto("/dashboard");
   const card = page.getByRole("region", { name: "مائدة الأسرة" });
-  await expect(card).toContainText("٨٬٦٤٠");
+  await expect(card).toContainText("٣٨٬٨٨٠");
   const preview = card.getByRole("figure", { name: "معاينة مائدتك" });
   await expect(preview).toContainText("حياكم الله");
   await expect(preview).toContainText("مرقوق");
@@ -83,12 +86,25 @@ test("a family picks its table from the library and saves it", async ({
     "aria-pressed",
     "false",
   );
+  // العبارة: الافتراضية «حياكم الله»، والأسرة تكتب عبارتها فتظهر في المعاينة.
+  const phrase = card.getByLabel("العبارة على المائدة");
+  await expect(phrase).toHaveAttribute("placeholder", "حياكم الله");
+  await phrase.fill("هلا بضيوف أم سعد");
+  await expect(preview).toContainText("هلا بضيوف أم سعد");
+  await expect(preview).not.toContainText("حياكم الله");
   await card.screenshot({
     path: `test-results/family-table-pick-${info.project.name}.png`,
   });
   await card.getByRole("button", { name: "حفظ المائدة" }).click();
   await expect(card).toContainText("تم حفظ مائدتك");
-  expect(sent).toEqual({ ...tablePresets.diwan, shape: "hex" });
+  expect(sent).toEqual({
+    ...tablePresets.diwan,
+    shape: "hex",
+    welcome: "هلا بضيوف أم سعد",
+  });
+  // مسح العبارة يعيد «حياكم الله».
+  await phrase.fill("");
+  await expect(preview).toContainText("حياكم الله");
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,
@@ -159,6 +175,51 @@ test.describe("the family page shows the chosen table", () => {
         path: `test-results/family-table-mobile-classic.png`,
       });
       return;
+    }
+    // عبارة الأسرة تظهر بدل «حياكم الله».
+    await pool.query(
+      `INSERT INTO jdatna.producer_table(producer_id,shape,height,finish,ornament,frame,display,welcome) VALUES($1,'rect','raised','walnut','sadu','plain','grid','أهلًا وسهلًا بكم')
+       ON CONFLICT(producer_id) DO UPDATE SET welcome=EXCLUDED.welcome`,
+      [pid],
+    );
+    await page.reload();
+    await expect(table).toContainText("أهلًا وسهلًا بكم");
+    await expect(table).not.toContainText("حياكم الله");
+    await pool.query(
+      "UPDATE jdatna.producer_table SET welcome=NULL WHERE producer_id=$1",
+      [pid],
+    );
+    // كل الأشكال بلون وزخرفة مختلفين، للصور.
+    const finishes = [
+      "walnut",
+      "sidr",
+      "athel",
+      "ivory",
+      "olive",
+      "henna",
+      "najdi",
+      "ebony",
+    ];
+    const ornaments = ["sadu", "najdi", "palm", "star", "dots", "none"];
+    const heights = ["raised", "low", "floor"];
+    for (const [i, shape] of tableShapes.entries()) {
+      await pool.query(
+        `UPDATE jdatna.producer_table SET shape=$2,height=$3,finish=$4,ornament=$5,frame=$6,display=$7 WHERE producer_id=$1`,
+        [
+          pid,
+          shape,
+          heights[i % 3],
+          finishes[i % 8],
+          ornaments[i % 6],
+          ["plain", "double", "gold", "sadu", "carved"][i % 5],
+          ["grid", "ring", "row"][i % 3],
+        ],
+      );
+      await page.reload();
+      await expect(table).toHaveAttribute("data-shape", shape);
+      await table.screenshot({
+        path: `test-results/family-shape-${i}-${shape}.png`,
+      });
     }
     for (const id of tablePresetIds) {
       const d = tablePresets[id];

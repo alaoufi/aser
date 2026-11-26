@@ -20,6 +20,7 @@ type Own = {
   name: string;
   chosen: boolean;
   table: FamilyTableDesign;
+  welcome: string;
   dishes: TableDish[];
 };
 const fmt = (n: number) => new Intl.NumberFormat("ar-SA").format(n);
@@ -32,6 +33,7 @@ export function FamilyTableCard() {
   const { tx, txb } = useTx();
   const [own, setOwn] = useState<Own | null>(null);
   const [draft, setDraft] = useState<FamilyTableDesign | null>(null);
+  const [welcome, setWelcome] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -41,6 +43,7 @@ export function FamilyTableCard() {
       .then((o) => {
         setOwn(o);
         setDraft(o.table);
+        setWelcome(o.welcome);
       })
       .catch(() => setFailed(true));
   }, []);
@@ -67,10 +70,11 @@ export function FamilyTableCard() {
     try {
       const o = await api<Own>("/api/producer/table", {
         method: "PUT",
-        body: JSON.stringify(draft),
+        body: JSON.stringify({ ...draft, welcome }),
       });
       setOwn(o);
       setDraft(o.table);
+      setWelcome(o.welcome);
       setSuccess(tx("ftable.pick.saved"));
     } catch (e) {
       setError((e as Error).message);
@@ -82,7 +86,8 @@ export function FamilyTableCard() {
     id: "sample-" + i,
     name: tx("ftable.pick.sample"),
   }));
-  const changed = own && draft && !samePreset(own.table, draft);
+  const changed =
+    own && draft && (!samePreset(own.table, draft) || welcome !== own.welcome);
   return (
     <section
       className={s.card}
@@ -100,12 +105,33 @@ export function FamilyTableCard() {
             <FamilyTable
               design={draft}
               dishes={own.dishes.length ? own.dishes : sample}
-              welcome={tx("ftable.welcome")}
+              welcome={welcome.trim() || tx("ftable.welcome")}
               empty={tx("ftable.empty")}
               label={tx("ftable.pick.preview")}
               link={false}
             />
           </div>
+          <label className={s.field}>
+            {txb("ftable.pick.welcome")}
+            <input
+              type="text"
+              maxLength={40}
+              value={welcome}
+              placeholder={tx("ftable.welcome")}
+              disabled={busy}
+              aria-describedby="ftable-welcome-hint"
+              onChange={(e) => {
+                setSuccess("");
+                setError("");
+                setWelcome(e.target.value);
+              }}
+            />
+            <small id="ftable-welcome-hint" className={s.muted}>
+              {tx("ftable.pick.welcomeHint", {
+                text: tx("ftable.welcome"),
+              })}
+            </small>
+          </label>
           <fieldset className={s.ftChoices} disabled={busy}>
             <legend>{txb("ftable.pick.presets")}</legend>
             <div className={s.ftChips}>

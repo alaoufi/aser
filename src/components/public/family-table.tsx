@@ -1,4 +1,5 @@
 import {
+  shapeGeometry,
   tableData,
   tableStyle,
   type FamilyTableDesign,
@@ -10,10 +11,10 @@ export type TableDish = { id: string; name: string; imageUrl?: string | null };
 
 /** كم طبقًا تتسع له المائدة حسب شكلها وطريقة العرض. */
 export function tableCapacity(d: FamilyTableDesign) {
-  if (d.display === "row")
-    return d.shape === "rect" || d.shape === "oval" ? 6 : 4;
+  const wide = shapeGeometry[d.shape].wide;
+  if (d.display === "row") return wide ? 6 : 4;
   if (d.display === "ring") return 8;
-  return d.shape === "rect" || d.shape === "oval" ? 8 : 6;
+  return wide ? 8 : 6;
 }
 
 /**
@@ -92,7 +93,7 @@ export function FamilyTable({
             )}
           </div>
         </div>
-        {design.height === "raised" && (
+        {design.height !== "floor" && (
           <>
             <span className="ft-leg is-1" aria-hidden="true" />
             <span className="ft-leg is-2" aria-hidden="true" />

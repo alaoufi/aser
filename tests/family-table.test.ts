@@ -14,7 +14,7 @@ import { isSiteTextKey, siteTextDefaults } from "../src/lib/site-texts";
 
 /** مكتبة موائد الأسر: كل اختيار ومقترح له اسم في «نصوص الموقع»، والمحفوظ القديم يكتمل بالافتراضي. */
 test("the family table library is complete and every name is a site text", () => {
-  assert.equal(tableCount, 6 * 2 * 8 * 6 * 5 * 3);
+  assert.equal(tableCount, 18 * 3 * 8 * 6 * 5 * 3);
   for (const dim of tableDimensionKeys) {
     assert.ok(isSiteTextKey(`ftable.dim.${dim}`), dim);
     for (const opt of tableDimensions[dim])
@@ -35,4 +35,22 @@ test("the family table library is complete and every name is a site text", () =>
     shape: "round",
   });
   assert.equal(isTableDesign({ ...defaultTable, frame: "x" }), false);
+});
+
+test("the family's own phrase is a short line without links or phone numbers", async () => {
+  const { cleanWelcome } = await import("../src/server/family-table");
+  assert.equal(cleanWelcome(""), null);
+  assert.equal(cleanWelcome("   "), null);
+  assert.equal(cleanWelcome(undefined), null);
+  assert.equal(cleanWelcome("  هلا   بضيوفنا ‏ "), "هلا بضيوفنا");
+  for (const bad of [
+    "زورونا https://x.com",
+    "www.example",
+    "موقعنا jdtna.sa",
+    "اتصل 0555123456",
+    "اتصل ٠٥٥٥١٢٣٤٥٦",
+    "<b>هلا</b>",
+    "ا".repeat(41),
+  ])
+    assert.throws(() => cleanWelcome(bad), { status: 400 }, bad);
 });
