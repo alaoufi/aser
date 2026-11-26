@@ -22,6 +22,7 @@ import "./heritage.css";
 import "./najdi.css";
 import "./palettes.css";
 import "./family-table.css";
+import "./type-scale.css";
 import {
   APP_STORE_URL,
   PLAY_STORE_URL,

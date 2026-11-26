@@ -3971,6 +3971,10 @@ main {
   body {
     padding-bottom: calc(68px + env(safe-area-inset-bottom));
   }
+  /* ما ينتقل إليه المتصفح (حقل أو زر أو رابط #) لا يختفي خلف القائمة السفلية الثابتة. */
+  html {
+    scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom));
+  }
   .bottom-nav {
     align-items: end;
     background: var(--surface);
