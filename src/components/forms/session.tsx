@@ -6,6 +6,7 @@
  */
 import { useEffect, useState, useSyncExternalStore } from "react";
 import type { SessionUser } from "@/lib/types";
+import { useSiteTextsContext } from "@/components/site-texts";
 import {
   siteTextDefaults,
   type SiteTextKey,
@@ -291,8 +292,12 @@ export function MemberNo({ no }: { no?: number | null }) {
  * و{اسم} في النص يُستبدل بقيمته. txb للأزرار: لا يُخفى، فيعود للأصل إن حُذف.
  */
 export function useSiteTexts() {
-  const [texts, setTexts] = useState<Partial<SiteTexts> | null>(null);
+  // داخل القالب النصوص جاهزة (SiteTextsProvider)، فلا طلب إضافي.
+  const fromLayout = useSiteTextsContext();
+  const [fetched, setTexts] = useState<Partial<SiteTexts> | null>(null);
+  const texts = fromLayout ?? fetched;
   useEffect(() => {
+    if (fromLayout) return;
     let live = true;
     api<{ texts: SiteTexts }>("/api/site-texts")
       .then((d) => live && setTexts(d.texts))
@@ -300,7 +305,7 @@ export function useSiteTexts() {
     return () => {
       live = false;
     };
-  }, []);
+  }, [fromLayout]);
   const fill = (text: string, vars?: Record<string, string | number>) =>
     vars
       ? text.replace(/\{(\w+)\}/g, (m, k: string) =>

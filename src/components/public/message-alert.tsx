@@ -1,4 +1,5 @@
 "use client";
+import { T } from "@/components/site-texts";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -54,7 +55,9 @@ export function MessagesLink({ className }: { className?: string }) {
           strokeLinejoin="round"
         />
       </svg>
-      <span className="messages-link-label">المحادثات</span>
+      <span className="messages-link-label">
+        <T k="c.msgAlert.t1" />
+      </span>
       {count > 0 && (
         <span className="messages-badge" aria-hidden="true">
           {count > 99 ? "99+" : count}
@@ -240,7 +243,7 @@ export function MessageAlert() {
           </Link>
         )}
         <button type="button" className="button light" onClick={later}>
-          لاحقًا
+          <T k="c.msgAlert.t2" />
         </button>
       </div>
     </dialog>

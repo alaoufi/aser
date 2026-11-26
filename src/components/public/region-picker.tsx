@@ -1,4 +1,5 @@
 "use client";
+import { T } from "@/components/site-texts";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { regionOf } from "@/lib/region-of";
@@ -81,7 +82,9 @@ export function RegionPicker({
   return (
     <div className="table-region-wrap">
       <label className="table-region">
-        <span className="sr-only">منطقة المائدة</span>
+        <span className="sr-only">
+          <T k="c.region.t1" />
+        </span>
         <select
           aria-label="منطقة المائدة"
           value={value}

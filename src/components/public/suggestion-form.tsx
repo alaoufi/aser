@@ -1,4 +1,5 @@
 "use client";
+import { T } from "@/components/site-texts";
 import { useState } from "react";
 import { api, useSession } from "@/components/forms/session";
 
@@ -66,7 +67,7 @@ export function SuggestionForm() {
       <div aria-live="polite">
         {sent && (
           <p role="status" className="suggestion-sent">
-            شكرًا لك، وصل اقتراحك للإدارة ✓
+            <T k="c.suggest.t1" />
           </p>
         )}
         {error && (

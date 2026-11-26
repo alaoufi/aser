@@ -1,4 +1,5 @@
 "use client";
+import { T } from "@/components/site-texts";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GuideArt } from "./guide-art";
@@ -176,7 +177,7 @@ export function GuideBook({
             className={b.modeButton}
             onClick={() => window.print()}
           >
-            طباعة الدليل
+            <T k="c.guide.t1" />
           </button>
         )}
       </div>
@@ -253,17 +254,17 @@ export function GuideBook({
               onClick={() => step(-1)}
               disabled={flipped === 0}
             >
-              → السابقة
+              <T k="c.guide.t2" />
             </button>
             <button type="button" onClick={() => go(1)}>
-              الفهرس
+              <T k="c.guide.t3" />
             </button>
             <button
               type="button"
               onClick={() => step(1)}
               disabled={flipped >= last}
             >
-              التالية ←
+              <T k="c.guide.t4" />
             </button>
           </nav>
           <p className={b.where} aria-live="polite" ref={live} />
@@ -295,7 +296,9 @@ function PageFace({
   if (page.kind === "cover")
     return (
       <div className={b.cover}>
-        <p className={b.coverEyebrow}>أكلات جدتنا</p>
+        <p className={b.coverEyebrow}>
+          <T k="c.guide.t5" />
+        </p>
         {/* biome-ignore lint/performance/noImgElement: صورة الشعار الثابتة على الغلاف */}
         <img
           src="/brand/jdatna-main-264.webp"
@@ -309,7 +312,7 @@ function PageFace({
         <p className={b.coverVersion}>الإصدار {version}</p>
         {!flat && (
           <button type="button" className={b.openButton} onClick={() => go(1)}>
-            افتح الكتاب ←
+            <T k="c.guide.t6" />
           </button>
         )}
       </div>
@@ -328,7 +331,7 @@ function PageFace({
         )}
         {!flat && (
           <button type="button" className={b.openButton} onClick={() => go(1)}>
-            العودة للفهرس
+            <T k="c.guide.t7" />
           </button>
         )}
       </div>
@@ -336,14 +339,16 @@ function PageFace({
   if (page.kind === "blank")
     return (
       <div className={b.paper}>
-        <p className={b.notes}>ملاحظاتك</p>
+        <p className={b.notes}>
+          <T k="c.guide.t8" />
+        </p>
       </div>
     );
   if (page.kind === "toc")
     return (
       <div className={b.paper}>
         <h2 className={b.tocTitle} id="guide-toc">
-          الفهرس
+          <T k="c.guide.t3" />
         </h2>
         <ol className={b.toc} aria-labelledby="guide-toc">
           {chapters.map((c, i) => (
@@ -365,7 +370,9 @@ function PageFace({
                 <span className={b.tocName}>{c.title}</span>
                 <span className={b.tocFill} aria-hidden="true" />
                 <span className={b.tocPage}>
-                  <span className="sr-only">صفحة </span>
+                  <span className="sr-only">
+                    <T k="c.guide.t9" />{" "}
+                  </span>
                   {chapterPage(c.id)}
                 </span>
               </a>
@@ -411,7 +418,9 @@ function PageFace({
       </ol>
       {c.tip && (
         <p className={b.tip}>
-          <strong>نصيحة: </strong>
+          <strong>
+            <T k="c.guide.t10" />{" "}
+          </strong>
           {c.tip}
         </p>
       )}

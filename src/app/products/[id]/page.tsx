@@ -1,3 +1,4 @@
+import { T } from "@/components/site-texts";
 import { productStatusLabels } from "@/lib/site-texts";
 import { AdSlot } from "@/components/public/ad-slot";
 import { ReportButton } from "@/components/public/report-button";
@@ -133,7 +134,7 @@ export default async function ProductDetail({
       />
       <div className="page-top">
         <Link href="/browse" className="text-link">
-          طبخات اليوم ←
+          <T k="p.product.t1" />
         </Link>
         <ShareButton
           title={p.name}
@@ -149,7 +150,9 @@ export default async function ProductDetail({
           ) : (
             <div className="portrait-placeholder">
               <span aria-hidden="true">♧</span>
-              <p>لم تُضف صورة لهذا المنتج</p>
+              <p>
+                <T k="p.product.t2" />
+              </p>
             </div>
           )}
         </div>
@@ -162,8 +165,7 @@ export default async function ProductDetail({
           <ViewCount kind="product" id={p.id} />
           {p.notCookingToday && (
             <p role="status" className="muted">
-              لا يوجد طبخ اليوم لدى هذه الأسرة المنتجة. يمكنك طلب موعد يبدأ من
-              الغد.
+              <T k="p.product.t3" />
             </p>
           )}
           <Link className="text-link" href={`/producers/${p.producerSlug}`}>
@@ -176,17 +178,23 @@ export default async function ProductDetail({
           <p className="profile-description">{p.description}</p>
           <div className="product-facts">
             <p>
-              <strong>وحدة البيع</strong>
+              <strong>
+                <T k="p.product.t4" />
+              </strong>
               <span>{p.unit}</span>
             </p>
             {p.preparationTime && (
               <p>
-                <strong>وقت التجهيز</strong>
+                <strong>
+                  <T k="p.product.t5" />
+                </strong>
                 <span>{p.preparationTime}</span>
               </p>
             )}
             <p>
-              <strong>التوصيل</strong>
+              <strong>
+                <T k="p.product.t6" />
+              </strong>
               <span>
                 {p.deliveryScope === "kingdom"
                   ? texts["delivery.kingdom"] || "شحن لجميع مناطق المملكة"
@@ -197,12 +205,16 @@ export default async function ProductDetail({
               </span>
             </p>
             <p>
-              <strong>التسليم المباشر</strong>
+              <strong>
+                <T k="p.product.t7" />
+              </strong>
               <span>{p.pickup ? "متاح من موقع الأسرة" : "غير متاح"}</span>
             </p>
             {p.deliveryScope === "kingdom" && (
               <p>
-                <strong>الشحن</strong>
+                <strong>
+                  <T k="p.product.t8" />
+                </strong>
                 <span>
                   {p.shippingFee == null
                     ? "رسوم الشحن بالاتفاق"
@@ -243,8 +255,7 @@ export default async function ProductDetail({
             )}
           </div>
           <p className="muted">
-            التواصل والاتفاق مباشرة مع الأسرة المنتجة. لا يوجد دفع إلكتروني داخل
-            المنصة.
+            <T k="p.product.t9" />
           </p>
         </section>
       </div>
@@ -277,16 +288,22 @@ export default async function ProductDetail({
         />
       )}
       <section className="food-information">
-        <h2>اعرف أكثر قبل ما تختار</h2>
+        <h2>
+          <T k="p.product.t10" />
+        </h2>
         <div className="information-grid">
           <div>
-            <h3>المكونات</h3>
+            <h3>
+              <T k="p.product.t11" />
+            </h3>
             <p>
               {p.ingredients || "لم تُذكر. استفسر من الأسرة المنتجة قبل الطلب."}
             </p>
           </div>
           <div>
-            <h3>مسببات الحساسية</h3>
+            <h3>
+              <T k="p.product.t12" />
+            </h3>
             <p>
               {p.allergens.length
                 ? p.allergens.join("، ")
@@ -294,15 +311,21 @@ export default async function ProductDetail({
             </p>
           </div>
           <div>
-            <h3>الحفظ والصلاحية</h3>
+            <h3>
+              <T k="p.product.t13" />
+            </h3>
             <p>{p.storage || "استفسر عن شروط الحفظ من الأسرة المنتجة."}</p>
             {p.shelfLife && <p>الصلاحية: {p.shelfLife}</p>}
           </div>
         </div>
         {p.story && (
           <div className="food-story">
-            <p className="eyebrow">وراء كل نكهة حكاية</p>
-            <h2>حكاية الأكلة</h2>
+            <p className="eyebrow">
+              <T k="p.product.t14" />
+            </p>
+            <h2>
+              <T k="p.product.t15" />
+            </h2>
             <p>{p.story}</p>
           </div>
         )}

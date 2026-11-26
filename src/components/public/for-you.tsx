@@ -1,4 +1,5 @@
 "use client";
+import { T } from "@/components/site-texts";
 import { useEffect, useState } from "react";
 import type { Product } from "@/lib/types";
 import { useSession } from "@/components/forms/session";
@@ -42,7 +43,9 @@ export function ForYou({
   return (
     <section className="section wrap for-you" aria-labelledby="for-you-title">
       <div className="section-heading">
-        <h2 id="for-you-title">مقترح لك</h2>
+        <h2 id="for-you-title">
+          <T k="c.forYou.t1" />
+        </h2>
         <p className="for-you-note">
           {personal
             ? "حسب طلباتك وتقييماتك وما تصفحته"

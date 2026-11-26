@@ -1,3 +1,4 @@
+import { T } from "@/components/site-texts";
 import { cookies } from "next/headers";
 import { MineBar } from "@/components/public/mine-bar";
 import { pageMemberScope } from "@/server/page-member";
@@ -37,7 +38,9 @@ export default async function Page({
         scope={
           <>
             <div className="browse-scope">
-              <span>نطاقك:</span>
+              <span>
+                <T k="p.offers.t1" />
+              </span>
               <RegionPicker regions={regions} value={region} path="/offers" />
             </div>
             <AdSlot placement="offers_top" />

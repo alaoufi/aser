@@ -1,3 +1,4 @@
+import { T } from "@/components/site-texts";
 import Link from "next/link";
 import { describeFood, type FoodIntent } from "@/lib/food-intent";
 import { DISHES, dishPath } from "@/lib/dishes";
@@ -20,7 +21,9 @@ export function UnderstoodRequest({
     `/browse?q=${encodeURIComponent(intent.search)}&region=${encodeURIComponent(region)}`;
   return (
     <section className="understood" aria-labelledby="understood-title">
-      <h2 id="understood-title">فهمنا طلبك</h2>
+      <h2 id="understood-title">
+        <T k="c.understood.t1" />
+      </h2>
       <p className="understood-asked">«{asked}»</p>
       {parts.length > 0 && (
         <ul className="understood-parts">
@@ -35,7 +38,10 @@ export function UnderstoodRequest({
       {missing === "dish" && (
         <div className="understood-ask">
           <p>
-            <strong>وش الأكلة اللي تبيها؟</strong> اختر، أو اكتب اسمها مع طلبك:
+            <strong>
+              <T k="c.understood.t2" />
+            </strong>{" "}
+            اختر، أو اكتب اسمها مع طلبك:
           </p>
           <p className="understood-choices">
             {DISHES.slice(0, 8).map((d) => (
@@ -53,7 +59,10 @@ export function UnderstoodRequest({
       {missing === "place" && (
         <div className="understood-ask">
           <p>
-            <strong>وين؟</strong> اختر منطقتك لنعرض أسرًا تصلك:
+            <strong>
+              <T k="c.understood.t3" />
+            </strong>{" "}
+            اختر منطقتك لنعرض أسرًا تصلك:
           </p>
           <p className="understood-choices">
             {regions.map((r) => (

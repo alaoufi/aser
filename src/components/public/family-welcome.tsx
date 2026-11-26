@@ -1,4 +1,5 @@
 "use client";
+import { T } from "@/components/site-texts";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useSession } from "@/components/forms/session";
@@ -73,15 +74,21 @@ export function FamilyWelcome({ texts }: { texts: WelcomeTexts }) {
         <nav aria-label="اختصارات الأسرة" className="family-welcome-links">
           <Link href="/dashboard/products" onClick={close}>
             <strong>{texts["welcome.products"] || "إضافة منتجاتك"}</strong>
-            <small>طبق جديد أو تحديث المتوفر</small>
+            <small>
+              <T k="c.welcome.t1" />
+            </small>
           </Link>
           <Link href="/dashboard/library" onClick={close}>
             <strong>{texts["welcome.library"] || "مكتبة الصور"}</strong>
-            <small>صور أطباقك جاهزة للمنتجات</small>
+            <small>
+              <T k="c.welcome.t2" />
+            </small>
           </Link>
           <Link href="/dashboard#family-categories" onClick={close}>
             <strong>{texts["welcome.categories"] || "الأقسام"}</strong>
-            <small>أقسام منتجاتك</small>
+            <small>
+              <T k="c.welcome.t3" />
+            </small>
           </Link>
         </nav>
       </div>

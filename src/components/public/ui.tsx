@@ -1,3 +1,4 @@
+import { T } from "@/components/site-texts";
 import Link from "next/link";
 import type { Product, Producer } from "@/lib/types";
 import { productStatusLabels } from "@/lib/site-texts";
@@ -93,7 +94,9 @@ export function ProductCard({
           {priceLabel(p.price)} {p.price !== null && <small>/ {p.unit}</small>}
         </p>
         {p.deliveryScope === "kingdom" && (
-          <small className="shipping-badge">شحن لكل المملكة</small>
+          <small className="shipping-badge">
+            <T k="c.ui.t1" />
+          </small>
         )}
         {extra}
       </div>
@@ -134,7 +137,11 @@ export function ProducerCard({ producer: p }: { producer: Producer }) {
             count={p.ratingCount ?? 0}
             size={14}
           />
-          {p.notCookingToday && <span>لا يوجد طبخ اليوم</span>}
+          {p.notCookingToday && (
+            <span>
+              <T k="c.ui.t2" />
+            </span>
+          )}
           <span>{p.delivery ? "توصيل متاح" : "استلام بالتنسيق"}</span>
         </div>
       </div>

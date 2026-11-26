@@ -1,4 +1,5 @@
 "use client";
+import { T } from "@/components/site-texts";
 import { regionOptions } from "@/lib/regions";
 import { useState } from "react";
 import type { City } from "@/lib/types";
@@ -31,7 +32,9 @@ export function LocationFields({
   return (
     <>
       <label className={className}>
-        <span className="sr-only">المنطقة</span>
+        <span className="sr-only">
+          <T k="c.location.t1" />
+        </span>
         <select
           name={regionName}
           value={region}
@@ -50,7 +53,9 @@ export function LocationFields({
         </select>
       </label>
       <label className={className}>
-        <span className="sr-only">المدينة</span>
+        <span className="sr-only">
+          <T k="c.location.t2" />
+        </span>
         <select
           name={cityName}
           value={city}

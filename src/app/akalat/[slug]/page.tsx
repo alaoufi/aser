@@ -1,3 +1,4 @@
+import { T } from "@/components/site-texts";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -55,9 +56,13 @@ export default async function DishPage({ params }: Props) {
         }}
       />
       <nav className="dish-crumbs" aria-label="مسار الصفحة">
-        <Link href="/">الرئيسية</Link>
+        <Link href="/">
+          <T k="p.akalatOne.t1" />
+        </Link>
         <span aria-hidden="true">‹</span>
-        <Link href="/akalat">الأكلات الشعبية</Link>
+        <Link href="/akalat">
+          <T k="p.akalatOne.t2" />
+        </Link>
         <span aria-hidden="true">‹</span>
         <span aria-current="page">{dish.name}</span>
       </nav>
@@ -75,7 +80,9 @@ export default async function DishPage({ params }: Props) {
         <p>{dish.ingredients}</p>
       </section>
       <section>
-        <h2>متى يُقدَّم؟</h2>
+        <h2>
+          <T k="p.akalatOne.t3" />
+        </h2>
         <p>{dish.served}</p>
       </section>
       <section aria-labelledby="dish-products">
@@ -83,8 +90,7 @@ export default async function DishPage({ params }: Props) {
         {products.length ? (
           <>
             <p>
-              منتجات متاحة الآن من أسر منتجة معتمدة، تطلبها من الأسرة مباشرة
-              بالتوصيل أو الاستلام.
+              <T k="p.akalatOne.t4" />
             </p>
             <div className="product-grid">
               {products.map((p) => (
@@ -110,17 +116,19 @@ export default async function DishPage({ params }: Props) {
             </p>
             <div className="dish-actions">
               <Link className="button" href="/producers">
-                تصفّح الأسر المنتجة
+                <T k="p.akalatOne.t5" />
               </Link>
               <Link className="button secondary" href="/register">
-                أسرة منتجة؟ اعرض أكلاتك
+                <T k="p.akalatOne.t6" />
               </Link>
             </div>
           </>
         )}
       </section>
       <nav className="dish-more" aria-label="أكلات شعبية أخرى">
-        <h2>أكلات شعبية أخرى</h2>
+        <h2>
+          <T k="p.akalatOne.t7" />
+        </h2>
         <p>
           {others.map((d) => (
             <Link key={d.slug} href={dishPath(d)} prefetch={false}>

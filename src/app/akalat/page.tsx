@@ -1,3 +1,4 @@
+import { T } from "@/components/site-texts";
 import type { Metadata } from "next";
 import { AdSlot } from "@/components/public/ad-slot";
 import Link from "next/link";
@@ -35,11 +36,14 @@ export default async function Dishes() {
           })),
         }}
       />
-      <p className="eyebrow">شعبيات من بيوت الأسر المنتجة</p>
-      <h1>الأكلات الشعبية السعودية</h1>
+      <p className="eyebrow">
+        <T k="p.akalat.t1" />
+      </p>
+      <h1>
+        <T k="p.akalat.t2" />
+      </h1>
       <p className="lead">
-        أكلات شعبية وطبخ بيت كما تطبخه الجدات: اختر الأكلة لتعرف مكوناتها
-        ومناسبتها، واطلبها من الأسر المنتجة مباشرة.
+        <T k="p.akalat.t3" />
       </p>
       <AdSlot placement="akalat_top" />
       <ul className="dish-list">
@@ -55,7 +59,9 @@ export default async function Dishes() {
       </ul>
       {categories.length > 0 && (
         <nav className="dish-more" aria-label="أقسام المنتجات">
-          <h2>أقسام المنتجات المعروضة</h2>
+          <h2>
+            <T k="p.akalat.t4" />
+          </h2>
           <p>
             {categories.map((c) => (
               <Link
@@ -71,10 +77,10 @@ export default async function Dishes() {
       )}
       <div className="dish-actions">
         <Link className="button" href="/browse">
-          طبخات اليوم المتاحة
+          <T k="p.akalat.t5" />
         </Link>
         <Link className="button secondary" href="/producers">
-          الأسر المنتجة
+          <T k="p.akalat.t6" />
         </Link>
       </div>
     </article>
