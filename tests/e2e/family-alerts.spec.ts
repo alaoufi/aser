@@ -25,6 +25,8 @@ test.describe("family alerts", () => {
   };
   let slug = "";
   let category = "";
+  let city = "";
+  let region = "";
   const dispatch = async () => {
     process.env.FAMILY_ALERTS_TIMER = "off";
     const fa = await import("../../src/server/family-alerts");
@@ -45,14 +47,17 @@ test.describe("family alerts", () => {
         (await pool.query("SELECT current_database() AS n")).rows[0].n as string
       ).startsWith("jdatna_test_"),
     ).toBe(true);
-    const city = (
-      await pool.query("SELECT id FROM jdatna.cities ORDER BY id LIMIT 1")
-    ).rows[0].id;
-    category = (
-      await pool.query(
-        "SELECT id FROM jdatna.categories WHERE NOT hidden ORDER BY id LIMIT 1",
-      )
-    ).rows[0].id;
+    // منطقة ومدينة خاصتان بالاختبار، وقسم رسمي ثابت: لا تتداخل الأسرة مع اختبارات أخرى تعمل بالتوازي.
+    city = `fa-city-${randomUUID().slice(0, 8)}`;
+    region = `fa-region-${randomUUID().slice(0, 8)}`;
+    await pool.query("INSERT INTO jdatna.regions(id,name) VALUES($1,$1)", [
+      region,
+    ]);
+    await pool.query(
+      "INSERT INTO jdatna.cities(id,name,region_id) VALUES($1,$1,$2)",
+      [city, region],
+    );
+    category = "1";
     ids.family = randomUUID();
     ids.member = randomUUID();
     ids.producer = randomUUID();
@@ -130,6 +135,12 @@ test.describe("family alerts", () => {
       .catch(() => {});
     await pool
       .query("DELETE FROM jdatna.users WHERE id=ANY($1::uuid[])", [users])
+      .catch(() => {});
+    await pool
+      .query("DELETE FROM jdatna.cities WHERE id=$1", [city])
+      .catch(() => {});
+    await pool
+      .query("DELETE FROM jdatna.regions WHERE id=$1", [region])
       .catch(() => {});
     await pool.end();
   });

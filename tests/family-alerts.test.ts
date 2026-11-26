@@ -48,9 +48,16 @@ test(
         role,
       } as never as import("../src/lib/types").SessionUser;
     };
-    const city = (
-      await pool.query("SELECT id FROM jdatna.cities ORDER BY id LIMIT 1")
-    ).rows[0].id;
+    // منطقة ومدينة خاصتان بالاختبار: لا تتداخل أسرته مع اختبارات أخرى تعمل بالتوازي في المدن نفسها.
+    const city = `fa-city-${randomUUID().slice(0, 8)}`;
+    const region = `fa-region-${randomUUID().slice(0, 8)}`;
+    await pool.query("INSERT INTO jdatna.regions(id,name) VALUES($1,$1)", [
+      region,
+    ]);
+    await pool.query(
+      "INSERT INTO jdatna.cities(id,name,region_id) VALUES($1,$1,$2)",
+      [city, region],
+    );
     const familyUser = await mkUser("producer");
     const producerId = randomUUID();
     const slug = `alerts-${producerId.slice(0, 8)}`;
@@ -228,6 +235,8 @@ test(
       await pool
         .query("DELETE FROM jdatna.users WHERE id=ANY($1::uuid[])", [users])
         .catch(() => {});
+      await pool.query("DELETE FROM jdatna.cities WHERE id=$1", [city]);
+      await pool.query("DELETE FROM jdatna.regions WHERE id=$1", [region]);
       await pool.end();
     }
   },
