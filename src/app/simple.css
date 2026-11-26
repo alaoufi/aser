@@ -823,3 +823,159 @@ body:has(:not(.footer-verified) > .verified-seal) .site-footer {
 .family-maeda .maeda-dishes {
   padding-top: 0;
 }
+
+/* ——— «صانع المائدة» (تفصيل المالك 2026-11-26؛ نموذج للاعتماد، بلا اختيار الأسرة بعد) ———
+   تركيب حر من أربعة محاور على .maeda: data-shape (الشكل)، data-finish (الخامة)، data-edge (الحافة)،
+   data-runner (مفرش فوق المائدة)، واللون --tc. اسم الأسرة على لوحة فاتحة دائمًا فيبقى تباينه ثابتًا
+   مهما كان اللون. */
+.maeda[data-finish] {
+  --tc: #6b4226;
+  --tc2: color-mix(in srgb, var(--tc) 72%, black);
+  --tc3: color-mix(in srgb, var(--tc) 55%, white);
+  --runner-layer: linear-gradient(transparent, transparent);
+  --cloth: var(--runner-layer), var(--finish);
+  --cloth-edge:
+    var(--edge, 0 0 0 0 transparent), var(--depth, 0 0 0 0 transparent),
+    0 16px 26px -10px rgb(43 31 23 / 0.45);
+}
+.maeda[data-finish] .maeda-cloth {
+  overflow: hidden;
+  inset-inline: var(--inset, 0);
+  border-radius: var(--radius, 0);
+}
+/* الخامة */
+.maeda[data-finish="plain"] {
+  --finish:
+    radial-gradient(ellipse at 50% 0%, var(--tc3), transparent 70%), var(--tc);
+}
+.maeda[data-finish="sadu"] {
+  --finish:
+    var(--sadu-band) repeat-x top / auto 24px,
+    var(--sadu-band) repeat-x bottom / auto 24px,
+    repeating-linear-gradient(
+      180deg,
+      var(--tc2) 0 20px,
+      var(--tc) 20px 26px,
+      var(--tc2) 26px 30px,
+      #efe3cc 30px 31px
+    );
+}
+.maeda[data-finish="najdi"] {
+  --finish:
+    repeating-linear-gradient(45deg, transparent 0 16px, #efe3cc59 16px 18px),
+    repeating-linear-gradient(-45deg, transparent 0 16px, #efe3cc59 16px 18px),
+    radial-gradient(circle, #efe3cc80 0 3px, transparent 3.5px) 0 0 / 24px 24px,
+    var(--tc);
+}
+.maeda[data-finish="embroidered"] {
+  --finish:
+    repeating-linear-gradient(90deg, #00000008 0 1px, transparent 1px 7px),
+    repeating-linear-gradient(0deg, #00000008 0 1px, transparent 1px 7px),
+    #fbf8f1;
+}
+.maeda[data-finish="embroidered"] .maeda-cloth::after {
+  content: "";
+  position: absolute;
+  inset: 14px;
+  border: 2px dashed var(--tc);
+  border-radius: inherit;
+}
+.maeda[data-finish="wood"] {
+  --finish:
+    repeating-linear-gradient(
+      178deg,
+      #0000001a 0 2px,
+      transparent 2px 11px,
+      #ffffff12 11px 13px,
+      transparent 13px 23px
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--tc) 60%, #a0683c),
+      color-mix(in srgb, var(--tc) 60%, #5e3820)
+    );
+}
+.maeda[data-finish="brass"] {
+  --finish:
+    radial-gradient(ellipse at 50% 10%, #fff1c2a6, transparent 55%),
+    repeating-radial-gradient(
+      ellipse at 50% 30%,
+      #d9a441 0 9px,
+      #9a6a1c 9px 10px,
+      #e8b955 10px 18px,
+      #c48d2e 18px 20px
+    );
+}
+.maeda[data-finish="khoos"] {
+  --finish:
+    repeating-linear-gradient(
+      180deg,
+      transparent 0 44px,
+      var(--tc) 44px 50px,
+      transparent 50px 96px
+    ),
+    repeating-linear-gradient(45deg, #dcbc80 0 6px, #c8a062 6px 12px);
+}
+.maeda[data-finish="marble"] {
+  --finish:
+    linear-gradient(115deg, transparent 30%, #8a7f7426 31%, transparent 33%),
+    linear-gradient(160deg, transparent 55%, #8a7f741f 56%, transparent 58%),
+    linear-gradient(
+      70deg,
+      transparent 70%,
+      color-mix(in srgb, var(--tc) 25%, transparent) 71%,
+      transparent 72%
+    ),
+    radial-gradient(ellipse at 30% 20%, #ffffff, #ebe6df);
+}
+/* الشكل */
+.maeda[data-shape="rect"] {
+  --inset: 12px;
+  --radius: 16px;
+}
+.maeda[data-shape="square"] {
+  --inset: 12px;
+  --radius: 4px;
+}
+.maeda[data-shape="oval"] {
+  --inset: 6px;
+  --radius: 50%;
+}
+.maeda[data-shape="round"] {
+  --inset: max(6px, calc(50% - 560px));
+  --radius: 999px;
+}
+.maeda[data-shape="sufra"] {
+  --inset: 16px;
+  --radius: 6px;
+  --depth: 0 12px 0 var(--tc2);
+}
+.maeda[data-shape="sufra"] .maeda-cloth {
+  bottom: 14px;
+}
+/* الحافة */
+.maeda[data-edge="gold"] {
+  --edge: inset 0 0 0 5px #c48d2e, inset 0 0 0 7px #f3d58e;
+}
+.maeda[data-edge="double"] {
+  --edge: inset 0 0 0 4px #efe3cc, inset 0 0 0 8px var(--tc2);
+}
+.maeda[data-edge="sadu"] .maeda-cloth::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    var(--sadu-thin) repeat-x top / auto 12px,
+    var(--sadu-thin) repeat-x bottom / auto 12px;
+}
+/* مفرش فوق المائدة: شريط قماش فاتح بحافتين في وسطها تحت الصحون. */
+.maeda[data-runner="on"] {
+  --runner-layer: linear-gradient(
+    180deg,
+    transparent 6%,
+    var(--tc2) 6% 7.5%,
+    #f6eddc 7.5% 54%,
+    var(--tc2) 54% 55.5%,
+    transparent 55.5%
+  );
+}
