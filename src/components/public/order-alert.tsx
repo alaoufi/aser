@@ -1,4 +1,5 @@
 "use client";
+import { T } from "@/components/site-texts";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, useSession } from "@/components/forms/session";
@@ -149,10 +150,10 @@ export function OrderAlert() {
           className="button"
           onClick={() => acknowledge()}
         >
-          عرض الطلب والرد عليه
+          <T k="c.orderAlert.t1" />
         </Link>
         <button type="button" className="button light" onClick={acknowledge}>
-          لاحقًا
+          <T k="c.orderAlert.t2" />
         </button>
       </div>
     </dialog>

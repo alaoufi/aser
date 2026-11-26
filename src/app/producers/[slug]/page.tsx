@@ -1,3 +1,4 @@
+import { T } from "@/components/site-texts";
 import { productStatusLabels } from "@/lib/site-texts";
 import { AdSlot } from "@/components/public/ad-slot";
 import { identityProps } from "@/lib/brand";
@@ -149,7 +150,7 @@ export default async function ProducerDetail({
         />
         <div className="page-top">
           <Link href="/producers" className="text-link">
-            الأسر المنتجة ←
+            <T k="p.family.t1" />
           </Link>
           <ShareButton
             title={p.name}
@@ -177,8 +178,7 @@ export default async function ProducerDetail({
             <FamilyViewsSummary />
             {p.notCookingToday && (
               <p role="status" className="muted">
-                لا يوجد طبخ اليوم. طلبات المواعيد القادمة متاحة بالاتفاق مع
-                الأسرة المنتجة.
+                <T k="p.family.t2" />
               </p>
             )}
             {p.certificateId && (
@@ -196,7 +196,9 @@ export default async function ProducerDetail({
         <AdSlot placement="producer_page" />
         <div className="detail-grid">
           <section>
-            <h2>من مائدة الأسرة المنتجة</h2>
+            <h2>
+              <T k="p.family.t3" />
+            </h2>
             {products.length ? (
               <div className="product-grid two">
                 {products.map((item) => (
@@ -216,8 +218,12 @@ export default async function ProducerDetail({
             )}
           </section>
           <aside className="info-panel">
-            <h2>تواصل مع الأسرة المنتجة</h2>
-            <p>اتفق مباشرة على السعر والكمية ووقت التجهيز والاستلام.</p>
+            <h2>
+              <T k="p.family.t4" />
+            </h2>
+            <p>
+              <T k="p.family.t5" />
+            </p>
             <RatingBox
               kind="family"
               target={p.id}
@@ -244,7 +250,9 @@ export default async function ProducerDetail({
               )}
             </div>
             <hr />
-            <h3>التوصيل والاستلام</h3>
+            <h3>
+              <T k="p.family.t6" />
+            </h3>
             <p>
               {p.delivery
                 ? "التوصيل متاح بالتنسيق مع الأسرة المنتجة."
@@ -270,19 +278,22 @@ export default async function ProducerDetail({
               <LocationLink label="موقع الأسرة" location={p.publicLocation} />
             ) : (
               <p className="muted">
-                يُشارك موقع الاستلام الدقيق معك بالتنسيق الخاص؛ لا يُعرض عنوان
-                المنزل علنًا.
+                <T k="p.family.t7" />
               </p>
             )}
             {p.businessHours && (
               <>
-                <h3>أوقات العمل</h3>
+                <h3>
+                  <T k="p.family.t8" />
+                </h3>
                 <p className="pre-line">{p.businessHours}</p>
               </>
             )}
             {p.socialLinks.length > 0 && (
               <>
-                <h3>تابع الأسرة المنتجة</h3>
+                <h3>
+                  <T k="p.family.t9" />
+                </h3>
                 <div className="social-links">
                   {p.socialLinks.map((s, i) => {
                     const url = safeUrl(s.url);
@@ -308,11 +319,13 @@ export default async function ProducerDetail({
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  الموقع الإلكتروني للأسرة المنتجة ↗
+                  <T k="p.family.t10" />
                 </a>
               </p>
             )}
-            <small>المراجعة الإدارية ليست ترخيصًا أو اعتمادًا حكوميًا.</small>
+            <small>
+              <T k="p.family.t11" />
+            </small>
             <ReportButton producerId={p.id} />
           </aside>
         </div>

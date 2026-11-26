@@ -1,3 +1,4 @@
+import { T } from "@/components/site-texts";
 /**
  * شارة «متجر موثّق» ثابتة في زاوية الصفحة اليمنى السفلى (طلبات المالك 2026-11-23).
  *
@@ -25,7 +26,9 @@ export function VerifiedStore() {
           {/* biome-ignore lint/performance/noImgElement: شعار SVG صغير ثابت */}
           <img src="/sbc-emblem.svg" alt="" width={20} height={22} />
         </span>
-        <span className="verified-store-text">متجر موثّق</span>
+        <span className="verified-store-text">
+          <T k="c.verified.t1" />
+        </span>
       </a>
     </div>
   );

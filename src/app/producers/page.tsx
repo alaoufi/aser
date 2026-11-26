@@ -1,3 +1,4 @@
+import { T } from "@/components/site-texts";
 import { LocationFields } from "@/components/public/location-fields";
 import { AdSlot } from "@/components/public/ad-slot";
 import type { Metadata } from "next";
@@ -33,9 +34,15 @@ export default async function Producers({
   return (
     <div className="wrap page-space">
       <div className="page-intro">
-        <p className="eyebrow">أيدٍ تحفظ الموروث</p>
-        <h1>الأسر المنتجة</h1>
-        <p>تعرّف على أهل الصنعة، واكتشف حكاية كل نكهة.</p>
+        <p className="eyebrow">
+          <T k="p.producers.t1" />
+        </p>
+        <h1>
+          <T k="p.producers.t2" />
+        </h1>
+        <p>
+          <T k="p.producers.t3" />
+        </p>
       </div>
       <AdSlot placement="producers_top" />
       <form
@@ -59,7 +66,9 @@ export default async function Producers({
           defaultRegion={region}
           defaultCity={city}
         />
-        <button className="button">ابحث عن أسرة</button>
+        <button className="button">
+          <T k="p.producers.t4" />
+        </button>
       </form>
       {scopeName && (
         <div className="results-heading">

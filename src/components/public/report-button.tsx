@@ -1,4 +1,5 @@
 "use client";
+import { T } from "@/components/site-texts";
 import { useId, useState } from "react";
 import Link from "next/link";
 type ReportTarget =
@@ -70,10 +71,11 @@ export function ReportButton(target: ReportTarget) {
       </button>
       {open && (
         <div id={id} className="report-panel">
-          <h3>ساعدنا نحافظ على مساحة آمنة</h3>
+          <h3>
+            <T k="c.report.t1" />
+          </h3>
           <p className="muted">
-            وضّح المخالفة أو المشكلة. لا تذكر بيانات هوية أو مستندات أو معلومات
-            بنكية. البلاغ ليس طلب استرجاع أو شكوى طوارئ.
+            <T k="c.report.t2" />
           </p>
           {!sent && (
             <form onSubmit={submit}>
@@ -112,7 +114,7 @@ export function ReportButton(target: ReportTarget) {
           </p>
           {login && (
             <Link className="text-link" href="/login">
-              سجّل الدخول لإرسال البلاغ ←
+              <T k="c.report.t3" />
             </Link>
           )}
         </div>

@@ -1,4 +1,5 @@
 "use client";
+import { T } from "@/components/site-texts";
 import Link from "next/link";
 import {
   MemberNo,
@@ -58,5 +59,9 @@ export function AccountGreeting() {
 export function FamilyMenuLinks() {
   const { user } = useSession();
   if (!isFamilyAccount(user) || familyPending(user)) return null;
-  return <Link href="/dashboard/couriers">مندوبي الخاص</Link>;
+  return (
+    <Link href="/dashboard/couriers">
+      <T k="c.account.t1" />
+    </Link>
+  );
 }

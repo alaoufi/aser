@@ -1,4 +1,5 @@
 "use client";
+import { T } from "@/components/site-texts";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { api } from "@/components/forms/session";
@@ -29,7 +30,9 @@ export function MinePrompt({
   if (needs === "region")
     return (
       <label className="mine-prompt">
-        <span className="sr-only">منطقتك</span>
+        <span className="sr-only">
+          <T k="c.minePrompt.t1" />
+        </span>
         <select
           defaultValue=""
           onChange={(e) => {
@@ -65,7 +68,9 @@ export function MinePrompt({
   }
   return (
     <fieldset className="mine-prompt">
-      <legend className="sr-only">خياراتك من الأقسام</legend>
+      <legend className="sr-only">
+        <T k="c.minePrompt.t2" />
+      </legend>
       <div className="mine-interests">
         {(choices.categories ?? []).map((c) => (
           <label key={c.id} className="mine-interest">

@@ -35,6 +35,7 @@ import { VerifiedStore } from "@/components/public/verified-store";
 import { VerifiedStoreGate } from "@/components/public/verified-store-gate";
 import { dishPath, findDish } from "@/lib/dishes";
 import { TemplateSwitcher } from "@/components/public/template-switcher";
+import { SiteTextsProvider, T } from "@/components/site-texts";
 import {
   AppearancePicker,
   PALETTE_SCRIPT,
@@ -190,230 +191,254 @@ export default async function RootLayout({
           // biome-ignore lint/security/noDangerouslySetInnerHtml: نص ثابت من الكود يقرأ اختيار الزائر من جهازه
           dangerouslySetInnerHTML={{ __html: PALETTE_SCRIPT }}
         />
-        <StarDefs />
-        <JsonLd
-          data={{
-            "@context": "https://schema.org",
-            "@graph": [
-              {
-                "@type": "Organization",
-                "@id": SITE_URL + "/#organization",
-                name: SITE_NAME,
-                alternateName: ["Jdatna", "أكلات جدتنا"],
-                url: SITE_URL,
-                logo: SITE_URL + "/brand/app-icon-512.png",
-                areaServed: {
-                  "@type": "Country",
-                  name: "المملكة العربية السعودية",
-                },
-              },
-              {
-                "@type": "WebSite",
-                "@id": SITE_URL + "/#website",
-                name: SITE_NAME,
-                url: SITE_URL,
-                inLanguage: "ar-SA",
-                publisher: { "@id": SITE_URL + "/#organization" },
-                potentialAction: {
-                  "@type": "SearchAction",
-                  target: {
-                    "@type": "EntryPoint",
-                    urlTemplate: SITE_URL + "/browse?q={search_term_string}",
+        <SiteTextsProvider texts={texts}>
+          <StarDefs />
+          <JsonLd
+            data={{
+              "@context": "https://schema.org",
+              "@graph": [
+                {
+                  "@type": "Organization",
+                  "@id": SITE_URL + "/#organization",
+                  name: SITE_NAME,
+                  alternateName: ["Jdatna", "أكلات جدتنا"],
+                  url: SITE_URL,
+                  logo: SITE_URL + "/brand/app-icon-512.png",
+                  areaServed: {
+                    "@type": "Country",
+                    name: "المملكة العربية السعودية",
                   },
-                  "query-input": "required name=search_term_string",
                 },
-              },
-            ],
-          }}
-        />
-        <a href="#main" className="skip-link">
-          انتقل إلى المحتوى
-        </a>
-        <SiteOnly>
-          {texts["ticker.text"] && <AboutTicker text={texts["ticker.text"]} />}
-          <header className="site-header">
-            <Link
-              href="/"
-              className="brand"
-              aria-label="أكلات جدتنا — الرئيسية"
-            >
-              <Image
-                className="brand-logo"
-                src="/brand/jdatna-symbol.webp"
-                alt=""
-                width={256}
-                height={219}
-                sizes="(max-width: 380px) 76px, (max-width: 850px) 84px, 112px"
-                loading="eager"
-              />
-              <span>
-                أكلات جدتنا
-                {texts["brand.tagline"] && (
-                  <small>{texts["brand.tagline"]}</small>
-                )}
-              </span>
-            </Link>
-            <nav className="desktop-nav" aria-label="التنقل الرئيسي">
-              <Link href="/">الرئيسية</Link>
-              <Link href="/browse">طبخات اليوم</Link>
-              <Link href="/producers">الأسر المنتجة</Link>
-              <Link href="/offers">العروض الخاصة</Link>
-              <Link href="/subscriptions">الاشتراكات</Link>
-              <Link href="/about">حكايتنا</Link>
-            </nav>
-            <AppearancePicker
-              texts={{
-                button: texts["palette.button"] || "ألوان الموقع",
-                title: texts["palette.title"] || "ألوان الموقع",
-                note: texts["palette.note"],
-                sadu: texts["palette.sadu"] || "السدو",
-                nakheel: texts["palette.nakheel"] || "النخيل",
-                teen: texts["palette.teen"] || "الطين",
-                qahwa: texts["palette.qahwa"] || "القهوة والهيل",
-                zafaran: texts["palette.zafaran"] || "الزعفران",
-                neel: texts["palette.neel"] || "النيلة",
-              }}
-            />
-            <div className="header-actions">
-              <TemplateSwitcher current={template} className="desktop-only" />
-              <FamilyStatusChip place="header" />
-              <MessagesLink />
-              <AccountLink className="button small" />
-            </div>
-            {/* المحادثات ظاهرة دائمًا على الجوال بجانب زر القائمة */}
-            <MessagesLink className="mobile-messages" />
-            <MobileNavigation
-              switcher={<TemplateSwitcher current={template} />}
-            />
-          </header>
-          <PushSetup
-            texts={{
-              title: texts["push.title"] || "فعّل الإشعارات",
-              body: texts["push.body"],
-              enable: texts["push.enable"] || "تفعيل الإشعارات",
-              later: texts["push.later"] || "لاحقًا",
-              ios: texts["push.ios"],
+                {
+                  "@type": "WebSite",
+                  "@id": SITE_URL + "/#website",
+                  name: SITE_NAME,
+                  url: SITE_URL,
+                  inLanguage: "ar-SA",
+                  publisher: { "@id": SITE_URL + "/#organization" },
+                  potentialAction: {
+                    "@type": "SearchAction",
+                    target: {
+                      "@type": "EntryPoint",
+                      urlTemplate: SITE_URL + "/browse?q={search_term_string}",
+                    },
+                    "query-input": "required name=search_term_string",
+                  },
+                },
+              ],
             }}
           />
-        </SiteOnly>
-        <main id="main">{children}</main>
-        <BottomNav guest={guest} />
-        <NavProgress />
-        <SaveToast />
-        <SiteOnly>
-          <FamilyWelcome texts={texts} />
-          <OrderAlert />
-          <MessageAlert />
-          <VerifiedStoreGate>
-            <VerifiedStore />
-          </VerifiedStoreGate>
-          <footer className="site-footer">
-            <div className="footer-top">
-              {/* اسم الموقع وتحته أزرار تحميل التطبيق، بلا شعار (شعار الترويسة يكفي) ولا فراغ. */}
-              <div className="footer-brand-col">
-                <Link className="footer-brand" href="/">
-                  <span>أكلات جدتنا</span>
-                </Link>
-                <StoreBadges
-                  appStore={appLinks.showAppStore ? APP_STORE_URL : null}
-                  playStore={appLinks.showPlayStore ? PLAY_STORE_URL : null}
-                  texts={{
-                    title: texts["store.title"] || "حمّل تطبيق أكلات جدتنا",
-                    appStore: texts["store.appStore"] || "حمّل من App Store",
-                    googlePlay:
-                      texts["store.googlePlay"] || "احصل عليه من Google Play",
-                  }}
+          <a href="#main" className="skip-link">
+            <T k="p.layout.t1" />
+          </a>
+          <SiteOnly>
+            {texts["ticker.text"] && (
+              <AboutTicker text={texts["ticker.text"]} />
+            )}
+            <header className="site-header">
+              <Link
+                href="/"
+                className="brand"
+                aria-label="أكلات جدتنا — الرئيسية"
+              >
+                <Image
+                  className="brand-logo"
+                  src="/brand/jdatna-symbol.webp"
+                  alt=""
+                  width={256}
+                  height={219}
+                  sizes="(max-width: 380px) 76px, (max-width: 850px) 84px, 112px"
+                  loading="eager"
                 />
-              </div>
-              <div>
-                <h3>اكتشف</h3>
-                <Link href="/browse" prefetch={false}>
-                  الأكلات والمنتجات
-                </Link>
-                <Link href="/producers" prefetch={false}>
-                  الأسر المنتجة
-                </Link>
-                <Link href="/akalat" prefetch={false}>
-                  الأكلات الشعبية
-                </Link>
-                <Link href="/offers" prefetch={false}>
-                  العروض الخاصة
-                </Link>
-                <Link href="/subscriptions" prefetch={false}>
-                  الاشتراكات
-                </Link>
-                <Link href="/orders" prefetch={false}>
-                  طلباتي
-                </Link>
-              </div>
-              <div>
-                <h3>عن المنصة</h3>
-                <Link href="/about" prefetch={false}>
-                  حكايتنا
-                </Link>
-                <Link href="/guide" prefetch={false}>
-                  دليل المستخدم
-                </Link>
-                <Link href="/privacy" prefetch={false}>
-                  سياسة الخصوصية
-                </Link>
-                <Link href="/terms" prefetch={false}>
-                  شروط الاستخدام
-                </Link>
-                <Link href="/support" prefetch={false}>
-                  الدعم والتواصل
-                </Link>
-                <Link href="/suggestions" prefetch={false}>
-                  الاقتراحات
-                </Link>
-              </div>
-            </div>
-            <nav className="footer-searches" aria-label="عمليات بحث شائعة">
-              <h3>يبحث الناس عن</h3>
-              <p>
-                {/* كل كلمة تفتح صفحة أكلتها في الدليل (محتوى حقيقي)، وما لا صفحة له يفتح البحث. */}
-                {POPULAR_SEARCHES.map((q) => {
-                  const dish = findDish(q);
-                  return (
-                    <Link
-                      key={q}
-                      href={
-                        dish
-                          ? dishPath(dish)
-                          : `/browse?q=${encodeURIComponent(q)}`
-                      }
-                      prefetch={false}
-                    >
-                      {q}
-                    </Link>
-                  );
-                })}
-                <Link href="/akalat" prefetch={false}>
-                  كل الأكلات الشعبية
-                </Link>
-              </p>
-            </nav>
-            <VisitStats />
-            <div className="footer-bottom">
-              <span>
-                © {new Date().getFullYear()} أكلات جدتنا
-                <small className="site-version">
-                  الإصدار <bdi dir="ltr">{SITE_VERSION}</bdi>
-                </small>
-                {texts["footer.affiliation"] && (
-                  <small className="footer-affiliation">
-                    {texts["footer.affiliation"]}
-                  </small>
-                )}
-              </span>
-              {texts["footer.made"] && (
                 <span>
-                  {texts["footer.made"]} <span aria-hidden="true">✧</span>
+                  أكلات جدتنا
+                  {texts["brand.tagline"] && (
+                    <small>{texts["brand.tagline"]}</small>
+                  )}
                 </span>
-              )}
-            </div>
-          </footer>
-        </SiteOnly>
+              </Link>
+              <nav className="desktop-nav" aria-label="التنقل الرئيسي">
+                <Link href="/">
+                  <T k="p.layout.t2" />
+                </Link>
+                <Link href="/browse">
+                  <T k="p.layout.t3" />
+                </Link>
+                <Link href="/producers">
+                  <T k="p.layout.t4" />
+                </Link>
+                <Link href="/offers">
+                  <T k="p.layout.t5" />
+                </Link>
+                <Link href="/subscriptions">
+                  <T k="p.layout.t6" />
+                </Link>
+                <Link href="/about">
+                  <T k="p.layout.t7" />
+                </Link>
+              </nav>
+              <AppearancePicker
+                texts={{
+                  button: texts["palette.button"] || "ألوان الموقع",
+                  title: texts["palette.title"] || "ألوان الموقع",
+                  note: texts["palette.note"],
+                  sadu: texts["palette.sadu"] || "السدو",
+                  nakheel: texts["palette.nakheel"] || "النخيل",
+                  teen: texts["palette.teen"] || "الطين",
+                  qahwa: texts["palette.qahwa"] || "القهوة والهيل",
+                  zafaran: texts["palette.zafaran"] || "الزعفران",
+                  neel: texts["palette.neel"] || "النيلة",
+                }}
+              />
+              <div className="header-actions">
+                <TemplateSwitcher current={template} className="desktop-only" />
+                <FamilyStatusChip place="header" />
+                <MessagesLink />
+                <AccountLink className="button small" />
+              </div>
+              {/* المحادثات ظاهرة دائمًا على الجوال بجانب زر القائمة */}
+              <MessagesLink className="mobile-messages" />
+              <MobileNavigation
+                switcher={<TemplateSwitcher current={template} />}
+              />
+            </header>
+            <PushSetup
+              texts={{
+                title: texts["push.title"] || "فعّل الإشعارات",
+                body: texts["push.body"],
+                enable: texts["push.enable"] || "تفعيل الإشعارات",
+                later: texts["push.later"] || "لاحقًا",
+                ios: texts["push.ios"],
+              }}
+            />
+          </SiteOnly>
+          <main id="main">{children}</main>
+          <BottomNav guest={guest} />
+          <NavProgress />
+          <SaveToast />
+          <SiteOnly>
+            <FamilyWelcome texts={texts} />
+            <OrderAlert />
+            <MessageAlert />
+            <VerifiedStoreGate>
+              <VerifiedStore />
+            </VerifiedStoreGate>
+            <footer className="site-footer">
+              <div className="footer-top">
+                {/* اسم الموقع وتحته أزرار تحميل التطبيق، بلا شعار (شعار الترويسة يكفي) ولا فراغ. */}
+                <div className="footer-brand-col">
+                  <Link className="footer-brand" href="/">
+                    <span>
+                      <T k="p.layout.t8" />
+                    </span>
+                  </Link>
+                  <StoreBadges
+                    appStore={appLinks.showAppStore ? APP_STORE_URL : null}
+                    playStore={appLinks.showPlayStore ? PLAY_STORE_URL : null}
+                    texts={{
+                      title: texts["store.title"] || "حمّل تطبيق أكلات جدتنا",
+                      appStore: texts["store.appStore"] || "حمّل من App Store",
+                      googlePlay:
+                        texts["store.googlePlay"] || "احصل عليه من Google Play",
+                    }}
+                  />
+                </div>
+                <div>
+                  <h3>
+                    <T k="p.layout.t9" />
+                  </h3>
+                  <Link href="/browse" prefetch={false}>
+                    <T k="p.layout.t10" />
+                  </Link>
+                  <Link href="/producers" prefetch={false}>
+                    <T k="p.layout.t4" />
+                  </Link>
+                  <Link href="/akalat" prefetch={false}>
+                    <T k="p.layout.t11" />
+                  </Link>
+                  <Link href="/offers" prefetch={false}>
+                    <T k="p.layout.t5" />
+                  </Link>
+                  <Link href="/subscriptions" prefetch={false}>
+                    <T k="p.layout.t6" />
+                  </Link>
+                  <Link href="/orders" prefetch={false}>
+                    <T k="p.layout.t12" />
+                  </Link>
+                </div>
+                <div>
+                  <h3>
+                    <T k="p.layout.t13" />
+                  </h3>
+                  <Link href="/about" prefetch={false}>
+                    <T k="p.layout.t7" />
+                  </Link>
+                  <Link href="/guide" prefetch={false}>
+                    <T k="p.layout.t14" />
+                  </Link>
+                  <Link href="/privacy" prefetch={false}>
+                    <T k="p.layout.t15" />
+                  </Link>
+                  <Link href="/terms" prefetch={false}>
+                    <T k="p.layout.t16" />
+                  </Link>
+                  <Link href="/support" prefetch={false}>
+                    <T k="p.layout.t17" />
+                  </Link>
+                  <Link href="/suggestions" prefetch={false}>
+                    <T k="p.layout.t18" />
+                  </Link>
+                </div>
+              </div>
+              <nav className="footer-searches" aria-label="عمليات بحث شائعة">
+                <h3>
+                  <T k="p.layout.t19" />
+                </h3>
+                <p>
+                  {/* كل كلمة تفتح صفحة أكلتها في الدليل (محتوى حقيقي)، وما لا صفحة له يفتح البحث. */}
+                  {POPULAR_SEARCHES.map((q) => {
+                    const dish = findDish(q);
+                    return (
+                      <Link
+                        key={q}
+                        href={
+                          dish
+                            ? dishPath(dish)
+                            : `/browse?q=${encodeURIComponent(q)}`
+                        }
+                        prefetch={false}
+                      >
+                        {q}
+                      </Link>
+                    );
+                  })}
+                  <Link href="/akalat" prefetch={false}>
+                    <T k="p.layout.t20" />
+                  </Link>
+                </p>
+              </nav>
+              <VisitStats />
+              <div className="footer-bottom">
+                <span>
+                  © {new Date().getFullYear()} أكلات جدتنا
+                  <small className="site-version">
+                    الإصدار <bdi dir="ltr">{SITE_VERSION}</bdi>
+                  </small>
+                  {texts["footer.affiliation"] && (
+                    <small className="footer-affiliation">
+                      {texts["footer.affiliation"]}
+                    </small>
+                  )}
+                </span>
+                {texts["footer.made"] && (
+                  <span>
+                    {texts["footer.made"]} <span aria-hidden="true">✧</span>
+                  </span>
+                )}
+              </div>
+            </footer>
+          </SiteOnly>
+        </SiteTextsProvider>
       </body>
     </html>
   );

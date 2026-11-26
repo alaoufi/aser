@@ -1,4 +1,5 @@
 "use client";
+import { T } from "@/components/site-texts";
 import { createContext, useContext, useEffect, useState } from "react";
 
 type Stats =
@@ -60,7 +61,9 @@ export function VisitStats() {
         <b>{num(stats.online)}</b>
       </span>
       {stats.adminOnly && (
-        <small className="visit-admin-only">(ظاهر للإدارة فقط)</small>
+        <small className="visit-admin-only">
+          <T k="c.visits.t1" />
+        </small>
       )}
     </section>
   );
@@ -89,7 +92,10 @@ export function ViewCount({
     <p className="view-count">
       <span aria-hidden="true">👁</span> {num(stats.views)} مشاهدة
       {stats.adminOnly && (
-        <small className="visit-admin-only"> (ظاهر للإدارة فقط)</small>
+        <small className="visit-admin-only">
+          {" "}
+          <T k="c.visits.t1" />
+        </small>
       )}
     </p>
   );
@@ -138,7 +144,10 @@ export function FamilyViewsSummary() {
       <span aria-hidden="true">👁</span> {num(stats.views)} مشاهدة للصفحة ·{" "}
       {num(stats.productsViews)} مشاهدة لمنتجاتها
       {stats.adminOnly && (
-        <small className="visit-admin-only"> (ظاهر للإدارة فقط)</small>
+        <small className="visit-admin-only">
+          {" "}
+          <T k="c.visits.t1" />
+        </small>
       )}
     </p>
   );

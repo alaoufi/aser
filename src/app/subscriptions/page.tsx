@@ -1,3 +1,4 @@
+import { T } from "@/components/site-texts";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { cookies } from "next/headers";
@@ -43,16 +44,19 @@ export default async function Subscriptions({
   return (
     <div className="wrap page-space">
       <div className="page-intro">
-        <p className="eyebrow">أكل بيت كل يوم</p>
-        <h1>الاشتراكات</h1>
+        <p className="eyebrow">
+          <T k="p.subs.t1" />
+        </p>
+        <h1>
+          <T k="p.subs.t2" />
+        </h1>
         <p>
-          اختر أسرة في منطقتك، ثم اطلب اشتراكًا يوميًا أو أسبوعيًا أو شهريًا أو
-          لمدة محددة، وتتفق معها في المحادثة.
+          <T k="p.subs.t3" />
         </p>
       </div>
       <p>
         <Link href="/my-subscriptions" className="text-link">
-          اشتراكاتي وأطباقي ←
+          <T k="p.subs.t4" />
         </Link>
       </p>
       <div className="browse-scope">

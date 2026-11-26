@@ -1,4 +1,5 @@
 "use client";
+import { T } from "@/components/site-texts";
 import { useEffect, useState } from "react";
 import { AD_FRAME, type Placement } from "@/lib/ads";
 import css from "./ad-slot.module.css";
@@ -140,7 +141,11 @@ export function AdSlot({
                 {ad.description && <span>{ad.description}</span>}
               </div>
             )}
-            {!ad.promo && <span className={css.mark}>إعلان</span>}
+            {!ad.promo && (
+              <span className={css.mark}>
+                <T k="c.ads.t1" />
+              </span>
+            )}
           </>
         );
         return (

@@ -1,4 +1,5 @@
 "use client";
+import { T } from "@/components/site-texts";
 import { useRouter } from "next/navigation";
 
 /** الزائر يختار شكل الموقع؛ يُحفظ في جهازه ويتقدم على اختيار الإدارة الافتراضي. */
@@ -16,7 +17,9 @@ export function TemplateSwitcher({
   };
   return (
     <fieldset className={`template-switcher ${className ?? ""}`}>
-      <legend>شكل الموقع</legend>
+      <legend>
+        <T k="c.template.t1" />
+      </legend>
       {(
         [
           ["classic", "الكلاسيكي"],

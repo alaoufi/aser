@@ -1,4 +1,5 @@
 "use client";
+import { T } from "@/components/site-texts";
 import Link from "next/link";
 import { AccountGreeting, AccountLink, FamilyMenuLinks } from "./account-link";
 import { LogoutButton } from "./logout-button";
@@ -70,16 +71,36 @@ export function MobileNavigation({ switcher }: { switcher?: React.ReactNode }) {
       >
         <AccountGreeting />
         <FamilyStatusChip place="menu" />
-        <Link href="/">الرئيسية</Link>
-        <Link href="/browse">طبخات اليوم</Link>
-        <Link href="/producers">الأسر المنتجة</Link>
-        <Link href="/offers">العروض الخاصة</Link>
-        <Link href="/subscriptions">الاشتراكات</Link>
-        <Link href="/orders">طلباتي</Link>
-        <Link href="/messages">المحادثات</Link>
-        <Link href="/about">حكايتنا</Link>
-        <Link href="/guide">دليل المستخدم</Link>
-        <Link href="/suggestions">الاقتراحات</Link>
+        <Link href="/">
+          <T k="c.mobileNav.t1" />
+        </Link>
+        <Link href="/browse">
+          <T k="c.mobileNav.t2" />
+        </Link>
+        <Link href="/producers">
+          <T k="c.mobileNav.t3" />
+        </Link>
+        <Link href="/offers">
+          <T k="c.mobileNav.t4" />
+        </Link>
+        <Link href="/subscriptions">
+          <T k="c.mobileNav.t5" />
+        </Link>
+        <Link href="/orders">
+          <T k="c.mobileNav.t6" />
+        </Link>
+        <Link href="/messages">
+          <T k="c.mobileNav.t7" />
+        </Link>
+        <Link href="/about">
+          <T k="c.mobileNav.t8" />
+        </Link>
+        <Link href="/guide">
+          <T k="c.mobileNav.t9" />
+        </Link>
+        <Link href="/suggestions">
+          <T k="c.mobileNav.t10" />
+        </Link>
         {switcher}
         {/* آخر القائمة: «تسجيل الدخول» لغير المسجّل، و«حسابي» ثم «خروج» للمسجّل. */}
         <AccountLink />

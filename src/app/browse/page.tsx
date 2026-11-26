@@ -1,3 +1,4 @@
+import { T } from "@/components/site-texts";
 import { productStatusLabels } from "@/lib/site-texts";
 import { MineBar } from "@/components/public/mine-bar";
 import { pageMemberScope } from "@/server/page-member";
@@ -354,7 +355,9 @@ export default async function Browse({
         {/* النطاق: يُحدَّد تلقائيًا من موقع الزائر، ويُغيَّر من القائمة. */}
         {!filters.producer && (
           <div className="browse-scope">
-            <span>نطاقك:</span>
+            <span>
+              <T k="p.browse.t1" />
+            </span>
             <RegionPicker
               regions={regions}
               value={filters.region}
@@ -400,7 +403,9 @@ export default async function Browse({
               defaultCity={filters.city}
             />
             <label>
-              <span className="sr-only">الأسرة المنتجة</span>
+              <span className="sr-only">
+                <T k="p.browse.t2" />
+              </span>
               <select name="producer" defaultValue={filters.producer}>
                 <option value="">كل الأسر</option>
                 {lists.families.map((f) => (
@@ -411,7 +416,9 @@ export default async function Browse({
               </select>
             </label>
             <label>
-              <span className="sr-only">التصنيف</span>
+              <span className="sr-only">
+                <T k="p.browse.t3" />
+              </span>
               <select name="category" defaultValue={filters.category}>
                 <option value="">كل التصنيفات</option>
                 {categories.map((c) => (
@@ -422,7 +429,9 @@ export default async function Browse({
               </select>
             </label>
             <label>
-              <span className="sr-only">التوفر</span>
+              <span className="sr-only">
+                <T k="p.browse.t4" />
+              </span>
               <select name="status" defaultValue={val("status")}>
                 <option value="">
                   {by === "available" ? "متوفر الآن" : "المتاح والطلب المسبق"}
@@ -439,7 +448,9 @@ export default async function Browse({
               </select>
             </label>
             <label>
-              <span className="sr-only">طريقة الاستلام</span>
+              <span className="sr-only">
+                <T k="p.browse.t5" />
+              </span>
               <select name="delivery" defaultValue={filters.delivery}>
                 <option value="">كل طرق الاستلام</option>
                 <option value="true">توصيل متاح</option>
@@ -447,7 +458,7 @@ export default async function Browse({
               </select>
             </label>
             <button className="button" type="submit">
-              بحث
+              <T k="p.browse.t6" />
             </button>
           </form>
           {!focus && (
@@ -489,7 +500,9 @@ export default async function Browse({
 
         {!focus && matchedCategories.length > 0 && (
           <nav className="search-suggestions" aria-label="أقسام مقترحة">
-            <span>أقسام مطابقة:</span>
+            <span>
+              <T k="p.browse.t7" />
+            </span>
             {matchedCategories.map((c) => (
               <Link
                 key={c.id}
@@ -562,7 +575,9 @@ export default async function Browse({
         {showCategoryDirectory && (
           <section aria-label="الأقسام">
             <div className="results-heading">
-              <h2>الأقسام</h2>
+              <h2>
+                <T k="p.browse.t8" />
+              </h2>
             </div>
             {topCategories.length === 0 && (
               <EmptyState
@@ -673,7 +688,7 @@ export default async function Browse({
                     className="button secondary"
                     href={pageHref(pageNo - 1)}
                   >
-                    السابق
+                    <T k="p.browse.t9" />
                   </Link>
                 ) : (
                   <span />
@@ -686,7 +701,7 @@ export default async function Browse({
                     className="button secondary"
                     href={pageHref(pageNo + 1)}
                   >
-                    التالي
+                    <T k="p.browse.t10" />
                   </Link>
                 ) : (
                   <span />

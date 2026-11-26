@@ -1,4 +1,5 @@
 "use client";
+import { T } from "@/components/site-texts";
 import { SITE_URL } from "@/lib/seo";
 import { useState } from "react";
 
@@ -169,7 +170,9 @@ export function ShareButton({
     <details className="share-menu">
       <summary>
         {icons.share}
-        <span>مشاركة</span>
+        <span>
+          <T k="c.share.t1" />
+        </span>
       </summary>
       <div className="share-panel">
         <ul aria-label="المشاركة عبر">
@@ -203,7 +206,10 @@ export function ShareButton({
             <li key={t.name}>
               <button type="button" onClick={() => viaApp(t.name)}>
                 <span style={{ color: t.color }}>{t.icon}</span>
-                {t.name} <small className="muted">(يُنسخ الرابط)</small>
+                {t.name}{" "}
+                <small className="muted">
+                  <T k="c.share.t2" />
+                </small>
               </button>
             </li>
           ))}

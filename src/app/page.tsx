@@ -1,3 +1,4 @@
+import { T } from "@/components/site-texts";
 import { productStatusLabels } from "@/lib/site-texts";
 import { MineBar } from "@/components/public/mine-bar";
 import { pageMemberScope } from "@/server/page-member";
@@ -81,7 +82,9 @@ export default async function Home({
       <section className="hero wrap">
         <div className="hero-copy">
           {/* عنوان الصفحة لقارئات الشاشة ومحركات البحث فقط؛ النصوص التعريفية حُذفت بطلب المالك. */}
-          <h1 className="sr-only">أكلات جدتنا وأصالة الماضي</h1>
+          <h1 className="sr-only">
+            <T k="p.home.t1" />
+          </h1>
           <form action="/browse" className="hero-search" autoComplete="off">
             <label>
               <span className="sr-only">
@@ -281,9 +284,11 @@ export default async function Home({
         >
           {/* عنوان في الفراغ بين أزرار التوفر وبطاقات الأسر: أسر المنطقة أولًا ثم من يشحن للمملكة. */}
           <div className="section-heading">
-            <h2 id="home-producers-title">أسر منتجة تغطي منطقتك</h2>
+            <h2 id="home-producers-title">
+              <T k="p.home.t2" />
+            </h2>
             <Link className="text-link" href="/producers">
-              كل الأسر المنتجة ←
+              <T k="p.home.t3" />
             </Link>
           </div>
           <div className="producer-grid compact">
