@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { FolderTabs } from "./folder-tabs";
+import { TypedConfirm } from "./typed-confirm";
 import { useTx } from "@/components/site-texts";
 import { AccountShell, Guard, Message, api, s, useSession } from "./shared";
 import type { SessionUser } from "@/lib/types";
@@ -22,6 +23,8 @@ const TABS = [
  */
 function BecomeFamily() {
   const { tx, txb } = useTx();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
   return (
     <section
       className={s.card}
@@ -30,9 +33,85 @@ function BecomeFamily() {
     >
       <h2 id="become-family-title">{txb("asCustomer.becomeTitle")}</h2>
       <p className={s.muted}>{tx("asCustomer.becomeBody")}</p>
-      <Link className={s.button} href="/register">
+      <Message error={error} />
+      <button
+        type="button"
+        className={s.button}
+        disabled={busy}
+        onClick={async () => {
+          // من له ملف أسرة سابق (تحوّل إلى عميل) يعود كما كان، ومن لا ملف له يسجّل أسرته.
+          setBusy(true);
+          setError("");
+          try {
+            const r = await api<{ register: boolean }>("/api/account/type", {
+              method: "POST",
+              body: JSON.stringify({ type: "family" }),
+            });
+            window.location.assign(r.register ? "/register" : "/dashboard");
+          } catch (e) {
+            setError((e as Error).message);
+            setBusy(false);
+          }
+        }}
+      >
         {txb("asCustomer.becomeButton")}
-      </Link>
+      </button>
+    </section>
+  );
+}
+
+/**
+ * العكس (قرار المالك 2026-11-26): الأسرة تحوّل حسابها إلى عميل بعد تأكيد. صفحتها ومنتجاتها تُخفى
+ * محفوظةً، وتعود كما كانت إن عادت أسرة.
+ */
+function BecomeCustomer() {
+  const { tx, txb } = useTx();
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  return (
+    <section
+      className={s.card}
+      aria-labelledby="become-customer-title"
+      id="become-customer"
+    >
+      <h2 id="become-customer-title">{txb("asCustomer.toCustomerTitle")}</h2>
+      <p className={s.muted}>{tx("asCustomer.toCustomerBody")}</p>
+      <Message error={error} />
+      {!confirming ? (
+        <button
+          type="button"
+          className={s.buttonSecondary}
+          onClick={() => setConfirming(true)}
+        >
+          {txb("asCustomer.toCustomerButton")}
+        </button>
+      ) : (
+        <TypedConfirm
+          word={tx("asCustomer.confirmWord")}
+          prompt={tx("asCustomer.typeToConfirm", {
+            word: tx("asCustomer.confirmWord"),
+          })}
+          confirmLabel={txb("asCustomer.toCustomerConfirm")}
+          cancelLabel={txb("asCustomer.cancel")}
+          busy={busy}
+          onCancel={() => setConfirming(false)}
+          onConfirm={async () => {
+            setBusy(true);
+            setError("");
+            try {
+              await api("/api/account/type", {
+                method: "POST",
+                body: JSON.stringify({ type: "customer" }),
+              });
+              window.location.assign("/me");
+            } catch (e) {
+              setError((e as Error).message);
+              setBusy(false);
+            }
+          }}
+        />
+      )}
     </section>
   );
 }
@@ -145,9 +224,8 @@ export function MyAccount() {
               </form>
             )}
             {tab === "profile" &&
-              me.role === "customer" &&
-              !me.familyName &&
-              !me.adminAccess && <BecomeFamily />}
+              me.role !== "courier" &&
+              (me.familyName ? <BecomeCustomer /> : <BecomeFamily />)}
             {tab === "password" && (
               <form
                 className={`${s.form} ${s.card}`}

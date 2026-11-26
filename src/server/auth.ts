@@ -119,7 +119,7 @@ export async function sessionInfo(request: Request): Promise<{
   const row = (
     await db().query(
       `SELECT u.id,u.name,u.phone,u.role,u.username,u.member_no AS "memberNo",u.permissions,(u.password_hash IS NOT NULL) AS "hasPassword",false AS "canSetCredentials",
-        (SELECT COALESCE(p.trade_name,p.name) FROM jdatna.producer_profiles p WHERE p.user_id=u.id) AS "familyName",
+        (SELECT COALESCE(p.trade_name,p.name) FROM jdatna.producer_profiles p WHERE p.user_id=u.id AND p.status<>'closed') AS "familyName",
         EXISTS (SELECT 1 FROM jdatna.producer_profiles p WHERE p.user_id=u.id AND p.status='approved') AS "familyApproved"
        FROM jdatna.sessions s JOIN jdatna.users u ON u.id=s.user_id WHERE s.token_hash=$1 AND s.expires_at>now() AND NOT s.setup_only AND u.suspended_at IS NULL
          AND s.scope=$2 AND ($2='site' OR u.role='admin' OR cardinality(u.permissions)>0)`,

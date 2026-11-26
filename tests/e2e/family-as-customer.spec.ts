@@ -92,9 +92,9 @@ test.describe("a family buys from other families like a customer", () => {
       name: "حوّل حسابك إلى أسرة منتجة",
     });
     await expect(card).toBeVisible();
-    await expect(
-      card.getByRole("link", { name: "سجّل أسرتك" }),
-    ).toHaveAttribute("href", "/register");
+    // عميل بلا ملف أسرة: الزر يفتح تسجيل الأسرة.
+    await card.getByRole("button", { name: "سجّل أسرتك" }).click();
+    await expect(page).toHaveURL(/\/register$/);
   });
 
   test("a family asks other families from «اطلب من الأسر», and its request is not on its own board", async ({
@@ -143,5 +143,36 @@ test.describe("a family buys from other families like a customer", () => {
       page.getByRole("tab", { name: "طلبات العملاء", selected: true }),
     ).toBeVisible();
     await expect(page.getByText(body)).toHaveCount(0);
+  });
+
+  test("a family sees «turn my account into a customer» with a confirmation", async ({
+    page,
+    context,
+    baseURL,
+  }) => {
+    await as(context, tf, baseURL);
+    await page.goto("/me");
+    const card = page.getByRole("region", { name: "حوّل حسابك إلى عميل" });
+    await expect(card).toBeVisible();
+    await expect(
+      page.getByRole("region", { name: "حوّل حسابك إلى أسرة منتجة" }),
+    ).toHaveCount(0);
+    await card.getByRole("button", { name: "تحويل حسابي إلى عميل" }).click();
+    // تأكيد بالكتابة (قرار المالك 2026-11-26): لا يعمل الزر حتى يكتب «عميل».
+    // لا نحوّل هنا فعلًا: الحساب مشترك بين الاختبارات.
+    const confirm = card.getByRole("button", {
+      name: "تأكيد التحويل إلى عميل",
+    });
+    await expect(confirm).toBeDisabled();
+    const word = card.getByLabel("للتأكيد اكتب «عميل»");
+    await word.fill("عمي");
+    await expect(confirm).toBeDisabled();
+    await word.fill(" عَميل ");
+    await expect(confirm).toBeEnabled();
+    await page.screenshot({ path: "test-results/typed-confirm.png" });
+    await card.getByRole("button", { name: "تراجع" }).click();
+    await expect(
+      card.getByRole("button", { name: "تحويل حسابي إلى عميل" }),
+    ).toBeVisible();
   });
 });
