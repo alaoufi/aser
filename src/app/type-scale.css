@@ -1,0 +1,39 @@
+/*
+ * مقاس خط موحّد للعناوين (طلب المالك 2026-11-26: «صغّر الخط واجعله متناسقًا مع التصميم،
+ * وأي خط أكبر من التصميم يُعدّل»). المرجع عنوان «مائدة اليوم» (24px). يُحمَّل بعد ملفات
+ * التصميم كلها، فيضبط عناوين الصفحات والأقسام في الموقع ولوحات الأسرة والإدارة معًا.
+ * الشهادة المطبوعة ومائدة الأسرة (عبارتها جزء من الرسم) خارج هذا المقاس.
+ */
+:root {
+  --fs-page: 30px;
+  --fs-section: 24px;
+  --fs-lead: 17px;
+}
+@media (max-width: 600px) {
+  :root {
+    --fs-page: 22px;
+    --fs-section: 18px;
+    --fs-lead: 15px;
+  }
+}
+#main h1:not(.sr-only):not([class*="certificate"]),
+#main h1:not(.sr-only):not([class*="certificate"]) *,
+#main [class*="coverTitle"] {
+  font-size: var(--fs-page) !important;
+  line-height: 1.35 !important;
+}
+#main h2,
+#main h2 * {
+  font-size: var(--fs-section) !important;
+  line-height: 1.4 !important;
+}
+#main .lead,
+#main .lead * {
+  font-size: var(--fs-lead) !important;
+}
+/* عنوان القسم ورابطه متقابلان على الجوال (مثل «أسر منتجة تغطي منطقتك» و«كل الأسر المنتجة»). */
+@media (max-width: 600px) {
+  #main .section-heading {
+    align-items: center;
+  }
+}

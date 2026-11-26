@@ -184,7 +184,8 @@ test("profile validates working hours and sends optional links and city fees", a
   await page.route("**/api/producer/availability", (r) =>
     r.fulfill({ json: { day: "2026-11-08", notCookingToday: false } }),
   );
-  await page.goto("/dashboard");
+  // «بيانات الأسرة» في تبويب «هوية الأسرة».
+  await page.goto("/dashboard/identity");
   await page.getByText("تفاصيل إضافية (اختيارية)", { exact: true }).click();
   await expect(
     page.getByRole("combobox", { name: "المنطقة", exact: true }),

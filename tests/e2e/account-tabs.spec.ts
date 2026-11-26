@@ -31,6 +31,7 @@ test("the family dashboard sections are 3D tabs, and the current one is marked",
   const tabs = page.getByRole("navigation", { name: "أقسام الأسرة المنتجة" });
   await expect(tabs.getByRole("link")).toHaveText([
     "الرئيسية",
+    "هوية الأسرة",
     "المنتجات",
     "الطلبات",
     "العروض",

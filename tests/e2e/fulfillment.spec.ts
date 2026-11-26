@@ -56,7 +56,8 @@ test("family chooses pickup and delivery from its dashboard and must give a pick
       },
     });
   });
-  await page.goto("/dashboard");
+  // «الموقع» في تبويب «هوية الأسرة».
+  await page.goto("/dashboard/identity#location");
   const card = page.getByRole("region", { name: "طرق التسليم" });
   const pickup = card.getByRole("checkbox", { name: /تسليم مباشر/ });
   const delivery = card.getByRole("checkbox", { name: /توصيل/ });
@@ -161,7 +162,7 @@ test("family chooses whether customers see its WhatsApp and phone", async ({
     }
     return r.fulfill({ json: state });
   });
-  await page.goto("/dashboard");
+  await page.goto("/dashboard/identity#contact");
   const card = page.getByRole("region", {
     name: "ظهور بيانات التواصل للعملاء",
   });

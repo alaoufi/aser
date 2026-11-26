@@ -66,6 +66,13 @@ test("a family picks its table from the library and saves it", async ({
   });
   await page.goto("/dashboard");
   const card = page.getByRole("region", { name: "مائدة الأسرة" });
+  // زر أعلى اللوحة ينقل إلى «المائدة» في تبويب «هوية الأسرة».
+  await page.getByRole("link", { name: "اختر مائدة أسرتك ↓" }).click();
+  await expect(page).toHaveURL(/\/dashboard\/identity#table$/);
+  await expect(
+    page.getByRole("tab", { name: "المائدة", selected: true }),
+  ).toBeVisible();
+  await expect(card).toBeVisible();
   await expect(card).toContainText("٣٨٬٨٨٠");
   const preview = card.getByRole("figure", { name: "معاينة مائدتك" });
   await expect(preview).toContainText("حياكم الله");

@@ -16,6 +16,7 @@ import { CookingAvailability } from "./cooking-availability";
 import { FulfillmentCard } from "./fulfillment";
 import { ContactVisibilityCard } from "./contact-visibility";
 import { BrandCard } from "./brand-card";
+import { useTx } from "@/components/site-texts";
 import { FamilyTableCard } from "./family-table-card";
 import { DeleteAccountSection } from "./delete-account";
 import { CertificateCard } from "./certificate-card";
@@ -69,8 +70,14 @@ const pickType = (type?: string) =>
   documentTypes.some(([id]) => id === type) ? type! : "producer_certificate";
 export function ProfileForm({
   registration = false,
+  part = "all",
 }: {
   registration?: boolean;
+  /**
+   * «home»: رئيسية لوحة الأسرة (حالة الطبخ والأقسام والتغطية)، والنموذج فقط لمن لم يسجّل أسرته.
+   * «data»: نموذج «بيانات الأسرة» داخل تبويب «هوية الأسرة». «all»: التسجيل (كل شيء).
+   */
+  part?: "all" | "home" | "data";
 }) {
   const session = useSession();
   const [verified, setVerified] = useState<SessionUser | null>(null);
@@ -232,278 +239,295 @@ export function ProfileForm({
     );
   return (
     <>
-      <FamilyStatusBanner />
-      {profile && <CookingAvailability />}
-      {profile && <FulfillmentCard />}
-      {profile && <ContactVisibilityCard />}
-      {profile && <BrandCard name={profile.tradeName || profile.name} />}
-      {profile && <FamilyTableCard />}
-      {profile && (
+      {part !== "data" && <FamilyStatusBanner />}
+      {profile && part !== "data" && <CookingAvailability />}
+      {profile && part === "all" && <FulfillmentCard />}
+      {profile && part === "all" && <ContactVisibilityCard />}
+      {profile && part === "all" && (
+        <BrandCard name={profile.tradeName || profile.name} />
+      )}
+      {profile && part === "all" && <FamilyTableCard />}
+      {profile && part !== "data" && (
         <Link className={s.button} href="/dashboard/coverage">
           تحديد نطاق التغطية: المدن والمراكز والأحياء
         </Link>
       )}
-      {profile && (
+      {profile && part !== "data" && (
         <FamilyCategories
           categories={categories}
           selected={profile.categoryIds}
           onSaved={(ids) => setProfile({ ...profile, categoryIds: ids })}
         />
       )}
-      <h1>
-        {registration ? "تسجيل أسرة في أكلات جدتنا" : "بيانات الأسرة المنتجة"}
-      </h1>
-      <p className={s.muted}>
-        البيانات الأساسية فقط؛ يمكنك إضافة التفاصيل الأخرى لاحقًا.
-      </p>
-      <Message error={error} success={success} />
-      {!loaded ? (
-        <p role="status">جارٍ تحميل البيانات…</p>
-      ) : (
-        <form
-          key={profile?.id || "new"}
-          className={`${s.form} ${s.card}`}
-          onSubmit={save}
-          noValidate
-        >
-          <div className={s.grid}>
-            <div className={s.field}>
-              <label htmlFor="family-trade-name">الاسم التجاري المعلن</label>
-              <input
-                id="family-trade-name"
-                name="tradeName"
-                required
-                minLength={2}
-                maxLength={120}
-                defaultValue={profile?.tradeName || ""}
-                aria-describedby="trade-name-hint trade-name-taken"
-                aria-invalid={Boolean(nameTaken)}
-                onChange={(e) => {
-                  setNameTaken("");
-                  // تنبيه فوري إن كان الاسم مستخدمًا، بعد توقف الكتابة لحظة.
-                  if (nameTimer.current) clearTimeout(nameTimer.current);
-                  const name = e.currentTarget.value.trim();
-                  if (name.length < 2) return;
-                  nameTimer.current = setTimeout(() => {
-                    api<{ available: boolean; message?: string }>(
-                      `/api/producer/trade-name?name=${encodeURIComponent(name)}`,
-                    )
-                      .then((r) =>
-                        setNameTaken(r.available ? "" : (r.message ?? "")),
-                      )
-                      .catch(() => {});
-                  }, 500);
-                }}
-              />
-              <small id="trade-name-hint">
-                يظهر في الموقع وللعملاء، ولا يتكرر لأسرتين.
-              </small>
-              <small
-                id="trade-name-taken"
-                aria-live="polite"
-                className={s.fieldError}
-              >
-                {nameTaken}
-              </small>
-            </div>
-            <div className={s.field}>
-              <label htmlFor="family-real-name">الاسم الحقيقي</label>
-              <input
-                id="family-real-name"
-                name="name"
-                required
-                minLength={2}
-                maxLength={120}
-                defaultValue={profile?.name || user.name}
-                aria-describedby="name-hint"
-              />
-              <small id="name-hint">للإدارة فقط، ولا يظهر للعملاء.</small>
-            </div>
-            <label className={s.field}>
-              رقم الهوية
-              <input
-                name="nationalId"
-                inputMode="numeric"
-                dir="ltr"
-                required
-                minLength={10}
-                maxLength={10}
-                pattern="[0-9٠-٩۰-۹]{10}"
-                defaultValue={profile?.nationalId || ""}
-                autoComplete="off"
-              />
-            </label>
-            <label className={s.field}>
-              رقم الجوال
-              <input
-                name="phone"
-                type="tel"
-                dir="ltr"
-                value={user.phone}
-                readOnly
-                aria-describedby="verified-phone"
-              />
-              <small id="verified-phone">تم التحقق من هذا الجوال.</small>
-            </label>
-          </div>
-          <fieldset>
-            <legend>المرفقات (اختيارية)</legend>
-            <p className={s.muted}>
-              أرفق شهادة الأسرة المنتجة أو صورة الهوية الوطنية إن وُجدت، فذلك
-              يسرّع الاعتماد. يُقبل التسجيل دون مرفق، وتراسلك الإدارة بالنواقص.
-            </p>
-            <div className={s.grid}>
-              <label className={s.field}>
-                نوع المرفق
-                <select
-                  value={documentType}
-                  onChange={(e) => {
-                    setDocumentType(e.target.value);
-                    setDocumentId("");
-                    uploaded.current = null;
-                  }}
-                >
-                  {documentTypes.map(([id, label]) => (
-                    <option key={id} value={id}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className={s.field}>
-                الملف
-                <input
-                  name="file"
-                  type="file"
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  disabled={busy}
-                />
-                <small>صورة أو PDF، حتى 10 ميجابايت. تراه الإدارة فقط.</small>
-              </label>
-            </div>
-          </fieldset>
-          {documentId && (
-            <a
-              href={`/api/documents/${encodeURIComponent(documentId)}`}
-              target="_blank"
-              rel="noopener noreferrer"
+      {/* رئيسية اللوحة: بيانات الأسرة صارت في تبويب «هوية الأسرة»، ويبقى هنا نموذج التسجيل لمن لم يسجّل. */}
+      {!(part === "home" && profile) && (
+        <>
+          <h1>
+            {registration
+              ? "تسجيل أسرة في أكلات جدتنا"
+              : "بيانات الأسرة المنتجة"}
+          </h1>
+          <p className={s.muted}>
+            البيانات الأساسية فقط؛ يمكنك إضافة التفاصيل الأخرى لاحقًا.
+          </p>
+          <Message error={error} success={success} />
+          {!loaded ? (
+            <p role="status">جارٍ تحميل البيانات…</p>
+          ) : (
+            <form
+              key={profile?.id || "new"}
+              className={`${s.form} ${s.card}`}
+              onSubmit={save}
+              noValidate
             >
-              عرض المرفق المحفوظ
-            </a>
-          )}
-          <fieldset>
-            <legend>موقع العمل</legend>
-            <div className={s.grid}>
-              <LocationFields
-                cities={cities}
-                defaultCity={profile?.cityId}
-                cityName="cityId"
-                regionName="regionId"
-                required
-                className={s.field}
-              />
-            </div>
-            <LocationInput
-              name="workLocation"
-              label="عنوان أو رابط موقع العمل"
-              hint="يُحدَّد موقعك تلقائيًا، ويمكنك تعديله أو كتابة العنوان أو لصق رابط الخرائط."
-              defaultValue={profile?.workLocation || ""}
-              required
-              autoLocate={!profile?.workLocation}
-            />
-            <p className={s.muted}>
-              رقم الهوية والموقع الدقيق خاصان بالأسرة المنتجة والإدارة. يظهر
-              للزوار اسم المدينة فقط.
-            </p>
-          </fieldset>
-          {!profile && (
-            <fieldset>
-              <legend>أقسام منتجاتك (اختر قسمًا واحدًا على الأقل)</legend>
-              <div className={s.checks}>
-                {categories.map((c) => (
-                  <label key={c.id}>
-                    <input
-                      name="categoryIds"
-                      type="checkbox"
-                      value={c.id}
-                      id={"cat-" + c.id}
-                    />
-                    {categoryLabel(c, categories)}
+              <div className={s.grid}>
+                <div className={s.field}>
+                  <label htmlFor="family-trade-name">
+                    الاسم التجاري المعلن
                   </label>
-                ))}
-              </div>
-              <small>
-                يمكنك تعديلها لاحقًا من لوحة الأسرة دون إعادة مراجعة.
-              </small>
-            </fieldset>
-          )}
-          <DeliveryScopeFields
-            defaultScope={profile?.deliveryScope ?? "coverage"}
-            defaultFee={profile?.shippingFee ?? null}
-          />
-          <details
-            open={extrasOpen}
-            onToggle={(e) => setExtrasOpen(e.currentTarget.open)}
-          >
-            <summary>تفاصيل إضافية (اختيارية)</summary>
-            {extrasOpen && (
-              <div className={s.form} style={{ marginTop: 16 }}>
-                <div className={s.grid}>
-                  <label className={s.field}>
-                    رقم المستند (إن وجد)
-                    <input
-                      name="documentNumber"
-                      maxLength={100}
-                      defaultValue={profile?.documentNumber}
-                    />
-                  </label>
-                  <label className={s.field}>
-                    تاريخ انتهاء المستند (إن وجد)
-                    <input
-                      name="documentExpiresAt"
-                      type="date"
-                      defaultValue={profile?.documentExpiresAt?.slice(0, 10)}
-                    />
-                  </label>
-                  <label className={s.field}>
-                    واتساب (اختياري)
-                    <input
-                      name="whatsapp"
-                      type="tel"
-                      dir="ltr"
-                      defaultValue={profile?.whatsapp}
-                    />
-                  </label>
-                  <label className={s.field}>
-                    الحي (اختياري)
-                    <input
-                      name="neighborhood"
-                      maxLength={120}
-                      defaultValue={profile?.neighborhood}
-                    />
-                  </label>
+                  <input
+                    id="family-trade-name"
+                    name="tradeName"
+                    required
+                    minLength={2}
+                    maxLength={120}
+                    defaultValue={profile?.tradeName || ""}
+                    aria-describedby="trade-name-hint trade-name-taken"
+                    aria-invalid={Boolean(nameTaken)}
+                    onChange={(e) => {
+                      setNameTaken("");
+                      // تنبيه فوري إن كان الاسم مستخدمًا، بعد توقف الكتابة لحظة.
+                      if (nameTimer.current) clearTimeout(nameTimer.current);
+                      const name = e.currentTarget.value.trim();
+                      if (name.length < 2) return;
+                      nameTimer.current = setTimeout(() => {
+                        api<{ available: boolean; message?: string }>(
+                          `/api/producer/trade-name?name=${encodeURIComponent(name)}`,
+                        )
+                          .then((r) =>
+                            setNameTaken(r.available ? "" : (r.message ?? "")),
+                          )
+                          .catch(() => {});
+                      }, 500);
+                    }}
+                  />
+                  <small id="trade-name-hint">
+                    يظهر في الموقع وللعملاء، ولا يتكرر لأسرتين.
+                  </small>
+                  <small
+                    id="trade-name-taken"
+                    aria-live="polite"
+                    className={s.fieldError}
+                  >
+                    {nameTaken}
+                  </small>
+                </div>
+                <div className={s.field}>
+                  <label htmlFor="family-real-name">الاسم الحقيقي</label>
+                  <input
+                    id="family-real-name"
+                    name="name"
+                    required
+                    minLength={2}
+                    maxLength={120}
+                    defaultValue={profile?.name || user.name}
+                    aria-describedby="name-hint"
+                  />
+                  <small id="name-hint">للإدارة فقط، ولا يظهر للعملاء.</small>
                 </div>
                 <label className={s.field}>
-                  نبذة عن الأسرة المنتجة
-                  <textarea
-                    name="description"
-                    maxLength={2000}
-                    defaultValue={profile?.description}
+                  رقم الهوية
+                  <input
+                    name="nationalId"
+                    inputMode="numeric"
+                    dir="ltr"
+                    required
+                    minLength={10}
+                    maxLength={10}
+                    pattern="[0-9٠-٩۰-۹]{10}"
+                    defaultValue={profile?.nationalId || ""}
+                    autoComplete="off"
                   />
                 </label>
-                <AdvancedFields profile={profile} cities={cities} />
+                <label className={s.field}>
+                  رقم الجوال
+                  <input
+                    name="phone"
+                    type="tel"
+                    dir="ltr"
+                    value={user.phone}
+                    readOnly
+                    aria-describedby="verified-phone"
+                  />
+                  <small id="verified-phone">تم التحقق من هذا الجوال.</small>
+                </label>
               </div>
-            )}
-          </details>
-          <FormIssues issues={issues} />
-          <button className={s.button} disabled={busy}>
-            {busy
-              ? "جارٍ الحفظ…"
-              : profile?.status === "approved"
-                ? "حفظ"
-                : "حفظ وإرسال للمراجعة"}
-          </button>
-        </form>
+              <fieldset>
+                <legend>المرفقات (اختيارية)</legend>
+                <p className={s.muted}>
+                  أرفق شهادة الأسرة المنتجة أو صورة الهوية الوطنية إن وُجدت،
+                  فذلك يسرّع الاعتماد. يُقبل التسجيل دون مرفق، وتراسلك الإدارة
+                  بالنواقص.
+                </p>
+                <div className={s.grid}>
+                  <label className={s.field}>
+                    نوع المرفق
+                    <select
+                      value={documentType}
+                      onChange={(e) => {
+                        setDocumentType(e.target.value);
+                        setDocumentId("");
+                        uploaded.current = null;
+                      }}
+                    >
+                      {documentTypes.map(([id, label]) => (
+                        <option key={id} value={id}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className={s.field}>
+                    الملف
+                    <input
+                      name="file"
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      disabled={busy}
+                    />
+                    <small>
+                      صورة أو PDF، حتى 10 ميجابايت. تراه الإدارة فقط.
+                    </small>
+                  </label>
+                </div>
+              </fieldset>
+              {documentId && (
+                <a
+                  href={`/api/documents/${encodeURIComponent(documentId)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  عرض المرفق المحفوظ
+                </a>
+              )}
+              <fieldset>
+                <legend>موقع العمل</legend>
+                <div className={s.grid}>
+                  <LocationFields
+                    cities={cities}
+                    defaultCity={profile?.cityId}
+                    cityName="cityId"
+                    regionName="regionId"
+                    required
+                    className={s.field}
+                  />
+                </div>
+                <LocationInput
+                  name="workLocation"
+                  label="عنوان أو رابط موقع العمل"
+                  hint="يُحدَّد موقعك تلقائيًا، ويمكنك تعديله أو كتابة العنوان أو لصق رابط الخرائط."
+                  defaultValue={profile?.workLocation || ""}
+                  required
+                  autoLocate={!profile?.workLocation}
+                />
+                <p className={s.muted}>
+                  رقم الهوية والموقع الدقيق خاصان بالأسرة المنتجة والإدارة. يظهر
+                  للزوار اسم المدينة فقط.
+                </p>
+              </fieldset>
+              {!profile && (
+                <fieldset>
+                  <legend>أقسام منتجاتك (اختر قسمًا واحدًا على الأقل)</legend>
+                  <div className={s.checks}>
+                    {categories.map((c) => (
+                      <label key={c.id}>
+                        <input
+                          name="categoryIds"
+                          type="checkbox"
+                          value={c.id}
+                          id={"cat-" + c.id}
+                        />
+                        {categoryLabel(c, categories)}
+                      </label>
+                    ))}
+                  </div>
+                  <small>
+                    يمكنك تعديلها لاحقًا من لوحة الأسرة دون إعادة مراجعة.
+                  </small>
+                </fieldset>
+              )}
+              <DeliveryScopeFields
+                defaultScope={profile?.deliveryScope ?? "coverage"}
+                defaultFee={profile?.shippingFee ?? null}
+              />
+              <details
+                open={extrasOpen}
+                onToggle={(e) => setExtrasOpen(e.currentTarget.open)}
+              >
+                <summary>تفاصيل إضافية (اختيارية)</summary>
+                {extrasOpen && (
+                  <div className={s.form} style={{ marginTop: 16 }}>
+                    <div className={s.grid}>
+                      <label className={s.field}>
+                        رقم المستند (إن وجد)
+                        <input
+                          name="documentNumber"
+                          maxLength={100}
+                          defaultValue={profile?.documentNumber}
+                        />
+                      </label>
+                      <label className={s.field}>
+                        تاريخ انتهاء المستند (إن وجد)
+                        <input
+                          name="documentExpiresAt"
+                          type="date"
+                          defaultValue={profile?.documentExpiresAt?.slice(
+                            0,
+                            10,
+                          )}
+                        />
+                      </label>
+                      <label className={s.field}>
+                        واتساب (اختياري)
+                        <input
+                          name="whatsapp"
+                          type="tel"
+                          dir="ltr"
+                          defaultValue={profile?.whatsapp}
+                        />
+                      </label>
+                      <label className={s.field}>
+                        الحي (اختياري)
+                        <input
+                          name="neighborhood"
+                          maxLength={120}
+                          defaultValue={profile?.neighborhood}
+                        />
+                      </label>
+                    </div>
+                    <label className={s.field}>
+                      نبذة عن الأسرة المنتجة
+                      <textarea
+                        name="description"
+                        maxLength={2000}
+                        defaultValue={profile?.description}
+                      />
+                    </label>
+                    <AdvancedFields profile={profile} cities={cities} />
+                  </div>
+                )}
+              </details>
+              <FormIssues issues={issues} />
+              <button className={s.button} disabled={busy}>
+                {busy
+                  ? "جارٍ الحفظ…"
+                  : profile?.status === "approved"
+                    ? "حفظ"
+                    : "حفظ وإرسال للمراجعة"}
+              </button>
+            </form>
+          )}
+        </>
       )}
     </>
   );
@@ -639,6 +663,7 @@ function FamilyShareTop({ name }: { name: string }) {
 /** أقسام لوحة الأسرة المنتجة: مربعات صغيرة بدل أسطر الروابط. */
 export function Dashboard() {
   const session = useSession();
+  const { txb } = useTx();
   // بطاقات لوحة الأسرة تظهر بعد وصول الملف: قراءاتها تبدأ معه لا بعده.
   const family = Boolean(session.user && isFamilyAccount(session.user));
   useEffect(() => {
@@ -683,9 +708,17 @@ export function Dashboard() {
               مدينتك في <Link href="/couriers">صفحة المندوبين</Link>.
             </p>
           )}
+          {isFamilyAccount(session.user) && (
+            <Link
+              className={s.buttonSecondary}
+              href="/dashboard/identity#table"
+            >
+              {txb("ftable.pick.jump")}
+            </Link>
+          )}
           {isFamilyAccount(session.user) && <FamilyInsightsCard />}
           {isFamilyAccount(session.user) && <CertificateCard />}
-          <ProfileForm />
+          <ProfileForm part="home" />
           <DeleteAccountSection />
         </>
       )}
