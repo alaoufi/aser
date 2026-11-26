@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 
 test("admin edits, deletes and restores visible site texts", async ({
   page,
-}) => {
+}, info) => {
   await page.route("**/api/session", (r) =>
     r.fulfill({
       json: {
@@ -71,56 +71,72 @@ test("admin edits, deletes and restores visible site texts", async ({
   });
   // كل قسم بمساره في القائمة الجانبية (src/lib/admin-nav.ts).
   await page.goto("/admin/texts");
-  const empty = page.getByLabel("المائدة الفارغة");
+  // قائمة مضغوطة: كل نص سطر يعرض نصه، وأمامه زر ⋮ فيه تعديل/حفظ وإخفاء وحذف واستعادة.
+  const open = async (name: string) => {
+    await page.getByLabel(`خيارات «${name}»`, { exact: true }).click();
+  };
+  const choose = (name: string) =>
+    page.getByRole("button", { name, exact: true }).locator("visible=true");
+  await expect(page.getByLabel(/^المائدة الفارغة/)).toHaveText(
+    "بانتظار العروض",
+  );
+  await page.screenshot({
+    path: `test-results/site-texts-list-${info.project.name}.png`,
+    fullPage: true,
+  });
+
+  await open("المائدة الفارغة");
+  await page.screenshot({
+    path: `test-results/site-texts-menu-${info.project.name}.png`,
+  });
+  await choose("تعديل").click();
+  const empty = page.getByRole("textbox", { name: "المائدة الفارغة" });
+  await expect(empty).toBeFocused();
   await expect(empty).toHaveValue("بانتظار العروض");
-  await expect(
-    page.getByRole("button", { name: "حفظ «المائدة الفارغة»" }),
-  ).toBeDisabled();
+  // الحفظ معطّل حتى يتغير النص، ويوجد في السطر وفي قائمة ⋮.
+  await expect(choose("حفظ")).toBeDisabled();
   await empty.fill("الصحون جاية");
-  await page.getByRole("button", { name: "حفظ «المائدة الفارغة»" }).click();
+  await page.screenshot({
+    path: `test-results/site-texts-edit-${info.project.name}.png`,
+  });
+  await open("المائدة الفارغة");
+  await choose("حفظ").first().click();
   await expect.poll(() => sent.length).toBe(1);
   expect(sent[0]).toEqual({ key: "table.empty", value: "الصحون جاية" });
-  // كل حفظ يُظهر «تم الحفظ» أسفل الشاشة.
   await expect(page.locator(".save-toast")).toContainText("تم الحفظ");
   await expect(page.getByText("(معدّل)")).toBeVisible();
+  await expect(page.getByLabel(/^المائدة الفارغة/)).toHaveText("الصحون جاية");
 
-  // نص محذوف: يُستعاد لأصله.
+  // نص محذوف: يُستعاد لأصله من القائمة.
   await expect(page.getByText("(محذوف)")).toBeVisible();
-  await page.getByRole("button", { name: "استعادة الأصل" }).last().click();
+  await open("العبارة الختامية");
+  await choose("استعادة الأصل").click();
   await expect.poll(() => sent.length).toBe(2);
   expect(sent[1]).toEqual({ key: "footer.made", value: null });
 
-  await page.getByRole("button", { name: "حذف «المائدة الفارغة»" }).click();
+  await open("المائدة الفارغة");
+  await choose("حذف").click();
   await expect.poll(() => sent.length).toBe(3);
   expect(sent[2]).toEqual({ key: "table.empty", value: "" });
 
-  // إخفاء العنوان أو النص دون مسحه، ثم إظهاره.
-  // المائدة: عنوانها ونصها في بطاقة واحدة بخياري الإخفاء.
-  const table = page.getByRole("group", { name: "إخفاء عنوان المائدة" });
-  await expect(
-    table.getByRole("checkbox", { name: "إخفاء النص" }),
-  ).toBeVisible();
-  await table.getByRole("checkbox", { name: "إخفاء العنوان" }).check();
+  // إخفاء العنوان دون مسحه ثم إظهاره.
+  await open("عنوان المائدة");
+  await choose("إخفاء العنوان").click();
   await expect.poll(() => sent.length).toBe(4);
   expect(sent[3]).toEqual({ key: "table.title", hidden: true });
   await expect(page.getByText("(مخفي)")).toBeVisible();
-  await expect(
-    page.getByRole("textbox", { name: /^عنوان المائدة/ }),
-  ).toHaveValue("مائدة اليوم");
-  await table.getByRole("checkbox", { name: "إخفاء العنوان" }).uncheck();
+  await expect(page.getByLabel(/^عنوان المائدة \(/)).toHaveText("مائدة اليوم");
+  await open("عنوان المائدة");
+  await choose("إظهار العنوان").click();
   await expect.poll(() => sent.length).toBe(5);
   expect(sent[4]).toEqual({ key: "table.title", hidden: false });
-  // الفقرة: «إخفاء العنوان» و«إخفاء النص» متجاوران أعلى بطاقتها.
-  const paragraph = page.getByRole("group", {
-    name: "إخفاء العنوان الفرعي الأول",
-  });
-  await paragraph.getByRole("checkbox", { name: "إخفاء النص" }).check();
-  await expect.poll(() => sent.length).toBe(6);
-  expect(sent[5]).toEqual({ key: "about.p1", hidden: true });
-  await expect(
-    paragraph.getByRole("checkbox", { name: "إخفاء العنوان" }),
-  ).not.toBeChecked();
-  await expect(page.getByLabel("الفقرة الأولى")).toHaveValue(
+  // الفقرة: عنوانها ونصها سطران في إطار واحد، ولكل منهما قائمته.
+  const paragraph = page.getByRole("group", { name: "العنوان الفرعي الأول" });
+  await expect(paragraph.getByLabel(/^الفقرة الأولى/)).toHaveText(
     "تصفح الأسر والمنتجات",
   );
+  await open("الفقرة الأولى");
+  await choose("إخفاء النص").click();
+  await expect.poll(() => sent.length).toBe(6);
+  expect(sent[5]).toEqual({ key: "about.p1", hidden: true });
 });

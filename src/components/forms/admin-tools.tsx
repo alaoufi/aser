@@ -16,6 +16,7 @@ import {
   type SiteTextKey,
 } from "@/lib/site-texts";
 import { api, Message, s } from "./shared";
+import { useTx } from "@/components/site-texts";
 import { PasswordField } from "./password-field";
 import { adminCache, fetchAdmin } from "./admin-cache";
 import { SectionIcon as AdminIcon } from "./section-icon";
@@ -1086,6 +1087,7 @@ type AdminText = {
 };
 /** نصوص الموقع: تعديل أي نص ظاهر، أو حذفه، أو إعادته للأصل. */
 export function TextsAdmin() {
+  const { tx } = useTx();
   const r = useResource<{ texts: AdminText[] }>("/api/admin/texts");
   const [query, setQuery] = useState("");
   const q = normalizeSearch(query);
@@ -1122,10 +1124,7 @@ export function TextsAdmin() {
   return (
     <section>
       <h2>نصوص الموقع</h2>
-      <p className={s.muted}>
-        عدّل النص واحفظه، أو أخفِ العنوان أو النص مؤقتًا دون أن يُمسح، أو احذفه،
-        أو أعده لأصله. الأزرار الأساسية تعود لنصها الأصلي إذا حُذفت أو أُخفيت.
-      </p>
+      <p className={s.muted}>{tx("admin.texts.intro")}</p>
       <label className={s.field}>
         بحث في النصوص
         <input
@@ -1143,26 +1142,23 @@ export function TextsAdmin() {
       <Message error={r.error} success={r.success} />
       {!r.data && !r.error && <p role="status">جارٍ تحميل النصوص…</p>}
       {[...groups].map(([group, items]) => (
-        <fieldset key={group} className={`${s.card} ${s.form}`}>
+        <fieldset key={group} className={`${s.card} ${s.textList}`}>
           <legend>{group}</legend>
           {items.map((t) => {
             const key = t.key as SiteTextKey;
-            // فقرة: عنوانها ونصها في بطاقة واحدة، وخيارا الإخفاء متجاوران أعلاها.
+            // فقرة: عنوانها ونصها سطران متلاصقان في إطار واحد.
             const textKey = siteTextParagraphs.get(key);
             const text = textKey && items.find((x) => x.key === textKey);
             if (text)
               return (
-                <div key={t.key} className={s.paragraphCard}>
-                  <div
-                    className={s.hideBar}
-                    role="group"
-                    aria-label={"إخفاء " + siteTextLabels[key][1]}
-                  >
-                    <HideToggle item={t} resource={r} label="إخفاء العنوان" />
-                    <HideToggle item={text} resource={r} label="إخفاء النص" />
-                  </div>
-                  <TextRow item={t} resource={r} toggle={false} />
-                  <TextRow item={text} resource={r} toggle={false} />
+                <div
+                  key={t.key}
+                  className={s.textPair}
+                  role="group"
+                  aria-label={siteTextLabels[key][1]}
+                >
+                  <TextRow item={t} resource={r} />
+                  <TextRow item={text} resource={r} />
                 </div>
               );
             if ([...siteTextParagraphs.values()].includes(key)) return null;
@@ -1174,110 +1170,174 @@ export function TextsAdmin() {
   );
 }
 type TextsResource = ReturnType<typeof useResource<{ texts: AdminText[] }>>;
-/** إخفاء نص من الموقع دون مسحه؛ يعود كما هو عند إلغاء الإخفاء. */
-function HideToggle({
-  item,
-  resource: r,
-  label,
-}: {
-  item: AdminText;
-  resource: TextsResource;
-  label: string;
-}) {
-  const [hidden, setHidden] = useState(item.hidden);
-  useEffect(() => setHidden(item.hidden), [item.hidden]);
-  return (
-    <label className={s.hideToggle}>
-      <input
-        type="checkbox"
-        checked={hidden}
-        disabled={r.busy}
-        aria-describedby={"text-" + item.key.replace(/\W/g, "-")}
-        onChange={(e) => {
-          setHidden(e.target.checked);
-          r.write("PUT", { key: item.key, hidden: e.target.checked });
-        }}
-      />
-      {label}
-    </label>
-  );
-}
+/**
+ * سطر نص مضغوط (طلب المالك 2026-11-26): الوصف والنص الحالي في سطر، وأمامه زر ⋮ فيه
+ * تعديل، وحفظ أثناء التعديل، وإخفاء أو إظهار، وحذف، واستعادة الأصل.
+ */
 function TextRow({
   item,
   resource: r,
-  toggle = true,
 }: {
   item: AdminText;
   resource: TextsResource;
-  /** خيار الإخفاء داخل السطر؛ في الفقرات يكون أعلى البطاقة. */
-  toggle?: boolean;
 }) {
+  const { tx } = useTx();
   const label = siteTextLabels[item.key as SiteTextKey]?.[1] ?? item.key;
   const id = "text-" + item.key.replace(/\W/g, "-");
   const [draft, setDraft] = useState(item.value);
+  const [editing, setEditing] = useState(false);
+  const menu = useRef<HTMLDetailsElement>(null);
   useEffect(() => setDraft(item.value), [item.value]);
-  // الحقل يتمدد مع النص: سطر للقصير، ويطول كلما زادت الكتابة، فلا يأخذ القصير مساحة كبيرة.
+  // القائمة تُغلق بالضغط خارجها.
+  useEffect(() => {
+    const out = (e: PointerEvent) => {
+      const el = menu.current;
+      if (el?.open && !el.contains(e.target as Node)) el.open = false;
+    };
+    document.addEventListener("pointerdown", out);
+    return () => document.removeEventListener("pointerdown", out);
+  }, []);
+  // الحقل يتمدد مع النص: سطر للقصير، ويطول كلما زادت الكتابة.
   const box = useRef<HTMLTextAreaElement>(null);
   useLayoutEffect(() => {
     const el = box.current;
     if (!el) return;
     el.style.height = "auto";
     el.style.height = `${el.scrollHeight + 2}px`;
-  }, [draft]);
+  }, [draft, editing]);
   const status = [
-    item.hidden ? "مخفي" : "",
-    !item.edited ? "" : item.value === "" ? "محذوف" : "معدّل",
+    item.hidden ? tx("admin.texts.hiddenTag") : "",
+    !item.edited
+      ? ""
+      : item.value === ""
+        ? tx("admin.texts.deletedTag")
+        : tx("admin.texts.editedTag"),
   ]
     .filter(Boolean)
     .join("، ");
-  const hideLabel = siteTextTitleKeys.has(item.key as SiteTextKey)
-    ? "إخفاء العنوان"
-    : "إخفاء النص";
+  const isTitle = siteTextTitleKeys.has(item.key as SiteTextKey);
+  const close = () => {
+    if (menu.current) menu.current.open = false;
+  };
+  const act = (body: Record<string, unknown>) => {
+    close();
+    r.write("PUT", { key: item.key, ...body });
+  };
+  const save = async () => {
+    close();
+    await r.write("PUT", { key: item.key, value: draft });
+    setEditing(false);
+  };
+  const changed = draft !== item.value;
   return (
-    <div className={s.field}>
-      <label htmlFor={id}>
-        {label}
-        {status && <small> ({status})</small>}
-      </label>
-      <textarea
-        id={id}
-        ref={box}
-        rows={1}
-        className={s.autoGrow}
-        maxLength={2000}
-        value={draft}
-        placeholder={item.value === "" ? "محذوف — لا يظهر في الموقع" : ""}
-        onChange={(e) => setDraft(e.target.value)}
-      />
-      {toggle && <HideToggle item={item} resource={r} label={hideLabel} />}
-      <div className={s.actions}>
-        <button
-          type="button"
-          className={s.button}
-          disabled={r.busy || draft === item.value}
-          onClick={() => r.write("PUT", { key: item.key, value: draft })}
-        >
-          حفظ «{label}»
-        </button>
-        <button
-          type="button"
-          className={s.danger}
-          disabled={r.busy || item.value === ""}
-          onClick={() => r.write("PUT", { key: item.key, value: "" })}
-        >
-          حذف «{label}»
-        </button>
-        {item.edited && (
+    <div className={s.textRow} data-editing={editing || undefined}>
+      <div className={s.textHead}>
+        <label htmlFor={id} id={id + "-label"} className={s.textLabel}>
+          {label}
+          {status && <small> ({status})</small>}
+        </label>
+        <details className={s.textMenu} ref={menu}>
+          <summary aria-label={tx("admin.texts.menu", { name: label })}>
+            ⋮
+          </summary>
+          <div className={s.textMenuList}>
+            {editing ? (
+              <>
+                <button
+                  type="button"
+                  disabled={r.busy || !changed}
+                  onClick={save}
+                >
+                  {tx("admin.texts.save")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    close();
+                    setDraft(item.value);
+                    setEditing(false);
+                  }}
+                >
+                  {tx("admin.texts.cancel")}
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  close();
+                  setEditing(true);
+                  requestAnimationFrame(() => box.current?.focus());
+                }}
+              >
+                {tx("admin.texts.edit")}
+              </button>
+            )}
+            <button
+              type="button"
+              disabled={r.busy}
+              onClick={() => act({ hidden: !item.hidden })}
+            >
+              {tx(
+                item.hidden
+                  ? isTitle
+                    ? "admin.texts.showTitle"
+                    : "admin.texts.showText"
+                  : isTitle
+                    ? "admin.texts.hideTitle"
+                    : "admin.texts.hideText",
+              )}
+            </button>
+            {item.edited && (
+              <button
+                type="button"
+                disabled={r.busy}
+                onClick={() => act({ value: null })}
+              >
+                {tx("admin.texts.restore")}
+              </button>
+            )}
+            <button
+              type="button"
+              className={s.textMenuDanger}
+              disabled={r.busy || item.value === ""}
+              onClick={() => act({ value: "" })}
+            >
+              {tx("admin.texts.delete")}
+            </button>
+          </div>
+        </details>
+      </div>
+      {editing ? (
+        <div className={s.textEdit}>
+          <textarea
+            id={id}
+            ref={box}
+            rows={1}
+            className={s.autoGrow}
+            maxLength={2000}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+          />
           <button
             type="button"
-            className={s.buttonSecondary}
-            disabled={r.busy}
-            onClick={() => r.write("PUT", { key: item.key, value: null })}
+            className={s.button}
+            disabled={r.busy || !changed}
+            onClick={save}
           >
-            استعادة الأصل
+            {tx("admin.texts.save")}
           </button>
-        )}
-      </div>
+        </div>
+      ) : (
+        <p
+          id={id}
+          aria-labelledby={id + "-label"}
+          className={s.textValue}
+          data-empty={!item.value || undefined}
+        >
+          {item.value || tx("admin.texts.deletedValue")}
+        </p>
+      )}
     </div>
   );
 }
