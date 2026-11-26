@@ -14,7 +14,49 @@ import { HttpError } from "./security";
  * قناة واتساب تُضاف لاحقًا في ALERT_CHANNELS بمفتاح من لوحة الإدارة (لا تُرسل الآن).
  */
 
+/** الافتراضي للحد اليومي؛ الإدارة تغيّره من «تطبيق الجوال ← تنبيهات الأسرة» (1 إلى 100). */
 export const ALERT_DAILY_LIMIT = 10;
+const LIMIT_KEY = "alerts:dailyLimit";
+
+/** الحد اليومي الحالي: إعداد الإدارة، وإلا الافتراضي. أي خطأ في القراءة يعيد الافتراضي. */
+export async function getAlertDailyLimit(): Promise<number> {
+  if (!databaseConfigured()) return ALERT_DAILY_LIMIT;
+  try {
+    const v = Number(
+      (
+        await db().query<{ value: string }>(
+          "SELECT value FROM jdatna.site_settings WHERE key=$1",
+          [LIMIT_KEY],
+        )
+      ).rows[0]?.value,
+    );
+    return Number.isInteger(v) && v >= 1 && v <= 100 ? v : ALERT_DAILY_LIMIT;
+  } catch {
+    return ALERT_DAILY_LIMIT;
+  }
+}
+
+/** الإدارة (صلاحية «تطبيق الجوال»): تغيير الحد اليومي، مسجّلًا في سجل النشاطات. */
+export async function setAlertDailyLimit(user: SessionUser, input: unknown) {
+  const { can } = await import("../lib/permissions");
+  if (!can(user, "app")) throw new HttpError(403, "لا تملك صلاحية الإدارة");
+  const { dailyLimit } = z
+    .object({ dailyLimit: z.number().int().min(1).max(100) })
+    .strict()
+    .parse(input);
+  await transaction(async (c) => {
+    await c.query(
+      `INSERT INTO jdatna.site_settings(key,value,updated_at,updated_by) VALUES($1,$2,now(),$3)
+       ON CONFLICT(key) DO UPDATE SET value=EXCLUDED.value,updated_at=now(),updated_by=EXCLUDED.updated_by`,
+      [LIMIT_KEY, String(dailyLimit), user.id],
+    );
+    await c.query(
+      "INSERT INTO jdatna.admin_audit_logs(id,actor_id,action,target_id,details) VALUES($1,$2,'site.alerts',NULL,$3)",
+      [randomUUID(), user.id, JSON.stringify({ dailyLimit })],
+    );
+  });
+  return { dailyLimit };
+}
 /** مهلة تجميع الدفعة: الأحداث الأحدث منها تنتظر الدورة التالية. */
 export const ALERT_GRACE_SECONDS = 120;
 const TODAY = `(now() AT TIME ZONE 'Asia/Riyadh')::date`;
@@ -407,7 +449,7 @@ export async function dispatchFamilyAlerts(
 ) {
   if (!databaseConfigured()) return { sent: 0, suppressed: 0 };
   const grace = opts.graceSeconds ?? ALERT_GRACE_SECONDS;
-  const limit = opts.dailyLimit ?? ALERT_DAILY_LIMIT;
+  const limit = opts.dailyLimit ?? (await getAlertDailyLimit());
   const texts =
     opts.texts ?? (await (await import("./settings")).getSiteTexts());
   const outbox: AlertMessage[] = [];

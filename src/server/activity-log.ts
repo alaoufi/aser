@@ -51,6 +51,7 @@ export const ACTION_LABELS: Record<string, string> = {
   "account.delete": "حذف حساب",
   "report.update": "تحديث بلاغ",
   "site.template": "تغيير قالب الموقع",
+  "site.alerts": "تغيير حد تنبيهات الأسرة اليومي",
   "site.text": "تعديل نص في الموقع",
   "site.app-links": "روابط التطبيق",
   "site.domain-verification": "رمز إثبات ملكية النطاق",

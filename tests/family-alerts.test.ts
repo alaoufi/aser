@@ -197,6 +197,29 @@ test(
       assert.ok(r.suppressed >= 1);
       assert.equal(await inboxCount(a.id), before);
 
+      // الحد اليومي من الإدارة (صلاحية «تطبيق الجوال»)، ويقرؤه المرسِل دون تمريره.
+      const admin = await mkUser("admin");
+      await assert.rejects(fa.setAlertDailyLimit(a, { dailyLimit: 3 }), {
+        status: 403,
+      });
+      await assert.rejects(fa.setAlertDailyLimit(admin, { dailyLimit: 0 }));
+      await assert.rejects(fa.setAlertDailyLimit(admin, { dailyLimit: 101 }));
+      assert.equal(await fa.getAlertDailyLimit(), 10);
+      await fa.setAlertDailyLimit(admin, {
+        dailyLimit: await inboxCount(a.id),
+      });
+      await fa.queueNewProduct(await product("فوق حد الإدارة"));
+      r = await fa.dispatchFamilyAlerts({ graceSeconds: 0, texts });
+      assert.equal(r.messages!.filter((m) => m.userId === a.id).length, 0);
+      await pool.query(
+        "DELETE FROM jdatna.site_settings WHERE key='alerts:dailyLimit'",
+      );
+      await pool.query(
+        "DELETE FROM jdatna.admin_audit_logs WHERE actor_id=$1",
+        [admin.id],
+      );
+      assert.equal(await fa.getAlertDailyLimit(), 10);
+
       // «تنبيهاتي» والإلغاء من الرابط بلا دخول.
       const inbox = await fa.myInbox(a);
       assert.ok(inbox.length >= 3);
