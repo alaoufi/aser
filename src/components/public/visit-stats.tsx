@@ -22,6 +22,8 @@ const post = (url: string, body?: unknown) =>
     return r.ok ? data : null;
   });
 const num = (n: number) => n.toLocaleString("en-US");
+/** زيارة واحدة لكل تحميل للصفحة، ولو بدأ المكوّن مرتين (وضع التطوير). التحديث يعيد تحميل الملف فيُحسب من جديد. */
+let pageHitSent = false;
 
 /**
  * الزوار أسفل كل صفحة: زوار اليوم، وإجمالي الزوار، والمتواجدون الآن. نبضة كل دقيقتين
@@ -31,19 +33,25 @@ export function VisitStats() {
   const [stats, setStats] = useState<Stats | null>(null);
   useEffect(() => {
     let active = true;
-    const beat = () => {
-      if (document.visibilityState !== "visible") return;
-      post("/api/visits")
+    // فتح الصفحة أو تحديثها زيارة (hit)، والنبضة الدورية تبقي الزائر «متواجدًا الآن» فقط.
+    const beat = (hit = false) => {
+      if (!hit && document.visibilityState !== "visible") return;
+      post("/api/visits", hit ? { hit: true } : undefined)
         .then((d: Stats | null) => active && d && setStats(d))
         .catch(() => {});
     };
-    beat();
-    const timer = setInterval(beat, 120_000);
-    document.addEventListener("visibilitychange", beat);
+    if (pageHitSent) beat();
+    else {
+      pageHitSent = true;
+      beat(true);
+    }
+    const onVisible = () => beat();
+    const timer = setInterval(onVisible, 120_000);
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
       active = false;
       clearInterval(timer);
-      document.removeEventListener("visibilitychange", beat);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, []);
   if (!stats?.visible) return null;

@@ -215,10 +215,16 @@ const presence: Map<string, number> = ((
 const ONLINE_MS = 5 * 60_000;
 
 /**
- * زوار الموقع (أسفل كل صفحة): زوار اليوم، وإجمالي الزوار (زائر واحد لكل يوم)، والمتواجدون الآن
- * (آخر 5 دقائق). يُسجَّل الزائر دائمًا، ويظهر العدد للجميع إن فعّلته الإدارة وإلا للإدارة فقط.
+ * زوار الموقع (أسفل كل صفحة): زيارات اليوم، وإجمالي الزيارات، والمتواجدون الآن (آخر 5 دقائق).
+ * قرار المالك 2026-11-26: كل فتح أو تحديث للصفحة زيارة (hit)، ولو تكرر من الزائر نفسه.
+ * نبضة «ما زال هنا» كل دقيقتين لا تُحسب زيارة، فالصفحة المفتوحة لا تضخّم العدد.
+ * يظهر العدد للجميع إن فعّلته الإدارة وإلا للإدارة فقط.
  */
-export async function recordVisit(request: Request, user: SessionUser | null) {
+export async function recordVisit(
+  request: Request,
+  user: SessionUser | null,
+  hit = true,
+) {
   if (!databaseConfigured()) return { visible: false as const };
   const agent = request.headers.get("user-agent") ?? "";
   const visitor = mask(
@@ -231,17 +237,22 @@ export async function recordVisit(request: Request, user: SessionUser | null) {
     (await countAllowed(request, "visits-ip", 60))
   ) {
     presence.set(visitor, now);
-    await db().query(
-      `WITH seen AS (
-         INSERT INTO jdatna.view_seen(kind,target_id,visitor,day)
-         VALUES('site',$1,$2,(now() AT TIME ZONE 'Asia/Riyadh')::date)
-         ON CONFLICT DO NOTHING RETURNING 1
-       )
-       INSERT INTO jdatna.view_counts(kind,target_id,views)
-       SELECT 'site',$1,1 FROM seen
-       ON CONFLICT(kind,target_id) DO UPDATE SET views=jdatna.view_counts.views+1,updated_at=now()`,
-      [SITE, visitor],
-    );
+    if (hit)
+      await db().query(
+        `WITH seen AS (
+           -- الزوار المختلفون لكل يوم (للإحصاءات).
+           INSERT INTO jdatna.view_seen(kind,target_id,visitor,day)
+           VALUES('site',$1,$2,(now() AT TIME ZONE 'Asia/Riyadh')::date)
+           ON CONFLICT DO NOTHING
+         ), daily AS (
+           INSERT INTO jdatna.site_visits_daily(day,visits)
+           VALUES((now() AT TIME ZONE 'Asia/Riyadh')::date,1)
+           ON CONFLICT(day) DO UPDATE SET visits=jdatna.site_visits_daily.visits+1
+         )
+         INSERT INTO jdatna.view_counts(kind,target_id,views) VALUES('site',$1,1)
+         ON CONFLICT(kind,target_id) DO UPDATE SET views=jdatna.view_counts.views+1,updated_at=now()`,
+        [SITE, visitor],
+      );
   }
   if (presence.size > 20_000 || Math.random() < 0.05)
     for (const [k, t] of presence) if (now - t > ONLINE_MS) presence.delete(k);
@@ -249,7 +260,7 @@ export async function recordVisit(request: Request, user: SessionUser | null) {
   if (!open && !isManager(user)) return { visible: false as const };
   const [today, total] = await Promise.all([
     db().query(
-      "SELECT count(*)::int AS n FROM jdatna.view_seen WHERE kind='site' AND day=(now() AT TIME ZONE 'Asia/Riyadh')::date",
+      "SELECT COALESCE((SELECT visits::int FROM jdatna.site_visits_daily WHERE day=(now() AT TIME ZONE 'Asia/Riyadh')::date),0) AS n",
     ),
     db().query(
       "SELECT views::int AS n FROM jdatna.view_counts WHERE kind='site' AND target_id=$1",
