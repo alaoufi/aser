@@ -73,8 +73,9 @@ test("a family picks its brand colour from the dashboard", async ({ page }) => {
     }
     return r.fulfill({ json: brand });
   });
-  await page.goto("/dashboard");
-  const card = page.getByRole("region", { name: "هوية الأسرة" });
+  // «الألوان والزخرفة» في تبويب «هوية الأسرة».
+  await page.goto("/dashboard/identity#brand");
+  const card = page.getByRole("region", { name: "الألوان والزخرفة" });
   const group = (name: string) =>
     card.getByRole("group", { name, exact: true });
   // مئات التدرجات: 24 عائلة لون، ولكل عائلة 12 درجة.

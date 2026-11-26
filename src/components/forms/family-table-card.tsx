@@ -44,13 +44,6 @@ export function FamilyTableCard() {
         setOwn(o);
         setDraft(o.table);
         setWelcome(o.welcome);
-        // رابط «اختر مائدة أسرتك» (/dashboard#family-table): القسم يظهر بعد التحميل فننتقل إليه.
-        if (location.hash === "#family-table")
-          requestAnimationFrame(() =>
-            document
-              .getElementById("family-table")
-              ?.scrollIntoView({ block: "start" }),
-          );
       })
       .catch(() => setFailed(true));
   }, []);

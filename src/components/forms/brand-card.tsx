@@ -140,8 +140,8 @@ export function BrandCard({ name }: { name: string }) {
     brandPalettes.find((p) => p.id === draft?.palette)?.accent ?? "#4f5d36";
   const tones = free.filter((p) => familyOf(p.id) === hue);
   return (
-    <section className={s.card} aria-label="هوية الأسرة">
-      <h2>هوية الأسرة</h2>
+    <section className={s.card} aria-label="الألوان والزخرفة">
+      <h2>الألوان والزخرفة</h2>
       <p className={s.muted}>
         مكتبة الهويات: {fmt(identityCount.palettes)} لونًا وتدرجًا، و
         {fmt(identityCount.patterns)} زخرفة، فتكون {fmt(identityCount.family)}{" "}

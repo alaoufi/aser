@@ -1,4 +1,5 @@
 "use client";
+import { useTx } from "@/components/site-texts";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -165,6 +166,8 @@ function AccountLinks({
 /** أقسام لوحة الأسرة: تبويبات ثلاثية الأبعاد أعلى كل صفحة من صفحات اللوحة. */
 export const FAMILY_TABS: FolderTab[] = [
   { id: "home", label: "الرئيسية", href: "/dashboard" },
+  // «هوية الأسرة» (طلب المالك 2026-11-26): البيانات والألوان والمائدة والموقع وظهور التواصل.
+  { id: "identity", label: "هوية الأسرة", href: "/dashboard/identity" },
   { id: "products", label: "المنتجات", href: "/dashboard/products" },
   { id: "orders", label: "الطلبات", href: "/dashboard/orders" },
   { id: "offers", label: "العروض", href: "/dashboard/offers" },
@@ -181,17 +184,19 @@ export const FAMILY_TABS: FolderTab[] = [
 ];
 function FamilyTabs({ children }: { children: React.ReactNode }) {
   const { user } = useSession();
+  const { txb } = useTx();
   const path = usePathname();
   const tab = FAMILY_TABS.find((t) => t.href === path);
   if (!user || !isFamilyAccount(user) || !tab) return <>{children}</>;
   return (
     <FolderTabs
       label="أقسام الأسرة المنتجة"
-      tabs={
-        familyPending(user)
-          ? FAMILY_TABS.filter((t) => t.id !== "couriers")
-          : FAMILY_TABS
-      }
+      tabs={(familyPending(user)
+        ? FAMILY_TABS.filter((t) => t.id !== "couriers")
+        : FAMILY_TABS
+      ).map((t) =>
+        t.id === "identity" ? { ...t, label: txb("fidentity.title") } : t,
+      )}
       active={tab.id}
     >
       {children}

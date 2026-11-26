@@ -75,5 +75,5 @@ test("the family-table chapter tells families where to pick their table", async 
   await expect(chapter).toContainText("حياكم الله");
   await expect(
     chapter.getByRole("link", { name: /اختر مائدة أسرتك/ }),
-  ).toHaveAttribute("href", "/dashboard#family-table");
+  ).toHaveAttribute("href", "/dashboard/identity#table");
 });
