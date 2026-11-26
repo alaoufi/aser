@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Product } from "@/lib/types";
 import { priceLabel, safeMediaUrl } from "@/components/public/ui";
+import { maedaColors, type MaedaStyle } from "@/lib/maeda";
 
 /**
  * «المائدة» — روح القالب المبسّط (قرار المالك 2026-11-26): أطباق اليوم الحقيقية صحونًا كبيرة على مفرش سدو
@@ -31,6 +32,8 @@ export function MaedaTable({
   empty,
   owner,
   cloth = "sadu",
+  maeda = null,
+  preview,
 }: {
   id: string;
   title: string;
@@ -47,18 +50,45 @@ export function MaedaTable({
   /** اسم صاحب المائدة مكتوبًا على المفرش (مائدة الأسرة). */
   owner?: string;
   cloth?: MaedaCloth;
+  /** مائدة الأسرة من «صانع المائدة»؛ null = مائدة السدو الأصلية. */
+  maeda?: MaedaStyle | null;
+  /** معاينة لوحة الأسرة: صور توضيحية بلا روابط ولا بطاقات. */
+  preview?: string[];
 }) {
+  const made = maeda
+    ? {
+        "data-shape": maeda.shape,
+        "data-finish": maeda.finish,
+        "data-edge": maeda.edge === "none" ? undefined : maeda.edge,
+        "data-runner": maeda.runner ? "on" : undefined,
+        style: { "--tc": maedaColors[maeda.color] } as React.CSSProperties,
+      }
+    : { "data-cloth": cloth };
   return (
-    <section className="maeda" data-cloth={cloth} aria-labelledby={id}>
+    <section className="maeda" {...made} aria-labelledby={id}>
       <div className="maeda-top wrap">
         <h2 id={id} className="maeda-name">
           {title}
         </h2>
         {hint && <p className="maeda-hint">{hint}</p>}
       </div>
-      <div className={`maeda-board ${dishes.length ? "" : "is-empty"}`}>
+      <div
+        className={`maeda-board ${dishes.length || preview ? "" : "is-empty"}`}
+      >
         <div className="maeda-cloth" aria-hidden="true" />
-        {dishes.length > 0 ? (
+        {preview ? (
+          <ul className="maeda-dishes" aria-hidden="true">
+            {preview.map((src) => (
+              <li key={src}>
+                <span className="maeda-dish">
+                  <span className="maeda-dish-plate">
+                    <img src={src} alt="" />
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : dishes.length > 0 ? (
           <ul className="maeda-dishes">
             {dishes.map((p, i) => {
               const image = p.imageUrl && safeMediaUrl(p.imageUrl);

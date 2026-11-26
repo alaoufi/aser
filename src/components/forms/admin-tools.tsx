@@ -16,6 +16,7 @@ import {
   type SiteTextKey,
 } from "@/lib/site-texts";
 import { api, Message, s, useSiteTexts } from "./shared";
+import { MaedaAdmin } from "./maeda-admin";
 import {
   paletteKeys,
   siteTemplates,
@@ -1143,6 +1144,7 @@ export function TemplateAdmin() {
               ))}
             </fieldset>
           )}
+          {template && <MaedaAdmin />}
         </>
       )}
     </section>

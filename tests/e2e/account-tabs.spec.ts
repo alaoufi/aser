@@ -37,6 +37,7 @@ test("the family dashboard sections are 3D tabs, and the current one is marked",
     "الاشتراكات",
     "مكتبة الصور",
     "المشاهدات",
+    "مائدتي",
     "التغطية",
     "مندوبي الخاص",
   ]);

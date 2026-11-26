@@ -175,23 +175,25 @@ export const FAMILY_TABS: FolderTab[] = [
   },
   { id: "library", label: "مكتبة الصور", href: "/dashboard/library" },
   { id: "views", label: "المشاهدات", href: "/dashboard/views" },
+  // «مائدتي»: اسمها من «نصوص الموقع» (maeda.tab) في FamilyTabs.
+  { id: "maeda", label: "", href: "/dashboard/maeda" },
   { id: "coverage", label: "التغطية", href: "/dashboard/coverage" },
   // مندوب الأسرة الخاص: تسجّله بنفسها بتعهّد، دون اعتماد الإدارة.
   { id: "couriers", label: "مندوبي الخاص", href: "/dashboard/couriers" },
 ];
 function FamilyTabs({ children }: { children: React.ReactNode }) {
   const { user } = useSession();
+  const { tx } = useSiteTexts();
   const path = usePathname();
   const tab = FAMILY_TABS.find((t) => t.href === path);
   if (!user || !isFamilyAccount(user) || !tab) return <>{children}</>;
   return (
     <FolderTabs
       label="أقسام الأسرة المنتجة"
-      tabs={
-        familyPending(user)
-          ? FAMILY_TABS.filter((t) => t.id !== "couriers")
-          : FAMILY_TABS
-      }
+      tabs={(familyPending(user)
+        ? FAMILY_TABS.filter((t) => t.id !== "couriers")
+        : FAMILY_TABS
+      ).map((t) => (t.id === "maeda" ? { ...t, label: tx("maeda.tab") } : t))}
       active={tab.id}
     >
       {children}

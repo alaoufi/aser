@@ -17,6 +17,7 @@ import { LocationCheck } from "@/components/maps/location-check";
 import { RatingBox } from "@/components/forms/rating-box";
 import { getSiteTexts, visitorTemplate } from "@/server/settings";
 import { MaedaTable } from "@/components/public/maeda-table";
+import { publicMaeda } from "@/server/maeda";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import {
@@ -83,12 +84,13 @@ export default async function ProducerDetail({
 }) {
   const p = await getProducer((await params).slug);
   if (!p) notFound();
-  const [products, shown, texts, share, template] = await Promise.all([
+  const [products, shown, texts, share, template, maeda] = await Promise.all([
     getProducerProducts(p.id),
     countProducerProducts(p.id),
     getSiteTexts(),
     shortLink("family", p.id),
     visitorTemplate(),
+    publicMaeda(p.id),
   ]);
   // القالب المبسّط، أسرة بلا منتجات منشورة: سؤال القائمة بالواتساب وأسر قريبة نشرت أطباقها.
   const simpleEmpty = template === "simple" && products.length === 0;
@@ -208,6 +210,7 @@ export default async function ProducerDetail({
               title={texts["family.table"]}
               hint={texts["family.tableHint"].replace("{family}", p.name)}
               owner={p.name}
+              maeda={maeda}
               showFamily={false}
               dishes={products.filter(
                 (x) => x.status === "available" && !x.notCookingToday,
