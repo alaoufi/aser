@@ -43,7 +43,7 @@
   padding: 0 16px;
   border: 1px solid var(--rust);
   border-radius: 10px;
-  background: #fff;
+  background: var(--tint, #fff);
   color: var(--rust);
   font: inherit;
   font-weight: 700;
@@ -78,7 +78,7 @@
   padding: 10px 12px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: #fff;
+  background: var(--tint, #fff);
   break-inside: avoid;
 }
 .tileLabel {
@@ -122,7 +122,7 @@
   padding: 12px 14px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: #fff;
+  background: var(--tint, #fff);
   break-inside: avoid;
 }
 .cardTitle {
@@ -157,7 +157,7 @@
   display: flex;
   height: 10px;
   border-radius: 4px;
-  background: #f1e8da;
+  background: var(--tint, #f1e8da);
   overflow: hidden;
 }
 .barFill {
@@ -282,7 +282,7 @@
 /* أثناء تصوير الملف: عنوان التقرير ظاهر، والأزرار مخفية. */
 .capturing {
   padding: 12px;
-  background: #fff;
+  background: var(--tint, #fff);
 }
 .capturing .printHead {
   display: flex;

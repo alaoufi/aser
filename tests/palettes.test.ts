@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { PALETTES } from "../src/components/public/appearance-picker";
+import { PALETTES } from "../src/lib/appearance";
 
 /**
  * «ألوان الموقع» التراثية (2026-11-25): كل لوحة في palettes.css تحقق تباين 4.5:1 على الأقل
@@ -53,7 +53,40 @@ test("every heritage palette keeps text and buttons readable (4.5:1)", () => {
         ratio(v[fg], v[bg]) >= 4.5,
         `${key}: ${what} ${ratio(v[fg], v[bg]).toFixed(2)}`,
       );
+    // نص الأزرار: أبيض، إلا في «ليلي» حيث الأزرار فاتحة بنص داكن (--on-accent).
+    const onAccent = v["on-accent"] ?? "#ffffff";
     for (const btn of ["olive", "rust"])
-      assert.ok(ratio("#ffffff", v[btn]) >= 4.5, `${key}: نص الزر على ${btn}`);
+      assert.ok(
+        ratio(onAccent, v[btn]) >= 4.5,
+        `${key}: نص الزر على ${btn} ${ratio(onAccent, v[btn]).toFixed(2)}`,
+      );
   }
+});
+
+test("the high-contrast palette goes beyond AA (7:1 for text and buttons)", () => {
+  const block = css.match(/data-palette="contrast"\]\s*\{([^}]*)\}/)?.[1];
+  assert.ok(block);
+  const v = vars(block);
+  for (const [fg, bg] of [
+    ["ink", "paper"],
+    ["muted", "paper"],
+    ["olive", "paper"],
+    ["rust", "surface"],
+  ])
+    assert.ok(ratio(v[fg], v[bg]) >= 7, `${fg}/${bg} ${ratio(v[fg], v[bg])}`);
+  assert.ok(ratio("#ffffff", v.olive) >= 7);
+  // عناوين التذييل الأسود.
+  const h3 = css.match(
+    /data-palette="contrast"\] \.site-footer h3 \{\s*color: (#[0-9a-f]{6})/,
+  )?.[1];
+  assert.ok(h3 && ratio(h3, v.footer) >= 7, "عناوين التذييل");
+});
+
+test("the night palette is dark and keeps the footer readable", () => {
+  const block = css.match(/data-palette="lail"\]\s*\{([^}]*)\}/)?.[1];
+  assert.ok(block);
+  const v = vars(block);
+  assert.ok(lum(v.paper) < 0.02, "خلفية داكنة");
+  assert.ok(ratio("#e3d0b7", v.footer) >= 4.5, "نص التذييل");
+  assert.ok(ratio(v["tint-ink"], v.tint) >= 4.5, "النص على البطاقات الملونة");
 });

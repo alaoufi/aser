@@ -11,58 +11,122 @@ import {
   type SiteTexts,
 } from "../lib/site-texts";
 import {
+  PALETTE_COOKIE,
+  TEMPLATE_COOKIE,
+  defaultAppearanceSettings,
+  normalizeAppearance,
+  paletteKeys,
+  resolveAppearance,
+  siteTemplates,
+  type AppearanceSettings,
+  type PaletteKey,
+  type SiteTemplate,
+} from "../lib/appearance";
+import {
   defaultProductFields,
   isProductFieldKey,
   type ProductFields,
 } from "../lib/product-fields";
 
-export const siteTemplates = ["najdi", "classic"] as const;
-export type SiteTemplate = (typeof siteTemplates)[number];
-const fallback: SiteTemplate = "classic";
+export { siteTemplates, type SiteTemplate } from "../lib/appearance";
 
-/** قالب الواجهة الحالي؛ أي خطأ في القراءة يعيد القالب الافتراضي ولا يوقف الصفحة. */
-/** تُقرأ مرة واحدة لكل طلب صفحة (القالب والصفحة يطلبانها معًا). */
-export const getSiteTemplate = cache(async (): Promise<SiteTemplate> => {
-  if (!databaseConfigured()) return fallback;
-  try {
-    const value = (
-      await db().query(
-        "SELECT value FROM jdatna.site_settings WHERE key='template'",
-      )
-    ).rows[0]?.value;
-    return siteTemplates.includes(value) ? value : fallback;
-  } catch {
-    return fallback;
-  }
+const appearanceKeys = [
+  "template",
+  "templates",
+  "palette",
+  "palettes",
+] as const;
+
+/**
+ * إعداد «المظهر» من الإدارة: القالب واللون الافتراضيان، والقوالب والألوان المتاحة للزائر.
+ * أي خطأ في القراءة يعيد الأصل (الكلاسيكي والسدو، والكل متاح) ولا يوقف الصفحة.
+ * تُقرأ مرة واحدة لكل طلب صفحة.
+ */
+export const getAppearanceSettings = cache(
+  async (): Promise<AppearanceSettings> => {
+    if (!databaseConfigured()) return defaultAppearanceSettings;
+    try {
+      const rows = (
+        await db().query(
+          "SELECT key,value FROM jdatna.site_settings WHERE key = ANY($1::text[])",
+          [appearanceKeys],
+        )
+      ).rows as { key: (typeof appearanceKeys)[number]; value: string }[];
+      const raw: Partial<Record<keyof AppearanceSettings, unknown>> = {};
+      for (const r of rows)
+        raw[r.key] =
+          r.key === "templates" || r.key === "palettes"
+            ? r.value.split(",").filter(Boolean)
+            : r.value;
+      return normalizeAppearance(raw);
+    } catch {
+      return defaultAppearanceSettings;
+    }
+  },
+);
+
+/** قالب الإدارة الافتراضي (للتوافق مع ما يطلبه وحده). */
+export async function getSiteTemplate(): Promise<SiteTemplate> {
+  return (await getAppearanceSettings()).template;
+}
+
+/** مظهر هذا الزائر: اختياره المحفوظ في cookie إن كان متاحًا، وإلا افتراضي الإدارة. */
+export const visitorAppearance = cache(async () => {
+  const { cookies } = await import("next/headers");
+  const jar = await cookies();
+  const settings = await getAppearanceSettings();
+  return {
+    ...resolveAppearance(settings, {
+      template: jar.get(TEMPLATE_COOKIE)?.value,
+      palette: jar.get(PALETTE_COOKIE)?.value,
+    }),
+    settings,
+  };
 });
 
 /** قالب هذا الزائر: اختياره المحفوظ في جهازه، وإلا قالب الإدارة الافتراضي. */
 export async function visitorTemplate(): Promise<SiteTemplate> {
-  const { cookies } = await import("next/headers");
-  const chosen = (await cookies()).get("jdatna_template")?.value;
-  return siteTemplates.includes(chosen as SiteTemplate)
-    ? (chosen as SiteTemplate)
-    : getSiteTemplate();
+  return (await visitorAppearance()).template;
 }
 
+const appearanceInput = z
+  .object({
+    template: z.enum(siteTemplates),
+    templates: z.array(z.enum(siteTemplates)).min(1).max(10).optional(),
+    palette: z.enum(paletteKeys as [PaletteKey, ...PaletteKey[]]).optional(),
+    palettes: z
+      .array(z.enum(paletteKeys as [PaletteKey, ...PaletteKey[]]))
+      .min(1)
+      .max(20)
+      .optional(),
+  })
+  .strict();
+
+/** الإدارة: القالب الافتراضي (ومعه اختياريًا المتاح والألوان). الافتراضي يُضاف للمتاح دائمًا. */
 export async function setSiteTemplate(user: SessionUser, input: unknown) {
   if (!can(user, "template"))
     throw new HttpError(403, "لا تملك صلاحية الإدارة");
-  const { template } = z
-    .object({ template: z.enum(siteTemplates) })
-    .strict()
-    .parse(input);
+  const parsed = appearanceInput.parse(input);
+  const current = await getAppearanceSettings();
+  const next = normalizeAppearance({ ...current, ...parsed });
   return transaction(async (client) => {
-    await client.query(
-      `INSERT INTO jdatna.site_settings(key,value,updated_at,updated_by) VALUES('template',$1,now(),$2)
-       ON CONFLICT(key) DO UPDATE SET value=EXCLUDED.value,updated_at=now(),updated_by=EXCLUDED.updated_by`,
-      [template, user.id],
-    );
+    // يُكتب ما غيّرته الإدارة فقط؛ الافتراضي يُضاف للمتاح عند القراءة (normalizeAppearance).
+    for (const key of appearanceKeys) {
+      if (parsed[key] === undefined) continue;
+      const value = Array.isArray(next[key])
+        ? (next[key] as string[]).join(",")
+        : (next[key] as string);
+      await client.query(
+        `INSERT INTO jdatna.site_settings(key,value,updated_at,updated_by) VALUES($1,$2,now(),$3)
+         ON CONFLICT(key) DO UPDATE SET value=EXCLUDED.value,updated_at=now(),updated_by=EXCLUDED.updated_by`,
+        [key, value, user.id],
+      );
+    }
     await client.query(
       "INSERT INTO jdatna.admin_audit_logs(id,actor_id,action,target_id,details) VALUES($1,$2,'site.template',NULL,$3)",
-      [randomUUID(), user.id, JSON.stringify({ template })],
+      [randomUUID(), user.id, JSON.stringify(next)],
     );
-    return { template };
+    return next;
   });
 }
 

@@ -2,7 +2,7 @@
   max-width: 1000px;
   margin: 24px auto;
   padding: 24px;
-  color: #3c2b20;
+  color: var(--tint-ink, #3c2b20);
 }
 .nav {
   margin-bottom: 18px;
@@ -63,7 +63,7 @@
   padding: 10px;
   border: 1px solid #e3d2b4;
   border-radius: 16px;
-  background: #fffdf8;
+  background: var(--tint, #fffdf8);
   box-shadow: 0 18px 40px -16px rgb(40 25 15 / 0.45);
   transform-origin: top;
   animation: account-menu-open 0.22s ease-out;
@@ -91,7 +91,7 @@
   padding: 8px 16px;
   border: 1.5px solid #d6b98d;
   border-radius: 999px;
-  background: #fffaf1;
+  background: var(--tint, #fffaf1);
   color: var(--ink);
   font-weight: 700;
   text-decoration: none;
@@ -103,7 +103,7 @@
 }
 .navLink:hover {
   border-color: var(--rust);
-  background: #fff;
+  background: var(--tint, #fff);
 }
 .navLink:active {
   transform: translateY(1px);
@@ -177,7 +177,7 @@
   border: 1px solid #ab9d88;
   border-radius: 9px;
   padding: 10px;
-  background: #fff;
+  background: var(--tint, #fff);
   font: inherit;
   font-size: 16px;
   color: inherit;
@@ -212,8 +212,8 @@
   line-height: 1.5;
 }
 .error {
-  color: #9d2929;
-  background: #fff0ec;
+  color: var(--tint-ink, #9d2929);
+  background: var(--tint, #fff0ec);
   padding: 14px;
   border-radius: 9px;
 }
@@ -229,12 +229,12 @@
   min-height: 44px;
 }
 .muted {
-  color: #756958;
+  color: var(--tint-ink, #756958);
   line-height: 1.55;
 }
 .tag {
   padding: 5px 12px;
-  background: #eee9d8;
+  background: var(--tint, #eee9d8);
   border-radius: 20px;
   display: inline-block;
 }
@@ -357,7 +357,7 @@
   padding: 8px 14px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #fff;
+  background: var(--tint, #fff);
   font-weight: 600;
 }
 .buttonSecondary {
@@ -384,7 +384,7 @@
   padding: 18px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: #fff;
+  background: var(--tint, #fff);
 }
 .confirmation h3 {
   margin: 0;
@@ -412,7 +412,7 @@
   border: 1px solid var(--line);
   border-inline-start: 6px solid var(--muted);
   border-radius: 8px;
-  background: #fff;
+  background: var(--tint, #fff);
   line-height: 1.45;
 }
 .familyStatus p {
@@ -424,7 +424,7 @@
 .familyStatusCongrats {
   padding: 10px 12px;
   border-radius: 6px;
-  background: #eef2e6;
+  background: var(--tint, #eef2e6);
   color: var(--olive, var(--olive));
   font-weight: 700;
 }
@@ -476,7 +476,7 @@
   padding: 8px 6px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: #fffdf8;
+  background: var(--tint, #fffdf8);
   box-shadow: 0 1px 2px rgb(46 29 18 / 0.06);
   font: inherit;
   color: var(--ink);
@@ -505,7 +505,7 @@
 }
 .summaryAlert {
   border-color: #e3b9ae;
-  background: #fff6f3;
+  background: var(--tint, #fff6f3);
 }
 .summaryAlert strong {
   color: var(--rust, var(--rust));
@@ -570,7 +570,7 @@
   padding: 8px 4px;
   border: 1px solid transparent;
   border-radius: 10px;
-  background: #fff;
+  background: var(--tint, #fff);
   color: var(--ink);
   font: inherit;
   font-size: 12px;
@@ -704,7 +704,7 @@
 }
 .picker label:has(input:checked) {
   border-color: #486443;
-  background: #eef3e8;
+  background: var(--tint, #eef3e8);
 }
 .picker img {
   width: 100%;
@@ -743,7 +743,7 @@
   padding: 14px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: #fffdf8;
+  background: var(--tint, #fffdf8);
 }
 .hideBar {
   display: flex;
@@ -797,7 +797,7 @@
 .productGroup {
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: #fffdf8;
+  background: var(--tint, #fffdf8);
   overflow: hidden;
 }
 .productGroup summary {
@@ -810,7 +810,7 @@
   font-weight: 700;
   cursor: pointer;
   list-style: none;
-  background: #f7efe1;
+  background: var(--tint, #f7efe1);
 }
 .productGroup summary::-webkit-details-marker {
   display: none;
@@ -869,7 +869,7 @@
   padding: 0 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #fff;
+  background: var(--tint, #fff);
   font: inherit;
   font-size: 14px;
   cursor: pointer;
@@ -896,7 +896,7 @@
   overflow-x: auto;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: #fffaf2;
+  background: var(--tint, #fffaf2);
 }
 .adminTable {
   width: 100%;
@@ -907,7 +907,7 @@
   position: sticky;
   top: 0;
   padding: 10px 12px;
-  background: #efe3cf;
+  background: var(--tint, #efe3cf);
   color: var(--ink, var(--ink));
   font-size: 14px;
   text-align: start;
@@ -925,7 +925,7 @@
   display: block;
 }
 .adminTable td > small {
-  color: #6b5a4a;
+  color: var(--tint-ink, #6b5a4a);
 }
 .adminTable td > a {
   color: inherit;
@@ -945,7 +945,7 @@
   padding: 0 14px;
   border: 1px solid var(--line);
   border-radius: 20px;
-  background: #fff;
+  background: var(--tint, #fff);
   font: inherit;
   font-size: 14px;
   cursor: pointer;
@@ -976,7 +976,7 @@
   background: linear-gradient(135deg, #fffaf0, #f6e9cc);
 }
 .certificateCard h2 {
-  color: #8a5a14;
+  color: var(--tint-ink, #8a5a14);
 }
 .certificateCard progress {
   width: 100%;
@@ -1179,7 +1179,7 @@
   box-shadow: 0 0 0 2px var(--olive);
 }
 .patternTile {
-  background-color: #fbf6ec;
+  background-color: var(--tint, #fbf6ec);
   background-size: 22px 22px;
   border: 1px solid rgba(46, 29, 18, 0.15);
   border-radius: 8px;
@@ -1187,9 +1187,9 @@
   width: 34px;
 }
 .premiumTag {
-  background: #fbf0d6;
+  background: var(--tint, #fbf0d6);
   border-radius: 6px;
-  color: #6b4d0e;
+  color: var(--tint-ink, #6b4d0e);
   font-size: 11px;
   padding: 1px 6px;
 }
@@ -1234,9 +1234,9 @@
   box-shadow: 0 0 0 3px var(--ink);
 }
 .takenTag {
-  background: #f3e3dc;
+  background: var(--tint, #f3e3dc);
   border-radius: 6px;
-  color: #6b2414;
+  color: var(--tint-ink, #6b2414);
   font-size: 11px;
   padding: 1px 6px;
 }
@@ -1246,11 +1246,11 @@
 }
 /* رسالة النواقص قبل الإرسال */
 .issues {
-  background: #fdf3e6;
+  background: var(--tint, #fdf3e6);
   border: 1px solid #e6b98a;
   border-inline-start: 5px solid #b5562a;
   border-radius: 12px;
-  color: #4a220e;
+  color: var(--tint-ink, #4a220e);
   margin: 0.75rem 0;
   padding: 0.85rem 1rem;
 }
@@ -1320,7 +1320,7 @@
 /* خانة التعهد: الضغط على النص كله يحددها */
 .pledge {
   align-items: flex-start;
-  background: #fbf6ec;
+  background: var(--tint, #fbf6ec);
   border: 1px solid rgba(46, 29, 18, 0.25);
   border-radius: 10px;
   cursor: pointer;
@@ -1453,7 +1453,7 @@
   padding: 12px;
   border: 1.5px solid #d6b98d;
   border-radius: 16px;
-  background: #fffaf1;
+  background: var(--tint, #fffaf1);
   color: var(--ink);
   font: inherit;
   text-align: start;
@@ -1495,6 +1495,12 @@
     ),
     var(--paper);
 }
+.look_simple .lookSwatch {
+  background:
+    radial-gradient(circle at 50% 120%, var(--olive) 0 30%, transparent 31%),
+    linear-gradient(180deg, var(--surface), var(--paper));
+  border: 1px solid var(--line);
+}
 .lookOn {
   color: var(--olive);
   font-weight: 700;
@@ -1512,7 +1518,7 @@
   padding: 8px 14px;
   border: 1px solid #e3d2b4;
   border-radius: 12px;
-  background: #fffaf1;
+  background: var(--tint, #fffaf1);
 }
 .securitySummary strong {
   color: var(--rust);
@@ -1562,7 +1568,7 @@
   padding: 10px 6px;
   border: 1px solid #eadbc2;
   border-radius: 12px;
-  background: #fff;
+  background: var(--tint, #fff);
   color: var(--ink);
   font: inherit;
   text-align: center;
@@ -1594,7 +1600,7 @@
 }
 .summaryStat.summaryAlert {
   border-color: #e3b9ae;
-  background: #fff3ef;
+  background: var(--tint, #fff3ef);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1626,7 +1632,7 @@
   padding: 6px 16px;
   border: 1.5px solid #d6b98d;
   border-radius: 999px;
-  background: #fffaf1;
+  background: var(--tint, #fffaf1);
   font-weight: 700;
   cursor: pointer;
 }

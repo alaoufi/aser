@@ -21,13 +21,14 @@ import "./globals.css";
 import "./heritage.css";
 import "./najdi.css";
 import "./palettes.css";
+import "./simple.css";
 import {
   APP_STORE_URL,
   PLAY_STORE_URL,
   getAppLinks,
   getDomainVerifications,
   getSiteTexts,
-  visitorTemplate,
+  visitorAppearance,
 } from "@/server/settings";
 import { StoreBadges } from "@/components/public/store-badges";
 import { NavProgress } from "@/components/public/nav-progress";
@@ -37,8 +38,10 @@ import { dishPath, findDish } from "@/lib/dishes";
 import { TemplateSwitcher } from "@/components/public/template-switcher";
 import {
   AppearancePicker,
-  PALETTE_SCRIPT,
+  type AppearanceTexts,
 } from "@/components/public/appearance-picker";
+import { paletteScript } from "@/lib/appearance";
+import type { SiteTexts } from "@/lib/site-texts";
 import { VisitStats } from "@/components/public/visit-stats";
 import { JsonLd } from "@/components/public/json-ld";
 import {
@@ -151,19 +154,35 @@ export default async function RootLayout({
   });
   // زائر بلا جلسة: القائمة السفلية تُرسم في HTML الخادم فورًا بدل انتظار /api/session.
   const guest = !(await cookies()).has("jdatna_session");
-  const [template, texts, appLinks, domainCodes] = await Promise.all([
-    visitorTemplate(),
+  const [look, texts, appLinks, domainCodes] = await Promise.all([
+    visitorAppearance(),
     getSiteTexts(),
     getAppLinks(),
     getDomainVerifications(),
   ]);
+  const template = look.template;
+  const appearanceTexts = pickerTexts(texts);
+  const pickerProps = {
+    texts: appearanceTexts,
+    template,
+    templates: look.settings.templates,
+    palettes: look.settings.palettes,
+  };
+  const switcherProps = {
+    current: template,
+    templates: look.settings.templates,
+    labels: appearanceTexts.template,
+  };
   return (
     <html
       lang="ar"
       dir="rtl"
       data-scroll-behavior="smooth"
       data-template={template}
-      // data-palette يضعه سكربت «ألوان الموقع» قبل التحميل من اختيار الزائر في جهازه.
+      // اللون من cookie الزائر (أو افتراضي الإدارة) في HTML الخادم نفسه: لا وميض. «السدو» بلا سمة.
+      data-palette={look.palette === "sadu" ? undefined : look.palette}
+      data-palette-chosen={look.explicitPalette ? "1" : undefined}
+      // سكربت «المظهر» قد يضع لون الوضع الداكن لمن لم يختر بعد، قبل رسم الصفحة.
       suppressHydrationWarning
     >
       {/*
@@ -185,10 +204,12 @@ export default async function RootLayout({
         </head>
       )}
       <body>
-        {/* لون الزائر قبل رسم الصفحة (نص ثابت من الكود، لا مدخلات). */}
+        {/* لون أول زيارة قبل رسم الصفحة (نص من الكود وأسماء ألوان من الكود فقط، لا مدخلات). */}
         <script
-          // biome-ignore lint/security/noDangerouslySetInnerHtml: نص ثابت من الكود يقرأ اختيار الزائر من جهازه
-          dangerouslySetInnerHTML={{ __html: PALETTE_SCRIPT }}
+          // biome-ignore lint/security/noDangerouslySetInnerHtml: نص من الكود يقرأ تفضيل جهاز الزائر
+          dangerouslySetInnerHTML={{
+            __html: paletteScript(look.settings.palettes),
+          }}
         />
         <StarDefs />
         <JsonLd
@@ -261,21 +282,9 @@ export default async function RootLayout({
               <Link href="/subscriptions">الاشتراكات</Link>
               <Link href="/about">حكايتنا</Link>
             </nav>
-            <AppearancePicker
-              texts={{
-                button: texts["palette.button"] || "ألوان الموقع",
-                title: texts["palette.title"] || "ألوان الموقع",
-                note: texts["palette.note"],
-                sadu: texts["palette.sadu"] || "السدو",
-                nakheel: texts["palette.nakheel"] || "النخيل",
-                teen: texts["palette.teen"] || "الطين",
-                qahwa: texts["palette.qahwa"] || "القهوة والهيل",
-                zafaran: texts["palette.zafaran"] || "الزعفران",
-                neel: texts["palette.neel"] || "النيلة",
-              }}
-            />
+            <AppearancePicker {...pickerProps} />
             <div className="header-actions">
-              <TemplateSwitcher current={template} className="desktop-only" />
+              {/* اختيار القالب في الكمبيوتر من زر «المظهر» (فيه القوالب الثلاثة)، فتتسع الترويسة. */}
               <FamilyStatusChip place="header" />
               <MessagesLink />
               <AccountLink className="button small" />
@@ -283,7 +292,7 @@ export default async function RootLayout({
             {/* المحادثات ظاهرة دائمًا على الجوال بجانب زر القائمة */}
             <MessagesLink className="mobile-messages" />
             <MobileNavigation
-              switcher={<TemplateSwitcher current={template} />}
+              switcher={<TemplateSwitcher {...switcherProps} />}
             />
           </header>
           <PushSetup
@@ -304,9 +313,12 @@ export default async function RootLayout({
           <FamilyWelcome texts={texts} />
           <OrderAlert />
           <MessageAlert />
-          <VerifiedStoreGate>
-            <VerifiedStore />
-          </VerifiedStoreGate>
+          {/* القالب المبسّط: الشارة في التذييل بدل الشارة العائمة. */}
+          {template !== "simple" && (
+            <VerifiedStoreGate>
+              <VerifiedStore />
+            </VerifiedStoreGate>
+          )}
           <footer className="site-footer">
             <div className="footer-top">
               {/* اسم الموقع وتحته أزرار تحميل التطبيق، بلا شعار (شعار الترويسة يكفي) ولا فراغ. */}
@@ -394,6 +406,14 @@ export default async function RootLayout({
               </p>
             </nav>
             <VisitStats />
+            <div className="footer-tools">
+              <AppearancePicker {...pickerProps} place="footer" />
+              {template === "simple" && (
+                <div className="footer-verified">
+                  <VerifiedStore />
+                </div>
+              )}
+            </div>
             <div className="footer-bottom">
               <span>
                 © {new Date().getFullYear()} أكلات جدتنا
@@ -417,4 +437,31 @@ export default async function RootLayout({
       </body>
     </html>
   );
+}
+
+/** نصوص «المظهر» من «نصوص الموقع»، والأصل إن حُذف نص. */
+function pickerTexts(t: SiteTexts): AppearanceTexts {
+  const pick = (k: keyof SiteTexts, d: string) => t[k] || d;
+  return {
+    button: pick("appearance.button", "المظهر"),
+    title: pick("appearance.title", "المظهر"),
+    templates: pick("appearance.templates", "القالب"),
+    colors: pick("palette.title", "الألوان"),
+    note: t["appearance.note"],
+    template: {
+      classic: pick("template.classic", "الكلاسيكي"),
+      najdi: pick("template.najdi", "الباب النجدي"),
+      simple: pick("template.simple", "المبسّط"),
+    },
+    palette: {
+      sadu: pick("palette.sadu", "السدو"),
+      nakheel: pick("palette.nakheel", "النخيل"),
+      teen: pick("palette.teen", "الطين"),
+      qahwa: pick("palette.qahwa", "القهوة والهيل"),
+      zafaran: pick("palette.zafaran", "الزعفران"),
+      neel: pick("palette.neel", "النيلة"),
+      lail: pick("palette.lail", "ليلي"),
+      contrast: pick("palette.contrast", "تباين عالٍ"),
+    },
+  };
 }

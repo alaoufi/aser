@@ -124,7 +124,85 @@ body {
   background-attachment: scroll;
 }
 
-/* زر «ألوان الموقع» ونافذته */
+/* ليلي — داكن مريح (طلب المالك 2026-11-26): نص فاتح دافئ على بني ليلي، والأزرار فاتحة بنص داكن. */
+:root[data-palette="lail"] {
+  color-scheme: dark;
+  --paper: #17130f;
+  --surface: #211b16;
+  --cream: #2a231c;
+  --ink: #efe6d8;
+  --muted: #c4b5a1;
+  --olive: #a9c48f;
+  --olive-hover: #bfd6a8;
+  --rust: #eba583;
+  --gold: #d8b469;
+  --line: #3b3229;
+  --line-strong: #5a4c3e;
+  --line-soft: #2f2720;
+  --header-bg: #1d1813;
+  --sadu-black: #0d0a07;
+  --sadu-white: #e9dcc6;
+  --sage-panel: #0d0a07;
+  --footer: #0d0a07;
+  --on-accent: #14110d;
+  --tint: #241e18;
+  --tint-ink: #efe6d8;
+  --page-zakhrafa: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Cg fill='%23d8b469' fill-opacity='0.05'%3E%3Cpolygon points='32%2C6 40%2C14 32%2C22 24%2C14'/%3E%3Cpolygon points='0%2C40 8%2C32 16%2C40 8%2C48'/%3E%3Cpolygon points='48%2C40 56%2C32 64%2C40 56%2C48'/%3E%3Cpolygon points='26%2C58 32%2C52 38%2C58'/%3E%3C/g%3E%3C/svg%3E");
+}
+:root[data-palette="lail"] main {
+  background: var(--paper);
+}
+:root[data-palette="lail"] img:not([src$=".svg"]) {
+  filter: brightness(0.94);
+}
+/* تباين عالٍ — للوصولية (AA وأعلى): أبيض وأسود وزيتون عميق، بلا زخرفة خلفية، وروابط مسطّرة. */
+:root[data-palette="contrast"] {
+  --paper: #ffffff;
+  --surface: #ffffff;
+  --cream: #f1f1f1;
+  --ink: #000000;
+  --muted: #222222;
+  --olive: #1b4410;
+  --olive-hover: #000000;
+  --rust: #861a00;
+  --gold: #6e5000;
+  --line: #3d3d3d;
+  --line-strong: #000000;
+  --line-soft: #5c5c5c;
+  --header-bg: #ffffff;
+  --sadu-black: #000000;
+  --sadu-white: #ffffff;
+  --sage-panel: #000000;
+  --footer: #000000;
+  --tint: #ffffff;
+  --tint-ink: #000000;
+  --page-zakhrafa: none;
+}
+:root[data-palette="contrast"] main,
+:root[data-palette="contrast"] body {
+  background: #ffffff;
+}
+:root[data-palette="contrast"] main a:not(.button):not([class*="card"]) {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+:root[data-palette="contrast"] a:focus-visible,
+:root[data-palette="contrast"] button:focus-visible,
+:root[data-palette="contrast"] input:focus-visible,
+:root[data-palette="contrast"] select:focus-visible {
+  outline: 3px solid #000;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 6px #fff;
+}
+:root[data-palette="contrast"] .site-footer a {
+  color: #ffffff;
+}
+/* عناوين التذييل: ذهبي فاتح على الأسود (الذهبي الداكن للنص على الأبيض فقط). */
+:root[data-palette="contrast"] .site-footer h3 {
+  color: #ffd77a;
+}
+
+/* زر «المظهر» ونافذته */
 .appearance {
   position: relative;
   display: inline-flex;

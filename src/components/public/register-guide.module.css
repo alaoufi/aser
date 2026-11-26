@@ -11,7 +11,7 @@
   padding: 10px 18px;
   border: 2px solid var(--gold, var(--gold));
   border-radius: 14px;
-  background: #fff8e8;
+  background: var(--tint, #fff8e8);
   color: var(--ink, var(--ink));
   font: inherit;
   font-size: 1.05rem;
@@ -20,7 +20,7 @@
 }
 .toggle:hover,
 .toggle[aria-expanded="true"] {
-  background: #fdeecb;
+  background: var(--tint, #fdeecb);
 }
 .book {
   min-width: 0;

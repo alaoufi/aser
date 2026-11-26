@@ -5,6 +5,7 @@ import { AdSlot } from "@/components/public/ad-slot";
 import { identityProps } from "@/lib/brand";
 import { FoodPhotos } from "@/components/public/food-photos";
 import { NajdiDoor } from "@/components/public/najdi-door";
+import { SimpleHome } from "@/components/public/simple-home";
 import { getSiteTexts, visitorTemplate } from "@/server/settings";
 import Link from "next/link";
 import type { Metadata } from "next";
@@ -50,6 +51,24 @@ export default async function Home({
     [asked ?? saved].find((r) => r && regions.some((x) => x.id === r)) ?? "";
   const scope = await pageMemberScope(raw.mine);
   const mine = scope.filters;
+  // القالب المبسّط: يطلب ما يعرضه فقط (النصوص والأسر القريبة).
+  if ((await visitorTemplate()) === "simple") {
+    const [texts, near] = await Promise.all([
+      getSiteTexts(),
+      regionalProducers({ region, mine }),
+    ]);
+    return (
+      <>
+        <MineBar scope={scope} path="/" query={{ region: asked ?? "" }} />
+        <SimpleHome
+          texts={texts}
+          regions={regions}
+          region={region}
+          producers={[...near.local, ...near.nationwide].slice(0, 6)}
+        />
+      </>
+    );
+  }
   const [
     template,
     texts,

@@ -17,8 +17,8 @@
   margin: 0;
   padding: 10px 28px 10px 14px;
   border-radius: 12px;
-  background: #fbf1dc;
-  color: #6b4a12;
+  background: var(--tint, #fbf1dc);
+  color: var(--tint-ink, #6b4a12);
   font-size: 14px;
 }
 .group {
@@ -78,7 +78,7 @@
   padding: 8px 10px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: #fff;
+  background: var(--tint, #fff);
 }
 .itemOff {
   opacity: 0.5;
@@ -107,7 +107,7 @@
   padding: 0 8px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: #fff;
+  background: var(--tint, #fff);
   font: inherit;
   font-size: 14px;
   color: var(--ink);

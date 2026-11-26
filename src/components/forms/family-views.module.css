@@ -13,7 +13,7 @@
   padding: 14px 16px;
   border: 1px solid #ead9bd;
   border-radius: 14px;
-  background: #fff;
+  background: var(--tint, #fff);
 }
 .cards strong {
   font-size: 26px;
@@ -23,7 +23,7 @@
 }
 .cards span {
   font-size: 13px;
-  color: #74634f;
+  color: var(--tint-ink, #74634f);
 }
 .list {
   display: grid;
@@ -40,10 +40,10 @@
   padding: 10px 14px;
   border: 1px solid #ead9bd;
   border-radius: 12px;
-  background: #fff;
+  background: var(--tint, #fff);
 }
 .list b {
-  color: #9c4a1e;
+  color: var(--tint-ink, #9c4a1e);
   font-variant-numeric: tabular-nums;
 }
 .list i {
@@ -54,5 +54,5 @@
 }
 .hidden {
   font-size: 12px;
-  color: #74634f;
+  color: var(--tint-ink, #74634f);
 }

@@ -30,7 +30,7 @@
   padding: 10px 14px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: #fff;
+  background: var(--tint, #fff);
 }
 .head {
   display: flex;
@@ -72,7 +72,7 @@
   color: var(--olive);
 }
 .off {
-  background: #f7e6df;
+  background: var(--tint, #f7e6df);
   color: var(--rust);
 }
 .note {

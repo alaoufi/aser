@@ -24,7 +24,7 @@
   padding: 0 18px;
   border: 1px solid #cdbb9e;
   border-radius: 999px;
-  background: #fffdf8;
+  background: var(--tint, #fffdf8);
   color: var(--ink);
   font: inherit;
   font-weight: 700;
@@ -197,7 +197,7 @@
   width: 132px;
   height: auto;
   border-radius: 14px;
-  background: #fcf8f0;
+  background: var(--tint, #fcf8f0);
   padding: 8px;
   box-shadow: 0 10px 24px rgb(0 0 0 / 0.35);
 }
@@ -266,7 +266,7 @@
   text-decoration: none;
 }
 .toc a:hover {
-  background: #f3e7d3;
+  background: var(--tint, #f3e7d3);
 }
 .tocDot {
   flex: none;
@@ -320,11 +320,11 @@
 }
 .gold {
   background: var(--gold);
-  color: #2c2015;
+  color: var(--tint-ink, #2c2015);
 }
 .sage {
   background: #a8b597;
-  color: #22301a;
+  color: var(--tint-ink, #22301a);
 }
 .art {
   justify-self: center;
@@ -342,7 +342,7 @@
   border: 1px solid #e2cfa9;
   border-radius: 14px;
   box-shadow: 0 6px 18px rgb(46 29 18 / 0.16);
-  background: #fbf4e6;
+  background: var(--tint, #fbf4e6);
 }
 .art svg {
   display: block;
@@ -378,8 +378,8 @@
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: #f3e7d3;
-  color: #6b3a22;
+  background: var(--tint, #f3e7d3);
+  color: var(--tint-ink, #6b3a22);
   font-weight: 700;
   font-size: 0.85rem;
 }
@@ -388,7 +388,7 @@
   padding: 10px 14px;
   border-inline-start: 4px solid var(--gold);
   border-radius: 10px;
-  background: #fbf0dc;
+  background: var(--tint, #fbf0dc);
   line-height: 1.7;
 }
 .links {
@@ -398,7 +398,7 @@
   margin: 0;
 }
 .links a {
-  color: #8b3d26;
+  color: var(--tint-ink, #8b3d26);
   font-weight: 700;
 }
 .folio {
@@ -420,7 +420,7 @@
 .where {
   margin: 0;
   text-align: center;
-  color: #5a4632;
+  color: var(--tint-ink, #5a4632);
   font-size: 0.9rem;
 }
 
