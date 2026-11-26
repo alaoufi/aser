@@ -276,6 +276,11 @@ export const siteTextDefaults = {
   "simple.tableEmptyCta": "اطلبها مسبقًا",
   "simple.indexLabel": "طرق الطلب",
   "family.menuPlate": "قائمة اليوم",
+  "family.table": "مائدة اليوم",
+  "family.tableHint": "أطباق {family} الجاهزة اليوم",
+  "family.tableEmptyTitle": "ما على المائدة أطباق جاهزة اليوم",
+  "family.tableEmpty": "اطلب من أطباقها مسبقًا، أو اسألهم عن طبخة اليوم.",
+  "family.tableEmptyCta": "أطباق الأسرة",
   "family.noMenuTitle": "القائمة لم تُنشر هنا بعد",
   "simple.trust": "كل أسرة تُراجَع مستنداتها قبل الظهور.",
   "simple.nearby": "أسر تطبخ قريب منك",
@@ -357,6 +362,23 @@ export const siteTextLabels: Record<
     "مائدة اليوم الفارغة: الزر",
   ],
   "simple.indexLabel": ["الرئيسية (القالب المبسّط)", "اسم قائمة طرق الطلب"],
+  "family.table": ["صفحة الأسرة (القالب المبسّط)", "عنوان مائدة الأسرة"],
+  "family.tableHint": [
+    "صفحة الأسرة (القالب المبسّط)",
+    "تحت مائدة الأسرة ({family} اسمها)",
+  ],
+  "family.tableEmptyTitle": [
+    "صفحة الأسرة (القالب المبسّط)",
+    "مائدة الأسرة الفارغة: العنوان",
+  ],
+  "family.tableEmpty": [
+    "صفحة الأسرة (القالب المبسّط)",
+    "مائدة الأسرة الفارغة: النص",
+  ],
+  "family.tableEmptyCta": [
+    "صفحة الأسرة (القالب المبسّط)",
+    "مائدة الأسرة الفارغة: الزر",
+  ],
   "family.menuPlate": [
     "صفحة الأسرة (القالب المبسّط)",
     "النص داخل الصحن الفارغ",

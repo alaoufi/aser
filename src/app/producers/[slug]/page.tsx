@@ -16,6 +16,7 @@ import { LocationLink } from "@/components/forms/location-share";
 import { LocationCheck } from "@/components/maps/location-check";
 import { RatingBox } from "@/components/forms/rating-box";
 import { getSiteTexts, visitorTemplate } from "@/server/settings";
+import { MaedaTable } from "@/components/public/maeda-table";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import {
@@ -199,9 +200,32 @@ export default async function ProducerDetail({
             <p className="profile-description">{p.description}</p>
           </div>
         </section>
+        {/* القالب المبسّط: مائدة الأسرة — أطباقها الجاهزة اليوم على مائدتها، واسمها على المفرش. */}
+        {template === "simple" && products.length > 0 && (
+          <div className="family-maeda">
+            <MaedaTable
+              id="family-maeda"
+              title={texts["family.table"]}
+              hint={texts["family.tableHint"].replace("{family}", p.name)}
+              owner={p.name}
+              showFamily={false}
+              dishes={products.filter(
+                (x) => x.status === "available" && !x.notCookingToday,
+              )}
+              empty={{
+                title: texts["family.tableEmptyTitle"],
+                text: texts["family.tableEmpty"],
+                cta: {
+                  href: "#family-menu",
+                  label: texts["family.tableEmptyCta"],
+                },
+              }}
+            />
+          </div>
+        )}
         <AdSlot placement="producer_page" />
         <div className="detail-grid">
-          <section>
+          <section id="family-menu">
             <h2>من مائدة الأسرة المنتجة</h2>
             {products.length ? (
               <div className="product-grid two">

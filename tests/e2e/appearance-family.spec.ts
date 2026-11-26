@@ -161,4 +161,32 @@ test.describe("simplified family page without dishes", () => {
       ),
     ).toBe(true);
   });
+
+  test("a family's own table shows its dishes ready today, with its name on the cloth", async ({
+    page,
+  }) => {
+    const withDish = fams.find((f) => f.products)!;
+    await page.context().addCookies([
+      {
+        name: "jdatna_template",
+        value: "simple",
+        url: "http://127.0.0.1:3000",
+      },
+    ]);
+    await page.goto(`/producers/${withDish.slug}`);
+    const table = page.getByRole("region", { name: "مائدة اليوم" });
+    await expect(table.locator(`a[href="/products/${dish}"]`)).toBeVisible();
+    await expect(table.locator(".maeda-owner")).toHaveText(
+      `أسرة المظهر ${withDish.slug}`,
+    );
+    // الاسم لا يتداخل مع الأطباق.
+    const name = (await table.locator(".maeda-owner span").boundingBox())!;
+    const plate = (await table.locator(".maeda-dish").first().boundingBox())!;
+    expect(name.y).toBeGreaterThanOrEqual(plate.y + plate.height - 1);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+  });
 });

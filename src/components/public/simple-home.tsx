@@ -1,15 +1,15 @@
-import Image from "next/image";
 import Link from "next/link";
 import type { Product, Producer } from "@/lib/types";
 import type { SiteTexts } from "@/lib/site-texts";
 import { RegionPicker } from "@/components/public/region-picker";
-import { priceLabel, safeMediaUrl } from "@/components/public/ui";
+import { safeMediaUrl } from "@/components/public/ui";
+import { MaedaTable } from "@/components/public/maeda-table";
 
 /**
  * الرئيسية في القالب المبسّط — اتجاه «المائدة» الذي اختاره المالك (2026-11-26):
- * صحن كبير يقطعه طرف الشاشة فوق مفرش سدو، والبحث جملة واحدة «أحب أكلات … في …»،
- * ثم «مائدة اليوم»: أطباق اليوم الحقيقية من القاعدة على المفرش (صورة، اسم، سعر، الأسرة)،
- * وحالة فارغة لائقة. بلا الطاولة الخشبية وبلا الشارة العائمة. كل النصوص من «نصوص الموقع».
+ * «مائدة اليوم» روح الصفحة (قرار المالك): بعد العنوان مباشرة، أكبر عنصر فيها، أطباق اليوم الحقيقية
+ * صحونًا على مفرش سدو. البحث «أحب أكلات … في …» وطرق الطلب تخدمها بعدها ولا تنافسها.
+ * بلا الطاولة الخشبية وبلا الشارة العائمة. كل النصوص من «نصوص الموقع».
  */
 export function SimpleHome({
   texts,
@@ -27,33 +27,35 @@ export function SimpleHome({
   const t = (k: keyof SiteTexts) => texts[k];
   return (
     <>
-      <section className="maeda-hero" aria-labelledby="simple-title">
-        <div className="maeda-copy wrap">
-          {t("simple.kicker") && (
-            <p className="maeda-kicker">{t("simple.kicker")}</p>
-          )}
-          <h1 id="simple-title" className="maeda-title">
-            {t("simple.title")}
-          </h1>
-          {t("simple.lead") && (
-            <p className="maeda-lead">
-              {t("simple.lead").replace("{regions}", String(regions.length))}
-            </p>
-          )}
-        </div>
-        <div className="maeda-runner" aria-hidden="true" />
-        <Image
-          className="maeda-plate"
-          src="/food/traditional-platter-floating-v2.webp"
-          alt={t("simple.archAlt")}
-          width={640}
-          height={640}
-          sizes="(max-width:760px) 430px, 640px"
-          preload
-          fetchPriority="high"
-          loading="eager"
-        />
+      <section className="maeda-hero wrap" aria-labelledby="simple-title">
+        {t("simple.kicker") && (
+          <p className="maeda-kicker">{t("simple.kicker")}</p>
+        )}
+        <h1 id="simple-title" className="maeda-title">
+          {t("simple.title")}
+        </h1>
+        {t("simple.lead") && (
+          <p className="maeda-lead">
+            {t("simple.lead").replace("{regions}", String(regions.length))}
+          </p>
+        )}
       </section>
+      {/* «مائدة اليوم»: روح الصفحة وأكبر عنصر فيها، قبل البحث. */}
+      <MaedaTable
+        id="maeda-today"
+        title={t("simple.table")}
+        hint={t("simple.tableHint")}
+        dishes={today}
+        all={{ href: "/browse?status=available", label: t("simple.tableAll") }}
+        empty={{
+          title: t("simple.tableEmptyTitle"),
+          text: t("simple.tableEmpty"),
+          cta: {
+            href: "/browse?status=preorder",
+            label: t("simple.tableEmptyCta"),
+          },
+        }}
+      />
       <form action="/browse" className="maeda-search wrap" autoComplete="off">
         <div className="maeda-sentence">
           <label className="maeda-row">
@@ -102,64 +104,6 @@ export function SimpleHome({
           {t("simple.search") || "ابحث"}
         </button>
       </form>
-
-      <section className="maeda-table" aria-labelledby="maeda-today">
-        <div className="wrap">
-          <div className="maeda-head">
-            <h2 id="maeda-today">{t("simple.table")}</h2>
-            {today.length > 0 && (
-              <Link className="text-link" href="/browse?status=available">
-                {t("simple.tableAll")} ←
-              </Link>
-            )}
-          </div>
-          {t("simple.tableHint") && (
-            <p className="maeda-hint">{t("simple.tableHint")}</p>
-          )}
-          {today.length > 0 ? (
-            <div className="maeda-cloth">
-              <ul className="maeda-dishes">
-                {today.map((p) => {
-                  const image = p.imageUrl && safeMediaUrl(p.imageUrl);
-                  return (
-                    <li key={p.id}>
-                      <Link href={`/products/${p.id}`} className="maeda-dish">
-                        <span className="maeda-dish-plate">
-                          {image ? (
-                            <img src={image} alt="" loading="lazy" />
-                          ) : (
-                            <span
-                              className="maeda-dish-initial"
-                              aria-hidden="true"
-                            >
-                              {p.name.trim().charAt(0)}
-                            </span>
-                          )}
-                        </span>
-                        <strong>{p.name}</strong>
-                        <small>{p.producerName}</small>
-                        <span className="maeda-price">
-                          {priceLabel(p.price)}
-                          {p.price !== null && <small> / {p.unit}</small>}
-                        </span>
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          ) : (
-            <div className="maeda-empty">
-              <span className="maeda-empty-plate" aria-hidden="true" />
-              <strong>{t("simple.tableEmptyTitle")}</strong>
-              {t("simple.tableEmpty") && <p>{t("simple.tableEmpty")}</p>}
-              <Link className="button secondary" href="/browse?status=preorder">
-                {t("simple.tableEmptyCta")}
-              </Link>
-            </div>
-          )}
-        </div>
-      </section>
 
       <nav className="maeda-index wrap" aria-label={t("simple.indexLabel")}>
         <Link href="/browse?status=available">

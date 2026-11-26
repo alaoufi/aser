@@ -101,18 +101,10 @@
 }
 
 /* الرئيسية المبسّطة — «المائدة» (اختيار المالك 2026-11-26)
-   سلّم الطباعة 13/15/17/20/26/34/44/56، وإيقاع المسافات 8/12/16/24/32/48/64.
-   عنصر لافت واحد: الصحن الكبير على مفرش السدو؛ ثم «مائدة اليوم» على المفرش نفسه. */
+   «مائدة اليوم» روح التصميم: أكبر عنصر ومحور الصفحة بعد العنوان، والبحث وطرق الطلب تخدمها.
+   سلّم الطباعة 13/15/17/20/26/34/44/56، وإيقاع المسافات 8/12/16/24/32/48/64. */
 .maeda-hero {
-  position: relative;
-  overflow: hidden;
-  min-height: 600px;
   padding-top: 24px;
-  background: linear-gradient(180deg, transparent 0 64%, var(--cream) 64%);
-}
-.maeda-copy {
-  position: relative;
-  z-index: 2;
 }
 .maeda-kicker {
   margin: 0;
@@ -121,10 +113,10 @@
   font-weight: 700;
 }
 .maeda-title {
-  margin: 8px 0 12px;
-  max-width: 11em;
+  margin: 8px 0 8px;
+  max-width: 12em;
   font-family: "Amiri", serif;
-  font-size: clamp(38px, 10.6vw, 56px);
+  font-size: clamp(34px, 9.4vw, 56px);
   font-weight: 700;
   line-height: 1.3;
   text-wrap: balance;
@@ -132,39 +124,208 @@
 }
 .maeda-lead {
   margin: 0;
-  max-width: 24em;
+  max-width: 26em;
   color: var(--muted);
-  font-size: 17px;
+  font-size: 16px;
   line-height: 1.8;
 }
-.maeda-runner {
+/* المائدة: مفرش سدو عريض بعرض الشاشة، وعليه صحون أطباق اليوم. */
+.maeda {
+  margin-top: 24px;
+  padding-bottom: 8px;
+  overflow: hidden;
+  background: linear-gradient(180deg, transparent 0 42%, var(--cream) 42%);
+}
+.maeda-top {
+  display: grid;
+  gap: 2px;
+}
+.maeda-name {
+  margin: 0;
+  font-family: "Amiri", serif;
+  font-size: clamp(34px, 9vw, 48px);
+  line-height: 1.25;
+  color: var(--ink);
+}
+.maeda-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 15px;
+}
+.maeda-board {
+  position: relative;
+  padding: 16px 0 8px;
+}
+.maeda-cloth {
   position: absolute;
   inset-inline: 0;
-  top: 384px;
-  height: 26px;
-  background: var(--sadu-band) repeat-x center / auto 26px;
-  box-shadow: 0 6px 14px rgb(43 31 23 / 0.15);
+  top: 96px;
+  height: 52px;
+  background: var(--sadu-band) repeat-x center / auto 52px;
+  box-shadow:
+    0 -3px 0 var(--sadu-white, #efe3cc),
+    0 3px 0 var(--sadu-white, #efe3cc),
+    0 12px 22px rgb(43 31 23 / 0.18);
 }
-.maeda-plate {
-  position: absolute;
-  z-index: 1;
-  width: 430px;
-  height: auto;
-  inset-inline-start: -150px;
-  top: 214px;
-  filter: drop-shadow(0 26px 30px rgb(43 31 23 / 0.25));
-  pointer-events: none;
-}
-.maeda-search {
+.maeda-dishes {
   position: relative;
-  z-index: 3;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 196px;
+  gap: 8px;
+  margin: 0;
+  padding: 0 16px 8px;
+  list-style: none;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 16px;
+  scrollbar-width: none;
+}
+.maeda-dishes::-webkit-scrollbar {
+  display: none;
+}
+.maeda-dishes li {
+  scroll-snap-align: start;
+}
+.maeda-dish {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding-bottom: 8px;
+  text-align: center;
+  color: var(--ink);
+}
+.maeda-dish-plate {
+  display: grid;
+  place-items: center;
+  width: 180px;
+  height: 180px;
+  margin: 8px 0 12px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow:
+    0 0 0 7px var(--surface),
+    0 0 0 8px var(--line-strong),
+    0 22px 26px -8px rgb(43 31 23 / 0.35);
+}
+.maeda-dish-plate img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.maeda-dish-initial {
+  font-family: "Amiri", serif;
+  font-size: 56px;
+  color: var(--olive);
+}
+.maeda-dish strong {
+  font-size: 17px;
+  line-height: 1.5;
+}
+.maeda-dish small {
+  color: var(--muted);
+  font-size: 13px;
+}
+.maeda-price {
+  margin-top: 2px;
+  color: var(--rust);
+  font-weight: 800;
+  font-size: 16px;
+}
+.maeda-price small {
+  color: var(--muted);
+  font-weight: 400;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .maeda-dish-plate {
+    transition: transform 0.2s ease;
+  }
+  .maeda-dish:hover .maeda-dish-plate,
+  .maeda-dish:focus-visible .maeda-dish-plate {
+    transform: translateY(-4px);
+  }
+}
+.maeda-all {
+  display: flex;
+  justify-content: flex-end;
+  padding-bottom: 8px;
+}
+/* المائدة بلا أطباق اليوم: الصحن المعتمد على المفرش، ورسالة لائقة. */
+.maeda-board.is-empty .maeda-cloth {
+  top: 128px;
+}
+.maeda-empty {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 0 16px 16px;
+  text-align: center;
+}
+.maeda-empty-dish {
+  width: 260px;
+  height: auto;
+  filter: drop-shadow(0 22px 26px rgb(43 31 23 / 0.3));
+}
+.maeda-empty-text {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  max-width: 26em;
+}
+.maeda-empty strong {
+  font-family: "Amiri", serif;
+  font-size: 26px;
+  line-height: 1.4;
+}
+.maeda-empty p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.8;
+}
+.maeda-owner {
+  display: flex;
+  justify-content: center;
+  margin: 8px 0 16px;
+  padding: 0 16px;
+}
+.maeda-owner span {
+  padding: 12px 28px;
+  background:
+    var(--sadu-thin) repeat-x top / auto 6px,
+    var(--sadu-thin) repeat-x bottom / auto 6px,
+    var(--surface);
+  box-shadow: 0 8px 16px rgb(43 31 23 / 0.12);
+  font-family: "Amiri", serif;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.5;
+  color: var(--ink);
+  text-align: center;
+}
+.maeda-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 16px;
+}
+.maeda-head h2 {
+  margin: 0;
+  font-family: "Amiri", serif;
+  font-size: clamp(26px, 7vw, 34px);
+  line-height: 1.3;
+}
+/* البحث: يخدم المائدة بعدها. */
+.maeda-search {
   display: grid;
   gap: 16px;
-  margin-top: -88px;
+  margin-top: 24px;
   padding: 24px 16px 16px;
+  border: 1px solid var(--line);
   border-radius: 20px;
   background: var(--surface);
-  box-shadow: 0 18px 40px rgb(43 31 23 / 0.13);
 }
 .maeda-sentence {
   display: grid;
@@ -179,7 +340,7 @@
 }
 .maeda-word {
   font-family: "Amiri", serif;
-  font-size: 26px;
+  font-size: 24px;
   font-weight: 700;
   line-height: 1.6;
   white-space: nowrap;
@@ -195,7 +356,7 @@
   border-radius: 0;
   background: transparent;
   color: var(--ink);
-  font-size: 19px;
+  font-size: 18px;
   font-weight: 600;
 }
 .maeda-row input::placeholder {
@@ -214,153 +375,6 @@
   gap: 10px;
   border-radius: 12px;
   font-size: 17px;
-}
-/* «مائدة اليوم» */
-/* بعرض الشاشة ليمتد المفرش، ويُقص ما يتجاوزها (لا تمرير أفقي للصفحة). */
-.maeda-table {
-  margin-top: 48px;
-  overflow: hidden;
-}
-.maeda-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 4px 16px;
-}
-.maeda-head h2 {
-  margin: 0;
-  font-family: "Amiri", serif;
-  font-size: clamp(28px, 8vw, 34px);
-  line-height: 1.3;
-}
-.maeda-hint {
-  margin: 4px 0 0;
-  color: var(--muted);
-  font-size: 15px;
-}
-.maeda-cloth {
-  position: relative;
-  margin-top: 16px;
-  padding: 8px 0 24px;
-}
-/* المفرش تحت الأطباق: شريط سدو يمتد بعرض الشاشة خلف الصحون. */
-.maeda-cloth::before {
-  content: "";
-  position: absolute;
-  inset-inline: -50vw;
-  top: 74px;
-  height: 22px;
-  background: var(--sadu-band) repeat-x center / auto 22px;
-  box-shadow: 0 6px 12px rgb(43 31 23 / 0.12);
-}
-.maeda-dishes {
-  position: relative;
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 152px;
-  gap: 12px;
-  margin: 0;
-  padding: 0 0 8px;
-  list-style: none;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  scrollbar-width: none;
-}
-.maeda-dishes::-webkit-scrollbar {
-  display: none;
-}
-.maeda-dishes li {
-  scroll-snap-align: start;
-}
-.maeda-dish {
-  display: grid;
-  justify-items: center;
-  gap: 2px;
-  padding: 0 8px 12px;
-  text-align: center;
-  color: var(--ink);
-}
-.maeda-dish-plate {
-  display: grid;
-  place-items: center;
-  width: 136px;
-  height: 136px;
-  margin-bottom: 8px;
-  overflow: hidden;
-  border-radius: 50%;
-  background: var(--surface);
-  box-shadow:
-    0 0 0 6px var(--surface),
-    0 0 0 7px var(--line-strong),
-    0 16px 22px -6px rgb(43 31 23 / 0.3);
-}
-.maeda-dish-plate img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.maeda-dish-initial {
-  font-family: "Amiri", serif;
-  font-size: 44px;
-  color: var(--olive);
-}
-.maeda-dish strong {
-  font-size: 16px;
-  line-height: 1.5;
-}
-.maeda-dish small {
-  color: var(--muted);
-  font-size: 13px;
-}
-.maeda-price {
-  margin-top: 4px;
-  color: var(--rust);
-  font-weight: 800;
-  font-size: 15px;
-}
-.maeda-price small {
-  color: var(--muted);
-  font-weight: 400;
-}
-.maeda-dish:hover .maeda-dish-plate,
-.maeda-dish:focus-visible .maeda-dish-plate {
-  transform: translateY(-3px);
-}
-@media (prefers-reduced-motion: no-preference) {
-  .maeda-dish-plate {
-    transition: transform 0.2s ease;
-  }
-}
-.maeda-empty {
-  display: grid;
-  justify-items: center;
-  gap: 8px;
-  margin-top: 16px;
-  padding: 32px 24px;
-  border-radius: 20px;
-  background: var(--surface);
-  text-align: center;
-}
-.maeda-empty-plate {
-  width: 96px;
-  height: 96px;
-  margin-bottom: 8px;
-  border: 2px dashed var(--line-strong);
-  border-radius: 50%;
-  background:
-    radial-gradient(circle, var(--cream) 0 30%, transparent 31%), var(--surface);
-}
-.maeda-empty strong {
-  font-family: "Amiri", serif;
-  font-size: 26px;
-  line-height: 1.4;
-}
-.maeda-empty p {
-  margin: 0 0 8px;
-  max-width: 24em;
-  color: var(--muted);
-  line-height: 1.8;
 }
 /* طرق الطلب: فهرس تحريري بخطوط فاصلة */
 .maeda-index {
@@ -454,40 +468,67 @@
 }
 @media (min-width: 1000px) {
   .maeda-hero {
-    min-height: 660px;
-    padding-top: 64px;
-    background: linear-gradient(180deg, transparent 0 70%, var(--cream) 70%);
+    padding-top: 48px;
+    text-align: center;
   }
-  .maeda-title {
-    max-width: 9em;
-  }
+  .maeda-title,
   .maeda-lead {
-    font-size: 20px;
+    margin-inline: auto;
   }
-  .maeda-runner {
-    top: 470px;
-    height: 34px;
-    background-size: auto 34px;
+  .maeda {
+    margin-top: 32px;
   }
-  .maeda-plate {
-    width: 640px;
-    inset-inline-start: auto;
-    inset-inline-end: -40px;
-    top: 40px;
+  .maeda-top {
+    text-align: center;
   }
-  .maeda-search {
-    margin-top: -250px;
-    margin-inline-start: max(24px, calc((100% - 1240px) / 2));
-    width: min(540px, 45%);
-    padding: 32px 24px 24px;
+  .maeda-cloth {
+    top: 120px;
+    height: 64px;
+    background-size: auto 64px;
   }
   .maeda-dishes {
     grid-auto-flow: row;
-    grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+    grid-template-columns: repeat(auto-fit, 236px);
+    justify-content: center;
+    gap: 16px;
     overflow: visible;
   }
-  .maeda-cloth::before {
-    top: 80px;
+  .maeda-dish-plate {
+    width: 220px;
+    height: 220px;
+  }
+  .maeda-board.is-empty .maeda-cloth {
+    top: 150px;
+  }
+  .maeda-empty {
+    grid-template-columns: 340px minmax(0, 26em);
+    justify-content: center;
+    align-items: center;
+    gap: 48px;
+    text-align: start;
+  }
+  .maeda-empty-dish {
+    width: 340px;
+  }
+  .maeda-empty-text {
+    justify-items: start;
+    padding: 24px;
+    border-radius: 20px;
+    background: var(--surface);
+  }
+  .maeda-all {
+    justify-content: center;
+  }
+  .maeda-search {
+    grid-template-columns: minmax(0, 1fr) 260px;
+    align-items: end;
+    gap: 32px;
+    max-width: 920px;
+    margin-inline: auto;
+  }
+  .maeda-sentence {
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
   }
   .maeda-index {
     grid-template-columns: 1fr 1fr;
@@ -497,16 +538,6 @@
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     column-gap: 32px;
-  }
-}
-@media (min-width: 761px) and (max-width: 999px) {
-  .maeda-plate {
-    width: 520px;
-    inset-inline-start: -120px;
-    top: 200px;
-  }
-  .maeda-runner {
-    top: 400px;
   }
 }
 
@@ -606,4 +637,15 @@ body:has(:not(.footer-verified) > .verified-seal) .site-footer {
   [data-template="simple"] .detail-grid > section {
     order: 1;
   }
+}
+
+/* مائدة الأسرة في صفحتها (المبسّط): بعرض الشاشة داخل حاوية الصفحة، واسم الأسرة على المفرش. */
+.family-maeda {
+  margin: 8px calc(50% - 50vw) 32px;
+}
+.family-maeda .maeda-board {
+  padding-bottom: 32px;
+}
+.family-maeda .maeda-dishes {
+  padding-top: 0;
 }
