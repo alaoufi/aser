@@ -145,7 +145,7 @@ test.describe("public cooking-day availability on an isolated catalog", () => {
     await expect(
       page
         .locator("main")
-        .getByRole("heading", { name: "أسرة الطبخ للاختبار" }),
+        .getByRole("heading", { level: 1, name: "أسرة الطبخ للاختبار" }),
     ).toBeVisible();
     await expect(page.locator(".product-card .badge")).toHaveText(
       "لا يوجد طبخ اليوم",

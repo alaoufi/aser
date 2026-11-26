@@ -130,14 +130,20 @@ test("the admin reads suggestions, and site-text fields grow with their text", a
   await expect(page.getByText(/جديدة: 1/)).toBeVisible();
   // كل قسم بمساره في القائمة الجانبية (src/lib/admin-nav.ts).
   await page.goto("/admin/texts");
-  const short = page.getByLabel("زر البحث");
-  const long = page.getByLabel("إرشاد الآيفون");
+  // القائمة مضغوطة: سطر النص القصير صغير، والطويل يمتد بطوله.
+  const short = page.getByRole("group", { name: "زر البحث", exact: true });
+  const long = page.getByRole("group", { name: "إرشاد الآيفون", exact: true });
   const height = (l: typeof short) =>
     l.evaluate((el) => el.getBoundingClientRect().height);
   const shortHeight = await height(short);
   expect(shortHeight).toBeLessThan(80);
   expect(await height(long)).toBeGreaterThan(shortHeight * 2);
-  // الكتابة الطويلة تمدد الحقل القصير.
-  await short.fill("كلمة ".repeat(80));
-  await expect.poll(() => height(short)).toBeGreaterThan(shortHeight * 2);
+  // عند التعديل (⋮ ثم «تعديل») يتمدد حقل الكتابة مع النص الطويل.
+  await page.getByLabel("خيارات «زر البحث»").click();
+  await page.getByRole("button", { name: "تعديل", exact: true }).click();
+  const box = page.getByRole("textbox", { name: "زر البحث" });
+  const boxHeight = await height(box);
+  expect(boxHeight).toBeLessThan(80);
+  await box.fill("كلمة ".repeat(80));
+  await expect.poll(() => height(box)).toBeGreaterThan(boxHeight * 2);
 });

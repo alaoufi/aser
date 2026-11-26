@@ -16,6 +16,7 @@ import { CookingAvailability } from "./cooking-availability";
 import { FulfillmentCard } from "./fulfillment";
 import { ContactVisibilityCard } from "./contact-visibility";
 import { BrandCard } from "./brand-card";
+import { FamilyTableCard } from "./family-table-card";
 import { DeleteAccountSection } from "./delete-account";
 import { CertificateCard } from "./certificate-card";
 import { stopPushOnLogout } from "@/components/public/push-setup";
@@ -236,6 +237,7 @@ export function ProfileForm({
       {profile && <FulfillmentCard />}
       {profile && <ContactVisibilityCard />}
       {profile && <BrandCard name={profile.tradeName || profile.name} />}
+      {profile && <FamilyTableCard />}
       {profile && (
         <Link className={s.button} href="/dashboard/coverage">
           تحديد نطاق التغطية: المدن والمراكز والأحياء

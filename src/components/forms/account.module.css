@@ -1655,3 +1655,214 @@
   gap: 6px;
   font-weight: 700;
 }
+/* نصوص الموقع: قائمة مضغوطة، كل نص سطر وأمامه زر ⋮ (طلب المالك 2026-11-26) */
+.textList {
+  display: grid;
+  gap: 0;
+  padding: 4px 10px 8px;
+}
+.textPair {
+  margin-block: 4px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface, #fffdf8);
+}
+.textPair .textRow:last-child {
+  border-bottom: 0;
+}
+.textRow {
+  display: grid;
+  gap: 2px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--line-soft, rgba(46, 29, 18, 0.1));
+}
+.textList > .textRow:last-of-type {
+  border-bottom: 0;
+}
+.textRow[data-editing] {
+  background: rgba(214, 163, 92, 0.12);
+  border-radius: 8px;
+}
+.textHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 28px;
+}
+.textLabel {
+  font-size: 0.82rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+.textLabel small {
+  color: var(--rust);
+}
+.textValue {
+  display: block;
+  margin: 0;
+  line-height: 1.6;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.textValue[data-empty] {
+  color: var(--muted);
+  font-style: italic;
+}
+.textEdit {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.textEdit textarea {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid var(--line-strong, #c9b28a);
+  border-radius: 8px;
+  font: inherit;
+  line-height: 1.6;
+  overflow: hidden;
+  resize: none;
+}
+.textMenu {
+  position: relative;
+  flex: none;
+}
+.textMenu summary {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 32px;
+  border-radius: 8px;
+  font-size: 1.3rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--ink);
+  cursor: pointer;
+  list-style: none;
+}
+.textMenu summary::-webkit-details-marker {
+  display: none;
+}
+.textMenu summary:hover,
+.textMenu[open] summary {
+  background: var(--cream, #f4ead9);
+}
+.textMenuList {
+  position: absolute;
+  inset-inline-end: 0;
+  top: calc(100% + 4px);
+  z-index: 20;
+  display: grid;
+  min-width: 170px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface, #fff);
+  box-shadow: 0 8px 24px rgba(46, 29, 18, 0.16);
+}
+.textMenuList button {
+  min-height: 40px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.textMenuList button:hover:not(:disabled) {
+  background: var(--cream, #f4ead9);
+}
+.textMenuList button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.textMenuList .textMenuDanger {
+  color: #b42318;
+}
+/* الكمبيوتر: الوصف والنص و⋮ في سطر واحد */
+@media (min-width: 700px) {
+  .textRow {
+    grid-template-columns: minmax(140px, 220px) 1fr auto;
+    align-items: center;
+    column-gap: 14px;
+  }
+  .textHead {
+    display: contents;
+  }
+  .textLabel {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .textValue,
+  .textEdit {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .textMenu {
+    grid-column: 3;
+    grid-row: 1;
+  }
+}
+/* مائدة الأسرة: المعاينة والاختيارات (طلب المالك 2026-11-26) */
+.ftPreview {
+  margin-block: 8px 14px;
+  padding: 12px 8px 4px;
+  border: 1px dashed var(--line-strong, #c9b28a);
+  border-radius: 12px;
+  background: var(--cream, #f4ead9);
+}
+.ftChoices {
+  margin: 0 0 10px;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.ftChoices legend {
+  margin-bottom: 6px;
+  font-weight: 700;
+}
+.ftChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ftChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong, #c9b28a);
+  border-radius: 999px;
+  background: var(--surface, #fff);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.92rem;
+  cursor: pointer;
+}
+.ftChip input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.ftChip:has(input:checked),
+.ftChip[aria-pressed="true"] {
+  border-color: var(--olive);
+  background: var(--olive);
+  color: #fff;
+}
+.ftChip:has(input:focus-visible) {
+  outline: 2px solid var(--gold, #d6a35c);
+  outline-offset: 2px;
+}
+.ftSwatch {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px #00000030;
+}
