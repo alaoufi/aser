@@ -198,6 +198,24 @@ export const GUIDE_CHAPTERS: GuideChapter[] = [
     links: [{ href: "/dashboard", label: "لوحة الأسرة (للأسر المنتجة)" }],
   },
   {
+    id: "family-table",
+    audience: "الأسر المنتجة",
+    title: "مائدة الأسرة",
+    art: "family",
+    tone: "gold",
+    intro:
+      "اختر مائدة تميز أسرتك من آلاف الموائد، فتظهر في صفحة أسرتك وعليها أطباقك.",
+    steps: [
+      "افتح «لوحتي كأسرة» من القائمة، ثم اضغط «اختر مائدة أسرتك» أعلى اللوحة، أو انزل في تبويب «الرئيسية» إلى قسم «مائدة الأسرة» بعد «هوية الأسرة».",
+      "اختر مقترحًا جاهزًا مثل «المجلس» أو «الديوانية»، أو اختر بنفسك: الشكل (18 شكلًا)، والارتفاع، واللون، والزخرفة، والإطار، وطريقة عرض الأطباق.",
+      "المعاينة تتغير مباشرة وعليها أطباقك، وزر «اختر لي مائدة» يقترح مائدة عشوائية.",
+      "«العبارة على المائدة»: اكتب عبارتك حتى 40 حرفًا بلا روابط ولا أرقام جوال، أو اتركها فارغة لتظهر «حياكم الله».",
+      "اضغط «حفظ المائدة»، فتظهر في صفحة أسرتك أعلى منتجاتك، والأطباق المتوفرة أولًا.",
+    ],
+    tip: "من لم يختر مائدة تظهر له «الكلاسيكية» تلقائيًا، ويمكنه تغييرها في أي وقت.",
+    links: [{ href: "/dashboard#family-table", label: "اختر مائدة أسرتك" }],
+  },
+  {
     id: "family-tools",
     audience: "الأسر المنتجة",
     title: "إدارة الطلبات والاشتراكات",
@@ -273,3 +291,33 @@ export const GUIDE_CHAPTERS: GuideChapter[] = [
     ],
   },
 ];
+
+type Texts = Partial<Record<string, string>>;
+/**
+ * نصوص الدليل من «نصوص الموقع» (مجموعة «دليل المستخدم»): المفتاح guide.<الفصل>.<الجزء>.
+ * المحذوف من الخطوات والنصيحة لا يظهر؛ وغير المعدّل يبقى كما في هذا الملف.
+ */
+export function localizeChapters(
+  chapters: GuideChapter[],
+  texts: Texts | null | undefined,
+): GuideChapter[] {
+  if (!texts) return chapters;
+  const get = (key: string, fallback: string) => texts[key] ?? fallback;
+  return chapters.map((c) => {
+    const k = `guide.${c.id}.`;
+    if (!(k + "title" in texts)) return c;
+    return {
+      ...c,
+      title: get(k + "title", c.title),
+      intro: get(k + "intro", c.intro),
+      steps: c.steps
+        .map((step, i) => get(`${k}step${i + 1}`, step))
+        .filter(Boolean),
+      tip: c.tip === undefined ? undefined : get(k + "tip", c.tip) || undefined,
+      links: c.links?.map((l, i) => ({
+        ...l,
+        label: get(`${k}link${i + 1}`, l.label) || l.label,
+      })),
+    };
+  });
+}

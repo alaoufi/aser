@@ -14,7 +14,7 @@ test("the user guide is a book: contents first, pages turn, and chapters open fr
   // الفهرس أول صفحة، وفيه كل الفصول.
   const toc = book.getByRole("list", { name: "الفهرس" });
   await expect(toc).toBeVisible();
-  await expect(toc.getByRole("link")).toHaveCount(15);
+  await expect(toc.getByRole("link")).toHaveCount(16);
   await toc.getByRole("link", { name: /الرسائل الصوتية/ }).click();
   await expect(page).toHaveURL(/#voice$/);
   const voice = book.getByRole("article", { name: "الرسائل الصوتية" });
@@ -46,7 +46,7 @@ test("a chapter link opens the book on that chapter, and the full text mode list
     book.getByRole("article", { name: "الإبلاغ والحظر" }),
   ).toContainText("نعم، احظر المحادثة");
   await page.getByRole("button", { name: "عرض الدليل نصًّا متصلًا" }).click();
-  await expect(page.getByRole("article")).toHaveCount(15);
+  await expect(page.getByRole("article")).toHaveCount(16);
   await expect(
     page.getByRole("button", { name: "طباعة الدليل" }),
   ).toBeVisible();
@@ -63,4 +63,17 @@ test("the guide is linked from the site footer", async ({ page }) => {
     .getByRole("link", { name: "دليل المستخدم" })
     .click();
   await expect(page).toHaveURL(/\/guide$/);
+});
+
+test("the family-table chapter tells families where to pick their table", async ({
+  page,
+}) => {
+  await page.goto("/guide#family-table");
+  const chapter = page.getByRole("article", { name: "مائدة الأسرة" });
+  await expect(chapter).toBeVisible();
+  await expect(chapter).toContainText("اختر مائدة أسرتك");
+  await expect(chapter).toContainText("حياكم الله");
+  await expect(
+    chapter.getByRole("link", { name: /اختر مائدة أسرتك/ }),
+  ).toHaveAttribute("href", "/dashboard#family-table");
 });

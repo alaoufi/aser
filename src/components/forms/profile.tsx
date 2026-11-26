@@ -16,6 +16,7 @@ import { CookingAvailability } from "./cooking-availability";
 import { FulfillmentCard } from "./fulfillment";
 import { ContactVisibilityCard } from "./contact-visibility";
 import { BrandCard } from "./brand-card";
+import { useTx } from "@/components/site-texts";
 import { FamilyTableCard } from "./family-table-card";
 import { DeleteAccountSection } from "./delete-account";
 import { CertificateCard } from "./certificate-card";
@@ -639,6 +640,7 @@ function FamilyShareTop({ name }: { name: string }) {
 /** أقسام لوحة الأسرة المنتجة: مربعات صغيرة بدل أسطر الروابط. */
 export function Dashboard() {
   const session = useSession();
+  const { txb } = useTx();
   // بطاقات لوحة الأسرة تظهر بعد وصول الملف: قراءاتها تبدأ معه لا بعده.
   const family = Boolean(session.user && isFamilyAccount(session.user));
   useEffect(() => {
@@ -682,6 +684,11 @@ export function Dashboard() {
               أقسام أسرتك في التبويبات أعلاه. ومندوبو التوصيل المعتمدون في
               مدينتك في <Link href="/couriers">صفحة المندوبين</Link>.
             </p>
+          )}
+          {isFamilyAccount(session.user) && (
+            <a className={s.buttonSecondary} href="#family-table">
+              {txb("ftable.pick.jump")}
+            </a>
           )}
           {isFamilyAccount(session.user) && <FamilyInsightsCard />}
           {isFamilyAccount(session.user) && <CertificateCard />}

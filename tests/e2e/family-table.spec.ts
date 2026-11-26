@@ -66,6 +66,10 @@ test("a family picks its table from the library and saves it", async ({
   });
   await page.goto("/dashboard");
   const card = page.getByRole("region", { name: "مائدة الأسرة" });
+  // زر أعلى اللوحة ينقل إلى قسم المائدة.
+  await page.getByRole("link", { name: "اختر مائدة أسرتك ↓" }).click();
+  await expect(page).toHaveURL(/#family-table$/);
+  await expect(card).toBeInViewport();
   await expect(card).toContainText("٣٨٬٨٨٠");
   const preview = card.getByRole("figure", { name: "معاينة مائدتك" });
   await expect(preview).toContainText("حياكم الله");

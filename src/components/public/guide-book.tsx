@@ -1,9 +1,13 @@
 "use client";
-import { T } from "@/components/site-texts";
+import { T, useSiteTextsContext } from "@/components/site-texts";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GuideArt } from "./guide-art";
-import { GUIDE_CHAPTERS, type GuideChapter } from "./guide-content";
+import {
+  GUIDE_CHAPTERS,
+  localizeChapters,
+  type GuideChapter,
+} from "./guide-content";
 import b from "./guide-book.module.css";
 import { safeDecode } from "@/lib/digits";
 
@@ -69,7 +73,12 @@ export function GuideBook({
   /** ربط الفصل بعنوان الصفحة (#) — يُعطَّل للكتاب المضمَّن داخل صفحة أخرى. */
   hash?: boolean;
 }) {
-  const pages = useMemo(() => buildPages(chapters), [chapters]);
+  // نصوص الفصول من «نصوص الموقع» إن عُدّلت.
+  const texts = useSiteTextsContext();
+  const pages = useMemo(
+    () => buildPages(localizeChapters(chapters, texts)),
+    [chapters, texts],
+  );
   const chapterPage = useCallback(
     (id: string) => chapterIndex(pages, id),
     [pages],
