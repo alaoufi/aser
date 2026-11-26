@@ -34,6 +34,8 @@ export type Producer = {
   /** متوسط تقييم الأسرة وعدد المقيّمين (يظهر في بطاقتها). */
   ratingAverage?: number | null;
   ratingCount?: number;
+  /** عدد طلباتها المقبولة والمكتملة (رقم فقط). */
+  orderCount?: number;
   /** هوية الأسرة (يسري على بطاقتها وبطاقات منتجاتها). */
   brand?: BrandChoice | null;
   /** يظهر للعملاء إن اختارت الأسرة إظهاره. */
@@ -51,6 +53,8 @@ export type Producer = {
   deliveryAreas?: { cityId: string; cityName: string; fee: number | null }[];
 };
 export type Product = {
+  /** عدد طلباته المقبولة والمكتملة (رقم فقط). */
+  orderCount?: number;
   /** لصاحب المنتج فقط: ظاهر للزوار؟ ومن أخفاه (الأسرة أو الإدارة). */
   visible?: boolean;
   hiddenBy?: "admin" | "family" | "docs" | null;

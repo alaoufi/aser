@@ -7,6 +7,9 @@ import { identityProps } from "@/lib/brand";
 
 /** الأسماء الأصلية لحالة المنتج؛ الصفحات تمرر المعدّل من «نصوص الموقع». */
 export const availability = productStatusLabels();
+/** رقم بالأرقام العربية كبقية الموقع. */
+export const countLabel = (n: number) =>
+  new Intl.NumberFormat("ar-SA").format(n);
 export function priceLabel(price: number | null) {
   return price === null
     ? "استفسر عن السعر"
@@ -98,6 +101,15 @@ export function ProductCard({
             <T k="c.ui.t1" />
           </small>
         )}
+        {/* أرقام الحركة (قرار المالك 2026-11-26): رقم فقط، بلا أسماء ولا مبالغ. */}
+        {(p.orderCount ?? 0) > 0 && (
+          <small className="order-count">
+            <T
+              k="count.productOrders"
+              vars={{ n: countLabel(p.orderCount ?? 0) }}
+            />
+          </small>
+        )}
         {extra}
       </div>
     </Link>
@@ -143,6 +155,14 @@ export function ProducerCard({ producer: p }: { producer: Producer }) {
             </span>
           )}
           <span>{p.delivery ? "توصيل متاح" : "استلام بالتنسيق"}</span>
+          {(p.orderCount ?? 0) > 0 && (
+            <span className="order-count">
+              <T
+                k="count.familyOrders"
+                vars={{ n: countLabel(p.orderCount ?? 0) }}
+              />
+            </span>
+          )}
         </div>
       </div>
       <span className="producer-card-arrow" aria-hidden="true">

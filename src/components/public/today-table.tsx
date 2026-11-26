@@ -341,8 +341,6 @@ export function TodayTable({
     | "table.next"
     | "delivery.kingdom"
     | "table.emptyRegion"
-    | "region.auto"
-    | "region.detecting"
   >;
   products: Product[];
   regions: Region[];
@@ -369,13 +367,7 @@ export function TodayTable({
           {texts["table.title"] || "مائدة اليوم"}
         </h2>
         {picker && (
-          <RegionPicker
-            regions={regions}
-            value={region}
-            path={path}
-            autoLabel={texts["region.auto"]}
-            detectingLabel={texts["region.detecting"]}
-          />
+          <RegionPicker regions={regions} value={region} path={path} />
         )}
       </div>
       {/* مائدة خشب كبيرة ثلاثية الأبعاد بأرجل قصيرة */}

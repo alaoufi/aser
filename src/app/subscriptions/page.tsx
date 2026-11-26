@@ -1,3 +1,4 @@
+import { REGION_COOKIE } from "@/lib/region-cookie";
 import { T } from "@/components/site-texts";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -34,7 +35,7 @@ export default async function Subscriptions({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const params = await searchParams;
-  const saved = (await cookies()).get("jdatna_region")?.value ?? "";
+  const saved = (await cookies()).get(REGION_COOKIE)?.value ?? "";
   const region = typeof params.region === "string" ? params.region : saved;
   const [cities, families] = await Promise.all([
     getCities(),

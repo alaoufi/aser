@@ -1,3 +1,4 @@
+import { REGION_COOKIE } from "@/lib/region-cookie";
 import { T } from "@/components/site-texts";
 import { cookies } from "next/headers";
 import { MineBar } from "@/components/public/mine-bar";
@@ -25,7 +26,7 @@ export default async function Page({
   const [cities, jar] = await Promise.all([getCities(), cookies()]);
   const regions = regionsOf(cities);
   const asked = typeof raw.region === "string" ? raw.region : undefined;
-  const saved = jar.get("jdatna_region")?.value ?? "";
+  const saved = jar.get(REGION_COOKIE)?.value ?? "";
   const region =
     [asked ?? saved].find((r) => r && regions.some((x) => x.id === r)) ?? "";
   const scope = await pageMemberScope(raw.mine);

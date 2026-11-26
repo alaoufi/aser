@@ -1,3 +1,4 @@
+import { REGION_COOKIE } from "@/lib/region-cookie";
 import { api, json } from "@/server/http";
 import { sessionUser } from "@/server/auth";
 import { liveAds } from "@/server/ads";
@@ -6,7 +7,7 @@ import { HttpError } from "@/server/security";
 import { safeDecode } from "@/lib/digits";
 /**
  * إعلانات مكان واحد للزائر: ?placement=home_top. الاستهداف من جهازه وحسابه الشخصي ومنطقته
- * (ملف jdatna_region الذي يختاره من «منطقة المائدة»).
+ * (ملف منطقة الزيارة الذي يختاره من «منطقة المائدة»).
  */
 export const GET = api(async (request) => {
   const url = new URL(request.url);
@@ -23,8 +24,8 @@ export const GET = api(async (request) => {
       .get("cookie")
       ?.split(";")
       .map((c) => c.trim())
-      .find((c) => c.startsWith("jdatna_region="))
-      ?.slice("jdatna_region=".length) ?? "";
+      .find((c) => c.startsWith(`${REGION_COOKIE}=`))
+      ?.slice(REGION_COOKIE.length + 1) ?? "";
   const ads = await liveAds(placement, {
     device: deviceOf(request.headers.get("user-agent") ?? ""),
     audience,

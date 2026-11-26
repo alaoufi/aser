@@ -1,3 +1,4 @@
+import { REGION_COOKIE } from "@/lib/region-cookie";
 import { T } from "@/components/site-texts";
 import { LocationFields } from "@/components/public/location-fields";
 import { AdSlot } from "@/components/public/ad-slot";
@@ -21,7 +22,7 @@ export default async function Producers({
   const q = typeof params.q === "string" ? params.q : "";
   const city = typeof params.city === "string" ? params.city : "";
   // النطاق: المنطقة في الرابط، وإلا المحفوظة في الجهاز (مثل الرئيسية و«طبخات اليوم»).
-  const saved = (await cookies()).get("jdatna_region")?.value ?? "";
+  const saved = (await cookies()).get(REGION_COOKIE)?.value ?? "";
   const region = typeof params.region === "string" ? params.region : saved;
   const [cities, { local: producers, nationwide }] = await Promise.all([
     getCities(),

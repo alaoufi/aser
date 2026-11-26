@@ -1773,19 +1773,11 @@ button.food-dish:focus-visible .food-dish-visual {
   }
 }
 
-/* منطقة المائدة: تلقائية من موقع الزائر، والقائمة للتعديل اليدوي */
+/* منطقة المائدة: «كل المناطق» في كل دخول، والقائمة للاختيار */
 .table-region-wrap {
   display: grid;
   justify-items: end;
   gap: 2px;
-}
-.table-region-note {
-  font-size: 12px;
-  color: var(--olive, var(--olive));
-  line-height: 1.3;
-}
-.table-region-note::before {
-  content: "📍 ";
 }
 
 /* شريط «فعّل الإشعارات» تحت رأس الموقع */
@@ -2100,5 +2092,59 @@ button.food-dish:focus-visible .food-dish-visual {
   @page {
     size: A4;
     margin: 12mm 8mm;
+  }
+}
+
+/* أرقام الحركة (قرار المالك 2026-11-26): أرقام فقط، بلا أسماء ولا أسعار. */
+.order-count {
+  display: inline-block;
+  margin-top: 4px;
+  color: var(--olive);
+  font-size: 11px;
+  font-weight: 600;
+}
+.product-card .order-count {
+  display: block;
+}
+.activity-stats {
+  margin-block: 24px 32px;
+  text-align: center;
+}
+.activity-stats h2 {
+  margin: 0 0 12px;
+  font-size: 18px;
+}
+.activity-stats dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+.activity-stats dl > div {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 2px;
+  padding: 12px 6px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.activity-stats dd {
+  margin: 0;
+  color: var(--rust);
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.activity-stats dt {
+  color: var(--muted);
+  font-size: 12px;
+}
+@media (max-width: 600px) {
+  .activity-stats dd {
+    font-size: 20px;
+  }
+  .activity-stats dt {
+    font-size: 11px;
   }
 }

@@ -1,3 +1,4 @@
+import { REGION_COOKIE } from "@/lib/region-cookie";
 import { T } from "@/components/site-texts";
 import { productStatusLabels } from "@/lib/site-texts";
 import { MineBar } from "@/components/public/mine-bar";
@@ -118,7 +119,7 @@ export default async function Browse({
   const statusParam = val("status") || (by === "available" ? "available" : "");
   // النطاق: المنطقة المختارة في الرابط، وإلا المحفوظة في الجهاز (تُحدَّد تلقائيًا من الموقع).
   const regionParam = typeof raw.region === "string" ? raw.region : undefined;
-  const savedRegion = (await cookies()).get("jdatna_region")?.value ?? "";
+  const savedRegion = (await cookies()).get(REGION_COOKIE)?.value ?? "";
   // التفاهم: جملة طلب بكلام العميل («أبي غدا لعشرة بالرياض بميزانية 300») تُفهم قبل البحث:
   // الأكلة تصير كلمة البحث، والمكان يصير النطاق. الكلمة الواحدة تبقى بحثًا عاديًا.
   const asked = val("q").trim();

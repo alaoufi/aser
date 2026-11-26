@@ -1,48 +1,27 @@
 "use client";
 import { T } from "@/components/site-texts";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { regionOf } from "@/lib/region-of";
-import { visitorLocation } from "@/lib/visitor-location";
-
-/** الاختيار اليدوي يبقى لهذه الزيارة فقط؛ الدخول التالي يعود للتحديد التلقائي. */
-const MANUAL = "jdatna:region-manual";
-const AUTO = "jdatna:region-auto";
-const year = 60 * 60 * 24 * 365;
-function session(key: string, value?: string) {
-  try {
-    if (value === undefined) return sessionStorage.getItem(key);
-    sessionStorage.setItem(key, value);
-  } catch {
-    // التخزين اختياري.
-  }
-  return null;
-}
+import { setVisitRegion } from "@/lib/region-cookie";
 
 /**
- * منطقة «مائدة اليوم»: تُعرف تلقائيًا من موقع الزائر في كل دخول،
- * والقائمة للتعديل اليدوي.
+ * منطقة المائدة: كل دخول يبدأ بـ«كل المناطق» (قرار المالك 2026-11-26)، ولا تُحدَّد من موقع الزائر.
+ * الاختيار اليدوي أو الرابط يبقى لهذه الزيارة فقط.
  */
 export function RegionPicker({
   regions,
   value,
   path,
-  autoLabel = "حسب موقعك",
-  detectingLabel = "نحدد منطقتك…",
   query = {},
 }: {
   regions: { id: string; name: string }[];
   value: string;
   path: string;
-  autoLabel?: string;
-  detectingLabel?: string;
   /** معاملات الرابط الأخرى (البحث والقسم…) تبقى عند تغيير المنطقة. */
   query?: Record<string, string>;
 }) {
   const router = useRouter();
-  const [state, setState] = useState<"idle" | "detecting" | "auto">("idle");
   const go = (region: string) => {
-    document.cookie = `jdatna_region=${encodeURIComponent(region)}; path=/; max-age=${year}; samesite=lax`;
+    setVisitRegion(region);
     const params = new URLSearchParams(
       Object.entries(query).filter(
         ([key, v]) => v && key !== "region" && key !== "city",
@@ -53,32 +32,6 @@ export function RegionPicker({
     router.replace(qs ? `${path}?${qs}` : path, { scroll: false });
     router.refresh();
   };
-  useEffect(() => {
-    if (session(MANUAL)) return;
-    const done = session(AUTO);
-    if (done) {
-      if (done === value) setState("auto");
-      return;
-    }
-    let active = true;
-    setState("detecting");
-    visitorLocation().then((p) => {
-      if (!active) return;
-      const region = p ? regionOf(p) : null;
-      if (!region || !regions.some((r) => r.id === region)) {
-        setState("idle");
-        return;
-      }
-      session(AUTO, region);
-      setState("auto");
-      if (region !== value) go(region);
-    });
-    return () => {
-      active = false;
-    };
-    // يُحدَّد مرة في كل دخول فقط.
-  }, []);
-  const note = (state === "detecting" ? detectingLabel : autoLabel) ?? "";
   return (
     <div className="table-region-wrap">
       <label className="table-region">
@@ -88,11 +41,7 @@ export function RegionPicker({
         <select
           aria-label="منطقة المائدة"
           value={value}
-          onChange={(e) => {
-            session(MANUAL, "1");
-            setState("idle");
-            go(e.target.value);
-          }}
+          onChange={(e) => go(e.target.value)}
         >
           <option value="">كل المناطق</option>
           {regions.map((r) => (
@@ -102,12 +51,6 @@ export function RegionPicker({
           ))}
         </select>
       </label>
-      {/* النص من «نصوص الموقع»: إن أخفاه المالك (فارغ) تختفي معه أيقونة الموقع 📍 (طلب المالك 2026-11-25). */}
-      {state !== "idle" && note.trim() && (
-        <small className="table-region-note" aria-live="polite">
-          {note}
-        </small>
-      )}
     </div>
   );
 }
