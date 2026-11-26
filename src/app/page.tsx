@@ -8,10 +8,9 @@ import { identityProps } from "@/lib/brand";
 import {
   FoodPhotos,
   PlatesProvider,
-  SITE_PLATES,
   SidePlates,
-  type Plate,
 } from "@/components/public/food-photos";
+import { SITE_PLATES, type Plate } from "@/lib/site-plates";
 import { NajdiDoor } from "@/components/public/najdi-door";
 import { getSiteTexts, visitorTemplate } from "@/server/settings";
 import Link from "next/link";
