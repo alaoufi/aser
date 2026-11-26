@@ -53,7 +53,7 @@ export type Producer = {
 export type Product = {
   /** لصاحب المنتج فقط: ظاهر للزوار؟ ومن أخفاه (الأسرة أو الإدارة). */
   visible?: boolean;
-  hiddenBy?: "admin" | "family" | null;
+  hiddenBy?: "admin" | "family" | "docs" | null;
   notCookingToday?: boolean;
   id: string;
   producerId: string;

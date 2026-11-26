@@ -29,11 +29,8 @@ export const POST = api(async (request) => {
       // «ادعُ صديقًا»: «رقم الدعوة» (رقم عضو من دعاه أو جواله، اختياري).
       invite: z.string().trim().max(30).optional(),
     })
+    // قرار المالك 2026-11-26: التسجيل بالجوال وكلمة المرور فقط؛ الاسم يُكتب في «إتمام التسجيل».
     .strict()
-    .refine(
-      (value) => value.purpose !== "signup" || Boolean(value.name),
-      "أدخل اسم صاحب الحساب",
-    )
     .parse(await jsonBody(request));
   const refCode = request.headers
     .get("cookie")

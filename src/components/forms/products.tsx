@@ -1,4 +1,5 @@
 "use client";
+import { useTx } from "@/components/site-texts";
 import { categoryLabel } from "@/lib/category-label";
 import { useEffect, useState } from "react";
 import { enterNext } from "./enter-next";
@@ -20,6 +21,7 @@ import { productStatusLabels } from "@/lib/site-texts";
 import { ShareAction } from "./share-action";
 export function Products() {
   const session = useSession();
+  const { tx } = useTx();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [mine, setMine] = useState<string[]>([]);
@@ -538,7 +540,9 @@ export function Products() {
                               <em className={s.hiddenTag}>
                                 {p.hiddenBy === "admin"
                                   ? " · أخفته الإدارة"
-                                  : " · مخفي عن الزوار"}
+                                  : p.hiddenBy === "docs"
+                                    ? tx("docs.family.hiddenTag")
+                                    : " · مخفي عن الزوار"}
                               </em>
                             )}
                           </small>
@@ -551,7 +555,7 @@ export function Products() {
                           >
                             تعديل
                           </button>
-                          {p.hiddenBy !== "admin" && (
+                          {p.hiddenBy !== "admin" && p.hiddenBy !== "docs" && (
                             <button
                               type="button"
                               disabled={busy}

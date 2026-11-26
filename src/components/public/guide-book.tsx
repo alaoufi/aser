@@ -65,6 +65,7 @@ export function GuideBook({
   chapters = GUIDE_CHAPTERS,
   copy = USER_GUIDE,
   hash = true,
+  textPrefix = "guide",
 }: {
   version: string;
   /** فصول الكتاب؛ الافتراضي دليل المستخدم كاملًا. */
@@ -72,12 +73,14 @@ export function GuideBook({
   copy?: GuideCopy;
   /** ربط الفصل بعنوان الصفحة (#) — يُعطَّل للكتاب المضمَّن داخل صفحة أخرى. */
   hash?: boolean;
+  /** بادئة مفاتيح «نصوص الموقع» لفصول هذا الكتاب. */
+  textPrefix?: string;
 }) {
   // نصوص الفصول من «نصوص الموقع» إن عُدّلت.
   const texts = useSiteTextsContext();
   const pages = useMemo(
-    () => buildPages(localizeChapters(chapters, texts)),
-    [chapters, texts],
+    () => buildPages(localizeChapters(chapters, texts, textPrefix)),
+    [chapters, texts, textPrefix],
   );
   const chapterPage = useCallback(
     (id: string) => chapterIndex(pages, id),

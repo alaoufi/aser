@@ -473,15 +473,15 @@ function MemberPassword({
       <PasswordField
         label={`تعيين كلمة مرور جديدة لـ${m.name}`}
         autoComplete="new-password"
-        minLength={8}
+        minLength={4}
         required
         value={password}
         onChange={(e) => setPassword(e.target.value)}
-        hint="ثماني خانات على الأقل. يدخل العضو بعدها برقم جواله وكلمة المرور دون رمز، ويخرج من أجهزته الحالية."
+        hint="أربع خانات على الأقل. يدخل العضو بعدها برقم جواله وكلمة المرور دون رمز، ويخرج من أجهزته الحالية."
       />
       <button
         className={s.buttonSecondary}
-        disabled={busy || password.length < 8}
+        disabled={busy || password.length < 4}
       >
         حفظ كلمة المرور
       </button>

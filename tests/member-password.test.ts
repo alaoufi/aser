@@ -45,8 +45,8 @@ test(
       // حسابات الإدارة تعيّن كلمة مرورها بنفسها برمز الجوال.
       await assert.rejects(set(admin, other.id), { status: 403 });
       await assert.rejects(set(admin, staff.id), { status: 403 });
-      // كلمة قصيرة مرفوضة.
-      await assert.rejects(set(admin, reviewer.id, "1234567"));
+      // كلمة أقصر من أربع خانات مرفوضة (قرار المالك 2026-11-26: الحد الأدنى أربع).
+      await assert.rejects(set(admin, reviewer.id, "123"));
       await set(admin, reviewer.id);
       // يخرج من أجهزته، ويدخل بالجوال وكلمة المرور دون رمز.
       assert.equal(

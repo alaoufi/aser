@@ -181,6 +181,7 @@ test("family saves only basic fields in one form and retries without reuploading
     workLocation: "عنوان عمل خاص لا يظهر للزوار",
     documentType: "producer_certificate",
     documentId: "00000000-0000-4000-8000-000000000002",
+    pledge: false,
   });
   expect(
     await page.evaluate(
@@ -251,4 +252,89 @@ test.describe("work location is detected automatically", () => {
     await field.fill("حي الريان، شارع الأسرة");
     await expect(field).toHaveValue("حي الريان، شارع الأسرة");
   });
+});
+
+// قرار المالك 2026-11-26: بلا مستند الآن يلزم التعهد بتقديمه خلال 15 يومًا، فتُعتمد الأسرة فورًا.
+test("registering without a document needs the 15-day pledge, and the family is active at once", async ({
+  page,
+}) => {
+  let profile: any = null,
+    posted: any;
+  await page.route("**/api/session", (r) =>
+    r.fulfill({
+      json: {
+        user: profile ? { ...user, role: "producer" } : user,
+        registrationOpen: true,
+      },
+    }),
+  );
+  await page.route("**/api/producer/status", (r) =>
+    r.fulfill({ json: { state: null } }),
+  );
+  await page.route("**/api/producer/profile", async (r) => {
+    if (r.request().method() === "POST") {
+      posted = r.request().postDataJSON();
+      profile = {
+        ...posted,
+        id: "00000000-0000-4000-8000-000000000009",
+        categoryIds: ["12"],
+        pickup: true,
+        delivery: false,
+        status: "approved",
+        docs_due_at: "2026-12-11T12:00:00Z",
+      };
+      return r.fulfill({ json: { id: profile.id, status: "approved" } });
+    }
+    return r.fulfill({
+      json: {
+        profile,
+        categories: [
+          { id: "12", name: "منتجات غذائية أخرى", slug: "general", icon: "✦" },
+        ],
+        cities: [city],
+      },
+    });
+  });
+  await page.route("**/api/producer/availability", (r) =>
+    r.fulfill({ json: { day: "2026-11-26", notCookingToday: false } }),
+  );
+  await page.goto("/register");
+  await page
+    .getByLabel("الاسم التجاري المعلن", { exact: true })
+    .fill("شاهي أم فهد");
+  await page.getByLabel("رقم الهوية", { exact: true }).fill("1234567890");
+  await page
+    .getByRole("combobox", { name: "المنطقة", exact: true })
+    .selectOption("riyadh");
+  await page
+    .getByRole("combobox", { name: "المدينة", exact: true })
+    .selectOption(city.id);
+  await page
+    .getByLabel("عنوان أو رابط موقع العمل", { exact: true })
+    .fill("عنوان عمل خاص لا يظهر للزوار");
+  await page.getByRole("checkbox", { name: "منتجات غذائية أخرى" }).check();
+  const save = page.getByRole("button", {
+    name: "حفظ وإرسال للمراجعة",
+    exact: true,
+  });
+  await save.click();
+  // لا مستند ولا تعهد: رسالة واضحة ولا إرسال.
+  await expect(
+    page.getByText("ارفع المستند الآن، أو اختر التعهد بتقديمه خلال 15 يومًا."),
+  ).toBeVisible();
+  expect(posted).toBeUndefined();
+  const pledge = page.getByRole("checkbox", { name: /أتعهد بتقديم المستندات/ });
+  await pledge.check();
+  await page.screenshot({
+    path: "test-results/family-pledge.png",
+    fullPage: true,
+  });
+  await save.click();
+  await expect.poll(() => posted?.pledge).toBe(true);
+  expect(posted.documentId).toBeNull();
+  await expect(page.getByText(/صارت ظاهرة للعملاء بكل صلاحيات/)).toBeVisible();
+  // التذكير بموعد المستندات.
+  await expect(
+    page.getByText(/تعهدت بتقديم المستندات الرسمية لممارسة النشاط قبل/),
+  ).toBeVisible();
 });

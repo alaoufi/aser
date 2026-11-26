@@ -1,4 +1,5 @@
 "use client";
+import { useTx } from "@/components/site-texts";
 import { AdminInsights } from "./admin-insights";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -55,6 +56,10 @@ type Application = {
   }[];
   documentId?: string;
   reviewReason?: string;
+  /** تعهدت بتقديم المستندات حتى هذا التاريخ (قرار المالك 2026-11-26). */
+  docsDueAt?: string | null;
+  /** منتجاتها مخفية حتى ترفع المستندات. */
+  docsHiddenAt?: string | null;
   nationalId?: string | null;
   workLocation?: string | null;
 };
@@ -65,6 +70,12 @@ const today = () =>
 /** معتمدة لكن الإدارة كتبت لها نواقص عند الاعتماد (لا تُطالَب بها الأسرة؛ للمتابعة هنا). */
 function hasMissing(p: Application) {
   return p.status === "approved" && Boolean(p.reviewReason?.trim());
+}
+/** تعهدت بالمستندات خلال 15 يومًا ومضت المدة ولم ترفعها: للمتابعة (الأسرة تبقى ظاهرة). */
+function docsLate(p: Application) {
+  return Boolean(
+    p.docsDueAt && !p.documentId && Date.parse(p.docsDueAt) < Date.now(),
+  );
 }
 function stateOf(p: Application): FamilyState {
   return familyAccountState(
@@ -87,6 +98,87 @@ const documentLabels: Record<string, string> = {
   other_document: "شهادة أو مستند آخر",
   exception: "طلب استثناء إداري",
 };
+/**
+ * مهلة المستندات (قرار المالك 2026-11-26): تمديدها، أو إخفاء منتجات الأسرة حتى ترفعها (تعود كما كانت
+ * عند الرفع)، أو إظهارها. الأسرة تُنبَّه بكل قرار.
+ */
+function DocsControls({
+  producer,
+  onSaved,
+}: {
+  producer: Application;
+  onSaved: () => Promise<void>;
+}) {
+  const { tx, txb } = useTx();
+  const [days, setDays] = useState(15);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const act = async (body: Record<string, unknown>) => {
+    setBusy(true);
+    setError("");
+    try {
+      await api(`/api/admin/producers/${producer.id}/docs`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+      await onSaved();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <fieldset className={s.docsControls} disabled={busy}>
+      <legend>{txb("docs.admin.title")}</legend>
+      {producer.docsHiddenAt && (
+        <p className={s.notice}>{tx("docs.admin.hiddenNow")}</p>
+      )}
+      <Message error={error} />
+      <div className={s.actions}>
+        <label className={s.inlineField}>
+          <span className="sr-only">{tx("docs.admin.days")}</span>
+          <select
+            aria-label={tx("docs.admin.days")}
+            value={days}
+            onChange={(e) => setDays(Number(e.target.value))}
+          >
+            {[7, 15, 30].map((d) => (
+              <option key={d} value={d}>
+                {tx("docs.admin.daysOption", { n: d })}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button
+          type="button"
+          className={s.button}
+          onClick={() => act({ action: "extend", days })}
+        >
+          {txb("docs.admin.extend")}
+        </button>
+        {producer.docsHiddenAt ? (
+          <button
+            type="button"
+            className={s.buttonSecondary}
+            onClick={() => act({ action: "show" })}
+          >
+            {txb("docs.admin.show")}
+          </button>
+        ) : (
+          <button
+            type="button"
+            className={s.danger}
+            onClick={() => act({ action: "hide" })}
+          >
+            {txb("docs.admin.hide")}
+          </button>
+        )}
+      </div>
+    </fieldset>
+  );
+}
+
 function Review({
   producer,
   onSaved,
@@ -154,6 +246,19 @@ function Review({
         </p>
       ) : (
         <p className={s.tag}>لم ترفق مستندات بعد</p>
+      )}
+      {producer.docsDueAt && !producer.documentId && (
+        <p className={docsLate(producer) ? s.notice : s.muted}>
+          {docsLate(producer)
+            ? "تأخرت في المستندات: "
+            : "تعهدت بتقديم المستندات الرسمية حتى "}
+          {new Date(producer.docsDueAt).toLocaleDateString("ar-SA-u-nu-latn", {
+            timeZone: "Asia/Riyadh",
+          })}
+        </p>
+      )}
+      {producer.docsDueAt && !producer.documentId && (
+        <DocsControls producer={producer} onSaved={onSaved} />
       )}
       {producer.documentType === "exception" && (
         <p>تفاصيل طلب الاستثناء: {producer.reviewReason || "دون تفاصيل"}</p>
@@ -389,6 +494,7 @@ export function Admin({ section }: { section?: string } = {}) {
                     ["trusted", "موثوق"],
                     ["suspended", "موقوف"],
                     ["missing", "من لديهم نواقص"],
+                    ["late", "تأخرت في المستندات"],
                     ["all", "الكل"],
                   ] as const
                 ).map(([id, label]) => (
@@ -405,7 +511,9 @@ export function Admin({ section }: { section?: string } = {}) {
                       : producers.filter((p) =>
                           id === "missing"
                             ? hasMissing(p)
-                            : stateOf(p).key === id,
+                            : id === "late"
+                              ? docsLate(p)
+                              : stateOf(p).key === id,
                         ).length}
                     )
                   </button>
@@ -429,7 +537,9 @@ export function Admin({ section }: { section?: string } = {}) {
                       (filter === "all" ||
                         (filter === "missing"
                           ? hasMissing(p)
-                          : stateOf(p).key === filter)) &&
+                          : filter === "late"
+                            ? docsLate(p)
+                            : stateOf(p).key === filter)) &&
                       (!q ||
                         [p.name, p.tradeName, p.ownerName, p.phone, p.cityName]
                           .filter(Boolean)

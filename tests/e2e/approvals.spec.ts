@@ -162,3 +162,55 @@ test("admin follows approved families with missing items from a dedicated filter
     page.getByText("النواقص المكتوبة عند الاعتماد: إرفاق شهادة الأسرة المنتجة"),
   ).toBeVisible();
 });
+
+// قرار المالك 2026-11-26: بعد انتهاء مهلة المستندات تختار الإدارة «تمديد» أو «إخفاء المنتجات حتى رفع المستندات».
+test("admin extends a late family's document deadline or hides its products until it uploads", async ({
+  page,
+}) => {
+  await asAdmin(page);
+  const family = {
+    id: "00000000-0000-4000-8000-000000000031",
+    name: "شاهي متأخرة",
+    cityName: "الرياض",
+    status: "approved",
+    verified: false,
+    documentId: null,
+    docsDueAt: "2026-11-01T00:00:00Z",
+    docsHiddenAt: null as string | null,
+  };
+  await page.route("**/api/admin/producers**", (r) =>
+    r.fulfill({ json: { producers: [family] } }),
+  );
+  const sent: unknown[] = [];
+  await page.route(`**/api/admin/producers/${family.id}/docs`, (r) => {
+    const body = r.request().postDataJSON();
+    sent.push(body);
+    if (body.action === "hide") family.docsHiddenAt = "2026-11-26T00:00:00Z";
+    else family.docsHiddenAt = null;
+    return r.fulfill({ json: { ok: true } });
+  });
+  await page.goto("/admin/producers");
+  const filters = page.getByRole("group", { name: "تصفية الأسر" });
+  await filters.getByRole("button", { name: /تأخرت في المستندات/ }).click();
+  await expect(page.getByText(/تأخرت في المستندات: /)).toBeVisible();
+  const box = page.getByRole("group", { name: "مهلة المستندات" });
+  await box
+    .getByRole("button", { name: "إخفاء المنتجات حتى رفع المستندات" })
+    .click();
+  await expect.poll(() => sent.length).toBe(1);
+  expect(sent[0]).toEqual({ action: "hide" });
+  await expect(
+    box.getByText(/منتجات هذه الأسرة مخفية حتى ترفع المستندات/),
+  ).toBeVisible();
+  await page.screenshot({
+    path: "test-results/docs-admin.png",
+    fullPage: true,
+  });
+  await box.getByLabel("مدة التمديد").selectOption("30");
+  await box.getByRole("button", { name: "تمديد المهلة" }).click();
+  await expect.poll(() => sent.length).toBe(2);
+  expect(sent[1]).toEqual({ action: "extend", days: 30 });
+  await expect(
+    box.getByRole("button", { name: "إخفاء المنتجات حتى رفع المستندات" }),
+  ).toBeVisible();
+});

@@ -53,6 +53,7 @@ export function RegisterGuide({
           <GuideBook
             version={version}
             chapters={REGISTER_CHAPTERS}
+            textPrefix="rguide"
             copy={COPY}
             hash={false}
           />

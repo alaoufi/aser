@@ -312,7 +312,7 @@ export async function verifyOtp(
             [
               randomUUID(),
               challenge.phone,
-              name?.trim() || "مستخدم",
+              name?.trim() || "عضو جديد",
               (await import("./store-review")).isReviewPhone(challenge.phone),
             ],
           )

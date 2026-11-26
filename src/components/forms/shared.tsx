@@ -268,6 +268,10 @@ export function LoginForm({
   const [adminChallenge, setAdminChallenge] = useState("");
   const [verified, setVerified] = useState<SessionUser | null>(null);
   const [canSetCredentials, setCanSetCredentials] = useState(false);
+  // قرار المالك 2026-11-26: التسجيل بالجوال وكلمة المرور ثم الرمز، ثم «تم التسجيل» و«إتمام التسجيل» أو «لاحقًا».
+  const [signupPassword, setSignupPassword] = useState("");
+  const [registered, setRegistered] = useState<SessionUser | null>(null);
+  const [completing, setCompleting] = useState(false);
   const [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const [phone, setPhone] = useState("");
@@ -282,8 +286,11 @@ export function LoginForm({
   const [invited, setInvited] = useState("");
   useEffect(() => {
     if (register) return;
-    if (new URLSearchParams(window.location.search).get("signup") === "1")
-      setMode("signup");
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("signup") === "1") setMode("signup");
+    // رابط «سجّل أسرتك» أو «سجّل كمندوب» يكمل إلى صفحته بعد التسجيل.
+    const wanted = params.get("intent");
+    if (wanted === "family" || wanted === "courier") setIntent(wanted);
     setInvited(
       /(?:^|;\s*)jdatna_ref=(\d{1,7})/.exec(document.cookie)?.[1] ?? "",
     );
@@ -431,6 +438,13 @@ export function LoginForm({
         }
         finish(d.user, d.next);
       } else if (!challenge) {
+        if (mode === "signup") {
+          const password = String(f.get("password") ?? "");
+          if (password.length < 4) throw new Error(tx("signup.passwordShort"));
+          if (password !== f.get("confirmPassword"))
+            throw new Error("كلمتا المرور غير متطابقتين");
+          setSignupPassword(password);
+        }
         const d = await api<{ challengeId: string }>("/api/auth/request-otp", {
           method: "POST",
           body: JSON.stringify({
@@ -451,13 +465,8 @@ export function LoginForm({
             challengeId: challenge,
             code: f.get("code"),
             purpose: mode === "signup" ? "signup" : "reset",
-            ...(mode === "signup"
-              ? {
-                  name: f.get("name"),
-                  ...(String(f.get("invite") ?? "").trim()
-                    ? { invite: String(f.get("invite")).trim() }
-                    : {}),
-                }
+            ...(mode === "signup" && String(f.get("invite") ?? "").trim()
+              ? { invite: String(f.get("invite")).trim() }
               : {}),
           }),
         });
@@ -465,6 +474,20 @@ export function LoginForm({
           throw new Error(
             "تعذر اعتماد إذن إعداد كلمة المرور؛ أعد التحقق من الجوال",
           );
+        if (mode === "signup" && signupPassword) {
+          // كلمة المرور كُتبت في الخطوة الأولى: تُحفظ مباشرة بعد التحقق من الجوال.
+          const saved = await api<{ user: SessionUser; next: string }>(
+            "/api/auth/credentials",
+            {
+              method: "POST",
+              body: JSON.stringify({ password: signupPassword }),
+            },
+          );
+          setSignupPassword("");
+          primeSession(saved.user);
+          setRegistered(saved.user);
+          return;
+        }
         setVerified(d.user);
         setCanSetCredentials(d.canSetCredentials === true);
         setUsername(
@@ -482,6 +505,67 @@ export function LoginForm({
       setBusy(false);
     }
   }
+  if (registered)
+    return (
+      <section
+        className={s.card}
+        aria-labelledby="signup-done-title"
+        data-testid="signup-done"
+      >
+        <h1 id="signup-done-title">{txb("signup.doneTitle")}</h1>
+        <p>{tx(completing ? "signup.chooseBody" : "signup.doneBody")}</p>
+        <div className={s.actions}>
+          {!completing ? (
+            <>
+              <button
+                type="button"
+                className={s.button}
+                onClick={() =>
+                  // من صفحة تسجيل الأسرة: يكمل نموذج الأسرة مباشرة.
+                  register && onVerified
+                    ? onVerified(registered)
+                    : intent === "family"
+                      ? window.location.assign("/register")
+                      : intent === "courier"
+                        ? window.location.assign("/courier")
+                        : setCompleting(true)
+                }
+              >
+                {txb("signup.complete")}
+              </button>
+              <button
+                type="button"
+                className={s.buttonSecondary}
+                onClick={() =>
+                  onVerified
+                    ? onVerified(registered)
+                    : window.location.assign("/")
+                }
+              >
+                {txb("signup.later")}
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                className={s.button}
+                onClick={() => window.location.assign("/register")}
+              >
+                {txb("signup.asFamily")}
+              </button>
+              <button
+                type="button"
+                className={s.button}
+                onClick={() => window.location.assign("/me")}
+              >
+                {txb("signup.asCustomer")}
+              </button>
+            </>
+          )}
+        </div>
+      </section>
+    );
   if (!session.ready) return <p role="status">جارٍ التحقق من الحساب…</p>;
   if (session.user && !verified) {
     const destination =
@@ -523,14 +607,9 @@ export function LoginForm({
             ? "ادخل باسم المستخدم أو جوالك المتحقق منه وكلمة المرور. نفتح حسابك بحسب صلاحياته المعتمدة."
             : mode === "recover"
               ? "نرسل رمزًا إلى الجوال المسجل لاستعادة كلمة المرور. إذا لم تعيّن كلمة مرور لحسابك سابقًا، يمكنك إعدادها بهذه الخطوة مرة واحدة."
-              : "نرسل رمزًا من ستة أرقام لإنشاء حسابك لأول مرة، ثم تعيّن كلمة مرور للدخول. لا تشارك الرمز مع أي شخص."}
+              : tx("signup.intro")}
       </p>
-      {register && (
-        <p className={s.notice}>
-          بعد الدخول يمكنك استكمال طلب الأسرة المنتجة؛ يخضع الاعتماد لمراجعة
-          الإدارة.
-        </p>
-      )}
+      {register && <p className={s.notice}>{tx("signup.familyNote")}</p>}
       <Message error={error || session.error} />
       <dialog
         ref={limitDialog}
@@ -699,33 +778,6 @@ export function LoginForm({
           </>
         ) : (
           <>
-            {mode === "signup" && !challenge && (
-              <label className={s.field}>
-                <span className="sr-only">نوع الحساب المطلوب</span>
-                <select
-                  aria-label="نوع الحساب المطلوب"
-                  value={intent}
-                  onChange={(e) => setIntent(e.target.value)}
-                >
-                  <option value="" disabled>
-                    نوع الحساب المطلوب
-                  </option>
-                  <option value="customer">عميل</option>
-                  <option value="family">أسرة منتجة — تقديم طلب أهلية</option>
-                  <option value="courier">مندوب توصيل للأسر المنتجة</option>
-                </select>
-              </label>
-            )}
-            {mode === "signup" && !challenge && (
-              <p className={s.muted} data-testid="account-type-hint">
-                {intent === "family"
-                  ? "الأسرة المنتجة: بعد التحقق من الجوال ترفع التراخيص المطلوبة، ولا تظهر منتجاتها إلا بعد موافقة الإدارة."
-                  : intent === "courier"
-                    ? "المندوب: بعد التحقق من الجوال يُكمل بياناته (رقم الهوية وصورتها ونوع السيارة)، ويظهر للأسر المنتجة بعد موافقة الإدارة."
-                    : "العميل: يتفعّل حسابه مباشرة بعد التحقق من الجوال."}{" "}
-                التصفح متاح للجميع، والطلب بعد التسجيل والتحقق من الجوال.
-              </p>
-            )}
             {mode === "signup" && challenge && (
               <label className={s.field}>
                 رقم الدعوة (اختياري)
@@ -738,18 +790,6 @@ export function LoginForm({
                   autoComplete="off"
                   placeholder="رقم العضو الذي دعاك أو جواله"
                   maxLength={30}
-                />
-              </label>
-            )}
-            {mode === "signup" && challenge && (
-              <label className={s.field}>
-                اسم صاحب الحساب
-                <input
-                  name="name"
-                  autoComplete="name"
-                  required
-                  minLength={2}
-                  maxLength={120}
                 />
               </label>
             )}
@@ -767,6 +807,25 @@ export function LoginForm({
                 disabled={!!challenge}
               />
             </label>
+            {mode === "signup" && !challenge && (
+              <>
+                <PasswordField
+                  label="كلمة المرور"
+                  name="password"
+                  autoComplete="new-password"
+                  minLength={4}
+                  required
+                  hint={tx("signup.passwordHint")}
+                />
+                <PasswordField
+                  label="تأكيد كلمة المرور"
+                  name="confirmPassword"
+                  autoComplete="new-password"
+                  minLength={4}
+                  required
+                />
+              </>
+            )}
             {challenge && (
               <label className={s.field}>
                 رمز التحقق

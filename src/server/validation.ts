@@ -103,6 +103,8 @@ export const profileSchema = z
     documentType,
     documentId: z.uuid().nullable().optional(),
     exceptionReason: optionalText(2000),
+    /** تعهد بتقديم المستندات الرسمية خلال 15 يومًا (قرار المالك 2026-11-26). */
+    pledge: z.boolean().optional(),
     documentNumber: optionalText(100),
     documentExpiresAt: z.iso.date().nullable().optional(),
     categoryIds: z.array(z.string().min(1).max(30)).min(1).max(100).optional(),

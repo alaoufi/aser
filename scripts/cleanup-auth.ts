@@ -5,7 +5,13 @@ async function main() {
   const arg = process.argv[2];
   const batch = arg === undefined ? 1000 : Number(arg);
   const removed = await cleanupAuthRows(batch);
-  console.log(JSON.stringify({ removed, batchPerTable: batch }));
+  // تنبيه الإدارة بالأسر التي تأخرت في المستندات (لا يُفشل الصيانة إن تعذر).
+  let lateDocuments = 0;
+  try {
+    const { notifyLateDocuments } = await import("../src/server/management");
+    lateDocuments = await notifyLateDocuments();
+  } catch {}
+  console.log(JSON.stringify({ removed, batchPerTable: batch, lateDocuments }));
 }
 main()
   .catch((error) => {
