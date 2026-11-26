@@ -5,6 +5,9 @@ import { OrderRequestForm } from "@/components/forms/orders";
 import { ChatButton } from "@/components/forms/chat";
 import { LocationCheck } from "@/components/maps/location-check";
 import { getSiteTexts } from "@/server/settings";
+import { FollowButton } from "@/components/public/follow-button";
+import { followTexts } from "@/lib/follow-texts";
+import { productSchedules } from "@/server/family-alerts";
 import { RatingBox } from "@/components/forms/rating-box";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -62,10 +65,20 @@ export default async function ProductDetail({
   if (!p) notFound();
   const offer = (await searchParams).offer;
   // وسائل تواصل الأسرة المنتجة المنشورة في صفحتها العامة فقط، لعرضها بعد إرسال الطلب.
-  const [family, share] = await Promise.all([
+  const [family, share, schedules] = await Promise.all([
     getProducer(p.producerSlug),
     shortLink("product", p.id),
+    productSchedules(p.id),
   ]);
+  const days = [
+    "الأحد",
+    "الاثنين",
+    "الثلاثاء",
+    "الأربعاء",
+    "الخميس",
+    "الجمعة",
+    "السبت",
+  ];
   const familyPhone = family?.phone ? phoneNumber(family.phone) : null;
   const familyWhatsapp = family?.whatsapp ? phoneNumber(family.whatsapp) : null;
   const image = p.imageUrl && safeMediaUrl(p.imageUrl);
@@ -169,6 +182,31 @@ export default async function ProductDetail({
           <Link className="text-link" href={`/producers/${p.producerSlug}`}>
             من مائدة {p.producerName} ←
           </Link>
+          {/* جدول توزيع المنتج، و«نبّهني» (تنبيهات الأسرة 2026-11-26). */}
+          {schedules.map((sc) => (
+            <p
+              key={`${sc.kind}-${sc.startsOn}-${sc.weekdays.join("")}`}
+              className="product-schedule"
+            >
+              <span aria-hidden="true">🗓</span>{" "}
+              {sc.kind === "date"
+                ? texts["schedule.publicDate"].replace("{date}", sc.startsOn)
+                : texts["schedule.public"]
+                    .replace(
+                      "{frequency}",
+                      sc.kind === "daily"
+                        ? texts["alerts.daily"]
+                        : `${texts["alerts.weekly"]} (${sc.weekdays.map((d) => days[d]).join("، ")})`,
+                    )
+                    .replace("{date}", sc.startsOn)}
+            </p>
+          ))}
+          <FollowButton
+            producer={p.producerSlug}
+            family={p.producerName}
+            productId={p.id}
+            texts={followTexts(texts)}
+          />
           <p className="product-price">
             {priceLabel(p.price)}
             {p.price !== null && <small> / {p.unit}</small>}

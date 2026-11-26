@@ -48,6 +48,7 @@ export function Message({
 }
 function AccountNavigation() {
   const { user } = useSession();
+  const { tx } = useSiteTexts();
   const path = usePathname();
   if (!user) return null;
   // حساب أسرة: دوره أسرة منتجة، أو المدير الكامل الذي له ملف أسرة.
@@ -65,6 +66,7 @@ function AccountNavigation() {
       string,
     ][]),
     ["/my-subscriptions", "اشتراكاتي"],
+    ["/alerts", tx("alerts.pageTitle")],
     ["/me", "معلوماتي"],
     ...((user.role === "courier"
       ? [["/courier", "لوحتي كمندوب"]]
@@ -175,6 +177,8 @@ export const FAMILY_TABS: FolderTab[] = [
   },
   { id: "library", label: "مكتبة الصور", href: "/dashboard/library" },
   { id: "views", label: "المشاهدات", href: "/dashboard/views" },
+  // جدول توزيع المنتجات وعدد متابعي «تنبيهات الأسرة» (2026-11-26).
+  { id: "schedules", label: "جدول التوزيع", href: "/dashboard/schedules" },
   { id: "coverage", label: "التغطية", href: "/dashboard/coverage" },
   // مندوب الأسرة الخاص: تسجّله بنفسها بتعهّد، دون اعتماد الإدارة.
   { id: "couriers", label: "مندوبي الخاص", href: "/dashboard/couriers" },

@@ -16,6 +16,8 @@ import { LocationLink } from "@/components/forms/location-share";
 import { LocationCheck } from "@/components/maps/location-check";
 import { RatingBox } from "@/components/forms/rating-box";
 import { getSiteTexts } from "@/server/settings";
+import { FollowButton } from "@/components/public/follow-button";
+import { followTexts } from "@/lib/follow-texts";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import {
@@ -175,6 +177,11 @@ export default async function ProducerDetail({
               <span aria-hidden="true">🍲</span> {productsLabel(shown)}
             </p>
             <FamilyViewsSummary />
+            <FollowButton
+              producer={p.slug}
+              family={p.name}
+              texts={followTexts(texts)}
+            />
             {p.notCookingToday && (
               <p role="status" className="muted">
                 لا يوجد طبخ اليوم. طلبات المواعيد القادمة متاحة بالاتفاق مع
