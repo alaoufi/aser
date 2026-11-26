@@ -87,6 +87,18 @@ export function ProductCard({
         <span className="badge">
           {p.notCookingToday ? "لا يوجد طبخ اليوم" : labels[p.status]}
         </span>
+        {/* عدد طلباته: شارة رقم على الصورة (قرار المالك 2026-11-26). */}
+        {(p.orderCount ?? 0) > 0 && (
+          <span className="order-badge">
+            <span aria-hidden="true">{countLabel(p.orderCount ?? 0)}</span>
+            <span className="sr-only">
+              <T
+                k="count.productOrders"
+                vars={{ n: countLabel(p.orderCount ?? 0) }}
+              />
+            </span>
+          </span>
+        )}
       </div>
       <div className="card-body">
         <small>
@@ -99,15 +111,6 @@ export function ProductCard({
         {p.deliveryScope === "kingdom" && (
           <small className="shipping-badge">
             <T k="c.ui.t1" />
-          </small>
-        )}
-        {/* أرقام الحركة (قرار المالك 2026-11-26): رقم فقط، بلا أسماء ولا مبالغ. */}
-        {(p.orderCount ?? 0) > 0 && (
-          <small className="order-count">
-            <T
-              k="count.productOrders"
-              vars={{ n: countLabel(p.orderCount ?? 0) }}
-            />
           </small>
         )}
         {extra}
@@ -123,18 +126,21 @@ export function ProducerCard({ producer: p }: { producer: Producer }) {
       className={`producer-card ${id.className}`}
       style={id.style}
     >
-      <div className="producer-avatar" aria-hidden="true">
-        {p.logoUrl && safeMediaUrl(p.logoUrl) ? (
+      {/* الشعار إن أضافته الأسرة، وإلا لا شيء (لا حروف بدله، قرار المالك 2026-11-26). */}
+      {p.logoUrl && safeMediaUrl(p.logoUrl) && (
+        <div className="producer-avatar" aria-hidden="true">
           <img src={p.logoUrl} alt="" loading="lazy" />
-        ) : (
-          p.name
-            .trim()
-            .split(/\s+/)
-            .slice(0, 2)
-            .map((word) => word[0])
-            .join(" ")
-        )}
-      </div>
+        </div>
+      )}
+      {/* عدد منتجاتها المعروضة: رقم على البطاقة. */}
+      {(p.productCount ?? 0) > 0 && (
+        <span className="product-count-badge">
+          <T
+            k="count.familyProducts"
+            vars={{ n: countLabel(p.productCount ?? 0) }}
+          />
+        </span>
+      )}
       <div className="producer-card-content">
         <small className="producer-location">
           {p.regionName} · {p.cityName}

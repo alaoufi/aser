@@ -2148,3 +2148,155 @@ button.food-dish:focus-visible .food-dish-visual {
     font-size: 11px;
   }
 }
+
+/* صحون آخر الإضافات أعلى الرئيسية (قرار المالك 2026-11-26): أربعة تحت القوس وثمانية بجانبه. */
+.food-side-plates {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 18px;
+  max-width: 480px;
+}
+.food-dish {
+  background: none;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  padding: 0;
+}
+.food-dish .food-dish-visual img,
+.food-showcase-main > img {
+  inset: 0;
+  height: 100%;
+  object-fit: cover;
+  position: absolute;
+  width: 100%;
+}
+.food-dish .food-dish-visual > img:not([data-nimg]) {
+  border-radius: 50%;
+  box-shadow: 0 3px 10px #38291f26;
+}
+.food-showcase-main > img:not([data-nimg]) {
+  border-radius: 50%;
+  inset: 8% 12% 22%;
+  height: auto;
+  width: auto;
+  box-shadow: 0 10px 28px #38291f30;
+}
+.food-dish.is-active .food-dish-visual {
+  outline: 3px solid var(--olive);
+  outline-offset: 2px;
+  border-radius: 50%;
+}
+.food-dish:focus-visible {
+  outline: 3px solid var(--rust);
+  outline-offset: 3px;
+}
+.food-showcase-caption {
+  position: absolute;
+  inset-inline: 14%;
+  bottom: 4%;
+  display: grid;
+  gap: 1px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: #fffdf8e6;
+  color: var(--ink);
+  font-size: 11px;
+  line-height: 1.45;
+  text-align: center;
+}
+.food-showcase-caption strong {
+  font-size: 12.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.food-showcase-caption span {
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.food-showcase-caption a {
+  color: var(--rust);
+  font-weight: 600;
+}
+
+/* عدد طلبات المنتج: شارة رقم على صورته وعلى صحنه. */
+.order-badge {
+  position: absolute;
+  top: 8px;
+  inset-inline-start: 8px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--rust);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 2px 6px #38291f33;
+}
+.food-dish .order-badge {
+  top: 0;
+  inset-inline-start: 0;
+  min-width: 22px;
+  height: 22px;
+  font-size: 11.5px;
+}
+
+/* بطاقة الأسرة: بلا شعار لا شيء بدل الحروف، وعدد منتجاتها المعروضة رقمًا في زاويتها. */
+.producer-card {
+  position: relative;
+}
+.producer-card .producer-card-content {
+  flex: 1;
+  min-width: 0;
+}
+.product-count-badge {
+  position: absolute;
+  top: 8px;
+  inset-inline-end: 10px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--olive);
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.6;
+}
+@media (max-width: 600px) {
+  .food-side-plates {
+    gap: 6px;
+    margin-top: 10px;
+    max-width: none;
+  }
+  .food-showcase-caption {
+    inset-inline: 6%;
+    padding: 4px 6px;
+    font-size: 10px;
+  }
+  .food-showcase-caption strong {
+    font-size: 11px;
+  }
+}
+
+/* الصحون الثمانية: تحت البحث على الشاشة العريضة، وتحت الصورة بعرض الصفحة على الجوال. */
+.food-side-plates.is-narrow {
+  display: none;
+}
+@media (max-width: 600px) {
+  .food-side-plates.is-wide {
+    display: none;
+  }
+  .food-side-plates.is-narrow {
+    display: grid;
+    grid-column: 1 / -1;
+    margin-top: 0;
+  }
+}

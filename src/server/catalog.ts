@@ -68,6 +68,7 @@ c.name AS "cityName",r.name AS "regionName",p.neighborhood,p.verified,
 ${ratingAverageSql("family", "p.id")} AS "ratingAverage",
 ${ratingCountSql("family", "p.id")} AS "ratingCount",
 (SELECT count(*)::int FROM jdatna.order_requests o WHERE o.producer_id=p.id AND ${countedOrderSql()}) AS "orderCount",
+(SELECT count(*)::int FROM jdatna.products px WHERE px.producer_id=p.id AND px.visible AND px.deleted_at IS NULL) AS "productCount",
 (SELECT json_build_object('palette',b.palette,'pattern',b.pattern,'effect',b.effect,'scale',b.scale) FROM jdatna.producer_brand b WHERE b.producer_id=p.id) AS brand,
 CASE WHEN p.show_phone THEN p.phone END AS phone,
 CASE WHEN p.show_location THEN p.pickup_location END AS "publicLocation",
@@ -231,6 +232,25 @@ export async function todayProducts(
       args,
     )
   ).rows.map(mapProduct);
+}
+/**
+ * آخر ١٢ منتجًا أُضيفت ولها صورة، لصحون أعلى الرئيسية (قرار المالك 2026-11-26):
+ * الجديد يحل محل الأقدم. ظاهرة ومن أسر معتمدة فقط، من كل المناطق.
+ */
+export async function latestProducts(limit = 12): Promise<Product[]> {
+  if (!databaseConfigured()) return [];
+  const { args, where } = conditions({}, true);
+  args.push(Math.max(1, Math.min(24, limit)));
+  try {
+    return (
+      await db().query(
+        `${productSelect} WHERE ${where} AND x.image_url IS NOT NULL AND x.image_url<>'' ORDER BY x.created_at DESC,x.id LIMIT $${args.length}`,
+        args,
+      )
+    ).rows.map(mapProduct);
+  } catch {
+    return [];
+  }
 }
 export async function searchProducers(
   filters: Filters = {},

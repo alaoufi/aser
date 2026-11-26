@@ -5,7 +5,13 @@ import { MineBar } from "@/components/public/mine-bar";
 import { pageMemberScope } from "@/server/page-member";
 import { AdSlot } from "@/components/public/ad-slot";
 import { identityProps } from "@/lib/brand";
-import { FoodPhotos } from "@/components/public/food-photos";
+import {
+  FoodPhotos,
+  PlatesProvider,
+  SITE_PLATES,
+  SidePlates,
+  type Plate,
+} from "@/components/public/food-photos";
 import { NajdiDoor } from "@/components/public/najdi-door";
 import { getSiteTexts, visitorTemplate } from "@/server/settings";
 import Link from "next/link";
@@ -28,6 +34,7 @@ import { TodayTable, regionsOf } from "@/components/public/today-table";
 import { RegionPicker } from "@/components/public/region-picker";
 import {
   getCities,
+  latestProducts,
   publicCategories,
   regionalProducts,
   todayProducts,
@@ -37,7 +44,7 @@ import { ProductCard, ProducerCard } from "@/components/public/ui";
 import { ForYou } from "@/components/public/for-you";
 import { recentCertificates } from "@/server/certificates";
 import { activityTotals } from "@/server/activity";
-import { countLabel } from "@/components/public/ui";
+import { countLabel, priceLabel } from "@/components/public/ui";
 export const dynamic = "force-dynamic";
 export default async function Home({
   searchParams,
@@ -63,6 +70,7 @@ export default async function Home({
     certificates,
     today,
     activity,
+    latest,
   ] = await Promise.all([
     visitorTemplate(),
     getSiteTexts(),
@@ -74,7 +82,21 @@ export default async function Home({
     recentCertificates(),
     todayProducts({ region, mine }),
     activityTotals(),
+    latestProducts(12),
   ]);
+  // صحون أعلى الرئيسية: آخر ١٢ منتجًا لها صور، وصور الموقع تكمّلها إن قلّت (قرار المالك 2026-11-26).
+  const plates: Plate[] = [
+    ...latest.map((p) => ({
+      id: p.id,
+      name: p.name,
+      image: p.imageUrl ?? "",
+      href: `/products/${p.id}`,
+      family: p.producerName,
+      price: priceLabel(p.price),
+      orders: p.orderCount ?? 0,
+    })),
+    ...SITE_PLATES,
+  ].slice(0, 12);
   const homeProducts = [...products.local, ...products.nationwide].slice(0, 4);
   const homeProducers = [...producers.local, ...producers.nationwide].slice(
     0,
@@ -84,102 +106,107 @@ export default async function Home({
     <>
       {/* «اعرض لي» تحت حزام الرأس مباشرة. */}
       <MineBar scope={scope} path="/" query={{ region: asked ?? "" }} />
-      <section className="hero wrap">
-        <div className="hero-copy">
-          {/* عنوان الصفحة لقارئات الشاشة ومحركات البحث فقط؛ النصوص التعريفية حُذفت بطلب المالك. */}
-          <h1 className="sr-only">
-            <T k="p.home.t1" />
-          </h1>
-          <form action="/browse" className="hero-search" autoComplete="off">
-            <label>
-              <span className="sr-only">
-                {texts["home.search"] || "وش تطلب اليوم"}
-              </span>
-              <input
-                type="search"
-                name="q"
-                autoComplete="off"
-                placeholder={texts["home.search"]}
-              />
-            </label>
-            <button
-              className="button"
-              type="submit"
-              aria-label={texts["home.searchButton"] || "ابحث"}
-            >
-              <span className="hero-search-word">
-                {texts["home.searchButton"] || "ابحث"}
-              </span>{" "}
-              <span className="hero-search-arrow" aria-hidden="true">
-                ←
-              </span>
-              {/* الجوال: عدسة بدل الكلمة، فتتسع خانة «وش تطلب اليوم». */}
-              <svg
-                className="hero-search-icon"
-                viewBox="0 0 24 24"
-                width="20"
-                height="20"
-                aria-hidden="true"
+      <PlatesProvider plates={plates}>
+        <section className="hero wrap">
+          <div className="hero-copy">
+            {/* عنوان الصفحة لقارئات الشاشة ومحركات البحث فقط؛ النصوص التعريفية حُذفت بطلب المالك. */}
+            <h1 className="sr-only">
+              <T k="p.home.t1" />
+            </h1>
+            <form action="/browse" className="hero-search" autoComplete="off">
+              <label>
+                <span className="sr-only">
+                  {texts["home.search"] || "وش تطلب اليوم"}
+                </span>
+                <input
+                  type="search"
+                  name="q"
+                  autoComplete="off"
+                  placeholder={texts["home.search"]}
+                />
+              </label>
+              <button
+                className="button"
+                type="submit"
+                aria-label={texts["home.searchButton"] || "ابحث"}
               >
-                <circle
-                  cx="11"
-                  cy="11"
-                  r="6.5"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.2"
-                />
-                <path
-                  d="m16 16 4.5 4.5"
-                  stroke="currentColor"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </button>
-          </form>
-          {/* المنطقة بجانب «وش تطلب اليوم» في السطر نفسه (وهي منطقة المائدة تحتها أيضًا). */}
-          <div className="hero-region">
-            <RegionPicker
-              regions={regions.map((r) => ({
-                ...r,
-                // «القصيم» بدل «منطقة القصيم»: الاسم كاملًا يُقص في سطر البحث على الجوال.
-                name: r.name.replace(/^منطقة\s+/, ""),
-              }))}
-              value={region}
-              path="/"
-            />
+                <span className="hero-search-word">
+                  {texts["home.searchButton"] || "ابحث"}
+                </span>{" "}
+                <span className="hero-search-arrow" aria-hidden="true">
+                  ←
+                </span>
+                {/* الجوال: عدسة بدل الكلمة، فتتسع خانة «وش تطلب اليوم». */}
+                <svg
+                  className="hero-search-icon"
+                  viewBox="0 0 24 24"
+                  width="20"
+                  height="20"
+                  aria-hidden="true"
+                >
+                  <circle
+                    cx="11"
+                    cy="11"
+                    r="6.5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                  />
+                  <path
+                    d="m16 16 4.5 4.5"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </button>
+            </form>
+            {/* المنطقة بجانب «وش تطلب اليوم» في السطر نفسه (وهي منطقة المائدة تحتها أيضًا). */}
+            <div className="hero-region">
+              <RegionPicker
+                regions={regions.map((r) => ({
+                  ...r,
+                  // «القصيم» بدل «منطقة القصيم»: الاسم كاملًا يُقص في سطر البحث على الجوال.
+                  name: r.name.replace(/^منطقة\s+/, ""),
+                }))}
+                value={region}
+                path="/"
+              />
+            </div>
+            {template !== "najdi" && <SidePlates where="wide" />}
           </div>
-        </div>
-        <div className="hero-visual">
-          {template === "najdi" ? <NajdiDoor /> : <FoodPhotos />}
-        </div>
-        {/* الجوال (النموذج 1 الذي اختاره المالك): تحت الصورة «متوفر الآن» و«اطلب الآن» متجاورتان. */}
-        <div className="hero-side">
-          <Link href="/browse?status=available" className="hero-chip">
-            <span className="hero-chip-icon" aria-hidden="true">
-              <span className="status-dot" />
-            </span>
-            <span className="hero-chip-text">
-              <strong>{texts["avail.now"] || "متوفر الآن"}</strong>
-              {texts["avail.nowHint"] && (
-                <small>{texts["avail.nowHint"]}</small>
-              )}
-            </span>
-          </Link>
-          <Link href="/browse?status=preorder" className="hero-chip warm">
-            <span className="hero-chip-icon" aria-hidden="true">
-              ◷
-            </span>
-            <span className="hero-chip-text">
-              <strong>{texts["avail.order"] || "اطلب الآن"}</strong>
-              {texts["avail.orderHint"] && (
-                <small>{texts["avail.orderHint"]}</small>
-              )}
-            </span>
-          </Link>
-        </div>
-      </section>
+          <div className="hero-visual">
+            {template === "najdi" ? <NajdiDoor /> : <FoodPhotos />}
+          </div>
+          {/* الجوال (النموذج 1 الذي اختاره المالك): تحت الصورة «متوفر الآن» و«اطلب الآن» متجاورتان. */}
+          <div className="hero-side">
+            <Link href="/browse?status=available" className="hero-chip">
+              <span className="hero-chip-icon" aria-hidden="true">
+                <span className="status-dot" />
+              </span>
+              <span className="hero-chip-text">
+                <strong>{texts["avail.now"] || "متوفر الآن"}</strong>
+                {texts["avail.nowHint"] && (
+                  <small>{texts["avail.nowHint"]}</small>
+                )}
+              </span>
+            </Link>
+            <Link href="/browse?status=preorder" className="hero-chip warm">
+              <span className="hero-chip-icon" aria-hidden="true">
+                ◷
+              </span>
+              <span className="hero-chip-text">
+                <strong>{texts["avail.order"] || "اطلب الآن"}</strong>
+                {texts["avail.orderHint"] && (
+                  <small>{texts["avail.orderHint"]}</small>
+                )}
+              </span>
+            </Link>
+          </div>
+          {/* الجوال: الصحون الثمانية تحت الصورة والبطاقتين بعرض الصفحة. */}
+          {template !== "najdi" && <SidePlates where="narrow" />}
+        </section>
+      </PlatesProvider>
       <AdSlot placement="home_top" className="wrap" />
       <TodayTable
         products={today}

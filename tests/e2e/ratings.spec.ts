@@ -110,17 +110,23 @@ test("a member rates an ordered product with shiny stars and the count shows", a
   ).toHaveCount(0);
 });
 
-test("any of the five plates can be shown enlarged", async ({ page }) => {
+// صحون آخر الإضافات (قرار المالك 2026-11-26): أي صحن يُعرض مكبّرًا داخل القوس، ويبقى في مكانه.
+test("any of the plates can be shown enlarged", async ({ page }) => {
   await page.goto("/");
   const html = page.locator("html");
   if ((await html.getAttribute("data-template")) !== "classic") test.skip();
   const main = page.locator(".food-showcase-main img");
-  await expect(main).toHaveAttribute("alt", "طبق أرز");
-  await page.getByRole("button", { name: "كبّر جريش" }).click();
-  await expect(main).toHaveAttribute("alt", "جريش");
-  await expect(
-    page.getByRole("button", { name: "كبّر طبق أرز" }),
-  ).toBeVisible();
+  const strip = page.getByRole("group", { name: "آخر الإضافات" });
+  const plates = strip.getByRole("button");
+  await expect(plates).toHaveCount(4);
+  // الأول (الأحدث) مختار عند الدخول.
+  await expect(plates.first()).toHaveAttribute("aria-pressed", "true");
+  const third = plates.nth(2);
+  const name = (await third.getAttribute("aria-label"))!.replace(/^اعرض /, "");
+  await third.click();
+  await expect(main).toHaveAttribute("alt", name);
+  await expect(third).toHaveAttribute("aria-pressed", "true");
+  await expect(plates).toHaveCount(4);
   await expect(page.locator(".food-showcase img")).toHaveCount(5);
 });
 
