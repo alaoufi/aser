@@ -52,6 +52,8 @@ export function FamilyIdentity() {
       {user && (
         <>
           <p className={s.muted}>{tx("fidentity.intro")}</p>
+          {/* قرار المالك 2026-11-26: التعهد بالمستندات خلال 15 يومًا، ورفعها من «بيانات الأسرة». */}
+          <p className={s.notice}>{tx("fidentity.pledgeNote")}</p>
           <FolderTabs
             label={tx("fidentity.title")}
             tabs={PARTS.map((id) => ({

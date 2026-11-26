@@ -251,6 +251,18 @@ export async function notifyApprovers(
 export async function saveProfile(user: SessionUser, input: unknown) {
   const saved = await saveProfileRecord(user, input);
   if (saved.newlyPending) void notifyApprovers(saved.name);
+  if (saved.pledged)
+    void notifyApprovers(
+      saved.name,
+      `«${saved.name}» سجّلت وتعهدت بتقديم المستندات خلال 15 يومًا، وظهرت للعملاء.`,
+      "أسرة جديدة بتعهد المستندات",
+    );
+  if (saved.newDocument)
+    void notifyApprovers(
+      saved.name,
+      `«${saved.name}» رفعت مستندًا جديدًا للمراجعة.`,
+      "مستند أسرة للمراجعة",
+    );
   return { id: saved.id, status: saved.status };
 }
 async function saveProfileRecord(user: SessionUser, input: unknown) {
@@ -338,11 +350,28 @@ async function saveProfileRecord(user: SessionUser, input: unknown) {
     const sameTradeName =
       value.tradeName === undefined ||
       (value.tradeName ?? "").trim() === (existing?.trade_name ?? "").trim();
-    const keepApproved =
-      existing?.status === "approved" && sameTradeName && sameDocument;
+    // قرار المالك 2026-11-26: المستند لا يُخفي الأسرة المعتمدة؛ تبقى ظاهرة وتراجعه الإدارة حين يصل.
+    // تغيير الاسم التجاري وحده يعيدها للمراجعة (قرار 2026-11-24).
+    const keepApproved = existing?.status === "approved" && sameTradeName;
+    // التعهد بالمستندات خلال 15 يومًا يعطي كل صلاحيات الأسرة فورًا: للتسجيل الجديد، أو لطلب
+    // ما زال بانتظار الاعتماد ولم يُعتمد قبل. لا يتجاوز مراجعة تغيير الاسم لأسرة اعتُمدت سابقًا.
+    const everApproved =
+      Boolean(existing) &&
+      Boolean(
+        (
+          await client.query(
+            "SELECT 1 FROM jdatna.producer_verifications WHERE producer_id=$1 AND decision='approved' LIMIT 1",
+            [id],
+          )
+        ).rowCount,
+      );
+    const autoApprove =
+      value.pledge === true &&
+      !keepApproved &&
+      (!existing || (existing.status === "pending" && !everApproved));
     await client.query(
-      `INSERT INTO jdatna.producer_profiles(id,user_id,slug,name,description,city_id,neighborhood,phone,whatsapp,delivery,pickup,trade_name) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) ON CONFLICT(user_id) DO UPDATE SET name=EXCLUDED.name,description=EXCLUDED.description,city_id=EXCLUDED.city_id,neighborhood=EXCLUDED.neighborhood,phone=EXCLUDED.phone,whatsapp=EXCLUDED.whatsapp,delivery=EXCLUDED.delivery,pickup=EXCLUDED.pickup,trade_name=EXCLUDED.trade_name,
-        status=CASE WHEN $13 THEN jdatna.producer_profiles.status ELSE 'pending' END,
+      `INSERT INTO jdatna.producer_profiles(id,user_id,slug,name,description,city_id,neighborhood,phone,whatsapp,delivery,pickup,trade_name,status) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,CASE WHEN $14 THEN 'approved' ELSE 'pending' END) ON CONFLICT(user_id) DO UPDATE SET name=EXCLUDED.name,description=EXCLUDED.description,city_id=EXCLUDED.city_id,neighborhood=EXCLUDED.neighborhood,phone=EXCLUDED.phone,whatsapp=EXCLUDED.whatsapp,delivery=EXCLUDED.delivery,pickup=EXCLUDED.pickup,trade_name=EXCLUDED.trade_name,
+        status=CASE WHEN $13 THEN jdatna.producer_profiles.status WHEN $14 THEN 'approved' ELSE 'pending' END,
         verified=CASE WHEN $13 THEN jdatna.producer_profiles.verified ELSE false END,updated_at=now()`,
       [
         id,
@@ -366,8 +395,14 @@ async function saveProfileRecord(user: SessionUser, input: unknown) {
           ? (existing?.trade_name ?? null)
           : value.tradeName,
         keepApproved,
+        autoApprove,
       ],
     );
+    if (autoApprove)
+      await client.query(
+        "UPDATE jdatna.producer_profiles SET docs_pledged_at=COALESCE(docs_pledged_at,now()),docs_due_at=COALESCE(docs_due_at,now()+interval '15 days') WHERE id=$1",
+        [id],
+      );
     if (encrypted)
       await client.query(
         "INSERT INTO jdatna.producer_private(producer_id,encrypted_payload) VALUES($1,$2) ON CONFLICT(producer_id) DO UPDATE SET encrypted_payload=EXCLUDED.encrypted_payload,updated_at=now()",
@@ -388,7 +423,7 @@ async function saveProfileRecord(user: SessionUser, input: unknown) {
         ],
       );
     await client.query(
-      "INSERT INTO jdatna.producer_verifications(id,producer_id,document_id,document_type,document_number,document_expires_at,reason) VALUES($1,$2,$3,$4,$5,$6,$7)",
+      "INSERT INTO jdatna.producer_verifications(id,producer_id,document_id,document_type,document_number,document_expires_at,reason,decision) VALUES($1,$2,$3,$4,$5,$6,$7,CASE WHEN $8 THEN 'approved' ELSE 'pending' END)",
       [
         randomUUID(),
         id,
@@ -401,6 +436,8 @@ async function saveProfileRecord(user: SessionUser, input: unknown) {
           ? previous.document_expires_at
           : (value.documentExpiresAt ?? null),
         value.documentType === "exception" ? value.exceptionReason : null,
+        // الاعتماد بالتعهد يُسجَّل اعتمادًا (تاريخه «تاريخ الاعتماد»)؛ وغيره كما كان.
+        autoApprove,
       ],
     );
     if (value.socialLinks !== undefined || value.website !== undefined) {
@@ -458,11 +495,19 @@ async function saveProfileRecord(user: SessionUser, input: unknown) {
     );
     return {
       id,
-      status: keepApproved ? ("approved" as const) : ("pending" as const),
+      status:
+        keepApproved || autoApprove
+          ? ("approved" as const)
+          : ("pending" as const),
       name: (value.tradeName || value.name) as string,
       // ينبّه المشرفين حين يدخل الملف قائمة الانتظار، لا مع كل تعديل وهو فيها.
       newlyPending:
-        !keepApproved && (!existing || existing.status !== "pending"),
+        !keepApproved &&
+        !autoApprove &&
+        (!existing || existing.status !== "pending"),
+      pledged: autoApprove,
+      // مستند جديد من أسرة معتمدة: تراجعه الإدارة دون إخفاء الأسرة.
+      newDocument: keepApproved && !sameDocument && Boolean(value.documentId),
     };
   });
 }
@@ -699,7 +744,7 @@ export async function adminProducers(user: SessionUser) {
     throw new HttpError(403, "لا تملك صلاحية المراجعة");
   const profiles = (
     await db().query(
-      `SELECT p.*,p.trade_name AS "tradeName",p.city_id AS "cityId",c.name AS "cityName",u.name AS "ownerName",v.document_id AS "documentId",v.document_type AS "documentType",v.reason AS "reviewReason",v.document_number AS "documentNumber",v.document_expires_at::text AS "documentExpiresAt",ARRAY(SELECT category_id FROM jdatna.producer_categories WHERE producer_id=p.id) AS "categoryIds" FROM jdatna.producer_profiles p JOIN jdatna.users u ON u.id=p.user_id JOIN jdatna.cities c ON c.id=p.city_id LEFT JOIN LATERAL(SELECT document_id,document_type,reason,document_number,document_expires_at FROM jdatna.producer_verifications WHERE producer_id=p.id ORDER BY created_at DESC LIMIT 1)v ON true ORDER BY (p.status='pending') DESC,(p.status='rejected') DESC,p.created_at DESC LIMIT 200`,
+      `SELECT p.*,p.trade_name AS "tradeName",p.city_id AS "cityId",c.name AS "cityName",u.name AS "ownerName",p.docs_due_at AS "docsDueAt",v.document_id AS "documentId",v.document_type AS "documentType",v.reason AS "reviewReason",v.document_number AS "documentNumber",v.document_expires_at::text AS "documentExpiresAt",ARRAY(SELECT category_id FROM jdatna.producer_categories WHERE producer_id=p.id) AS "categoryIds" FROM jdatna.producer_profiles p JOIN jdatna.users u ON u.id=p.user_id JOIN jdatna.cities c ON c.id=p.city_id LEFT JOIN LATERAL(SELECT document_id,document_type,reason,document_number,document_expires_at FROM jdatna.producer_verifications WHERE producer_id=p.id ORDER BY created_at DESC LIMIT 1)v ON true ORDER BY (p.status='pending') DESC,(p.status='rejected') DESC,p.created_at DESC LIMIT 200`,
     )
   ).rows;
   if (!profiles.length) return profiles;
@@ -859,4 +904,30 @@ export async function manageProduct(user: SessionUser, input: unknown) {
     );
     return { id, visible: action === "show" };
   });
+}
+
+/**
+ * قرار المالك 2026-11-26: الأسرة المتعهدة بالمستندات إذا مضت 15 يومًا دون رفعها، تُنبَّه الإدارة
+ * (مرة لكل أسرة) وتبقى الأسرة ظاهرة. يعمل مع الصيانة الدورية (scripts/cleanup-auth.ts).
+ */
+export async function notifyLateDocuments(limit = 50) {
+  const late = (
+    await db().query<{ id: string; name: string }>(
+      `UPDATE jdatna.producer_profiles p SET docs_late_notified_at=now()
+       WHERE p.id IN (
+         SELECT x.id FROM jdatna.producer_profiles x
+         WHERE x.docs_due_at<now() AND x.docs_late_notified_at IS NULL AND x.status='approved'
+           AND NOT EXISTS(SELECT 1 FROM jdatna.producer_verifications v WHERE v.producer_id=x.id AND v.document_id IS NOT NULL)
+         ORDER BY x.docs_due_at LIMIT $1)
+       RETURNING p.id,COALESCE(p.trade_name,p.name) AS name`,
+      [limit],
+    )
+  ).rows;
+  for (const f of late)
+    await notifyApprovers(
+      f.name,
+      `«${f.name}» مضت 15 يومًا على تعهدها ولم ترفع المستندات الرسمية. تجدها في «تأخرت في المستندات».`,
+      "أسرة تأخرت في المستندات",
+    );
+  return late.length;
 }

@@ -57,6 +57,8 @@ type Profile = AdvancedProfile & {
   reviewReason?: string;
   nationalId?: string | null;
   workLocation?: string | null;
+  /** تعهدت بتقديم المستندات حتى هذا التاريخ (قرار المالك 2026-11-26). */
+  docs_due_at?: string | null;
 };
 // المرفق اختياري: التسجيل يُقبل دونه، والإدارة تفعّل الحساب وتطلب النواقص في ملاحظتها.
 const documentTypes = [
@@ -80,6 +82,7 @@ export function ProfileForm({
   part?: "all" | "home" | "data";
 }) {
   const session = useSession();
+  const { tx } = useTx();
   const [verified, setVerified] = useState<SessionUser | null>(null);
   const user = verified || session.user;
   const [profile, setProfile] = useState<Profile | null>(null),
@@ -89,6 +92,8 @@ export function ProfileForm({
     [extrasOpen, setExtrasOpen] = useState(false),
     [documentId, setDocumentId] = useState(""),
     [documentType, setDocumentType] = useState("producer_certificate");
+  // التعهد بالمستندات: للتسجيل الجديد أو لطلب ما زال بانتظار الاعتماد (قرار المالك 2026-11-26).
+  const pledgeShown = !profile || profile.status === "pending";
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [success, setSuccess] = useState("");
@@ -166,10 +171,20 @@ export function ProfileForm({
       setError((e as Error).message);
       return;
     }
+    // قرار المالك 2026-11-26: بلا مستند الآن يلزم التعهد بتقديمه خلال 15 يومًا.
+    const file = f.get("file");
+    if (
+      pledgeShown &&
+      !documentId &&
+      !(file instanceof File && file.size) &&
+      f.get("pledge") !== "on"
+    ) {
+      setError(tx("pledge.required"));
+      return;
+    }
     setBusy(true);
     try {
       let savedDocument = documentId;
-      const file = f.get("file");
       if (file instanceof File && file.size) {
         if (
           file.size > 10 * 1024 * 1024 ||
@@ -211,16 +226,20 @@ export function ProfileForm({
           workLocation: f.get("workLocation"),
           documentType,
           documentId: savedDocument || null,
+          pledge: f.get("pledge") === "on",
         }),
       });
       await load();
       setSuccess(
-        registration || !profile
-          ? "تم تسجيل أسرتك بنجاح ✓ طلبك الآن تحت المراجعة، وستظهر حالة الحساب أعلى الصفحة. يمكنك إضافة منتجاتك خلال المراجعة."
-          : saved.status === "approved"
-            ? // قرار المالك 2026-11-24: التعديل العادي لا يعيد الأسرة المعتمدة للمراجعة.
-              "تم حفظ البيانات، وأسرتك ما زالت ظاهرة."
-            : "تم حفظ البيانات وإرسالها للمراجعة.",
+        (registration || !profile || profile.status === "pending") &&
+          saved.status === "approved"
+          ? tx("pledge.success")
+          : registration || !profile
+            ? "تم تسجيل أسرتك بنجاح ✓ طلبك الآن تحت المراجعة، وستظهر حالة الحساب أعلى الصفحة. يمكنك إضافة منتجاتك خلال المراجعة."
+            : saved.status === "approved"
+              ? // قرار المالك 2026-11-24: التعديل العادي لا يعيد الأسرة المعتمدة للمراجعة.
+                "تم حفظ البيانات، وأسرتك ما زالت ظاهرة."
+              : "تم حفظ البيانات وإرسالها للمراجعة.",
       );
       await load().catch(() => {});
       window.dispatchEvent(new Event(FAMILY_STATUS_CHANGED));
@@ -270,6 +289,16 @@ export function ProfileForm({
           <p className={s.muted}>
             البيانات الأساسية فقط؛ يمكنك إضافة التفاصيل الأخرى لاحقًا.
           </p>
+          {profile?.docs_due_at && !profile.documentId && (
+            <p className={s.notice} role="status">
+              {tx("pledge.reminder", {
+                date: new Date(profile.docs_due_at).toLocaleDateString(
+                  "ar-SA-u-nu-latn",
+                  { timeZone: "Asia/Riyadh" },
+                ),
+              })}
+            </p>
+          )}
           <Message error={error} success={success} />
           {!loaded ? (
             <p role="status">جارٍ تحميل البيانات…</p>
@@ -400,6 +429,12 @@ export function ProfileForm({
                     </small>
                   </label>
                 </div>
+                {pledgeShown && (
+                  <label className={s.pledge}>
+                    <input type="checkbox" name="pledge" />
+                    <span>{tx("pledge.label")}</span>
+                  </label>
+                )}
               </fieldset>
               {documentId && (
                 <a

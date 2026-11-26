@@ -1866,3 +1866,23 @@
   border-radius: 50%;
   box-shadow: 0 0 0 1px #00000030;
 }
+/* التعهد بالمستندات خلال 15 يومًا (قرار المالك 2026-11-26) */
+.pledge {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid var(--line-strong, #c9b28a);
+  border-radius: 10px;
+  background: var(--cream, #f4ead9);
+  line-height: 1.7;
+  cursor: pointer;
+}
+.pledge input {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin-top: 3px;
+  accent-color: var(--olive);
+}

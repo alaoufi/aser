@@ -55,6 +55,8 @@ type Application = {
   }[];
   documentId?: string;
   reviewReason?: string;
+  /** تعهدت بتقديم المستندات حتى هذا التاريخ (قرار المالك 2026-11-26). */
+  docsDueAt?: string | null;
   nationalId?: string | null;
   workLocation?: string | null;
 };
@@ -65,6 +67,12 @@ const today = () =>
 /** معتمدة لكن الإدارة كتبت لها نواقص عند الاعتماد (لا تُطالَب بها الأسرة؛ للمتابعة هنا). */
 function hasMissing(p: Application) {
   return p.status === "approved" && Boolean(p.reviewReason?.trim());
+}
+/** تعهدت بالمستندات خلال 15 يومًا ومضت المدة ولم ترفعها: للمتابعة (الأسرة تبقى ظاهرة). */
+function docsLate(p: Application) {
+  return Boolean(
+    p.docsDueAt && !p.documentId && Date.parse(p.docsDueAt) < Date.now(),
+  );
 }
 function stateOf(p: Application): FamilyState {
   return familyAccountState(
@@ -154,6 +162,16 @@ function Review({
         </p>
       ) : (
         <p className={s.tag}>لم ترفق مستندات بعد</p>
+      )}
+      {producer.docsDueAt && !producer.documentId && (
+        <p className={docsLate(producer) ? s.notice : s.muted}>
+          {docsLate(producer)
+            ? "تأخرت في المستندات: "
+            : "تعهدت بتقديم المستندات الرسمية حتى "}
+          {new Date(producer.docsDueAt).toLocaleDateString("ar-SA-u-nu-latn", {
+            timeZone: "Asia/Riyadh",
+          })}
+        </p>
       )}
       {producer.documentType === "exception" && (
         <p>تفاصيل طلب الاستثناء: {producer.reviewReason || "دون تفاصيل"}</p>
@@ -389,6 +407,7 @@ export function Admin({ section }: { section?: string } = {}) {
                     ["trusted", "موثوق"],
                     ["suspended", "موقوف"],
                     ["missing", "من لديهم نواقص"],
+                    ["late", "تأخرت في المستندات"],
                     ["all", "الكل"],
                   ] as const
                 ).map(([id, label]) => (
@@ -405,7 +424,9 @@ export function Admin({ section }: { section?: string } = {}) {
                       : producers.filter((p) =>
                           id === "missing"
                             ? hasMissing(p)
-                            : stateOf(p).key === id,
+                            : id === "late"
+                              ? docsLate(p)
+                              : stateOf(p).key === id,
                         ).length}
                     )
                   </button>
@@ -429,7 +450,9 @@ export function Admin({ section }: { section?: string } = {}) {
                       (filter === "all" ||
                         (filter === "missing"
                           ? hasMissing(p)
-                          : stateOf(p).key === filter)) &&
+                          : filter === "late"
+                            ? docsLate(p)
+                            : stateOf(p).key === filter)) &&
                       (!q ||
                         [p.name, p.tradeName, p.ownerName, p.phone, p.cityName]
                           .filter(Boolean)
