@@ -4,6 +4,7 @@ import type { PoolClient } from "pg";
 import type { SessionUser } from "../lib/types";
 import { db, transaction } from "./db";
 import { HttpError, normalizePhone } from "./security";
+import { auditAccountType, setAccountType } from "./account-type";
 import { adminPermissions } from "../lib/permissions";
 import { hashPassword } from "./credentials";
 
@@ -36,7 +37,7 @@ export async function listMembers(
   return (
     await db().query(
       `SELECT u.id,u.name,u.phone,u.role,u.member_no AS "memberNo",u.permissions,(u.suspended_at IS NOT NULL) AS suspended,
-        COALESCE(p.trade_name,p.name) AS "familyName",u.created_at AS "createdAt"
+        COALESCE(p.trade_name,p.name) AS "familyName",p.status AS "familyStatus",u.created_at AS "createdAt"
        FROM jdatna.users u LEFT JOIN jdatna.producer_profiles p ON p.user_id=u.id
        WHERE $1='' OR u.name ILIKE '%'||$1||'%' OR COALESCE(p.name,'') ILIKE '%'||$1||'%'
          OR ($2<>'' AND u.phone LIKE '%'||$2||'%')
@@ -94,6 +95,21 @@ const updateSchema = z.discriminatedUnion("action", [
         .max(128, "كلمة المرور طويلة جدًا"),
     })
     .strict(),
+  /** قرار المالك 2026-11-26: تعديل جوال العضو (يدخل به بعدها)، ونوع حسابه عميل أو أسرة منتجة. */
+  z
+    .object({
+      action: z.literal("phone"),
+      id: z.uuid(),
+      phone: z.string().trim().min(9, "اكتب رقم الجوال").max(20),
+    })
+    .strict(),
+  z
+    .object({
+      action: z.literal("type"),
+      id: z.uuid(),
+      type: z.enum(["customer", "family"]),
+    })
+    .strict(),
   z
     .object({
       action: z.literal("create"),
@@ -145,6 +161,18 @@ export async function updateMember(user: SessionUser, input: unknown) {
   const value = updateSchema.parse(input);
   if (value.action === "create") return createMember(user, value);
   if (value.action === "number") return changeMemberNo(user, value);
+  if (value.action === "phone") return changeMemberPhone(user, value);
+  if (value.action === "type")
+    return transaction(async (client) => {
+      const r = await setAccountType(client, value.id, value.type);
+      if (r.register)
+        throw new HttpError(
+          400,
+          "لا ملف أسرة لهذا العضو بعد؛ يسجّل أسرته من «معلوماتي» ← «سجّل أسرتك»",
+        );
+      await auditAccountType(client, user.id, value.id, value.type);
+      return { id: value.id, type: value.type };
+    });
   if (value.id === user.id)
     throw new HttpError(400, "لا يمكنك تعديل حسابك أنت من هنا");
   return transaction(async (client) => {
@@ -323,5 +351,43 @@ async function createMember(
     );
     await audit(client, user, "member.create", id, { ...value, phone });
     return { ok: true, id };
+  });
+}
+
+/** تعديل جوال العضو (قرار المالك 2026-11-26): لا يتكرر لعضوين، ويتبعه جوال ملف أسرته. */
+async function changeMemberPhone(
+  user: SessionUser,
+  value: { id: string; phone: string },
+) {
+  const phone = normalizePhone(value.phone);
+  return transaction(async (client) => {
+    const target = (
+      await client.query<{ phone: string }>(
+        "SELECT phone FROM jdatna.users WHERE id=$1 AND deleted_at IS NULL FOR UPDATE",
+        [value.id],
+      )
+    ).rows[0];
+    if (!target) throw new HttpError(404, "العضو غير موجود");
+    if (target.phone === phone) return { id: value.id, phone };
+    const taken = (
+      await client.query(
+        "SELECT 1 FROM jdatna.users WHERE phone=$1 AND id<>$2",
+        [phone, value.id],
+      )
+    ).rowCount;
+    if (taken) throw new HttpError(409, "هذا الجوال مسجّل لعضو آخر");
+    await client.query(
+      "UPDATE jdatna.users SET phone=$2,phone_verified_at=now() WHERE id=$1",
+      [value.id, phone],
+    );
+    await client.query(
+      "UPDATE jdatna.producer_profiles SET phone=$2,updated_at=now() WHERE user_id=$1",
+      [value.id, phone],
+    );
+    await audit(client, user, "member.phone", value.id, {
+      from: target.phone,
+      to: phone,
+    });
+    return { id: value.id, phone };
   });
 }

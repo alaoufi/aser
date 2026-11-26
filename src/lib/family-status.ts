@@ -8,7 +8,7 @@ export type FamilyStatusInput = {
   reviewReason?: string | null;
 };
 export type FamilyState = {
-  key: "review" | "active" | "incomplete" | "trusted" | "suspended";
+  key: "review" | "active" | "incomplete" | "trusted" | "suspended" | "closed";
   label: string;
   detail: string;
   reason?: string;
@@ -48,6 +48,14 @@ export function familyAccountState(
         detail:
           "راجعت الإدارة طلبك ويحتاج استكمالًا. عدّل البيانات المطلوبة ثم احفظها ليعود للمراجعة.",
         reason,
+      };
+    // قرار المالك 2026-11-26: الأسرة تحوّلت إلى عميل؛ صفحتها ومنتجاتها مخفية ومحفوظة حتى تعود.
+    case "closed":
+      return {
+        key: "closed",
+        label: "تحوّلت إلى عميل",
+        detail:
+          "حسابك الآن حساب عميل، وصفحة أسرتك ومنتجاتها مخفية ومحفوظة. تعود كما كانت من «معلوماتي».",
       };
     case "suspended":
       return {

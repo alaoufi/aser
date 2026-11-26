@@ -5,16 +5,19 @@ import { useEffect, useState } from "react";
 import { adminPermissions, type AdminPermission } from "@/lib/permissions";
 import { NAV_GROUPS } from "@/lib/admin-nav";
 import { Message, api, s, useSession } from "./shared";
+import { useTx } from "@/components/site-texts";
 
 type Member = {
   id: string;
   name: string;
   phone: string;
-  role: "customer" | "producer" | "admin" | "staff";
+  role: "customer" | "producer" | "admin" | "staff" | "courier";
   memberNo: number;
   permissions: string[];
   suspended: boolean;
   familyName: string | null;
+  /** حالة ملف الأسرة إن وُجد ('closed': تحوّلت إلى عميل). */
+  familyStatus?: string | null;
 };
 type Access = { fullAdmin: boolean; permissions: string[] };
 
@@ -300,6 +303,14 @@ export function MembersAdmin() {
                     onSave={update}
                   />
                 )}
+                {openId === m.id && (
+                  <MemberContact
+                    key={`ct-${m.id}-${m.phone}-${m.role}-${m.familyStatus}`}
+                    member={m}
+                    busy={busy}
+                    onSave={update}
+                  />
+                )}
               </div>
             );
           })}
@@ -440,6 +451,95 @@ function MemberEditor({
       </div>
       {m.role !== "admin" && m.permissions.length === 0 && (
         <MemberPassword member={m} busy={busy} onSave={onSave} />
+      )}
+    </div>
+  );
+}
+
+/**
+ * قرار المالك 2026-11-26: المدير يعدّل جوال العضو، ونوع حسابه: عميل أو أسرة منتجة.
+ * الأسرة إلى عميل: تُخفى صفحتها ومنتجاتها محفوظةً، وتعود كما كانت عند إرجاعها أسرة.
+ */
+function MemberContact({
+  member: m,
+  busy,
+  onSave,
+}: {
+  member: Member;
+  busy: boolean;
+  onSave: (body: Record<string, unknown>, done: string) => Promise<boolean>;
+}) {
+  const { tx, txb } = useTx();
+  const [phone, setPhone] = useState(m.phone);
+  const family = Boolean(m.familyStatus) && m.familyStatus !== "closed";
+  const [type, setType] = useState<"customer" | "family">(
+    family ? "family" : "customer",
+  );
+  return (
+    <div className={s.form}>
+      <form
+        className={s.form}
+        onSubmit={(e) => {
+          e.preventDefault();
+          void onSave(
+            { action: "phone", id: m.id, phone },
+            tx("members.phoneSaved", { name: m.name }),
+          );
+        }}
+      >
+        <label className={s.field}>
+          {txb("members.phone")}
+          <input
+            type="tel"
+            dir="ltr"
+            inputMode="tel"
+            value={phone}
+            maxLength={20}
+            onChange={(e) => setPhone(e.target.value)}
+          />
+        </label>
+        <button
+          className={s.buttonSecondary}
+          disabled={busy || phone.trim() === m.phone}
+        >
+          {txb("members.phoneSave")}
+        </button>
+      </form>
+      {m.role !== "courier" && (
+        <fieldset className={s.ftChoices} disabled={busy}>
+          <legend>{txb("members.type")}</legend>
+          <div className={s.ftChips}>
+            {(["customer", "family"] as const).map((t) => (
+              <label key={t} className={s.ftChip}>
+                <input
+                  type="radio"
+                  name={`type-${m.id}`}
+                  checked={type === t}
+                  onChange={() => setType(t)}
+                />
+                {txb(
+                  t === "customer"
+                    ? "members.typeCustomer"
+                    : "members.typeFamily",
+                )}
+              </label>
+            ))}
+          </div>
+          <small className={s.muted}>{tx("members.typeHint")}</small>
+          <button
+            type="button"
+            className={s.buttonSecondary}
+            disabled={busy || type === (family ? "family" : "customer")}
+            onClick={() =>
+              void onSave(
+                { action: "type", id: m.id, type },
+                tx("members.typeSaved", { name: m.name }),
+              )
+            }
+          >
+            {txb("members.typeSave")}
+          </button>
+        </fieldset>
       )}
     </div>
   );
