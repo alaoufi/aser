@@ -96,8 +96,12 @@ export function FoodPhotos() {
   const main = ctx.plates.find((p) => p.id === ctx.selected) ?? ctx.plates[0];
   if (!main) return null;
   // كل صف أربعة أماكن: المنتج إن وُجد، وإلا صحن فارغ برقم مكانه (يمتلئ بالمنتجات الجديدة).
-  const line = (from: number) =>
-    [0, 1, 2, 3].map((i) => ({ at: from + i, plate: ctx.plates[from + i] }));
+  // الصف العلوي خمسة (طلب المالك 2026-11-27)، والعمودان أربعة أربعة: ١٣ منتجًا.
+  const line = (from: number, size = 4) =>
+    Array.from({ length: size }, (_, i) => ({
+      at: from + i,
+      plate: ctx.plates[from + i],
+    }));
   return (
     <figure className="food-showcase food-ring">
       {/* مسار انتقال المنتجات: من ١ أسفل اليسار صعودًا، ثم الأعلى، ثم اليمين نزولًا. */}
@@ -154,7 +158,7 @@ export function FoodPhotos() {
         role="group"
         aria-label={txb("plates.more")}
       >
-        {line(4).map(({ at, plate }) =>
+        {line(4, 5).map(({ at, plate }) =>
           plate ? (
             <PlateButton key={plate.id} plate={plate} />
           ) : (
@@ -167,7 +171,7 @@ export function FoodPhotos() {
         role="group"
         aria-label={txb("plates.rest")}
       >
-        {line(8).map(({ at, plate }) =>
+        {line(9).map(({ at, plate }) =>
           plate ? (
             <PlateButton key={plate.id} plate={plate} />
           ) : (
