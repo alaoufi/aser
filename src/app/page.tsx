@@ -38,8 +38,7 @@ import {
 import { ProductCard, ProducerCard } from "@/components/public/ui";
 import { ForYou } from "@/components/public/for-you";
 import { recentCertificates } from "@/server/certificates";
-import { activityTotals } from "@/server/activity";
-import { countLabel, priceLabel } from "@/components/public/ui";
+import { priceLabel } from "@/components/public/ui";
 export const dynamic = "force-dynamic";
 export default async function Home({
   searchParams,
@@ -64,7 +63,6 @@ export default async function Home({
     producers,
     certificates,
     today,
-    activity,
     latest,
   ] = await Promise.all([
     visitorTemplate(),
@@ -76,8 +74,7 @@ export default async function Home({
     regionalProducers({ region, mine }),
     recentCertificates(),
     todayProducts({ region, mine }),
-    activityTotals(),
-    latestProducts(12),
+    latestProducts(10),
   ]);
   // صحون أعلى الرئيسية: آخر ١٢ منتجًا لها صور، وصور الموقع تكمّلها إن قلّت (قرار المالك 2026-11-26).
   const plates: Plate[] = [
@@ -91,11 +88,9 @@ export default async function Home({
       orders: p.orderCount ?? 0,
     })),
   ];
-  // إن قلّت المنتجات ذات الصور عن ١٢ تكمّلها صور الموقع (تتكرر عند الحاجة) فتكتمل الصفوف الثلاثة.
-  for (let i = 0; plates.length < 12; i++) {
-    const site = SITE_PLATES[i % SITE_PLATES.length];
-    plates.push({ ...site, id: `${site.id}-${i}` });
-  }
+  // صور الموقع لا تُخلط بالمنتجات الحقيقية (قرار المالك 2026-11-27): تظهر وحدها فقط إن لم يكن
+  // في الموقع منتج له صورة، فلا يبقى القوس فارغًا.
+  if (!plates.length) plates.push(...SITE_PLATES);
   const homeProducts = [...products.local, ...products.nationwide].slice(0, 4);
   const homeProducers = [...producers.local, ...producers.nationwide].slice(
     0,
@@ -338,33 +333,6 @@ export default async function Home({
         </section>
       )}
       <AdSlot placement="home_bottom" className="wrap" />
-      {/* أرقام الحركة أسفل الرئيسية (قرار المالك 2026-11-26): أرقام فقط، بلا أسماء ولا أسعار. */}
-      {activity.orders > 0 && (
-        <section
-          className="wrap activity-stats"
-          aria-labelledby="activity-stats-title"
-        >
-          <h2 id="activity-stats-title">
-            <T k="stats.title" />
-          </h2>
-          <dl>
-            {(
-              [
-                ["orders", "stats.orders"],
-                ["families", "stats.families"],
-                ["products", "stats.products"],
-              ] as const
-            ).map(([key, label]) => (
-              <div key={key}>
-                <dt>
-                  <T k={label} />
-                </dt>
-                <dd>{countLabel(activity[key])}</dd>
-              </div>
-            ))}
-          </dl>
-        </section>
-      )}
     </>
   );
 }

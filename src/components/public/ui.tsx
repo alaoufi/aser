@@ -128,13 +128,21 @@ export function ProducerCard({ producer: p }: { producer: Producer }) {
     >
       {/* الشعار إن أضافته الأسرة، وإلا لا شيء (لا حروف بدله، قرار المالك 2026-11-26). */}
       {p.logoUrl && safeMediaUrl(p.logoUrl) && (
-        <div className="producer-avatar" aria-hidden="true">
+        <div className="producer-avatar">
           <img src={p.logoUrl} alt="" loading="lazy" />
+          {/* عدد منتجاتها المعروضة على شعارها (قرار المالك 2026-11-27). */}
+          {(p.productCount ?? 0) > 0 && (
+            <span className="logo-count">
+              {countLabel(p.productCount ?? 0)}
+            </span>
+          )}
         </div>
       )}
-      {/* عدد منتجاتها المعروضة: رقم على البطاقة. */}
+      {/* بلا شعار: العدد في زاوية البطاقة. ولقارئ الشاشة «{n} منتج» دائمًا. */}
       {(p.productCount ?? 0) > 0 && (
-        <span className="product-count-badge">
+        <span
+          className={`product-count-badge${p.logoUrl && safeMediaUrl(p.logoUrl) ? " sr-only" : ""}`}
+        >
           <T
             k="count.familyProducts"
             vars={{ n: countLabel(p.productCount ?? 0) }}

@@ -61,18 +61,30 @@ self.addEventListener("push", (event) => {
     data = { title: "أكلات جدتنا", body: event.data ? event.data.text() : "" };
   }
   const title = data.title || "أكلات جدتنا";
+  // قرار المالك 2026-11-27: تنبيه صوتي مع كل إشعار. الصوت صريح (silent: false)، والصفحات المفتوحة
+  // تُبلَّغ لتُصدر نغمتها، لأن الجهاز قد لا يُصدر صوتًا والموقع أمام صاحبه.
+  const tellPages = self.clients
+    .matchAll({ type: "window", includeUncontrolled: true })
+    .then((windows) => {
+      for (const w of windows) w.postMessage({ type: "jdatna:push", title });
+    })
+    .catch(() => {});
   event.waitUntil(
-    self.registration.showNotification(title, {
-      body: data.body || "",
-      icon: "/brand/app-icon-192.png",
-      badge: "/brand/jdatna-icon.png",
-      dir: "rtl",
-      lang: "ar",
-      tag: data.tag,
-      renotify: Boolean(data.tag),
-      vibrate: [200, 100, 200],
-      data: { url: data.url || "/" },
-    }),
+    Promise.all([
+      tellPages,
+      self.registration.showNotification(title, {
+        body: data.body || "",
+        icon: "/brand/app-icon-192.png",
+        badge: "/brand/jdatna-icon.png",
+        dir: "rtl",
+        lang: "ar",
+        tag: data.tag,
+        renotify: Boolean(data.tag),
+        silent: false,
+        vibrate: [200, 100, 200],
+        data: { url: data.url || "/" },
+      }),
+    ]),
   );
 });
 

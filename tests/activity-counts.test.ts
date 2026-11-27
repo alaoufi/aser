@@ -12,7 +12,8 @@ test(
   async () => {
     const { db } = await import("../src/server/db");
     const { getProducer, getProduct } = await import("../src/server/catalog");
-    const { activityTotals } = await import("../src/server/activity");
+    const { activityTotals, resetActivityCache } =
+      await import("../src/server/activity");
     const pool = db();
     assert.match(
       (await pool.query("SELECT current_database() AS n")).rows[0].n,
@@ -45,6 +46,7 @@ test(
         "INSERT INTO jdatna.products(id,producer_id,name,description,unit,status,visible) VALUES($1,$3,'كليجا','وصف','meal','available',true),($2,$3,'بلا طلبات','وصف','meal','available',true)",
         [product, idle, family],
       );
+      resetActivityCache();
       const before = await activityTotals();
       for (const [status, hash] of [
         ["accepted", "h"],
@@ -62,6 +64,7 @@ test(
       assert.equal((await getProducer(slug))?.orderCount, 3);
       assert.equal((await getProduct(product))?.orderCount, 3);
       assert.equal((await getProduct(idle))?.orderCount, 0);
+      resetActivityCache();
       const after = await activityTotals();
       // اختبارات أخرى تعمل معًا، فالمجموع لا يقل عن أثر هذه الطلبات.
       assert.ok(after.orders >= before.orders + 3);

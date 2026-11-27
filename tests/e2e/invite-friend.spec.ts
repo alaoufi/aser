@@ -65,10 +65,24 @@ test.describe("invite a friend", () => {
     await expect(box.getByTestId("invite-balance")).toContainText("رصيدك: 0");
     const link = await box.getByLabel("رابط دعوتك").inputValue();
     expect(link).toBe(`https://jdtna.sa/r/${no}`);
+    // مشاركة التطبيق في رأس الموقع (قرار المالك 2026-11-27): رابط العضو jdtna.sa/app/رقمه.
+    const share = page.locator(".header-share");
+    await share.locator("summary").click();
+    await expect(share.locator(".share-link")).toHaveText(`jdtna.sa/app/${no}`);
+    await expect(share.getByRole("link", { name: "واتساب" })).toHaveAttribute(
+      "href",
+      new RegExp(encodeURIComponent(`رقم الدعوة: ${no}`)),
+    );
+    await share.getByRole("button", { name: "رمز QR" }).click();
+    await expect(share.locator(".share-qr img")).toHaveAttribute(
+      "src",
+      `/app/qr?r=${no}`,
+    );
+    await share.locator("summary").click();
     // رسالة الدعوة (طلب المالك 2026-11-26) ثم الرابط.
     await expect(box.getByRole("link", { name: "واتساب" })).toHaveAttribute(
       "href",
-      `https://wa.me/?text=${encodeURIComponent(`نرحب بدعوتكم للانضمام في منصة #اكلات_جدتنا\n${link}`)}`,
+      `https://wa.me/?text=${encodeURIComponent(`نرحب بدعوتكم للانضمام في منصة #اكلات_جدتنا\nرقم الدعوة: ${no}\n${link}`)}`,
     );
     await expect(box).toContainText(`رقم دعوتك: ${no}`);
     code = String(no);
@@ -103,9 +117,42 @@ test.describe("invite a friend", () => {
     // التحويل نسبي (لا يكشف عنوان الخادم الداخلي خلف البوابة).
     const raw = await page.request.get(`/r/${code}`, { maxRedirects: 0 });
     expect(raw.status()).toBe(302);
-    expect(raw.headers().location).toBe("/login?signup=1");
+    expect(raw.headers().location).toBe(`/invite/${code}`);
+    // رابط مشاركة التطبيق برقم العضو كدعوة الصديق تمامًا.
+    const app = await page.request.get(`/app/${code}`, { maxRedirects: 0 });
+    expect(app.status()).toBe(302);
+    expect(app.headers().location).toBe(`/invite/${code}`);
+    expect(app.headers()["set-cookie"]).toContain(`jdatna_ref=${code}`);
+    const qr = await page.request.get(`/app/qr?r=${code}`);
+    expect(qr.headers()["content-type"]).toContain("image/svg+xml");
+    // صفحة الدعوة القصيرة ثم التحويل حسب الجوال (قرار المالك 2026-11-27).
+    // المتجران خارج الاختبار: يُعترض طلبهما ويُرد عليه هنا، فلا يُرسل شيء خارجيًا.
+    await page.route(/^https:\/\/(apps\.apple\.com|play\.google\.com)\//, (r) =>
+      r.fulfill({ contentType: "text/html", body: "<p>store</p>" }),
+    );
     await page.goto(`/r/${code}`);
-    await expect(page).toHaveURL(/\/login\?signup=1/);
+    await expect(page).toHaveURL(new RegExp(`/invite/${code}$`));
+    const landing = page.getByRole("region", {
+      name: "دعاك صديقك إلى أكلات جدتنا",
+    });
+    await expect(landing).toContainText(`رقم الدعوة:${code}`);
+    // على الجوال رابط «أكمل من الموقع» لمن لا يريد التطبيق؛ على الكمبيوتر التسجيل نفسه.
+    const desktop = test.info().project.name === "desktop";
+    await expect(
+      landing.getByRole("link", {
+        name: desktop ? "سجّل الآن" : "أكمل من الموقع بدل التطبيق",
+      }),
+    ).toHaveAttribute("href", "/login?signup=1");
+    // الكمبيوتر إلى التسجيل، والآيفون (مشروع الجوال) إلى App Store.
+    if (desktop)
+      await expect(page).toHaveURL(/\/login\?signup=1/, { timeout: 8000 });
+    else
+      await expect(page).toHaveURL(
+        /^https:\/\/apps\.apple\.com\/sa\/app\/id6833382132$/,
+        {
+          timeout: 8000,
+        },
+      );
     const saved = (await context.cookies()).find(
       (c) => c.name === "jdatna_ref",
     );

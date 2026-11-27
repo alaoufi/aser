@@ -61,16 +61,39 @@ export async function validInvite(value: string) {
 }
 
 /**
+ * فتح رابط الدعوة (قرار المالك 2026-11-27): يُسجَّل ببصمة مشفّرة لشبكة الجهاز (لا العنوان نفسه)،
+ * لأن تطبيق الآيفون لا يرى ما حفظه Safari. تُحذف بعد يوم (`cleanupInviteClicks`).
+ */
+export async function recordInviteClick(code: string, net: string | null) {
+  if (!net) return;
+  const referrer = await ownerOfNumber(db(), code);
+  if (!referrer) return;
+  await db().query(
+    `INSERT INTO jdatna.invite_clicks(referrer_id,net) VALUES($1,$2)
+     ON CONFLICT (net,referrer_id) DO UPDATE SET created_at=now()`,
+    [referrer, net],
+  );
+}
+
+export async function cleanupInviteClicks() {
+  return (
+    await db().query(
+      "DELETE FROM jdatna.invite_clicks WHERE created_at < now()-interval '24 hours'",
+    )
+  ).rowCount;
+}
+
+/**
  * يُستدعى داخل معاملة التسجيل بعد تأكيد الجوال. «رقم الدعوة» الذي كتبه (رقم عضو، أو جوال) أولًا،
  * وإلا رقم رابط الدعوة المحفوظ في الجهاز. أي خطأ هنا لا يمنع التسجيل: الدعوة تُتجاهل.
  */
 export async function recordReferral(
   client: PoolClient,
   newUserId: string,
-  ref: { invite?: string | null; link?: string | null },
+  ref: { invite?: string | null; link?: string | null; net?: string | null },
 ) {
   let referrer: string | undefined;
-  let via: "link" | "number" | "phone" = "link";
+  let via: "link" | "number" | "phone" | "network" = "link";
   const typed = ref.invite ? ascii(ref.invite).replace(/[\s\-]/g, "") : "";
   if (typed) {
     if (invitePattern.test(typed)) {
@@ -97,6 +120,21 @@ export async function recordReferral(
   if (!referrer && ref.link) {
     referrer = await ownerOfNumber(client, ref.link);
     via = "link";
+  }
+  // بلا رقم ولا رابط محفوظ (تطبيق الآيفون): من فتح رابط دعوة من الشبكة نفسها خلال ٢٤ ساعة،
+  // إن كانت دعوة واحدة فقط منها (دعوتان من شبكة واحدة لا تُنسبان لأحد).
+  if (!referrer && !typed && !ref.link && ref.net) {
+    const rows = (
+      await client.query<{ id: string }>(
+        `SELECT DISTINCT referrer_id AS id FROM jdatna.invite_clicks
+         WHERE net=$1 AND created_at > now()-interval '24 hours' LIMIT 2`,
+        [ref.net],
+      )
+    ).rows;
+    if (rows.length === 1) {
+      referrer = rows[0].id;
+      via = "network";
+    }
   }
   if (!referrer || referrer === newUserId) return false;
   const r = await client.query(

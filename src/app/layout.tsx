@@ -1,4 +1,7 @@
 import { MobileNavigation } from "@/components/public/mobile-navigation";
+import { PushChime } from "@/components/public/push-chime";
+import { activityTotals } from "@/server/activity";
+import { HeaderShare } from "@/components/public/header-share";
 import { BottomNav } from "@/components/public/bottom-nav";
 import { AboutTicker } from "@/components/public/about-ticker";
 import { AccountLink } from "@/components/public/account-link";
@@ -154,11 +157,12 @@ export default async function RootLayout({
   });
   // زائر بلا جلسة: القائمة السفلية تُرسم في HTML الخادم فورًا بدل انتظار /api/session.
   const guest = !(await cookies()).has("jdatna_session");
-  const [template, texts, appLinks, domainCodes] = await Promise.all([
+  const [template, texts, appLinks, domainCodes, activity] = await Promise.all([
     visitorTemplate(),
     getSiteTexts(),
     getAppLinks(),
     getDomainVerifications(),
+    activityTotals(),
   ]);
   return (
     <html
@@ -299,6 +303,8 @@ export default async function RootLayout({
                 <MessagesLink />
                 <AccountLink className="button small" />
               </div>
+              {/* مشاركة التطبيق (قرار المالك 2026-11-27): أيقونة في الرأس على الجوال والكمبيوتر. */}
+              <HeaderShare />
               {/* المحادثات ظاهرة دائمًا على الجوال بجانب زر القائمة */}
               <MessagesLink className="mobile-messages" />
               <MobileNavigation
@@ -322,6 +328,7 @@ export default async function RootLayout({
           <SiteOnly>
             <FamilyWelcome texts={texts} />
             <OrderAlert />
+            <PushChime />
             <MessageAlert />
             <VerifiedStoreGate>
               <VerifiedStore />
@@ -420,7 +427,38 @@ export default async function RootLayout({
                   </Link>
                 </p>
               </nav>
-              <VisitStats />
+              {/* مربع الإحصائيات (قرار المالك 2026-11-27): أرقام المنصة ثم الزوار، بلا أسماء ولا أسعار. */}
+              {activity.families + activity.products > 0 ? (
+                <section
+                  className="site-stats"
+                  aria-labelledby="site-stats-title"
+                >
+                  <h2 id="site-stats-title">
+                    <T k="stats.title" />
+                  </h2>
+                  <dl>
+                    {(
+                      [
+                        ["families", "stats.families"],
+                        ["products", "stats.products"],
+                        ["orders", "stats.orders"],
+                      ] as const
+                    ).map(([key, label]) => (
+                      <div key={key}>
+                        <dt>
+                          <T k={label} />
+                        </dt>
+                        <dd>
+                          {new Intl.NumberFormat("ar-SA").format(activity[key])}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                  <VisitStats />
+                </section>
+              ) : (
+                <VisitStats />
+              )}
               <div className="footer-bottom">
                 <span>
                   © {new Date().getFullYear()} أكلات جدتنا

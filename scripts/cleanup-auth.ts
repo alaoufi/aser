@@ -11,7 +11,20 @@ async function main() {
     const { notifyLateDocuments } = await import("../src/server/management");
     lateDocuments = await notifyLateDocuments();
   } catch {}
-  console.log(JSON.stringify({ removed, batchPerTable: batch, lateDocuments }));
+  // بصمات فتح روابط الدعوة تُحذف بعد يوم (قرار المالك 2026-11-27).
+  let inviteClicks = 0;
+  try {
+    const { cleanupInviteClicks } = await import("../src/server/referrals");
+    inviteClicks = (await cleanupInviteClicks()) ?? 0;
+  } catch {}
+  console.log(
+    JSON.stringify({
+      removed,
+      batchPerTable: batch,
+      lateDocuments,
+      inviteClicks,
+    }),
+  );
 }
 main()
   .catch((error) => {

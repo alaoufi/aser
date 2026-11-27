@@ -7,7 +7,8 @@ const ANDROID =
 const IPHONE =
   "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1";
 
-// روابط التطبيق المختصرة: /gl لـ Google Play، و/ios لـ App Store، و/app للمتجر المناسب للجوال.
+// روابط التطبيق المختصرة: /gl لـ Google Play، و/ios لـ App Store، و/app للمتجر المناسب للجوال
+// (قرار المالك 2026-11-27: على الجوال صفحة قصيرة كدعوة الصديق ثم متجره).
 test("short links open the right store", async ({ playwright, baseURL }) => {
   const plain = await playwright.request.newContext({ baseURL });
   for (const [path, store] of [
@@ -27,8 +28,16 @@ test("short links open the right store", async ({ playwright, baseURL }) => {
       userAgent: agent,
     });
     const res = await phone.get("/app", { maxRedirects: 0 });
-    expect(res.status()).toBe(307);
-    expect(res.headers().location).toBe(store);
+    expect(res.status()).toBe(200);
+    const html = await res.text();
+    expect(html).toContain("حمّل تطبيق أكلات جدتنا");
+    // الآيفون إلى App Store دائمًا؛ وأندرويد إلى Google Play إن كان زره مفعّلًا، وإلا التسجيل.
+    if (store === APPLE) expect(html).toContain(`href="${APPLE}"`);
+    else
+      expect(
+        html.includes(`href="${PLAY}"`) ||
+          html.includes('href="/login?signup=1"'),
+      ).toBe(true);
     await phone.dispose();
   }
   await plain.dispose();
