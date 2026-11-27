@@ -16,10 +16,15 @@ import { fieldShown } from "../lib/product-fields";
 import { productSelect, mapProduct } from "./catalog";
 import { can, canAny } from "../lib/permissions";
 type ProducerPrivate = { nationalId: string; workLocation: string };
+/**
+ * رقم الهوية مطلوب دائمًا. وموقع العمل مطلوب فقط مع التسليم المباشر (قرار المالك 2026-11-27):
+ * أسرة التوصيل وحده لا تُلزم بموقعها، فيُحفظ فارغًا.
+ */
 export function mergeProducerPrivate(
   existing: ProducerPrivate | null,
   input: { nationalId?: string; workLocation?: string },
   creating: boolean,
+  needsLocation = true,
 ): ProducerPrivate | null {
   if (
     !creating &&
@@ -29,11 +34,13 @@ export function mergeProducerPrivate(
   )
     return null;
   const nationalId = input.nationalId ?? existing?.nationalId,
-    workLocation = input.workLocation ?? existing?.workLocation;
-  if (!nationalId || !workLocation)
+    workLocation = input.workLocation ?? existing?.workLocation ?? "";
+  if (!nationalId || (needsLocation && !workLocation))
     throw new HttpError(
       400,
-      "أدخل رقم الهوية ومكان مزاولة العمل للأسرة المنتجة",
+      needsLocation
+        ? "أدخل رقم الهوية ومكان مزاولة العمل للأسرة المنتجة"
+        : "أدخل رقم الهوية للأسرة المنتجة",
     );
   return { nationalId, workLocation };
 }
@@ -323,6 +330,7 @@ async function saveProfileRecord(user: SessionUser, input: unknown) {
         stored ? decryptPrivate(stored.encrypted_payload) : null,
         value,
         !existing,
+        pickup,
       );
       if (data)
         encrypted = encryptDocument(
@@ -523,9 +531,6 @@ const fulfillmentSchema = z
     locationPublic: z.boolean().default(false),
   })
   .strict()
-  .refine((v) => !v.locationPublic || (v.pickupLocation ?? "").length >= 5, {
-    message: "اكتب موقع الأسرة أولًا ليُعلن في صفحتها",
-  })
   .refine((v) => v.pickup || v.delivery, {
     message: "اختر التسليم المباشر أو التوصيل، أو كليهما",
   })

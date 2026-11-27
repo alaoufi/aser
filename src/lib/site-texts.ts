@@ -651,6 +651,11 @@ export const siteTextDefaults = {
   "asCustomer.confirmWord": "عميل",
   "invite.message": "نرحب بدعوتكم للانضمام في منصة #اكلات_جدتنا",
   "invite.codeLine": "رقم الدعوة: {n}",
+  "fulfill.legend": "طريقة التسليم (اختر واحدة أو أكثر)",
+  "fulfill.pickup": "تسليم مباشر (يستلم العميل من موقعك)",
+  "fulfill.delivery": "توصيل (لموقع العميل)",
+  "fulfill.locationOptional":
+    "اختياري مع التوصيل وحده: الموقع يُطلب فقط في التسليم المباشر.",
   "appShare.label": "مشاركة التطبيق",
   "appShare.title": "تطبيق أكلات جدتنا",
   "appShare.message":
@@ -1344,6 +1349,13 @@ export const siteTextLabels: Record<
   "asCustomer.confirmWord": ["الأسرة كعميل", "كلمة تأكيد التحويل إلى عميل"],
   "invite.message": ["ادعُ صديقًا", "رسالة الدعوة مع الرابط"],
   "invite.codeLine": ["ادعُ صديقًا", "سطر رقم الدعوة في الرسالة ({n} الرقم)"],
+  "fulfill.legend": ["تسجيل الأسرة", "عنوان اختيار طريقة التسليم"],
+  "fulfill.pickup": ["تسجيل الأسرة", "خيار التسليم المباشر"],
+  "fulfill.delivery": ["تسجيل الأسرة", "خيار التوصيل"],
+  "fulfill.locationOptional": [
+    "تسجيل الأسرة",
+    "تنبيه أن الموقع اختياري مع التوصيل",
+  ],
   "appShare.label": ["مشاركة التطبيق", "اسم أيقونة المشاركة في رأس الموقع"],
   "appShare.title": ["مشاركة التطبيق", "عنوان المشاركة"],
   "appShare.message": ["مشاركة التطبيق", "رسالة المشاركة مع الرابط"],

@@ -36,6 +36,14 @@ test("new private identity is required, legacy omission retained, partial update
     () => mergeProducerPrivate(null, { nationalId: "1234567890" }, true),
     { status: 400 },
   );
+  // التوصيل وحده (قرار المالك 2026-11-27): موقع العمل غير مطلوب، ورقم الهوية مطلوب.
+  assert.deepEqual(
+    mergeProducerPrivate(null, { nationalId: "1234567890" }, true, false),
+    { nationalId: "1234567890", workLocation: "" },
+  );
+  assert.throws(() => mergeProducerPrivate(null, {}, true, false), {
+    status: 400,
+  });
   assert.equal(mergeProducerPrivate(null, {}, false), null);
   const existing = { nationalId: "1234567890", workLocation: "عنوان خاص سابق" };
   assert.deepEqual(mergeProducerPrivate(existing, {}, false), existing);
