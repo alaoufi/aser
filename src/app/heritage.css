@@ -2148,3 +2148,223 @@ button.food-dish:focus-visible .food-dish-visual {
     font-size: 11px;
   }
 }
+
+/* صحون آخر الإضافات أعلى الرئيسية (قرار المالك 2026-11-26). */
+.food-dish {
+  background: none;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  padding: 0;
+}
+.food-dish .food-dish-visual img,
+.food-showcase-main > img {
+  inset: 0;
+  height: 100%;
+  object-fit: cover;
+  position: absolute;
+  width: 100%;
+}
+.food-dish .food-dish-visual > img:not([data-nimg]) {
+  border-radius: 50%;
+  box-shadow: 0 3px 10px #38291f26;
+}
+.food-showcase-main > img:not([data-nimg]) {
+  aspect-ratio: 1;
+  border-radius: 50%;
+  box-shadow: 0 10px 28px #38291f30;
+  height: auto;
+  inset: 6% auto auto 50%;
+  transform: translateX(-50%);
+  width: 62%;
+}
+/* البيانات فوق الصورة دائمًا، أسفل القوس. */
+.food-showcase-main:has(.food-showcase-caption) > img {
+  max-height: 72%;
+}
+.food-dish.is-active .food-dish-visual {
+  outline: 3px solid var(--olive);
+  outline-offset: 2px;
+  border-radius: 50%;
+}
+.food-dish:focus-visible {
+  outline: 3px solid var(--rust);
+  outline-offset: 3px;
+}
+.food-showcase .food-showcase-caption {
+  z-index: 3;
+  position: absolute;
+  inset-inline: 14%;
+  bottom: 4%;
+  display: grid;
+  gap: 1px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: #fffdf8e6;
+  color: var(--ink);
+  font-size: 11px;
+  line-height: 1.45;
+  text-align: center;
+}
+.food-showcase .food-showcase-caption strong {
+  font-size: 12.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.food-showcase-caption span {
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.food-showcase-caption a {
+  color: var(--rust);
+  font-weight: 600;
+}
+
+/* عدد طلبات المنتج: شارة رقم على صورته وعلى صحنه. */
+.order-badge {
+  position: absolute;
+  top: 8px;
+  inset-inline-start: 8px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--rust);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 2px 6px #38291f33;
+}
+.food-dish .order-badge {
+  top: 0;
+  inset-inline-start: 0;
+  min-width: 22px;
+  height: 22px;
+  font-size: 11.5px;
+}
+
+/* بطاقة الأسرة: بلا شعار لا شيء بدل الحروف، وعدد منتجاتها المعروضة رقمًا في زاويتها. */
+.producer-card {
+  position: relative;
+}
+.producer-card .producer-card-content {
+  flex: 1;
+  min-width: 0;
+}
+.product-count-badge {
+  position: absolute;
+  top: 8px;
+  inset-inline-end: 10px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--olive);
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.6;
+}
+@media (max-width: 600px) {
+  .food-showcase .food-showcase-caption {
+    inset-inline: 6%;
+    padding: 4px 6px;
+    font-size: 10px;
+  }
+  .food-showcase .food-showcase-caption strong {
+    font-size: 11px;
+  }
+}
+
+/* الصحون حول القوس (رسم المالك 2026-11-27): ثلاثة صفوف من أربعة، يسار وأعلى ويمين.
+   الترتيب يدور من ١ أسفل اليسار (الأحدث) صعودًا، ثم الأعلى من اليسار لليمين، ثم اليمين نزولًا.
+   اتجاه الشبكة يسار-يمين ليطابق الرسم، والمحتوى داخلها عربي. */
+.food-showcase.food-ring {
+  --plate: 78px;
+  --ring-gap: 10px;
+  direction: ltr;
+  display: grid;
+  gap: var(--ring-gap);
+  grid-template-areas:
+    "top top top"
+    "left main right";
+  grid-template-columns: var(--plate) minmax(0, 1fr) var(--plate);
+  margin: 0 auto;
+  max-width: 560px;
+  /* إطار الصحن المختار لا يُقص عند حافة الشاشة. */
+  padding: 5px;
+}
+.food-ring > * {
+  direction: rtl;
+}
+.food-ring-line {
+  display: flex;
+  gap: var(--ring-gap);
+  justify-content: space-between;
+  margin: 0;
+}
+.food-ring-line.is-top {
+  grid-area: top;
+}
+.food-ring-line.is-left {
+  flex-direction: column-reverse;
+  grid-area: left;
+}
+.food-ring-line.is-right {
+  flex-direction: column;
+  grid-area: right;
+}
+.food-ring .food-dish {
+  flex: 0 0 auto;
+  width: var(--plate);
+}
+.food-ring .food-showcase-main {
+  aspect-ratio: auto;
+  grid-area: main;
+  min-height: calc(var(--plate) * 4 + var(--ring-gap) * 3);
+}
+/* الصحن داخل القوس أكبر ومرفوع، والبيانات تحته. */
+.food-ring .food-showcase-main::before {
+  bottom: auto;
+  inset-inline: 9%;
+  top: 9%;
+}
+.food-ring .food-showcase-main img {
+  object-position: 50% 22%;
+  transform: scale(0.86) translateY(-6%);
+}
+.food-ring .food-showcase-main > img:not([data-nimg]) {
+  inset: 10% auto auto 50%;
+  max-height: none;
+  transform: translateX(-50%);
+  width: 82%;
+}
+.food-ring .food-showcase .food-showcase-caption,
+.food-ring.food-showcase .food-showcase-caption {
+  bottom: 5%;
+  inset-inline: 8%;
+}
+@media (max-width: 600px) {
+  .hero .food-showcase.food-ring {
+    --plate: 54px;
+    --ring-gap: 7px;
+    display: grid;
+    grid-template-columns: var(--plate) minmax(0, 1fr) var(--plate);
+    max-width: none;
+  }
+  .hero .food-ring .food-showcase-main {
+    aspect-ratio: auto;
+  }
+}
+/* التابلت: عمود الصورة نصف الشاشة، فالصحون أصغر لئلا تتجاوز العرض. */
+@media (min-width: 601px) and (max-width: 1023px) {
+  .food-showcase.food-ring {
+    --plate: 54px;
+    --ring-gap: 6px;
+  }
+}

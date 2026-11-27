@@ -1,56 +1,140 @@
 "use client";
 import Image from "next/image";
-import { useState } from "react";
+import Link from "next/link";
+import { createContext, useContext, useState } from "react";
+import { useTx } from "@/components/site-texts";
 
-const dishes = [
-  ["rice-plate", "طبق أرز"],
-  ["traditional-platter", "مطازيز"],
-  ["clay-pot", "مرقوق"],
-  ["grain-plate", "جريش"],
-  ["fish-tray", "طبق سمك"],
-] as const;
+import type { Plate } from "@/lib/site-plates";
 
-/** خمسة صحون: يُعرض المختار منها مكبّرًا، والضغط على أي صحن صغير يكبّره. */
-export function FoodPhotos() {
-  const [selected, setSelected] = useState<string>("rice-plate");
-  const main = dishes.find(([id]) => id === selected) ?? dishes[0];
+const Ctx = createContext<{
+  plates: Plate[];
+  selected: string;
+  select: (id: string) => void;
+} | null>(null);
+
+/**
+ * صحون أعلى الرئيسية (قرار المالك 2026-11-26): آخر ١٢ منتجًا، الجديد يحل محل الأقدم.
+ * أربعة تحت القوس وثمانية بجانبه، والضغط على صحن يُظهر صورته وبياناته داخل القوس بخط صغير.
+ */
+export function PlatesProvider({
+  plates,
+  children,
+}: {
+  plates: Plate[];
+  children: React.ReactNode;
+}) {
+  const [selected, select] = useState(plates[0]?.id ?? "");
   return (
-    <figure className="food-showcase">
+    <Ctx.Provider value={{ plates, selected, select }}>{children}</Ctx.Provider>
+  );
+}
+
+/** صور الموقع عبر Image بمقاسها؛ صور المنتجات (من رفع الأسر) تُعرض كما هي. */
+const real = (plate: Plate) => !plate.id.startsWith("site-");
+
+function PlateImage({ plate, sizes }: { plate: Plate; sizes: string }) {
+  // صور المنتجات من رفع الأسر تُعرض كما هي؛ صور الموقع عبر Image.
+  return real(plate) ? (
+    <img src={plate.image} alt="" loading="lazy" />
+  ) : (
+    <Image src={plate.image} alt="" fill sizes={sizes} />
+  );
+}
+
+function PlateButton({ plate }: { plate: Plate }) {
+  const ctx = useContext(Ctx);
+  const { txb } = useTx();
+  if (!ctx) return null;
+  const active = ctx.selected === plate.id;
+  return (
+    <button
+      type="button"
+      className={`food-dish${active ? " is-active" : ""}`}
+      aria-pressed={active}
+      aria-label={txb("plates.show", { name: plate.name })}
+      onClick={() => ctx.select(plate.id)}
+    >
+      <span className="food-dish-visual">
+        <PlateImage plate={plate} sizes="(max-width:600px) 18vw, 110px" />
+        {(plate.orders ?? 0) > 0 && (
+          <span
+            className="order-badge"
+            title={txb("count.productOrders", {
+              n: plate.orders ?? 0,
+            })}
+          >
+            {new Intl.NumberFormat("ar-SA").format(plate.orders ?? 0)}
+          </span>
+        )}
+      </span>
+    </button>
+  );
+}
+
+/**
+ * الصحون حول القوس (رسم المالك 2026-11-27): ثلاثة صفوف، في كل صف أربعة.
+ * الترتيب يدور: ١ أسفل اليسار (الأحدث) صعودًا، ثم الصف العلوي من اليسار لليمين،
+ * ثم العمود الأيمن نزولًا. القوس في الوسط، والصحن فيه أكبر ومرفوع، ومعه بياناته.
+ */
+export function FoodPhotos() {
+  const ctx = useContext(Ctx);
+  const { txb } = useTx();
+  if (!ctx) return null;
+  const main = ctx.plates.find((p) => p.id === ctx.selected) ?? ctx.plates[0];
+  if (!main) return null;
+  const line = (from: number) => ctx.plates.slice(from, from + 4);
+  return (
+    <figure className="food-showcase food-ring">
       <div className="food-showcase-main">
-        <Image
-          key={main[0]}
-          src={`/food/${main[0]}-floating-v2.webp`}
-          alt={main[1]}
-          fill
-          sizes="(max-width:600px) 55vw, (max-width:850px) 40vw, 400px"
-          preload={main[0] === "rice-plate"}
-        />
+        {real(main) ? (
+          <img key={main.id} src={main.image} alt={main.name} />
+        ) : (
+          <Image
+            key={main.id}
+            src={main.image}
+            alt={main.name}
+            fill
+            sizes="(max-width:600px) 55vw, (max-width:850px) 34vw, 320px"
+            preload={main.id === ctx.plates[0]?.id}
+          />
+        )}
+        {main.href && (
+          <figcaption className="food-showcase-caption" aria-live="polite">
+            <strong>{main.name}</strong>
+            <span>{[main.family, main.price].filter(Boolean).join(" · ")}</span>
+            <Link href={main.href}>
+              {txb("plates.details")} <span aria-hidden="true">←</span>
+            </Link>
+          </figcaption>
+        )}
+      </div>
+      {/* العمود الأيسر: ١ (الأحدث) في الأسفل صعودًا إلى ٤. */}
+      <div
+        className="food-ring-line is-left"
+        role="group"
+        aria-label={txb("plates.label")}
+      >
+        {line(0).map((p) => (
+          <PlateButton key={p.id} plate={p} />
+        ))}
       </div>
       <div
-        className="food-showcase-strip"
+        className="food-ring-line is-top"
         role="group"
-        aria-label="اختر صحنًا لعرضه مكبرًا"
+        aria-label={txb("plates.more")}
       >
-        {dishes
-          .filter(([id]) => id !== selected)
-          .map(([id, name]) => (
-            <button
-              type="button"
-              className="food-dish"
-              key={id}
-              aria-label={`كبّر ${name}`}
-              onClick={() => setSelected(id)}
-            >
-              <span className="food-dish-visual">
-                <Image
-                  src={`/food/${id}-floating-v2.webp`}
-                  alt=""
-                  fill
-                  sizes="(max-width:600px) 18vw, 110px"
-                />
-              </span>
-            </button>
-          ))}
+        {line(4).map((p) => (
+          <PlateButton key={p.id} plate={p} />
+        ))}
+      </div>
+      <div
+        className="food-ring-line is-right"
+        role="group"
+        aria-label={txb("plates.rest")}
+      >
+        {line(8).map((p) => (
+          <PlateButton key={p.id} plate={p} />
+        ))}
       </div>
     </figure>
   );

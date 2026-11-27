@@ -36,6 +36,8 @@ export type Producer = {
   ratingCount?: number;
   /** عدد طلباتها المقبولة والمكتملة (رقم فقط). */
   orderCount?: number;
+  /** عدد منتجاتها المعروضة (رقم على بطاقتها). */
+  productCount?: number;
   /** هوية الأسرة (يسري على بطاقتها وبطاقات منتجاتها). */
   brand?: BrandChoice | null;
   /** يظهر للعملاء إن اختارت الأسرة إظهاره. */

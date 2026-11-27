@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+const info = () => test.info();
 import { randomUUID } from "node:crypto";
 import { Pool } from "pg";
 
@@ -85,8 +86,8 @@ test.describe("activity numbers", () => {
       [family, owner, slug, familyName, city, ph()],
     );
     await pool.query(
-      "INSERT INTO jdatna.products(id,producer_id,name,description,unit,status,visible,price) VALUES($1,$2,$3,'وصف','علبة','available',true,45)",
-      [product, family, productName],
+      "INSERT INTO jdatna.products(id,producer_id,name,description,unit,status,visible,price,image_url) VALUES($1,$2,$3,'وصف','علبة','available',true,45,$4)",
+      [product, family, productName, "/food/clay-pot-floating-v2.webp"],
     );
     for (const status of ["accepted", "completed", "declined"])
       await pool.query(
@@ -162,15 +163,63 @@ test.describe("activity numbers", () => {
     // المقبول والمكتمل فقط (المرفوض لا يُحسب): ٢.
     await page.goto(`/producers/${slug}`);
     const card = page.locator(".product-card", { hasText: productName });
-    await expect(card.locator(".order-count")).toHaveText("طُلب ٢ مرة");
+    // شارة رقم على صورة المنتج (المقبول والمكتمل فقط).
+    await expect(card.locator(".order-badge")).toContainText("٢");
+    await expect(card.locator(".order-badge")).toContainText("طُلب ٢ مرة");
     await card.screenshot({
       path: `test-results/product-count-${test.info().project.name}.png`,
     });
     await page.goto(`/producers?q=${encodeURIComponent(familyName)}`);
     const familyCard = page.locator(".producer-card", { hasText: familyName });
     await expect(familyCard.locator(".order-count")).toHaveText("٢ طلب منفّذ");
+    // عدد منتجاتها المعروضة رقمًا على البطاقة، وبلا شعار لا حروف بدله.
+    await expect(familyCard.locator(".product-count-badge")).toHaveText(
+      "١ منتج",
+    );
+    await expect(familyCard.locator(".producer-avatar")).toHaveCount(0);
     await familyCard.screenshot({
       path: `test-results/family-count-${test.info().project.name}.png`,
+    });
+  });
+
+  test("the newest product is the first plate, and choosing it shows its details in the arch", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    if (
+      (await page.locator("html").getAttribute("data-template")) !== "classic"
+    )
+      test.skip();
+    const plate = page.getByRole("button", { name: `اعرض ${productName}` });
+    await expect(plate).toHaveCount(1);
+    await plate.click();
+    await expect(plate).toHaveAttribute("aria-pressed", "true");
+    const caption = page.locator(".food-showcase-caption");
+    await expect(caption).toContainText(productName);
+    await expect(caption).toContainText(familyName);
+    await expect(caption).toContainText("٤٥");
+    await expect(
+      caption.getByRole("link", { name: /التفاصيل/ }),
+    ).toHaveAttribute("href", `/products/${product}`);
+    await expect(plate.locator(".order-badge")).toHaveText("٢");
+    // ثلاثة صفوف من أربعة حول القوس (رسم المالك 2026-11-27)، والأحدث رقم ١ أسفل اليسار.
+    const ring = page.locator(".food-ring");
+    for (const side of ["is-left", "is-top", "is-right"])
+      await expect(ring.locator(`.food-ring-line.${side} button`)).toHaveCount(
+        4,
+      );
+    const left = ring.locator(".food-ring-line.is-left button");
+    const [first, second] = await Promise.all([
+      left.nth(0).boundingBox(),
+      left.nth(1).boundingBox(),
+    ]);
+    expect(first!.y).toBeGreaterThan(second!.y);
+    const top = await ring.locator(".food-ring-line.is-top").boundingBox();
+    const main = await ring.locator(".food-showcase-main").boundingBox();
+    expect(first!.x).toBeLessThan(main!.x);
+    expect(top!.y + top!.height).toBeLessThanOrEqual(main!.y + 1);
+    await page.locator(".hero").screenshot({
+      path: `test-results/hero-plates-${info().project.name}.png`,
     });
   });
 });

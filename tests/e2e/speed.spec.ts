@@ -32,7 +32,9 @@ test("the home dish image asks for the size it is shown at", async ({
   await page.setViewportSize({ width: 412, height: 915 });
   await page.goto("/");
   const dish = page.locator(".food-showcase-main img");
-  await expect(dish).toHaveAttribute("sizes", /55vw/);
+  // صور الموقع تُطلب بمقاسها؛ صورة منتج (آخر الإضافات) تُعرض كما رفعتها الأسرة.
+  if (await dish.getAttribute("data-nimg"))
+    await expect(dish).toHaveAttribute("sizes", /55vw/);
   const box = await dish.boundingBox();
   expect(box?.width).toBeLessThan(412 * 0.6);
 });

@@ -17,7 +17,7 @@ test("food photography stays visible and separate from search across tablet brea
     if (najdi) {
       await expect(page.locator(".najdi-door")).toBeVisible();
       await expect(page.locator(".najdi-window")).toHaveCount(2);
-    } else await expect(page.locator(".food-showcase img")).toHaveCount(5);
+    } else await expect(page.locator(".food-showcase img")).toHaveCount(13);
     // مسميات الصحون وأرقامها حُذفت بطلب المالك.
     await expect(page.locator(".food-showcase .food-dish-name")).toHaveCount(0);
     await expect(page.locator(".food-showcase .dish-number")).toHaveCount(0);
