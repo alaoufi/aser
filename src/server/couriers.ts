@@ -39,8 +39,15 @@ const courierSchema = z
   })
   .strict();
 
-const decryptId = (payload: Buffer | null) =>
-  payload ? decryptDocument(payload, privateKey()).toString("utf8") : "";
+/** رقم الهوية المشفّر؛ صف تالف لا يُسقط قائمة المندوبين كلها في الإدارة، بل يظهر رقمه فارغًا. */
+const decryptId = (payload: Buffer | null) => {
+  if (!payload) return "";
+  try {
+    return decryptDocument(payload, privateKey()).toString("utf8");
+  } catch {
+    return "";
+  }
+};
 
 /** اسم الأسرة التي يتبعها المندوب الخاص (null للمندوب العام). */
 const familyNameSql = `(SELECT COALESCE(fp.trade_name,fp.name) FROM jdatna.producer_profiles fp WHERE fp.id=k.family_id)`;
