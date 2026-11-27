@@ -2473,8 +2473,10 @@ button.food-dish:focus-visible .food-dish-visual {
 }
 .ring-arrow {
   --nudge: 0px, 0px;
-  animation: plate-flow 1.5s ease-in-out infinite;
-  animation-delay: calc(var(--i, 0) * 0.15s);
+  /* تتابع (طلب المالك 2026-11-27): سهم واحد يضيء ويتقدم في كل لحظة، من ١ إلى ١٠ ثم يعود.
+     تسعة أسهم × ٠٫٣ ثانية = دورة ٢٫٧ ثانية. */
+  animation: plate-flow 2.7s linear infinite;
+  animation-delay: calc(var(--i, 0) * 0.3s);
   border: 9px solid transparent;
   filter: drop-shadow(0 1px 1px #2e1d1240);
   flex: 0 0 auto;
@@ -2499,14 +2501,21 @@ button.food-dish:focus-visible .food-dish-visual {
   border-bottom-width: 0;
 }
 @keyframes plate-flow {
-  0%,
-  100% {
-    opacity: 0.35;
-    transform: translate(0, 0);
+  0% {
+    opacity: 0.3;
+    transform: translate(0, 0) scale(1);
   }
-  50% {
+  6% {
     opacity: 1;
-    transform: translate(var(--nudge));
+    transform: translate(var(--nudge)) scale(1.25);
+  }
+  14% {
+    opacity: 0.3;
+    transform: translate(0, 0) scale(1);
+  }
+  100% {
+    opacity: 0.3;
+    transform: translate(0, 0) scale(1);
   }
 }
 @media (prefers-reduced-motion: reduce) {
