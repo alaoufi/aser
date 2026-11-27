@@ -127,7 +127,7 @@ test.describe("invite a friend", () => {
     expect(qr.headers()["content-type"]).toContain("image/svg+xml");
     // صفحة الدعوة القصيرة ثم التحويل حسب الجوال (قرار المالك 2026-11-27).
     // المتجران خارج الاختبار: يُعترض طلبهما ويُرد عليه هنا، فلا يُرسل شيء خارجيًا.
-    await page.route(/apps\.apple\.com|play\.google\.com/, (r) =>
+    await page.route(/^https:\/\/(apps\.apple\.com|play\.google\.com)\//, (r) =>
       r.fulfill({ contentType: "text/html", body: "<p>store</p>" }),
     );
     await page.goto(`/r/${code}`);
@@ -147,9 +147,12 @@ test.describe("invite a friend", () => {
     if (desktop)
       await expect(page).toHaveURL(/\/login\?signup=1/, { timeout: 8000 });
     else
-      await expect(page).toHaveURL(/apps\.apple\.com\/sa\/app\/id6833382132/, {
-        timeout: 8000,
-      });
+      await expect(page).toHaveURL(
+        /^https:\/\/apps\.apple\.com\/sa\/app\/id6833382132$/,
+        {
+          timeout: 8000,
+        },
+      );
     const saved = (await context.cookies()).find(
       (c) => c.name === "jdatna_ref",
     );
