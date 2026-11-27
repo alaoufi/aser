@@ -129,7 +129,7 @@ test("any of the plates can be shown enlarged", async ({ page }) => {
   await expect(third).toHaveAttribute("aria-pressed", "true");
   await expect(plates).toHaveCount(count);
   // القوس وصحونه حوله (حتى ١٢)، وصورة كل صحن مرة.
-  const all = await page.locator(".food-ring .food-dish").count();
+  const all = await page.locator(".food-ring button.food-dish").count();
   expect(all).toBeGreaterThan(0);
   await expect(page.locator(".food-showcase img")).toHaveCount(all + 1);
 });

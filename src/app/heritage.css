@@ -2471,3 +2471,58 @@ button.food-dish:focus-visible .food-dish-visual {
   grid-template-rows: repeat(4, var(--plate));
   align-content: space-between;
 }
+
+/* مسار انتقال المنتجات حول القوس (طلب المالك 2026-11-27): خط منقّط يمر بمراكز الصحون،
+   من ١ أسفل اليسار صعودًا، ثم الصف الأعلى، ثم العمود الأيمن نزولًا. والأماكن الفارغة صحون منقّطة برقمها. */
+.food-ring {
+  position: relative;
+}
+.food-ring-path {
+  border: 2px dashed #c9a273;
+  border-bottom: 0;
+  border-radius: 28px 28px 0 0;
+  inset: calc(5px + var(--plate) / 2) calc(5px + var(--plate) / 2);
+  pointer-events: none;
+  position: absolute;
+  z-index: 0;
+}
+.food-ring-path::before,
+.food-ring-path::after {
+  border: 6px solid transparent;
+  content: "";
+  position: absolute;
+}
+/* سهم صعودًا على اليسار، وسهم نزولًا على اليمين. */
+.food-ring-path::before {
+  border-bottom-color: #b48a5c;
+  left: -7px;
+  top: 45%;
+}
+.food-ring-path::after {
+  border-top-color: #b48a5c;
+  right: -7px;
+  top: 45%;
+}
+.food-ring > .food-ring-line,
+.food-ring > .food-showcase-main {
+  position: relative;
+  z-index: 1;
+}
+.food-ring .food-showcase-main {
+  background-color: var(--paper);
+}
+.food-dish.is-empty {
+  cursor: default;
+}
+.food-dish.is-empty .food-dish-visual {
+  align-items: center;
+  background: #fffaf2;
+  border: 2px dashed #d6b98d;
+  display: flex;
+  justify-content: center;
+}
+.food-slot-no {
+  color: #b48a5c;
+  font-size: 14px;
+  font-weight: 700;
+}

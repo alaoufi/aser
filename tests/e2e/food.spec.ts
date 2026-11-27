@@ -18,7 +18,7 @@ test("food photography stays visible and separate from search across tablet brea
       await expect(page.locator(".najdi-door")).toBeVisible();
       await expect(page.locator(".najdi-window")).toHaveCount(2);
     } else {
-      const plates = await page.locator(".food-ring .food-dish").count();
+      const plates = await page.locator(".food-ring button.food-dish").count();
       expect(plates).toBeGreaterThan(0);
       await expect(page.locator(".food-showcase img")).toHaveCount(plates + 1);
     }

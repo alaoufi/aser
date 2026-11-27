@@ -71,6 +71,19 @@ function PlateButton({ plate }: { plate: Plate }) {
   );
 }
 
+/** مكان فارغ في المسار: صحن منقّط برقم مكانه، يمتلئ حين تُضاف منتجات جديدة. */
+function EmptyPlate({ at }: { at: number }) {
+  return (
+    <span className="food-dish is-empty" aria-hidden="true">
+      <span className="food-dish-visual">
+        <span className="food-slot-no">
+          {new Intl.NumberFormat("ar-SA").format(at + 1)}
+        </span>
+      </span>
+    </span>
+  );
+}
+
 /**
  * الصحون حول القوس (رسم المالك 2026-11-27): ثلاثة صفوف، في كل صف أربعة.
  * الترتيب يدور: ١ أسفل اليسار (الأحدث) صعودًا، ثم الصف العلوي من اليسار لليمين،
@@ -82,9 +95,13 @@ export function FoodPhotos() {
   if (!ctx) return null;
   const main = ctx.plates.find((p) => p.id === ctx.selected) ?? ctx.plates[0];
   if (!main) return null;
-  const line = (from: number) => ctx.plates.slice(from, from + 4);
+  // كل صف أربعة أماكن: المنتج إن وُجد، وإلا صحن فارغ برقم مكانه (يمتلئ بالمنتجات الجديدة).
+  const line = (from: number) =>
+    [0, 1, 2, 3].map((i) => ({ at: from + i, plate: ctx.plates[from + i] }));
   return (
     <figure className="food-showcase food-ring">
+      {/* مسار انتقال المنتجات: من ١ أسفل اليسار صعودًا، ثم الأعلى، ثم اليمين نزولًا. */}
+      <span className="food-ring-path" aria-hidden="true" />
       <div className="food-showcase-main">
         {real(main) ? (
           <img key={main.id} src={main.image} alt={main.name} />
@@ -124,27 +141,39 @@ export function FoodPhotos() {
         role="group"
         aria-label={txb("plates.label")}
       >
-        {line(0).map((p) => (
-          <PlateButton key={p.id} plate={p} />
-        ))}
+        {line(0).map(({ at, plate }) =>
+          plate ? (
+            <PlateButton key={plate.id} plate={plate} />
+          ) : (
+            <EmptyPlate key={`empty-${at}`} at={at} />
+          ),
+        )}
       </div>
       <div
         className="food-ring-line is-top"
         role="group"
         aria-label={txb("plates.more")}
       >
-        {line(4).map((p) => (
-          <PlateButton key={p.id} plate={p} />
-        ))}
+        {line(4).map(({ at, plate }) =>
+          plate ? (
+            <PlateButton key={plate.id} plate={plate} />
+          ) : (
+            <EmptyPlate key={`empty-${at}`} at={at} />
+          ),
+        )}
       </div>
       <div
         className="food-ring-line is-right"
         role="group"
         aria-label={txb("plates.rest")}
       >
-        {line(8).map((p) => (
-          <PlateButton key={p.id} plate={p} />
-        ))}
+        {line(8).map(({ at, plate }) =>
+          plate ? (
+            <PlateButton key={plate.id} plate={plate} />
+          ) : (
+            <EmptyPlate key={`empty-${at}`} at={at} />
+          ),
+        )}
       </div>
     </figure>
   );
