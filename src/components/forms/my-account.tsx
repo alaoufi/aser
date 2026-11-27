@@ -360,7 +360,11 @@ function InviteFriend() {
   }, []);
   // كلمات البطاقة ونص الدعوة من «نصوص الموقع» (طلب المالك 2026-11-26).
   const { tx, txb } = useTx();
-  const text = txb("invite.message");
+  const message = txb("invite.message");
+  // «رقم الدعوة» في الرسالة (قرار المالك 2026-11-27): يكتبه الصديق عند التسجيل إن ثبّت تطبيق الآيفون.
+  const text = d
+    ? `${message}\n${txb("invite.codeLine", { n: d.memberNo })}`
+    : message;
   return (
     <section className={`${s.form} ${s.card}`} aria-label={txb("invite.title")}>
       <h2>{txb("invite.title")}</h2>

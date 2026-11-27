@@ -68,7 +68,7 @@ test.describe("invite a friend", () => {
     // رسالة الدعوة (طلب المالك 2026-11-26) ثم الرابط.
     await expect(box.getByRole("link", { name: "واتساب" })).toHaveAttribute(
       "href",
-      `https://wa.me/?text=${encodeURIComponent(`نرحب بدعوتكم للانضمام في منصة #اكلات_جدتنا\n${link}`)}`,
+      `https://wa.me/?text=${encodeURIComponent(`نرحب بدعوتكم للانضمام في منصة #اكلات_جدتنا\nرقم الدعوة: ${no}\n${link}`)}`,
     );
     await expect(box).toContainText(`رقم دعوتك: ${no}`);
     code = String(no);
@@ -103,9 +103,32 @@ test.describe("invite a friend", () => {
     // التحويل نسبي (لا يكشف عنوان الخادم الداخلي خلف البوابة).
     const raw = await page.request.get(`/r/${code}`, { maxRedirects: 0 });
     expect(raw.status()).toBe(302);
-    expect(raw.headers().location).toBe("/login?signup=1");
+    expect(raw.headers().location).toBe(`/invite/${code}`);
+    // صفحة الدعوة القصيرة ثم التحويل حسب الجوال (قرار المالك 2026-11-27).
+    // المتجران خارج الاختبار: يُعترض طلبهما ويُرد عليه هنا، فلا يُرسل شيء خارجيًا.
+    await page.route(/apps\.apple\.com|play\.google\.com/, (r) =>
+      r.fulfill({ contentType: "text/html", body: "<p>store</p>" }),
+    );
     await page.goto(`/r/${code}`);
-    await expect(page).toHaveURL(/\/login\?signup=1/);
+    await expect(page).toHaveURL(new RegExp(`/invite/${code}$`));
+    const landing = page.getByRole("region", {
+      name: "دعاك صديقك إلى أكلات جدتنا",
+    });
+    await expect(landing).toContainText(`رقم الدعوة:${code}`);
+    // على الجوال رابط «أكمل من الموقع» لمن لا يريد التطبيق؛ على الكمبيوتر التسجيل نفسه.
+    const desktop = test.info().project.name === "desktop";
+    await expect(
+      landing.getByRole("link", {
+        name: desktop ? "سجّل الآن" : "أكمل من الموقع بدل التطبيق",
+      }),
+    ).toHaveAttribute("href", "/login?signup=1");
+    // الكمبيوتر إلى التسجيل، والآيفون (مشروع الجوال) إلى App Store.
+    if (desktop)
+      await expect(page).toHaveURL(/\/login\?signup=1/, { timeout: 8000 });
+    else
+      await expect(page).toHaveURL(/apps\.apple\.com\/sa\/app\/id6833382132/, {
+        timeout: 8000,
+      });
     const saved = (await context.cookies()).find(
       (c) => c.name === "jdatna_ref",
     );

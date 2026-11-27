@@ -7,7 +7,7 @@ const SOURCE = "jdatna:store-source";
  * داخل تطبيقي الجوال لا تظهر أزرار المتجرين: فتحهما يكون بـ ?source=ios (الآيفون) أو
  * ?source=app (أندرويد)، ويُحفظ للجلسة. Apple لا تقبل إشارة لمنصة أخرى داخل التطبيق (2.3.10).
  */
-function insideApp() {
+export function insideApp() {
   try {
     const cap = (
       window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }

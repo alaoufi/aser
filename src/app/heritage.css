@@ -2377,3 +2377,40 @@ button.food-dish:focus-visible .food-dish-visual {
   border-radius: inherit;
   cursor: pointer;
 }
+
+/* صفحة الدعوة (قرار المالك 2026-11-27). */
+.invite-landing {
+  max-width: 520px;
+  margin-block: 40px;
+  padding: 24px 20px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  text-align: center;
+}
+.invite-landing h1 {
+  margin: 0 0 8px;
+  font-size: 22px;
+}
+.invite-landing-code {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-block: 16px 6px;
+}
+.invite-landing-code strong {
+  color: var(--rust);
+  font-size: 28px;
+}
+.invite-landing-hint {
+  color: var(--muted);
+  font-size: 13px;
+}
+.invite-landing-actions {
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+  margin-top: 14px;
+}

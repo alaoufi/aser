@@ -327,14 +327,18 @@ export async function verifyOtp(
       }
       if (!user) return null;
       // حساب جديد أكّد جواله: يُحسب لمن دعاه (مرة واحدة، ولا يُفشل التسجيل أبدًا).
+      // ومن الشبكة نفسها لمن فتح رابط دعوة ثم سجّل من تطبيق الآيفون (قرار المالك 2026-11-27).
       if (
         challenge.purpose === "signup" &&
-        (referral?.invite || referral?.link)
+        (referral?.invite || referral?.link || source)
       ) {
         const { recordReferral } = await import("./referrals");
         await client.query("SAVEPOINT referral");
         try {
-          await recordReferral(client, user.id, referral);
+          await recordReferral(client, user.id, {
+            ...referral,
+            net: source,
+          });
           await client.query("RELEASE SAVEPOINT referral");
         } catch {
           await client.query("ROLLBACK TO SAVEPOINT referral");
