@@ -861,6 +861,7 @@ type Summary = Record<string, number>;
 export function AdminSummary({ onOpen }: { onOpen: (tab: string) => void }) {
   const r = useResource<{ summary: Summary }>("/api/admin/summary");
   const v = r.data?.summary;
+  const { txb } = useTx();
   const groups: {
     title: string;
     icon: string;
@@ -887,6 +888,16 @@ export function AdminSummary({ onOpen }: { onOpen: (tab: string) => void }) {
           stats: [
             ["آخر 24 ساعة", v.ordersToday, "orders"],
             ["بلا رد منذ 24 ساعة", v.ordersStale, "orders", v.ordersStale > 0],
+            [
+              txb("admin.summary.ordersCompleted"),
+              v.ordersCompleted ?? 0,
+              "orders",
+            ],
+            [
+              txb("admin.summary.ordersCancelled"),
+              v.ordersCancelled ?? 0,
+              "orders",
+            ],
           ],
         },
         {

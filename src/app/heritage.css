@@ -2411,8 +2411,9 @@ button.food-dish:focus-visible .food-dish-visual {
     gap: 8px;
   }
 }
-/* بين 851 و899: زر القالب (الكلاسيكي/الباب النجدي) في نافذة الألوان، فيتسع الرأس لأيقونة المشاركة. */
-@media (min-width: 851px) and (max-width: 899px) {
+/* بين 851 و1365: زر القالب (الكلاسيكي/الباب النجدي) في نافذة الألوان، فيتسع الرأس لأيقونتي
+   المشاركة والإشعارات (2026-11-27). */
+@media (min-width: 851px) and (max-width: 1365px) {
   .header-actions > .desktop-only {
     display: none;
   }
@@ -2753,10 +2754,14 @@ button.food-dish:focus-visible .food-dish-visual {
   font-weight: 700;
   line-height: 1;
 }
+/* Chrome يُبقي محتوى details المغلق في التخطيط (content-visibility)، فيوسّع الصفحة: يُخفى كليًا. */
+.notif-bell:not([open]) .notif-panel {
+  display: none;
+}
 .notif-panel {
   position: absolute;
   top: calc(100% + 8px);
-  inset-inline-end: -60px;
+  inset-inline-end: 0;
   z-index: 60;
   width: min(340px, calc(100vw - 24px));
   max-height: min(70vh, 520px);
@@ -2827,5 +2832,25 @@ button.food-dish:focus-visible .food-dish-visual {
     top: 96px;
     inset-inline: 12px;
     width: auto;
+  }
+}
+
+/* جرس «الإشعارات» في رأس الكمبيوتر (2026-11-27): مسافات أضيق ليتسع الرأس دون تجاوز العرض. */
+@media (min-width: 1101px) {
+  html body > header.site-header {
+    gap: 14px;
+  }
+}
+@media (min-width: 851px) and (max-width: 960px) {
+  html body > header.site-header {
+    gap: 6px;
+    padding-inline: 10px;
+  }
+  .header-actions .messages-link {
+    padding: 0 8px;
+    font-size: 13px;
+  }
+  html .site-header .desktop-nav {
+    gap: 6px;
   }
 }
