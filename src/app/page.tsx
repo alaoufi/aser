@@ -77,7 +77,7 @@ export default async function Home({
     recentCertificates(),
     todayProducts({ region, mine }),
     activityTotals(),
-    latestProducts(13),
+    latestProducts(10),
   ]);
   // صحون أعلى الرئيسية: آخر ١٢ منتجًا لها صور، وصور الموقع تكمّلها إن قلّت (قرار المالك 2026-11-26).
   const plates: Plate[] = [

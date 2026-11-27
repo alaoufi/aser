@@ -211,7 +211,7 @@ test.describe("activity numbers", () => {
     // ثلاثة صفوف من أربعة حول القوس (رسم المالك 2026-11-27)، والأحدث رقم ١ أسفل اليسار.
     // المنتجات الحقيقية فقط (لا صور للموقع معها): العدد من قاعدة الاختبار.
     const withImages = Math.min(
-      13,
+      10,
       (
         await pool!.query(
           `SELECT count(*)::int AS n FROM jdatna.products x JOIN jdatna.producer_profiles p ON p.id=x.producer_id
@@ -221,11 +221,11 @@ test.describe("activity numbers", () => {
       ).rows[0].n as number,
     );
     const ring = page.locator(".food-ring");
-    // ٤ يسار، و٥ أعلى، و٤ يمين (١٣).
+    // ٣ يسار، و٤ أعلى، و٣ يمين (١٠).
     const sizes = [
-      Math.min(4, withImages),
-      Math.min(5, Math.max(0, withImages - 4)),
-      Math.max(0, withImages - 9),
+      Math.min(3, withImages),
+      Math.min(4, Math.max(0, withImages - 3)),
+      Math.max(0, withImages - 7),
     ];
     for (const [i, side] of ["is-left", "is-top", "is-right"].entries())
       await expect(ring.locator(`.food-ring-line.${side} button`)).toHaveCount(

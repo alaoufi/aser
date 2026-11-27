@@ -41,19 +41,20 @@ function PlateImage({ plate, sizes }: { plate: Plate; sizes: string }) {
   );
 }
 
-/** اتجاه السهم من كل مكان إلى الذي بعده: العمود الأيسر صعودًا، ثم الأعلى يمينًا، ثم الأيمن نزولًا. */
-function arrowOf(at: number) {
-  if (at < 4) return "up";
-  if (at < 8) return "right";
-  if (at < 12) return "down";
-  return "end";
+type Dir = "up" | "right" | "down";
+/** سهم الاتجاه في الفراغ بين صحنين، يتحرك في اتجاهه متتابعًا (‎--i‏ ترتيبه في المسار). */
+function Arrow({ dir, i }: { dir: Dir; i: number }) {
+  return (
+    <span
+      className="ring-arrow"
+      data-dir={dir}
+      aria-hidden="true"
+      style={{ "--i": i } as React.CSSProperties}
+    />
+  );
 }
-const slotProps = (at: number) => ({
-  "data-arrow": arrowOf(at),
-  style: { "--i": at } as React.CSSProperties,
-});
 
-function PlateButton({ plate, at }: { plate: Plate; at: number }) {
+function PlateButton({ plate }: { plate: Plate }) {
   const ctx = useContext(Ctx);
   const { txb } = useTx();
   if (!ctx) return null;
@@ -62,7 +63,6 @@ function PlateButton({ plate, at }: { plate: Plate; at: number }) {
     <button
       type="button"
       className={`food-dish${active ? " is-active" : ""}`}
-      {...slotProps(at)}
       aria-pressed={active}
       aria-label={txb("plates.show", { name: plate.name })}
       onClick={() => ctx.select(plate.id)}
@@ -87,7 +87,7 @@ function PlateButton({ plate, at }: { plate: Plate; at: number }) {
 /** مكان فارغ في المسار: صحن منقّط برقم مكانه، يمتلئ حين تُضاف منتجات جديدة. */
 function EmptyPlate({ at }: { at: number }) {
   return (
-    <span className="food-dish is-empty" aria-hidden="true" {...slotProps(at)}>
+    <span className="food-dish is-empty" aria-hidden="true">
       <span className="food-dish-visual">
         <span className="food-slot-no">
           {new Intl.NumberFormat("ar-SA").format(at + 1)}
@@ -109,12 +109,34 @@ export function FoodPhotos() {
   const main = ctx.plates.find((p) => p.id === ctx.selected) ?? ctx.plates[0];
   if (!main) return null;
   // كل صف أربعة أماكن: المنتج إن وُجد، وإلا صحن فارغ برقم مكانه (يمتلئ بالمنتجات الجديدة).
-  // الصف العلوي خمسة (طلب المالك 2026-11-27)، والعمودان أربعة أربعة: ١٣ منتجًا.
-  const line = (from: number, size = 4) =>
-    Array.from({ length: size }, (_, i) => ({
-      at: from + i,
-      plate: ctx.plates[from + i],
-    }));
+  // ٣ يسار، و٤ أعلى، و٣ يمين (طلب المالك 2026-11-27): مسافات أوسع لأسهم متحركة واضحة.
+  const slot = (at: number) => {
+    const plate = ctx.plates[at];
+    return plate ? (
+      <PlateButton key={plate.id} plate={plate} />
+    ) : (
+      <EmptyPlate key={`empty-${at}`} at={at} />
+    );
+  };
+  /** صحون من `from` بعدد `size`، وبين كل اثنين سهم؛ و`lead`/`tail` سهم قبل الأول أو بعد الأخير. */
+  const line = (
+    from: number,
+    size: number,
+    dir: Dir,
+    edge?: "lead" | "tail",
+  ) => {
+    const out: React.ReactNode[] = [];
+    if (edge === "lead")
+      out.push(<Arrow key="a-lead" dir={dir} i={from - 1} />);
+    for (let k = 0; k < size; k++) {
+      if (k)
+        out.push(<Arrow key={`a-${from + k}`} dir={dir} i={from + k - 1} />);
+      out.push(slot(from + k));
+    }
+    if (edge === "tail")
+      out.push(<Arrow key="a-tail" dir={dir} i={from + size - 1} />);
+    return out;
+  };
   return (
     <figure className="food-showcase food-ring">
       {/* مسار انتقال المنتجات: من ١ أسفل اليسار صعودًا، ثم الأعلى، ثم اليمين نزولًا. */}
@@ -152,45 +174,27 @@ export function FoodPhotos() {
           </figcaption>
         )}
       </div>
-      {/* العمود الأيسر: ١ (الأحدث) في الأسفل صعودًا إلى ٤. */}
+      {/* العمود الأيسر: ١ (الأحدث) في الأسفل صعودًا إلى ٣، ثم سهم إلى الصف الأعلى. */}
       <div
         className="food-ring-line is-left"
         role="group"
         aria-label={txb("plates.label")}
       >
-        {line(0).map(({ at, plate }) =>
-          plate ? (
-            <PlateButton key={plate.id} plate={plate} at={at} />
-          ) : (
-            <EmptyPlate key={`empty-${at}`} at={at} />
-          ),
-        )}
+        {line(0, 3, "up", "tail")}
       </div>
       <div
         className="food-ring-line is-top"
         role="group"
         aria-label={txb("plates.more")}
       >
-        {line(4, 5).map(({ at, plate }) =>
-          plate ? (
-            <PlateButton key={plate.id} plate={plate} at={at} />
-          ) : (
-            <EmptyPlate key={`empty-${at}`} at={at} />
-          ),
-        )}
+        {line(3, 4, "right")}
       </div>
       <div
         className="food-ring-line is-right"
         role="group"
         aria-label={txb("plates.rest")}
       >
-        {line(9).map(({ at, plate }) =>
-          plate ? (
-            <PlateButton key={plate.id} plate={plate} at={at} />
-          ) : (
-            <EmptyPlate key={`empty-${at}`} at={at} />
-          ),
-        )}
+        {line(7, 3, "down", "lead")}
       </div>
     </figure>
   );

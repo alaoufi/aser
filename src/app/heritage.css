@@ -2326,7 +2326,7 @@ button.food-dish:focus-visible .food-dish-visual {
 .food-ring .food-showcase-main {
   aspect-ratio: auto;
   grid-area: main;
-  min-height: calc(var(--plate) * 4 + var(--ring-gap) * 3);
+  min-height: calc(var(--plate) * 3 + 66px);
 }
 /* الصحن داخل القوس أكبر ومرفوع، والبيانات تحته. */
 .food-ring .food-showcase-main::before {
@@ -2459,17 +2459,9 @@ button.food-dish:focus-visible .food-dish-visual {
     display: none;
   }
 }
-/* الصحون تملأ أماكنها بالترتيب ولو قلّ عددها: الصف الأعلى من اليسار، والعمود الأيمن من الأعلى. */
+/* الصف الأعلى من اليسار (كالرسم). */
 .food-ring-line.is-top {
   direction: ltr;
-  display: grid;
-  grid-template-columns: repeat(5, var(--plate));
-  justify-content: space-between;
-}
-.food-ring-line.is-right {
-  display: grid;
-  grid-template-rows: repeat(4, var(--plate));
-  align-content: space-between;
 }
 
 /* مسار انتقال المنتجات حول القوس (طلب المالك 2026-11-27): خط منقّط يمر بمراكز الصحون،
@@ -2510,50 +2502,48 @@ button.food-dish:focus-visible .food-dish-visual {
   font-weight: 700;
 }
 
-/* أسهم الاتجاه على الخط بين كل صحن والذي بعده (طلب المالك 2026-11-27)، تتحرك متتابعة كأنها تسري
-   في المسار. تتوقف الحركة لمن طلب تقليلها من جهازه. */
-.food-ring .food-dish {
-  overflow: visible;
-  position: relative;
+/* أسهم الاتجاه في الفراغ بين كل صحنين (طلب المالك 2026-11-27): ٣ و٤ و٣ لتتسع المسافات،
+   والأسهم تتقدم في اتجاهها متتابعة كأنها تسري في المسار. تتوقف لمن طلب تقليل الحركة. */
+.food-ring-line.is-top {
+  display: flex;
 }
-.food-ring .food-dish[data-arrow]::after {
+.food-ring-line.is-right {
+  display: flex;
+}
+.food-ring-line {
+  align-items: center;
+}
+.ring-arrow {
   --nudge: 0px, 0px;
-  animation: plate-flow 1.6s ease-in-out infinite;
-  animation-delay: calc(var(--i, 0) * 0.12s);
-  border: 6px solid transparent;
-  content: "";
-  pointer-events: none;
-  position: absolute;
+  animation: plate-flow 1.5s ease-in-out infinite;
+  animation-delay: calc(var(--i, 0) * 0.15s);
+  border: 9px solid transparent;
+  filter: drop-shadow(0 1px 1px #2e1d1240);
+  flex: 0 0 auto;
+  height: 0;
+  position: relative;
+  width: 0;
   z-index: 2;
 }
-.food-ring .food-dish[data-arrow="up"]::after {
-  --nudge: 0px, -3px;
-  border-bottom: 8px solid var(--rust);
+.ring-arrow[data-dir="up"] {
+  --nudge: 0px, -5px;
+  border-bottom: 12px solid var(--rust);
   border-top-width: 0;
-  left: calc(50% - 6px);
-  top: calc(var(--ring-gap) / -2 - 4px);
 }
-.food-ring .food-dish[data-arrow="right"]::after {
-  --nudge: 3px, 0px;
-  border-left: 8px solid var(--rust);
+.ring-arrow[data-dir="right"] {
+  --nudge: 5px, 0px;
+  border-left: 12px solid var(--rust);
   border-right-width: 0;
-  right: -14px;
-  top: calc(50% - 6px);
 }
-.food-ring .food-dish[data-arrow="down"]::after {
-  --nudge: 0px, 3px;
-  border-top: 8px solid var(--rust);
+.ring-arrow[data-dir="down"] {
+  --nudge: 0px, 5px;
+  border-top: 12px solid var(--rust);
   border-bottom-width: 0;
-  bottom: calc(var(--ring-gap) / -2 - 4px);
-  left: calc(50% - 6px);
-}
-.food-ring .food-dish[data-arrow="end"]::after {
-  display: none;
 }
 @keyframes plate-flow {
   0%,
   100% {
-    opacity: 0.45;
+    opacity: 0.35;
     transform: translate(0, 0);
   }
   50% {
@@ -2562,7 +2552,7 @@ button.food-dish:focus-visible .food-dish-visual {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .food-ring .food-dish[data-arrow]::after {
+  .ring-arrow {
     animation: none;
     opacity: 0.9;
   }
