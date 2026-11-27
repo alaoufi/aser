@@ -2411,10 +2411,15 @@ button.food-dish:focus-visible .food-dish-visual {
     gap: 8px;
   }
 }
-/* بين 851 و1365: زر القالب (الكلاسيكي/الباب النجدي) في نافذة الألوان، فيتسع الرأس لأيقونتي
-   المشاركة والإشعارات (2026-11-27). */
-@media (min-width: 851px) and (max-width: 1365px) {
+/* بين 851 و899: زر القالب (الكلاسيكي/الباب النجدي) في نافذة الألوان، فيتسع الرأس لأيقونة المشاركة. */
+@media (min-width: 851px) and (max-width: 899px) {
   .header-actions > .desktop-only {
+    display: none;
+  }
+}
+/* حتى ١٣٦٥ للعضو المسجّل فقط: يتسع الرأس لجرس «الإشعارات» (2026-11-27). */
+@media (min-width: 851px) and (max-width: 1365px) {
+  .site-header:has(.notif-bell) .header-actions > .desktop-only {
     display: none;
   }
 }
