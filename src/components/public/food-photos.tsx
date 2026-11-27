@@ -41,7 +41,19 @@ function PlateImage({ plate, sizes }: { plate: Plate; sizes: string }) {
   );
 }
 
-function PlateButton({ plate }: { plate: Plate }) {
+/** اتجاه السهم من كل مكان إلى الذي بعده: العمود الأيسر صعودًا، ثم الأعلى يمينًا، ثم الأيمن نزولًا. */
+function arrowOf(at: number) {
+  if (at < 4) return "up";
+  if (at < 8) return "right";
+  if (at < 12) return "down";
+  return "end";
+}
+const slotProps = (at: number) => ({
+  "data-arrow": arrowOf(at),
+  style: { "--i": at } as React.CSSProperties,
+});
+
+function PlateButton({ plate, at }: { plate: Plate; at: number }) {
   const ctx = useContext(Ctx);
   const { txb } = useTx();
   if (!ctx) return null;
@@ -50,6 +62,7 @@ function PlateButton({ plate }: { plate: Plate }) {
     <button
       type="button"
       className={`food-dish${active ? " is-active" : ""}`}
+      {...slotProps(at)}
       aria-pressed={active}
       aria-label={txb("plates.show", { name: plate.name })}
       onClick={() => ctx.select(plate.id)}
@@ -74,7 +87,7 @@ function PlateButton({ plate }: { plate: Plate }) {
 /** مكان فارغ في المسار: صحن منقّط برقم مكانه، يمتلئ حين تُضاف منتجات جديدة. */
 function EmptyPlate({ at }: { at: number }) {
   return (
-    <span className="food-dish is-empty" aria-hidden="true">
+    <span className="food-dish is-empty" aria-hidden="true" {...slotProps(at)}>
       <span className="food-dish-visual">
         <span className="food-slot-no">
           {new Intl.NumberFormat("ar-SA").format(at + 1)}
@@ -147,7 +160,7 @@ export function FoodPhotos() {
       >
         {line(0).map(({ at, plate }) =>
           plate ? (
-            <PlateButton key={plate.id} plate={plate} />
+            <PlateButton key={plate.id} plate={plate} at={at} />
           ) : (
             <EmptyPlate key={`empty-${at}`} at={at} />
           ),
@@ -160,7 +173,7 @@ export function FoodPhotos() {
       >
         {line(4, 5).map(({ at, plate }) =>
           plate ? (
-            <PlateButton key={plate.id} plate={plate} />
+            <PlateButton key={plate.id} plate={plate} at={at} />
           ) : (
             <EmptyPlate key={`empty-${at}`} at={at} />
           ),
@@ -173,7 +186,7 @@ export function FoodPhotos() {
       >
         {line(9).map(({ at, plate }) =>
           plate ? (
-            <PlateButton key={plate.id} plate={plate} />
+            <PlateButton key={plate.id} plate={plate} at={at} />
           ) : (
             <EmptyPlate key={`empty-${at}`} at={at} />
           ),

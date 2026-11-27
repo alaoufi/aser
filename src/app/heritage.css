@@ -2486,23 +2486,6 @@ button.food-dish:focus-visible .food-dish-visual {
   position: absolute;
   z-index: 0;
 }
-.food-ring-path::before,
-.food-ring-path::after {
-  border: 6px solid transparent;
-  content: "";
-  position: absolute;
-}
-/* سهم صعودًا على اليسار، وسهم نزولًا على اليمين. */
-.food-ring-path::before {
-  border-bottom-color: #b48a5c;
-  left: -7px;
-  top: 45%;
-}
-.food-ring-path::after {
-  border-top-color: #b48a5c;
-  right: -7px;
-  top: 45%;
-}
 .food-ring > .food-ring-line,
 .food-ring > .food-showcase-main {
   position: relative;
@@ -2525,4 +2508,62 @@ button.food-dish:focus-visible .food-dish-visual {
   color: #b48a5c;
   font-size: 14px;
   font-weight: 700;
+}
+
+/* أسهم الاتجاه على الخط بين كل صحن والذي بعده (طلب المالك 2026-11-27)، تتحرك متتابعة كأنها تسري
+   في المسار. تتوقف الحركة لمن طلب تقليلها من جهازه. */
+.food-ring .food-dish {
+  overflow: visible;
+  position: relative;
+}
+.food-ring .food-dish[data-arrow]::after {
+  --nudge: 0px, 0px;
+  animation: plate-flow 1.6s ease-in-out infinite;
+  animation-delay: calc(var(--i, 0) * 0.12s);
+  border: 6px solid transparent;
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  z-index: 2;
+}
+.food-ring .food-dish[data-arrow="up"]::after {
+  --nudge: 0px, -3px;
+  border-bottom: 8px solid var(--rust);
+  border-top-width: 0;
+  left: calc(50% - 6px);
+  top: calc(var(--ring-gap) / -2 - 4px);
+}
+.food-ring .food-dish[data-arrow="right"]::after {
+  --nudge: 3px, 0px;
+  border-left: 8px solid var(--rust);
+  border-right-width: 0;
+  right: -14px;
+  top: calc(50% - 6px);
+}
+.food-ring .food-dish[data-arrow="down"]::after {
+  --nudge: 0px, 3px;
+  border-top: 8px solid var(--rust);
+  border-bottom-width: 0;
+  bottom: calc(var(--ring-gap) / -2 - 4px);
+  left: calc(50% - 6px);
+}
+.food-ring .food-dish[data-arrow="end"]::after {
+  display: none;
+}
+@keyframes plate-flow {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: translate(0, 0);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(var(--nudge));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .food-ring .food-dish[data-arrow]::after {
+    animation: none;
+    opacity: 0.9;
+  }
 }
