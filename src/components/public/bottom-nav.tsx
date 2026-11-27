@@ -38,11 +38,13 @@ export function BottomNav({ guest = false }: { guest?: boolean }) {
     label: string,
     icon: React.ReactNode,
     extra?: React.ReactNode,
+    ariaLabel?: string,
   ) => (
     <Link
       href={href}
       className="bottom-nav-item"
       aria-current={on(href) ? "page" : undefined}
+      aria-label={ariaLabel}
     >
       <span className="bottom-nav-icon" aria-hidden="true">
         {icon}
@@ -104,6 +106,8 @@ export function BottomNav({ guest = false }: { guest?: boolean }) {
             {unread > 99 ? "99+" : unread}
           </span>
         ) : null,
+        // المحادثات صارت هنا وحدها على الجوال (قرار المالك 2026-11-27): العدد يُقرأ مع الاسم كما في الرأس.
+        user && unread > 0 ? `المحادثات، ${unread} رسالة جديدة` : undefined,
       )}
       {item(
         account,
