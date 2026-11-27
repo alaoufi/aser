@@ -74,6 +74,7 @@ export function ShareButton({
   qr: qrImage,
   iconOnly,
   className,
+  label,
 }: {
   title: string;
   /** الرابط المختصر؛ بدونه يُشارك رابط الصفحة الحالية. */
@@ -179,11 +180,7 @@ export function ShareButton({
     <details className={`share-menu${className ? ` ${className}` : ""}`}>
       <summary aria-label={iconOnly}>
         {icons.share}
-        {!iconOnly && (
-          <span>
-            <T k="c.share.t1" />
-          </span>
-        )}
+        {!iconOnly && <span>{label ?? <T k="c.share.t1" />}</span>}
       </summary>
       <div className="share-panel">
         <ul aria-label="المشاركة عبر">

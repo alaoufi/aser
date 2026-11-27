@@ -53,7 +53,7 @@ for (const [key, label, detail] of states)
     if (mobile) {
       await page
         .getByRole("button", { name: "قائمة التنقل" })
-        .or(page.locator(".mobile-nav summary"))
+        .or(page.locator(".mobile-nav > summary"))
         .first()
         .click();
       const menu = page.getByRole("navigation", { name: "التنقل للجوال" });
@@ -62,7 +62,7 @@ for (const [key, label, detail] of states)
       const first = menu.getByRole("link").first();
       await expect(first).toContainText("حالة الحساب");
       // زر القائمة أقصى اليمين والشعار يسارًا.
-      const burger = await page.locator(".mobile-nav summary").boundingBox();
+      const burger = await page.locator(".mobile-nav > summary").boundingBox();
       const logo = await page.locator(".site-header .brand").boundingBox();
       expect(burger!.x).toBeGreaterThan(logo!.x);
     } else {

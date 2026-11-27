@@ -167,6 +167,11 @@ test.describe("activity numbers", () => {
   }) => {
     // المقبول والمكتمل فقط (المرفوض لا يُحسب): ٢.
     await page.goto(`/producers/${slug}`);
+    // أسرة لم تختر التوصيل: لا تُعرض «التوصيل غير متاح» (قرار المالك 2026-11-27)، والاستلام كما هو.
+    await expect(page.getByText("التوصيل غير متاح")).toHaveCount(0);
+    await expect(
+      page.getByText("الاستلام متاح بالتنسيق المباشر."),
+    ).toBeVisible();
     const card = page.locator(".product-card", { hasText: productName });
     // شارة رقم على صورة المنتج (المقبول والمكتمل فقط).
     await expect(card.locator(".order-badge")).toContainText("٢");

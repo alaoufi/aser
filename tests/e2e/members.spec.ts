@@ -165,7 +165,7 @@ test("a family with admin permissions keeps its own account and opens the panel 
   });
   await page.goto("/");
   const mobile = (page.viewportSize()?.width ?? 1280) <= 850;
-  if (mobile) await page.locator(".mobile-nav summary").click();
+  if (mobile) await page.locator(".mobile-nav > summary").click();
   const scope = mobile
     ? page.getByRole("navigation", { name: "التنقل للجوال" })
     : page.locator(".site-header .header-actions");
@@ -192,7 +192,7 @@ test("visitors pick the site look themselves and it is remembered", async ({
   await page.goto("/");
   const initial = await page.locator("html").getAttribute("data-template");
   const mobile = (page.viewportSize()?.width ?? 1280) <= 850;
-  if (mobile) await page.locator(".mobile-nav summary").click();
+  if (mobile) await page.locator(".mobile-nav > summary").click();
   const switcher = page
     .getByRole("group", { name: "شكل الموقع" })
     .filter({ visible: true })

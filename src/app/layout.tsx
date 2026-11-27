@@ -309,6 +309,26 @@ export default async function RootLayout({
               <MessagesLink className="mobile-messages" />
               <MobileNavigation
                 switcher={<TemplateSwitcher current={template} />}
+                tools={
+                  <>
+                    <AppearancePicker
+                      texts={{
+                        button: texts["palette.button"] || "ألوان الموقع",
+                        title: texts["palette.title"] || "ألوان الموقع",
+                        note: texts["palette.note"],
+                        sadu: texts["palette.sadu"] || "السدو",
+                        nakheel: texts["palette.nakheel"] || "النخيل",
+                        teen: texts["palette.teen"] || "الطين",
+                        qahwa: texts["palette.qahwa"] || "القهوة والهيل",
+                        zafaran: texts["palette.zafaran"] || "الزعفران",
+                        neel: texts["palette.neel"] || "النيلة",
+                      }}
+                      template={template}
+                      labelled
+                    />
+                    <HeaderShare inMenu />
+                  </>
+                }
               />
             </header>
             <PushSetup

@@ -118,7 +118,8 @@ test(
         pickupLocation: pickupAt,
         locationPublic: false,
       });
-      // معلن أو لا بحسب رغبة الأسرة؛ الإعلان يحتاج موقعًا.
+      // معلن أو لا بحسب رغبة الأسرة؛ الإعلان يحتاج موقعًا. بلا موقع (توصيل وحده) يُحفظ ويُلغى الإعلان
+      // تلقائيًا، فلا يُطلب الموقع للتوصيل (قرار المالك 2026-11-27).
       const { getProducer } = await import("../src/server/catalog");
       const slug = (
         await pool.query(
@@ -127,15 +128,14 @@ test(
         )
       ).rows[0].slug as string;
       assert.equal((await getProducer(slug))?.publicLocation, null);
-      await assert.rejects(
-        saveFulfillment(owner, {
-          pickup: false,
-          delivery: true,
-          pickupLocation: null,
-          locationPublic: true,
-        }),
-        /ليُعلن/,
-      );
+      const deliveryOnly = await saveFulfillment(owner, {
+        pickup: false,
+        delivery: true,
+        pickupLocation: null,
+        locationPublic: true,
+      });
+      assert.equal(deliveryOnly.locationPublic, false);
+      assert.equal(deliveryOnly.pickupLocation, null);
       await saveFulfillment(owner, {
         pickup: true,
         delivery: true,

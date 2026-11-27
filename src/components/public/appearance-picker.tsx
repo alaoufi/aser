@@ -47,9 +47,12 @@ const IDENTITY_PARTS = [
 export function AppearancePicker({
   texts,
   template,
+  labelled,
 }: {
   texts: Texts;
   template: "classic" | "najdi";
+  /** داخل قائمة الجوال: الكلمة بجانب الدائرة (قرار المالك 2026-11-27). */
+  labelled?: boolean;
 }) {
   const { tx, txb } = useTx();
   const router = useRouter();
@@ -100,7 +103,7 @@ export function AppearancePicker({
     ...(family ? [["identity", txb("fidentity.title")]] : []),
   ] as [typeof tab, string][];
   return (
-    <div className="appearance" ref={box}>
+    <div className={`appearance${labelled ? " is-labelled" : ""}`} ref={box}>
       <button
         type="button"
         className="appearance-button"
@@ -111,6 +114,9 @@ export function AppearancePicker({
         onClick={() => setOpen((v) => !v)}
       >
         <span className="appearance-dot" style={{ background: swatch(now) }} />
+        {labelled && (
+          <span className="appearance-label">{txb("menu.appearance")}</span>
+        )}
       </button>
       {open && (
         <div

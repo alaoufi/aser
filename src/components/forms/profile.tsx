@@ -84,7 +84,7 @@ export function ProfileForm({
   part?: "all" | "home" | "data";
 }) {
   const session = useSession();
-  const { tx } = useTx();
+  const { tx, txb } = useTx();
   const [verified, setVerified] = useState<SessionUser | null>(null);
   const user = verified || session.user;
   const [profile, setProfile] = useState<Profile | null>(null),
@@ -93,9 +93,16 @@ export function ProfileForm({
   const [loaded, setLoaded] = useState(false),
     [extrasOpen, setExtrasOpen] = useState(false),
     [documentId, setDocumentId] = useState(""),
-    [documentType, setDocumentType] = useState("producer_certificate");
+    [documentType, setDocumentType] = useState("producer_certificate"),
+    // طريقة التسليم: موقع العمل مطلوب فقط مع التسليم المباشر (قرار المالك 2026-11-27).
+    [pickupChosen, setPickupChosen] = useState<boolean | null>(null),
+    [deliveryChosen, setDeliveryChosen] = useState<boolean | null>(null);
   // التعهد بالمستندات: للتسجيل الجديد أو لطلب ما زال بانتظار الاعتماد (قرار المالك 2026-11-26).
   const pledgeShown = !profile || profile.status === "pending";
+  // الأسرة الجديدة: بحسب اختيارها؛ والقائمة: بحسب طرق التسليم المحفوظة.
+  const needsLocation = profile
+    ? profile.pickup !== false
+    : (pickupChosen ?? true);
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [success, setSuccess] = useState("");
@@ -225,7 +232,15 @@ export function ProfileForm({
           phone: user.phone,
           cityId: f.get("cityId"),
           nationalId: f.get("nationalId"),
-          workLocation: f.get("workLocation"),
+          ...(String(f.get("workLocation") ?? "").trim()
+            ? { workLocation: f.get("workLocation") }
+            : {}),
+          ...(!profile
+            ? {
+                pickup: f.get("fulfillPickup") === "on",
+                delivery: f.get("fulfillDelivery") === "on",
+              }
+            : {}),
           documentType,
           documentId: savedDocument || null,
           pledge: f.get("pledge") === "on",
@@ -464,13 +479,42 @@ export function ProfileForm({
                     className={s.field}
                   />
                 </div>
+                {!profile && (
+                  <fieldset>
+                    <legend>{txb("fulfill.legend")}</legend>
+                    <div className={s.checks}>
+                      <label>
+                        <input
+                          type="checkbox"
+                          name="fulfillPickup"
+                          checked={pickupChosen ?? true}
+                          onChange={(e) => setPickupChosen(e.target.checked)}
+                        />
+                        {txb("fulfill.pickup")}
+                      </label>
+                      <label>
+                        <input
+                          type="checkbox"
+                          name="fulfillDelivery"
+                          checked={deliveryChosen ?? false}
+                          onChange={(e) => setDeliveryChosen(e.target.checked)}
+                        />
+                        {txb("fulfill.delivery")}
+                      </label>
+                    </div>
+                  </fieldset>
+                )}
                 <LocationInput
                   name="workLocation"
                   label="عنوان أو رابط موقع العمل"
-                  hint="يُحدَّد موقعك تلقائيًا، ويمكنك تعديله أو كتابة العنوان أو لصق رابط الخرائط."
+                  hint={
+                    needsLocation
+                      ? "يُحدَّد موقعك تلقائيًا، ويمكنك تعديله أو كتابة العنوان أو لصق رابط الخرائط."
+                      : txb("fulfill.locationOptional")
+                  }
                   defaultValue={profile?.workLocation || ""}
-                  required
-                  autoLocate={!profile?.workLocation}
+                  required={needsLocation}
+                  autoLocate={!profile?.workLocation && needsLocation}
                 />
                 <p className={s.muted}>
                   رقم الهوية والموقع الدقيق خاصان بالأسرة المنتجة والإدارة. يظهر

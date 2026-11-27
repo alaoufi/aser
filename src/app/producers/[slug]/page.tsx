@@ -201,8 +201,11 @@ export default async function ProducerDetail({
             <p className="profile-description">{p.description}</p>
           </div>
         </section>
+        {/* مائدة الأسرة (طلب المالك 2026-11-27): بارزة بعد بطاقة الأسرة مباشرة، ورابطها #family-table
+            من صفحة كل منتج للأسرة. */}
         <section
-          className="family-table-section"
+          id="family-table"
+          className="family-table-section is-featured"
           aria-labelledby="family-table-title"
         >
           {texts["ftable.title"] && (
@@ -283,12 +286,10 @@ export default async function ProducerDetail({
             <h3>
               <T k="p.family.t6" />
             </h3>
-            <p>
-              {p.delivery
-                ? "التوصيل متاح بالتنسيق مع الأسرة المنتجة."
-                : "التوصيل غير متاح."}
-            </p>
-            <p>{p.pickup ? "الاستلام متاح بالتنسيق المباشر." : ""}</p>
+            {/* لا تُعرض «التوصيل غير متاح» (قرار المالك 2026-11-27): كانت تظهر لكل أسرة لم تختر بعد،
+                فيظهر التوصيل حين تختاره الأسرة من «هوية الأسرة ← الموقع ← طرق التسليم». */}
+            {p.delivery && <p>التوصيل متاح بالتنسيق مع الأسرة المنتجة.</p>}
+            {p.pickup && <p>الاستلام متاح بالتنسيق المباشر.</p>}
             {p.delivery && Boolean(coverage.length) && (
               <ul>
                 {coverage.map((area) => (

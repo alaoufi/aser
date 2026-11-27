@@ -66,7 +66,10 @@ test.describe("invite a friend", () => {
     const link = await box.getByLabel("رابط دعوتك").inputValue();
     expect(link).toBe(`https://jdtna.sa/r/${no}`);
     // مشاركة التطبيق في رأس الموقع (قرار المالك 2026-11-27): رابط العضو jdtna.sa/app/رقمه.
-    const share = page.locator(".header-share");
+    // على الجوال في أول القائمة (قرار المالك 2026-11-27)، وعلى الكمبيوتر في الرأس.
+    const mobile = info.project.name === "mobile";
+    if (mobile) await page.locator(".mobile-nav > summary").click();
+    const share = page.locator(mobile ? ".menu-share" : ".header-share");
     await share.locator("summary").click();
     await expect(share.locator(".share-link")).toHaveText(`jdtna.sa/app/${no}`);
     await expect(share.getByRole("link", { name: "واتساب" })).toHaveAttribute(

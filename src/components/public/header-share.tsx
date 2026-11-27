@@ -9,7 +9,7 @@ import { ShareButton } from "./share-button";
  * نسخ الرابط، رمز QR) برابط التطبيق الذي يفتح متجر جوال من يستلمه.
  * العضو المسجّل يشارك رابطه jdtna.sa/app/رقمه، فيُحسب له من يسجّل به كدعوة الصديق.
  */
-export function HeaderShare() {
+export function HeaderShare({ inMenu }: { inMenu?: boolean } = {}) {
   const { user } = useSession();
   const { txb } = useTx();
   const no = user?.memberNo;
@@ -19,8 +19,9 @@ export function HeaderShare() {
     : txb("appShare.message");
   return (
     <ShareButton
-      className="header-share"
-      iconOnly={txb("appShare.label")}
+      className={inMenu ? "menu-share" : "header-share"}
+      iconOnly={inMenu ? undefined : txb("appShare.label")}
+      label={inMenu ? txb("appShare.label") : undefined}
       title={txb("appShare.title")}
       text={text}
       url={url}

@@ -182,6 +182,9 @@ test("family saves only basic fields in one form and retries without reuploading
     documentType: "producer_certificate",
     documentId: "00000000-0000-4000-8000-000000000002",
     pledge: false,
+    // طريقة التسليم في التسجيل (قرار المالك 2026-11-27): الافتراضي تسليم مباشر.
+    pickup: true,
+    delivery: false,
   });
   expect(
     await page.evaluate(
@@ -252,6 +255,42 @@ test.describe("work location is detected automatically", () => {
     await field.fill("حي الريان، شارع الأسرة");
     await expect(field).toHaveValue("حي الريان، شارع الأسرة");
   });
+});
+
+// قرار المالك 2026-11-27: موقع الأسرة يُطلب فقط في التسليم المباشر.
+test("registration asks the delivery method, and the work location is required only for direct pickup", async ({
+  page,
+}) => {
+  await page.route("**/api/session", (r) =>
+    r.fulfill({ json: { user, registrationOpen: true } }),
+  );
+  await page.route("**/api/producer/status", (r) =>
+    r.fulfill({ json: { state: null } }),
+  );
+  await page.route("**/api/producer/profile", (r) =>
+    r.fulfill({ json: { profile: null, categories: [], cities: [city] } }),
+  );
+  await page.goto("/register");
+  const field = page.getByLabel("عنوان أو رابط موقع العمل", { exact: true });
+  const pickup = page.getByRole("checkbox", {
+    name: "تسليم مباشر (يستلم العميل من موقعك)",
+  });
+  const delivery = page.getByRole("checkbox", { name: "توصيل (لموقع العميل)" });
+  // الافتراضي تسليم مباشر: الموقع مطلوب.
+  await expect(pickup).toBeChecked();
+  await expect(field).toHaveAttribute("required", "");
+  // توصيل وحده: الموقع اختياري.
+  await delivery.check();
+  await pickup.uncheck();
+  await expect(field).not.toHaveAttribute("required", "");
+  await expect(
+    page.getByText(
+      "اختياري مع التوصيل وحده: الموقع يُطلب فقط في التسليم المباشر.",
+    ),
+  ).toBeVisible();
+  // الرجوع للتسليم المباشر يعيده مطلوبًا.
+  await pickup.check();
+  await expect(field).toHaveAttribute("required", "");
 });
 
 // قرار المالك 2026-11-26: بلا مستند الآن يلزم التعهد بتقديمه خلال 15 يومًا، فتُعتمد الأسرة فورًا.
