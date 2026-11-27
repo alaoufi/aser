@@ -71,15 +71,20 @@ function PlateButton({ plate }: { plate: Plate }) {
   );
 }
 
-/** القوس: الصحن المختار مكبّرًا وبياناته بخط صغير، وتحته أول أربعة صحون. */
+/**
+ * الصحون حول القوس (رسم المالك 2026-11-27): ثلاثة صفوف، في كل صف أربعة.
+ * الترتيب يدور: ١ أسفل اليسار (الأحدث) صعودًا، ثم الصف العلوي من اليسار لليمين،
+ * ثم العمود الأيمن نزولًا. القوس في الوسط، والصحن فيه أكبر ومرفوع، ومعه بياناته.
+ */
 export function FoodPhotos() {
   const ctx = useContext(Ctx);
   const { txb } = useTx();
   if (!ctx) return null;
   const main = ctx.plates.find((p) => p.id === ctx.selected) ?? ctx.plates[0];
   if (!main) return null;
+  const line = (from: number) => ctx.plates.slice(from, from + 4);
   return (
-    <figure className="food-showcase">
+    <figure className="food-showcase food-ring">
       <div className="food-showcase-main">
         {real(main) ? (
           <img key={main.id} src={main.image} alt={main.name} />
@@ -89,7 +94,7 @@ export function FoodPhotos() {
             src={main.image}
             alt={main.name}
             fill
-            sizes="(max-width:600px) 55vw, (max-width:850px) 40vw, 400px"
+            sizes="(max-width:600px) 55vw, (max-width:850px) 34vw, 320px"
             preload={main.id === ctx.plates[0]?.id}
           />
         )}
@@ -103,34 +108,34 @@ export function FoodPhotos() {
           </figcaption>
         )}
       </div>
+      {/* العمود الأيسر: ١ (الأحدث) في الأسفل صعودًا إلى ٤. */}
       <div
-        className="food-showcase-strip"
+        className="food-ring-line is-left"
         role="group"
         aria-label={txb("plates.label")}
       >
-        {ctx.plates.slice(0, 4).map((p) => (
+        {line(0).map((p) => (
+          <PlateButton key={p.id} plate={p} />
+        ))}
+      </div>
+      <div
+        className="food-ring-line is-top"
+        role="group"
+        aria-label={txb("plates.more")}
+      >
+        {line(4).map((p) => (
+          <PlateButton key={p.id} plate={p} />
+        ))}
+      </div>
+      <div
+        className="food-ring-line is-right"
+        role="group"
+        aria-label={txb("plates.rest")}
+      >
+        {line(8).map((p) => (
           <PlateButton key={p.id} plate={p} />
         ))}
       </div>
     </figure>
-  );
-}
-
-/** ثمانية صحون بجانب القوس (تحت البحث). */
-export function SidePlates({ where }: { where: "wide" | "narrow" }) {
-  const ctx = useContext(Ctx);
-  const { txb } = useTx();
-  const rest = ctx?.plates.slice(4, 12) ?? [];
-  if (!rest.length) return null;
-  return (
-    <div
-      className={`food-side-plates is-${where}`}
-      role="group"
-      aria-label={txb("plates.more")}
-    >
-      {rest.map((p) => (
-        <PlateButton key={p.id} plate={p} />
-      ))}
-    </div>
   );
 }

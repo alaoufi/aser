@@ -5,11 +5,7 @@ import { MineBar } from "@/components/public/mine-bar";
 import { pageMemberScope } from "@/server/page-member";
 import { AdSlot } from "@/components/public/ad-slot";
 import { identityProps } from "@/lib/brand";
-import {
-  FoodPhotos,
-  PlatesProvider,
-  SidePlates,
-} from "@/components/public/food-photos";
+import { FoodPhotos, PlatesProvider } from "@/components/public/food-photos";
 import { SITE_PLATES, type Plate } from "@/lib/site-plates";
 import { NajdiDoor } from "@/components/public/najdi-door";
 import { getSiteTexts, visitorTemplate } from "@/server/settings";
@@ -94,8 +90,12 @@ export default async function Home({
       price: priceLabel(p.price),
       orders: p.orderCount ?? 0,
     })),
-    ...SITE_PLATES,
-  ].slice(0, 12);
+  ];
+  // إن قلّت المنتجات ذات الصور عن ١٢ تكمّلها صور الموقع (تتكرر عند الحاجة) فتكتمل الصفوف الثلاثة.
+  for (let i = 0; plates.length < 12; i++) {
+    const site = SITE_PLATES[i % SITE_PLATES.length];
+    plates.push({ ...site, id: `${site.id}-${i}` });
+  }
   const homeProducts = [...products.local, ...products.nationwide].slice(0, 4);
   const homeProducers = [...producers.local, ...producers.nationwide].slice(
     0,
@@ -172,7 +172,6 @@ export default async function Home({
                 path="/"
               />
             </div>
-            {template !== "najdi" && <SidePlates where="wide" />}
           </div>
           <div className="hero-visual">
             {template === "najdi" ? <NajdiDoor /> : <FoodPhotos />}
@@ -202,8 +201,6 @@ export default async function Home({
               </span>
             </Link>
           </div>
-          {/* الجوال: الصحون الثمانية تحت الصورة والبطاقتين بعرض الصفحة. */}
-          {template !== "najdi" && <SidePlates where="narrow" />}
         </section>
       </PlatesProvider>
       <AdSlot placement="home_top" className="wrap" />

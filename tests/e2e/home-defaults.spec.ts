@@ -202,22 +202,22 @@ test.describe("activity numbers", () => {
       caption.getByRole("link", { name: /التفاصيل/ }),
     ).toHaveAttribute("href", `/products/${product}`);
     await expect(plate.locator(".order-badge")).toHaveText("٢");
-    // حتى ١٢ صحنًا: أربعة تحت القوس والباقي (حتى ثمانية) بجانبه.
-    const wide = info().project.name === "desktop";
-    const side = page.locator(
-      wide ? ".food-side-plates.is-wide" : ".food-side-plates.is-narrow",
-    );
-    await expect(side).toBeVisible();
-    // آخر ١٢ منتجًا لها صور، وصور الموقع الخمس تكمّلها: العدد من قاعدة الاختبار.
-    const withImages = (
-      await pool!.query(
-        `SELECT count(*)::int AS n FROM jdatna.products x JOIN jdatna.producer_profiles p ON p.id=x.producer_id
-          WHERE p.status='approved' AND NOT p.review_only AND x.visible AND x.deleted_at IS NULL
-            AND x.image_url IS NOT NULL AND x.image_url<>''`,
-      )
-    ).rows[0].n as number;
-    const plates = Math.min(12, Math.min(12, withImages) + 5);
-    await expect(side.getByRole("button")).toHaveCount(plates - 4);
+    // ثلاثة صفوف من أربعة حول القوس (رسم المالك 2026-11-27)، والأحدث رقم ١ أسفل اليسار.
+    const ring = page.locator(".food-ring");
+    for (const side of ["is-left", "is-top", "is-right"])
+      await expect(ring.locator(`.food-ring-line.${side} button`)).toHaveCount(
+        4,
+      );
+    const left = ring.locator(".food-ring-line.is-left button");
+    const [first, second] = await Promise.all([
+      left.nth(0).boundingBox(),
+      left.nth(1).boundingBox(),
+    ]);
+    expect(first!.y).toBeGreaterThan(second!.y);
+    const top = await ring.locator(".food-ring-line.is-top").boundingBox();
+    const main = await ring.locator(".food-showcase-main").boundingBox();
+    expect(first!.x).toBeLessThan(main!.x);
+    expect(top!.y + top!.height).toBeLessThanOrEqual(main!.y + 1);
     await page.locator(".hero").screenshot({
       path: `test-results/hero-plates-${info().project.name}.png`,
     });

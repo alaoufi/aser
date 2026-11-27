@@ -127,7 +127,8 @@ test("any of the plates can be shown enlarged", async ({ page }) => {
   await expect(main).toHaveAttribute("alt", name);
   await expect(third).toHaveAttribute("aria-pressed", "true");
   await expect(plates).toHaveCount(4);
-  await expect(page.locator(".food-showcase img")).toHaveCount(5);
+  // القوس و١٢ صحنًا حوله (ثلاثة صفوف من أربعة).
+  await expect(page.locator(".food-showcase img")).toHaveCount(13);
 });
 
 test("the site version shows in the footer as four numbers", async ({
