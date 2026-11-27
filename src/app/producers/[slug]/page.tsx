@@ -201,8 +201,11 @@ export default async function ProducerDetail({
             <p className="profile-description">{p.description}</p>
           </div>
         </section>
+        {/* مائدة الأسرة (طلب المالك 2026-11-27): بارزة بعد بطاقة الأسرة مباشرة، ورابطها #family-table
+            من صفحة كل منتج للأسرة. */}
         <section
-          className="family-table-section"
+          id="family-table"
+          className="family-table-section is-featured"
           aria-labelledby="family-table-title"
         >
           {texts["ftable.title"] && (

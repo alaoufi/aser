@@ -168,8 +168,28 @@ export default async function ProductDetail({
               <T k="p.product.t3" />
             </p>
           )}
-          <Link className="text-link" href={`/producers/${p.producerSlug}`}>
-            من مائدة {p.producerName} ←
+          {/* زر واضح يفتح مائدة الأسرة مباشرة (طلب المالك 2026-11-27). */}
+          <Link
+            className="button secondary family-table-link"
+            href={`/producers/${p.producerSlug}#family-table`}
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="20"
+              height="20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="13" r="7" />
+              <circle cx="12" cy="13" r="3.5" />
+              <path d="M3 4v5M5 4v5M4 9v11M20 4c-1.5 1-2 3-2 5h2v11" />
+            </svg>
+            {(texts["product.familyTable"] || "مائدة الأسرة").replace(
+              "{name}",
+              p.producerName,
+            )}
           </Link>
           <p className="product-price">
             {priceLabel(p.price)}

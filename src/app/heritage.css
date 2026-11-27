@@ -2591,3 +2591,114 @@ button.food-dish:focus-visible .food-dish-visual {
   font-weight: 700;
   line-height: 1;
 }
+
+/* رأس الجوال نظيف (طلب المالك 2026-11-27): الشعار وزر القائمة فقط. الألوان والقوالب ومشاركة
+   التطبيق أول خيارين في القائمة، والمحادثات في الشريط السفلي. */
+@media (max-width: 850px) {
+  .site-header > .appearance,
+  .site-header > .header-share,
+  .site-header > .mobile-messages {
+    display: none;
+  }
+  .mobile-nav .menu-tools {
+    border-bottom: 1px solid var(--line);
+    display: grid;
+    gap: 4px;
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+  }
+  .menu-tools .appearance-button,
+  .menu-tools .menu-share > summary {
+    align-items: center;
+    background: none;
+    border: 0;
+    border-radius: 8px;
+    box-shadow: none;
+    color: var(--ink);
+    cursor: pointer;
+    display: flex;
+    font: inherit;
+    font-weight: 600;
+    gap: 10px;
+    height: auto;
+    justify-content: flex-start;
+    min-height: 44px;
+    padding: 8px 12px;
+    width: 100%;
+  }
+  .menu-tools .appearance-dot {
+    flex: 0 0 auto;
+    height: 22px;
+    width: 22px;
+  }
+  .menu-tools .menu-share > summary svg {
+    color: var(--olive);
+  }
+  .menu-tools .share-panel {
+    box-shadow: none;
+    margin-top: 4px;
+    position: static;
+    width: auto;
+  }
+}
+
+/* مائدة الأسرة بارزة (طلب المالك 2026-11-27): عنوان أوضح بزخرفة، ورابطها من صفحة المنتج يصل إليها
+   فوق الرأس الثابت. */
+.family-table-section.is-featured {
+  scroll-margin-top: 90px;
+  margin-block: 14px 28px;
+}
+.family-table-section.is-featured h2 {
+  align-items: center;
+  color: var(--rust);
+  display: flex;
+  font-size: 24px;
+  gap: 12px;
+  justify-content: center;
+}
+.family-table-section.is-featured h2::before,
+.family-table-section.is-featured h2::after {
+  background: linear-gradient(90deg, transparent, var(--gold, #d6a35c));
+  content: "";
+  flex: 0 1 60px;
+  height: 2px;
+}
+.family-table-section.is-featured h2::after {
+  transform: scaleX(-1);
+}
+.family-table-link {
+  display: inline-flex;
+  gap: 6px;
+  margin-block: 6px 4px;
+}
+@media (max-width: 760px) {
+  /* بطاقة الأسرة أصغر على الجوال لتظهر المائدة أعلى. */
+  .profile-header {
+    padding-block: 14px;
+  }
+  .profile-header .profile-symbol {
+    aspect-ratio: 1;
+    flex: 0 0 auto;
+    font-size: 26px;
+    height: 56px;
+    min-width: 0;
+    width: 56px;
+  }
+  /* «متجر موثّق» على الجوال: ختم صغير بلا كلمة، فلا يغطي المحتوى (الكلمة لقارئ الشاشة). */
+  .verified-store {
+    gap: 0;
+    min-height: 40px;
+    padding: 6px;
+  }
+  .verified-store .verified-store-text {
+    clip: rect(0 0 0 0);
+    height: 1px;
+    overflow: hidden;
+    position: absolute;
+    width: 1px;
+  }
+  /* مسافة أسفل المحتوى لا تغطيها العناصر العائمة والشريط السفلي. */
+  body:has(.bottom-nav) main {
+    padding-bottom: calc(96px + env(safe-area-inset-bottom));
+  }
+}

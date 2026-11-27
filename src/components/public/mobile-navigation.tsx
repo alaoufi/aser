@@ -5,7 +5,14 @@ import { AccountGreeting, AccountLink, FamilyMenuLinks } from "./account-link";
 import { LogoutButton } from "./logout-button";
 import { FamilyStatusChip } from "@/components/forms/family-status";
 import { useEffect, useRef } from "react";
-export function MobileNavigation({ switcher }: { switcher?: React.ReactNode }) {
+export function MobileNavigation({
+  switcher,
+  tools,
+}: {
+  switcher?: React.ReactNode;
+  /** أول القائمة (قرار المالك 2026-11-27): الألوان والقوالب، ومشاركة التطبيق. */
+  tools?: React.ReactNode;
+}) {
   const ref = useRef<HTMLDetailsElement>(null);
   useEffect(() => {
     const outside = (event: PointerEvent) => {
@@ -69,6 +76,7 @@ export function MobileNavigation({ switcher }: { switcher?: React.ReactNode }) {
             ref.current.open = false;
         }}
       >
+        {tools && <div className="menu-tools">{tools}</div>}
         <AccountGreeting />
         <FamilyStatusChip place="menu" />
         <Link href="/">

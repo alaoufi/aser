@@ -657,6 +657,8 @@ export const siteTextDefaults = {
   "fulfill.locationOptional":
     "اختياري مع التوصيل وحده: الموقع يُطلب فقط في التسليم المباشر.",
   "appShare.label": "مشاركة التطبيق",
+  "menu.appearance": "الألوان والقوالب",
+  "product.familyTable": "مائدة الأسرة: {name}",
   "appShare.title": "تطبيق أكلات جدتنا",
   "appShare.message":
     "حمّل تطبيق أكلات جدتنا: أكل البيت من الأسر المنتجة #اكلات_جدتنا",
@@ -1357,6 +1359,8 @@ export const siteTextLabels: Record<
     "تنبيه أن الموقع اختياري مع التوصيل",
   ],
   "appShare.label": ["مشاركة التطبيق", "اسم أيقونة المشاركة في رأس الموقع"],
+  "menu.appearance": ["قائمة الجوال", "زر الألوان والقوالب في القائمة"],
+  "product.familyTable": ["صفحة المنتج", "زر مائدة الأسرة ({name} اسم الأسرة)"],
   "appShare.title": ["مشاركة التطبيق", "عنوان المشاركة"],
   "appShare.message": ["مشاركة التطبيق", "رسالة المشاركة مع الرابط"],
   "invite.shareApp": ["ادعُ صديقًا", "زر مشاركة رابط التطبيق"],
