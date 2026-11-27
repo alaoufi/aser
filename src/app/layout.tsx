@@ -1,4 +1,5 @@
 import { MobileNavigation } from "@/components/public/mobile-navigation";
+import { PushChime } from "@/components/public/push-chime";
 import { activityTotals } from "@/server/activity";
 import { HeaderShare } from "@/components/public/header-share";
 import { BottomNav } from "@/components/public/bottom-nav";
@@ -327,6 +328,7 @@ export default async function RootLayout({
           <SiteOnly>
             <FamilyWelcome texts={texts} />
             <OrderAlert />
+            <PushChime />
             <MessageAlert />
             <VerifiedStoreGate>
               <VerifiedStore />

@@ -1,4 +1,5 @@
 "use client";
+import { chime } from "@/lib/chime";
 import { T } from "@/components/site-texts";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -65,41 +66,6 @@ export function MessagesLink({ className }: { className?: string }) {
       )}
     </Link>
   );
-}
-
-function chime() {
-  try {
-    const AudioCtx =
-      window.AudioContext ||
-      (window as unknown as { webkitAudioContext: typeof AudioContext })
-        .webkitAudioContext;
-    const ctx = new AudioCtx();
-    const tone = (freq: number, at: number) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0.0001, ctx.currentTime + at);
-      gain.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + at + 0.02);
-      gain.gain.exponentialRampToValueAtTime(
-        0.0001,
-        ctx.currentTime + at + 0.3,
-      );
-      osc.connect(gain).connect(ctx.destination);
-      osc.start(ctx.currentTime + at);
-      osc.stop(ctx.currentTime + at + 0.35);
-    };
-    tone(880, 0);
-    tone(1175, 0.16);
-    tone(880, 0.32);
-    setTimeout(() => ctx.close().catch(() => {}), 1200);
-  } catch {
-    // الصوت اختياري؛ قد يمنعه المتصفح قبل أي تفاعل.
-  }
-  try {
-    navigator.vibrate?.([180, 80, 180]);
-  } catch {
-    // الاهتزاز غير مدعوم في كل الأجهزة.
-  }
 }
 
 /** بصمة غير المقروء: تتغير مع كل رسالة جديدة فقط. */
