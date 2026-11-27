@@ -91,11 +91,9 @@ export default async function Home({
       orders: p.orderCount ?? 0,
     })),
   ];
-  // إن قلّت المنتجات ذات الصور عن ١٢ تكمّلها صور الموقع (تتكرر عند الحاجة) فتكتمل الصفوف الثلاثة.
-  for (let i = 0; plates.length < 12; i++) {
-    const site = SITE_PLATES[i % SITE_PLATES.length];
-    plates.push({ ...site, id: `${site.id}-${i}` });
-  }
+  // صور الموقع لا تُخلط بالمنتجات الحقيقية (قرار المالك 2026-11-27): تظهر وحدها فقط إن لم يكن
+  // في الموقع منتج له صورة، فلا يبقى القوس فارغًا.
+  if (!plates.length) plates.push(...SITE_PLATES);
   const homeProducts = [...products.local, ...products.nationwide].slice(0, 4);
   const homeProducers = [...producers.local, ...producers.nationwide].slice(
     0,

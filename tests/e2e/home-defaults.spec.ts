@@ -209,21 +209,33 @@ test.describe("activity numbers", () => {
     await expect(page).toHaveURL(new RegExp(`/products/${product}$`));
     await page.goBack();
     // ثلاثة صفوف من أربعة حول القوس (رسم المالك 2026-11-27)، والأحدث رقم ١ أسفل اليسار.
+    // المنتجات الحقيقية فقط (لا صور للموقع معها): العدد من قاعدة الاختبار.
+    const withImages = Math.min(
+      12,
+      (
+        await pool!.query(
+          `SELECT count(*)::int AS n FROM jdatna.products x JOIN jdatna.producer_profiles p ON p.id=x.producer_id
+            WHERE p.status='approved' AND NOT p.review_only AND x.visible AND x.deleted_at IS NULL
+              AND x.image_url IS NOT NULL AND x.image_url<>''`,
+        )
+      ).rows[0].n as number,
+    );
     const ring = page.locator(".food-ring");
-    for (const side of ["is-left", "is-top", "is-right"])
+    const sizes = [
+      Math.min(4, withImages),
+      Math.min(4, Math.max(0, withImages - 4)),
+      Math.max(0, withImages - 8),
+    ];
+    for (const [i, side] of ["is-left", "is-top", "is-right"].entries())
       await expect(ring.locator(`.food-ring-line.${side} button`)).toHaveCount(
-        4,
+        sizes[i],
       );
     const left = ring.locator(".food-ring-line.is-left button");
-    const [first, second] = await Promise.all([
-      left.nth(0).boundingBox(),
-      left.nth(1).boundingBox(),
-    ]);
-    expect(first!.y).toBeGreaterThan(second!.y);
-    const top = await ring.locator(".food-ring-line.is-top").boundingBox();
+    const first = await left.nth(0).boundingBox();
+    if (withImages > 1)
+      expect(first!.y).toBeGreaterThan((await left.nth(1).boundingBox())!.y);
     const main = await ring.locator(".food-showcase-main").boundingBox();
     expect(first!.x).toBeLessThan(main!.x);
-    expect(top!.y + top!.height).toBeLessThanOrEqual(main!.y + 1);
     await page.locator(".hero").screenshot({
       path: `test-results/hero-plates-${info().project.name}.png`,
     });

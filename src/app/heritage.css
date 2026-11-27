@@ -2459,3 +2459,15 @@ button.food-dish:focus-visible .food-dish-visual {
     display: none;
   }
 }
+/* الصحون تملأ أماكنها بالترتيب ولو قلّ عددها: الصف الأعلى من اليسار، والعمود الأيمن من الأعلى. */
+.food-ring-line.is-top {
+  direction: ltr;
+  display: grid;
+  grid-template-columns: repeat(4, var(--plate));
+  justify-content: space-between;
+}
+.food-ring-line.is-right {
+  display: grid;
+  grid-template-rows: repeat(4, var(--plate));
+  align-content: space-between;
+}
