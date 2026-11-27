@@ -98,6 +98,16 @@ export function FoodPhotos() {
             preload={main.id === ctx.plates[0]?.id}
           />
         )}
+        {/* الضغط على الصحن المكبّر يفتح تفاصيل المنتج (طلب المالك 2026-11-27).
+            للوحة المفاتيح وقارئات الشاشة رابط «التفاصيل» نفسه، فلا يتكرر. */}
+        {main.href && (
+          <Link
+            href={main.href}
+            className="food-showcase-open"
+            tabIndex={-1}
+            aria-hidden="true"
+          />
+        )}
         {main.href && (
           <figcaption className="food-showcase-caption" aria-live="polite">
             <strong>{main.name}</strong>

@@ -2368,3 +2368,12 @@ button.food-dish:focus-visible .food-dish-visual {
     --ring-gap: 6px;
   }
 }
+
+/* الصحن المكبّر داخل القوس رابط لتفاصيل المنتج (طلب المالك 2026-11-27). */
+.food-showcase-open {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  cursor: pointer;
+}

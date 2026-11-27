@@ -202,6 +202,12 @@ test.describe("activity numbers", () => {
       caption.getByRole("link", { name: /التفاصيل/ }),
     ).toHaveAttribute("href", `/products/${product}`);
     await expect(plate.locator(".order-badge")).toHaveText("٢");
+    // الضغط على الصحن المكبّر داخل القوس يفتح تفاصيل المنتج (طلب المالك 2026-11-27).
+    await page
+      .locator(".food-showcase-main")
+      .click({ position: { x: 60, y: 60 } });
+    await expect(page).toHaveURL(new RegExp(`/products/${product}$`));
+    await page.goBack();
     // ثلاثة صفوف من أربعة حول القوس (رسم المالك 2026-11-27)، والأحدث رقم ١ أسفل اليسار.
     const ring = page.locator(".food-ring");
     for (const side of ["is-left", "is-top", "is-right"])
