@@ -173,16 +173,33 @@ export const productSchema = z.object({
 });
 export const reviewSchema = z
   .object({
-    decision: z.enum(["approved", "rejected", "suspended"]),
+    /** complete: مكتمل الشروط؛ exempt: مستثنى من الشروط (قرار المالك 2026-11-27). كلاهما تفعيل. */
+    decision: z.enum([
+      "approved",
+      "complete",
+      "exempt",
+      "rejected",
+      "suspended",
+    ]),
     /** الملاحظة اختيارية عند الاعتماد، ولازمة عند طلب الاستكمال أو الإيقاف (لتعرف الأسرة السبب). */
     reason: z.string().trim().max(2000).default(""),
     eligibilityConfirmed: z.boolean().optional(),
     exceptionApproved: z.boolean().optional(),
   })
-  .refine((x) => x.decision !== "approved" || x.eligibilityConfirmed === true, {
-    message: "يجب تأكيد الأهلية النظامية للنشاط قبل الاعتماد",
-  })
-  .refine((x) => x.decision === "approved" || x.reason.length >= 5, {
-    message: "اكتب للأسرة النواقص أو سبب القرار (خمسة أحرف على الأقل)",
-    path: ["reason"],
-  });
+  .refine(
+    (x) =>
+      !["approved", "complete", "exempt"].includes(x.decision) ||
+      x.eligibilityConfirmed === true,
+    {
+      message: "يجب تأكيد الأهلية النظامية للنشاط قبل الاعتماد",
+    },
+  )
+  .refine(
+    (x) =>
+      ["approved", "complete", "exempt"].includes(x.decision) ||
+      x.reason.length >= 5,
+    {
+      message: "اكتب للأسرة النواقص أو سبب القرار (خمسة أحرف على الأقل)",
+      path: ["reason"],
+    },
+  );

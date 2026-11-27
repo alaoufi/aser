@@ -2702,3 +2702,15 @@ button.food-dish:focus-visible .food-dish-visual {
     padding-bottom: calc(96px + env(safe-area-inset-bottom));
   }
 }
+
+/* مستندات الأسر في الإدارة. */
+.admin-documents-list {
+  display: grid;
+  gap: 10px;
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+}
+.admin-documents-list li p {
+  margin: 4px 0;
+}
