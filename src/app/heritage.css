@@ -2414,3 +2414,48 @@ button.food-dish:focus-visible .food-dish-visual {
   justify-items: center;
   margin-top: 14px;
 }
+
+/* مشاركة التطبيق في رأس الموقع: أيقونة فقط، والقائمة نفسها (قرار المالك 2026-11-27). */
+.share-menu.header-share > summary {
+  justify-content: center;
+  min-height: 40px;
+  min-width: 40px;
+  padding: 0;
+  width: 40px;
+}
+/* القائمة تتمدد نحو داخل الصفحة (الأيقونة عند الطرف الأيسر)، ولا تتجاوز عرض الشاشة. */
+.header-share .share-panel {
+  max-height: calc(100dvh - 190px);
+  max-width: calc(100vw - 24px);
+  overflow-y: auto;
+}
+/* كلمات القائمة العلوية في سطر واحد مع أيقونة المشاركة. */
+@media (min-width: 1024px) {
+  .desktop-nav a {
+    white-space: nowrap;
+  }
+}
+@media (min-width: 851px) and (max-width: 1280px) {
+  .desktop-nav {
+    gap: 14px;
+  }
+  .header-actions {
+    gap: 12px;
+  }
+}
+/* التابلت العريض: مسافات أضيق لتتسع أيقونة المشاركة دون تجاوز عرض الشاشة. */
+@media (min-width: 851px) and (max-width: 1023px) {
+  .desktop-nav {
+    gap: 10px;
+    font-size: 13px;
+  }
+  .header-actions {
+    gap: 8px;
+  }
+}
+/* بين 851 و899: زر القالب (الكلاسيكي/الباب النجدي) في نافذة الألوان، فيتسع الرأس لأيقونة المشاركة. */
+@media (min-width: 851px) and (max-width: 899px) {
+  .header-actions > .desktop-only {
+    display: none;
+  }
+}

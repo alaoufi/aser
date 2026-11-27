@@ -1,4 +1,5 @@
 import { MobileNavigation } from "@/components/public/mobile-navigation";
+import { HeaderShare } from "@/components/public/header-share";
 import { BottomNav } from "@/components/public/bottom-nav";
 import { AboutTicker } from "@/components/public/about-ticker";
 import { AccountLink } from "@/components/public/account-link";
@@ -299,6 +300,8 @@ export default async function RootLayout({
                 <MessagesLink />
                 <AccountLink className="button small" />
               </div>
+              {/* مشاركة التطبيق (قرار المالك 2026-11-27): أيقونة في الرأس على الجوال والكمبيوتر. */}
+              <HeaderShare />
               {/* المحادثات ظاهرة دائمًا على الجوال بجانب زر القائمة */}
               <MessagesLink className="mobile-messages" />
               <MobileNavigation

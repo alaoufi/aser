@@ -71,6 +71,9 @@ export function ShareButton({
   url,
   text,
   image,
+  qr: qrImage,
+  iconOnly,
+  className,
 }: {
   title: string;
   /** الرابط المختصر؛ بدونه يُشارك رابط الصفحة الحالية. */
@@ -81,6 +84,11 @@ export function ShareButton({
   image?: string | null;
   /** للتوافق مع الاستخدام السابق. */
   label?: string;
+  /** صورة رمز QR جاهزة (لرابط ليس من روابط /s/ المختصرة). */
+  qr?: string | null;
+  /** أيقونة فقط بلا كلمة «مشاركة» (رأس الموقع)، واسمها لقارئ الشاشة. */
+  iconOnly?: string;
+  className?: string;
 }) {
   const [message, setMessage] = useState("");
   const [qr, setQr] = useState(false);
@@ -90,6 +98,7 @@ export function ShareButton({
     new URL(window.location.pathname + window.location.search, SITE_URL).href;
   const body = text ?? title;
   const code = url?.split("/s/")[1];
+  const qrSrc = qrImage ?? (code ? `/s/${code}/qr` : null);
   async function copy(app?: string) {
     try {
       await navigator.clipboard.writeText(link());
@@ -167,12 +176,14 @@ export function ShareButton({
     { name: "إنستغرام", icon: icons.camera, color: "#d6249f" },
   ];
   return (
-    <details className="share-menu">
-      <summary>
+    <details className={`share-menu${className ? ` ${className}` : ""}`}>
+      <summary aria-label={iconOnly}>
         {icons.share}
-        <span>
-          <T k="c.share.t1" />
-        </span>
+        {!iconOnly && (
+          <span>
+            <T k="c.share.t1" />
+          </span>
+        )}
       </summary>
       <div className="share-panel">
         <ul aria-label="المشاركة عبر">
@@ -219,7 +230,7 @@ export function ShareButton({
               نسخ الرابط
             </button>
           </li>
-          {code && (
+          {qrSrc && (
             <li>
               <button
                 type="button"
@@ -232,16 +243,16 @@ export function ShareButton({
             </li>
           )}
         </ul>
-        {qr && code && (
+        {qr && qrSrc && (
           <a
             className="share-qr"
-            href={`/s/${code}/qr`}
+            href={qrSrc}
             target="_blank"
             rel="noopener noreferrer"
           >
             {/* biome-ignore lint/performance/noImgElement: صورة SVG صغيرة يولّدها الخادم للرمز */}
             <img
-              src={`/s/${code}/qr`}
+              src={qrSrc}
               alt="رمز QR لرابط المشاركة"
               width={180}
               height={180}

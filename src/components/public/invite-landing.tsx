@@ -14,7 +14,8 @@ export function InviteLanding({
   platform,
   store,
 }: {
-  code: string;
+  /** رقم الدعوة؛ بدونه صفحة رابط التطبيق العام jdtna.sa/app. */
+  code?: string;
   platform: "ios" | "android" | "web";
   store: string | null;
 }) {
@@ -37,28 +38,34 @@ export function InviteLanding({
         : "Google Play";
   return (
     <section className="wrap invite-landing" aria-labelledby="invite-title">
-      <h1 id="invite-title">{txb("inviteLanding.title")}</h1>
-      <p>{tx("inviteLanding.body")}</p>
-      <div className="invite-landing-code">
-        <span>{txb("inviteLanding.code")}</span>
-        <strong dir="ltr">{code}</strong>
-        <button
-          type="button"
-          className="button secondary"
-          onClick={async () => {
-            setPaused(true);
-            try {
-              await navigator.clipboard.writeText(code);
-              setCopied(true);
-            } catch {
-              setCopied(false);
-            }
-          }}
-        >
-          {copied ? txb("inviteLanding.copied") : txb("inviteLanding.copy")}
-        </button>
-      </div>
-      <p className="invite-landing-hint">{tx("inviteLanding.hint")}</p>
+      <h1 id="invite-title">
+        {txb(code ? "inviteLanding.title" : "appLanding.title")}
+      </h1>
+      <p>{tx(code ? "inviteLanding.body" : "appLanding.body")}</p>
+      {code && (
+        <div className="invite-landing-code">
+          <span>{txb("inviteLanding.code")}</span>
+          <strong dir="ltr">{code}</strong>
+          <button
+            type="button"
+            className="button secondary"
+            onClick={async () => {
+              setPaused(true);
+              try {
+                await navigator.clipboard.writeText(code);
+                setCopied(true);
+              } catch {
+                setCopied(false);
+              }
+            }}
+          >
+            {copied ? txb("inviteLanding.copied") : txb("inviteLanding.copy")}
+          </button>
+        </div>
+      )}
+      {code && (
+        <p className="invite-landing-hint">{tx("inviteLanding.hint")}</p>
+      )}
       <p role="status" aria-live="polite">
         {paused ? "" : txb("inviteLanding.going", { place: storeName })}
       </p>

@@ -65,6 +65,20 @@ test.describe("invite a friend", () => {
     await expect(box.getByTestId("invite-balance")).toContainText("رصيدك: 0");
     const link = await box.getByLabel("رابط دعوتك").inputValue();
     expect(link).toBe(`https://jdtna.sa/r/${no}`);
+    // مشاركة التطبيق في رأس الموقع (قرار المالك 2026-11-27): رابط العضو jdtna.sa/app/رقمه.
+    const share = page.locator(".header-share");
+    await share.locator("summary").click();
+    await expect(share.locator(".share-link")).toHaveText(`jdtna.sa/app/${no}`);
+    await expect(share.getByRole("link", { name: "واتساب" })).toHaveAttribute(
+      "href",
+      new RegExp(encodeURIComponent(`رقم الدعوة: ${no}`)),
+    );
+    await share.getByRole("button", { name: "رمز QR" }).click();
+    await expect(share.locator(".share-qr img")).toHaveAttribute(
+      "src",
+      `/app/qr?r=${no}`,
+    );
+    await share.locator("summary").click();
     // رسالة الدعوة (طلب المالك 2026-11-26) ثم الرابط.
     await expect(box.getByRole("link", { name: "واتساب" })).toHaveAttribute(
       "href",
@@ -104,6 +118,13 @@ test.describe("invite a friend", () => {
     const raw = await page.request.get(`/r/${code}`, { maxRedirects: 0 });
     expect(raw.status()).toBe(302);
     expect(raw.headers().location).toBe(`/invite/${code}`);
+    // رابط مشاركة التطبيق برقم العضو كدعوة الصديق تمامًا.
+    const app = await page.request.get(`/app/${code}`, { maxRedirects: 0 });
+    expect(app.status()).toBe(302);
+    expect(app.headers().location).toBe(`/invite/${code}`);
+    expect(app.headers()["set-cookie"]).toContain(`jdatna_ref=${code}`);
+    const qr = await page.request.get(`/app/qr?r=${code}`);
+    expect(qr.headers()["content-type"]).toContain("image/svg+xml");
     // صفحة الدعوة القصيرة ثم التحويل حسب الجوال (قرار المالك 2026-11-27).
     // المتجران خارج الاختبار: يُعترض طلبهما ويُرد عليه هنا، فلا يُرسل شيء خارجيًا.
     await page.route(/apps\.apple\.com|play\.google\.com/, (r) =>

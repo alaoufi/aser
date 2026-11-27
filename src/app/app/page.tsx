@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { redirect } from "next/navigation";
-import { APP_STORE_URL, PLAY_STORE_URL } from "@/server/settings";
+import { InviteLanding } from "@/components/public/invite-landing";
+import { platformOf } from "@/lib/platform";
+import { APP_STORE_URL, PLAY_STORE_URL, getAppLinks } from "@/server/settings";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -12,13 +13,22 @@ export const metadata: Metadata = {
 };
 
 /**
- * رابط مختصر واحد للتطبيق: jdatna.com/app يفتح المتجر المناسب لجوال الزائر
- * (Google Play لأندرويد، App Store للآيفون والآيباد)، وفي الكمبيوتر صفحة فيها الرابطان.
+ * رابط مختصر واحد للتطبيق: jdtna.sa/app. على الجوال الصفحة القصيرة نفسها لدعوة الصديق ثم متجره
+ * (قرار المالك 2026-11-27)، وفي الكمبيوتر صفحة فيها الرابطان. ورابط العضو jdtna.sa/app/رقمه يُحسب له.
  */
 export default async function AppLink() {
   const agent = (await headers()).get("user-agent") ?? "";
-  if (/android/i.test(agent)) redirect(PLAY_STORE_URL);
-  if (/iphone|ipad|ipod/i.test(agent)) redirect(APP_STORE_URL);
+  const platform = platformOf(agent);
+  if (platform !== "web") {
+    const links = await getAppLinks();
+    const store =
+      platform === "ios" && links.showAppStore
+        ? APP_STORE_URL
+        : platform === "android" && links.showPlayStore
+          ? PLAY_STORE_URL
+          : null;
+    return <InviteLanding platform={platform} store={store} />;
+  }
   return (
     <article className="wrap prose page-space app-links">
       <h1>حمّل تطبيق أكلات جدتنا</h1>
