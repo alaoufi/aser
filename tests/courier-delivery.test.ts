@@ -98,6 +98,7 @@ test(
         nationalId: i ? "1023456781" : "1023456782",
         documentId: docs[i],
         carType: "سيارة",
+        nationality: "سعودي",
         cityId: a.id,
       });
       // المراكز لا بد أن تتبع مدينة المندوب.

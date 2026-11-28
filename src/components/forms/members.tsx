@@ -19,6 +19,8 @@ type Member = {
   familyName: string | null;
   /** حالة ملف الأسرة إن وُجد ('closed': تحوّلت إلى عميل). */
   familyStatus?: string | null;
+  /** حالة اعتماد المندوب إن كان مندوبًا. */
+  courierStatus?: string | null;
   createdAt?: string;
 };
 type Access = { fullAdmin: boolean; permissions: string[] };
@@ -166,6 +168,25 @@ const TABS: MemberTab[] = [
   "admins",
 ];
 /** نوع الحساب في سطر العضو. */
+/** حالة الاعتماد في التفاصيل: للأسرة والمندوب (قرار المالك 2026-11-28). */
+function approvalKey(m: Member) {
+  const st =
+    m.familyStatus && m.familyStatus !== "closed"
+      ? m.familyStatus
+      : m.courierStatus;
+  return st === "pending"
+    ? ("members.approval.pending" as const)
+    : st === "approved"
+      ? ("members.approval.approved" as const)
+      : st === "rejected"
+        ? ("members.approval.rejected" as const)
+        : st === "suspended"
+          ? ("members.approval.suspended" as const)
+          : st === "hidden"
+            ? ("members.approval.hidden" as const)
+            : null;
+}
+
 function accountType(m: Member, tx: ReturnType<typeof useTx>["tx"]) {
   if (m.role === "admin") return tx("members.type.admin");
   const family = Boolean(m.familyName) && m.familyStatus !== "closed";
@@ -486,6 +507,12 @@ export function MembersAdmin() {
                             ? tx("members.suspendedTag")
                             : tx("members.activeTag")}
                         </dd>
+                        {approvalKey(m) && (
+                          <>
+                            <dt>{tx("members.d.approval")}</dt>
+                            <dd>{tx(approvalKey(m)!)}</dd>
+                          </>
+                        )}
                         {m.createdAt && (
                           <>
                             <dt>{tx("members.d.joined")}</dt>

@@ -790,6 +790,31 @@ export const siteTextDefaults = {
   "alert.family.late.body":
     "«{name}» مضت 15 يومًا على تعهدها ولم ترفع المستندات الرسمية. تجدها في «تأخرت في المستندات».",
   "alert.courier.pending.title": "مندوب ينتظر الاعتماد",
+  "alert.courier.family.body":
+    "أسرة «{family}» سجّلت المندوب «{name}» وينتظر اعتمادك.",
+  "courier.nationality": "الجنسية",
+  "courier.nationality.choose": "اختر الجنسية",
+  "courier.nationality.required": "اختر الجنسية من القائمة",
+  "courier.nationality.none": "لم تُسجَّل",
+  "familyCourier.intro":
+    "سجّل مندوبًا تعرفه شخصيًا ليوصل طلبات «{family}». لا يُفعَّل إلا بعد موافقة الإدارة، ثم يظهر لأسرتك فقط في إسناد التوصيل.",
+  "familyCourier.pending": "⏳ بانتظار اعتماد الإدارة",
+  "familyCourier.rejected": "⛔ لم تعتمده الإدارة",
+  "familyCourier.pendingSaved":
+    "تم تسجيل المندوب ✓ وأُرسل للإدارة. يُفعَّل بعد موافقتها، ثم يدخل بجواله من «دخول» ← «نسيت كلمة المرور» أول مرة.",
+  "members.d.approval": "الاعتماد",
+  "members.approval.pending": "بانتظار اعتماد الإدارة",
+  "members.approval.approved": "معتمد",
+  "members.approval.rejected": "مرفوض",
+  "members.approval.suspended": "موقوف",
+  "members.approval.hidden": "مخفية",
+  "approvalAlerts.title": "من يستقبل إشعارات الموافقات",
+  "approvalAlerts.hint":
+    "يصل المحدَّدين إشعار عند تسجيل أسرة منتجة أو مندوب جديد ينتظر الموافقة.",
+  "approvalAlerts.loading": "جارٍ التحميل…",
+  "approvalAlerts.saved": "تم الحفظ.",
+  "approvalAlerts.admin": "مدير عام",
+  "approvalAlerts.approver": "صلاحية الاعتماد",
   "alert.courier.pending.body": "المندوب «{name}» سجّل وينتظر الاعتماد.",
   "alert.suggestion.title": "اقتراح جديد",
   "alert.security.title": "تنبيه أمني: محاولات دخول فاشلة كثيرة",
@@ -1763,6 +1788,60 @@ export const siteTextLabels: Record<
     "تأخر المستندات: النص ({name})",
   ],
   "alert.courier.pending.title": ["تنبيهات الإدارة", "مندوب جديد: العنوان"],
+  "alert.courier.family.body": [
+    "تنبيهات الإدارة",
+    "مندوب سجّلته أسرة: النص ({name} {family})",
+  ],
+  "courier.nationality": ["اعتماد المندوبين", "حقل الجنسية"],
+  "courier.nationality.choose": ["اعتماد المندوبين", "الجنسية: الخيار الأول"],
+  "courier.nationality.required": [
+    "اعتماد المندوبين",
+    "الجنسية: رسالة الإلزام",
+  ],
+  "courier.nationality.none": ["اعتماد المندوبين", "الجنسية غير مسجلة"],
+  "familyCourier.intro": [
+    "اعتماد المندوبين",
+    "مندوب الأسرة: المقدمة ({family})",
+  ],
+  "familyCourier.pending": [
+    "اعتماد المندوبين",
+    "مندوب الأسرة: بانتظار الاعتماد",
+  ],
+  "familyCourier.rejected": ["اعتماد المندوبين", "مندوب الأسرة: مرفوض"],
+  "familyCourier.pendingSaved": [
+    "اعتماد المندوبين",
+    "مندوب الأسرة: رسالة بعد التسجيل",
+  ],
+  "members.d.approval": ["الأعضاء والصلاحيات (الإدارة)", "تفاصيل: الاعتماد"],
+  "members.approval.pending": [
+    "الأعضاء والصلاحيات (الإدارة)",
+    "الاعتماد: بالانتظار",
+  ],
+  "members.approval.approved": [
+    "الأعضاء والصلاحيات (الإدارة)",
+    "الاعتماد: معتمد",
+  ],
+  "members.approval.rejected": [
+    "الأعضاء والصلاحيات (الإدارة)",
+    "الاعتماد: مرفوض",
+  ],
+  "members.approval.suspended": [
+    "الأعضاء والصلاحيات (الإدارة)",
+    "الاعتماد: موقوف",
+  ],
+  "members.approval.hidden": [
+    "الأعضاء والصلاحيات (الإدارة)",
+    "الاعتماد: مخفية",
+  ],
+  "approvalAlerts.title": ["اعتماد المندوبين", "مستقبلو الإشعارات: العنوان"],
+  "approvalAlerts.hint": ["اعتماد المندوبين", "مستقبلو الإشعارات: الشرح"],
+  "approvalAlerts.loading": ["اعتماد المندوبين", "مستقبلو الإشعارات: التحميل"],
+  "approvalAlerts.saved": ["اعتماد المندوبين", "مستقبلو الإشعارات: تم الحفظ"],
+  "approvalAlerts.admin": ["اعتماد المندوبين", "مستقبلو الإشعارات: مدير عام"],
+  "approvalAlerts.approver": [
+    "اعتماد المندوبين",
+    "مستقبلو الإشعارات: صلاحية الاعتماد",
+  ],
   "alert.courier.pending.body": [
     "تنبيهات الإدارة",
     "مندوب جديد: النص ({name})",
@@ -2448,6 +2527,7 @@ export const siteTextSections: readonly (readonly [
       "ترتيب قائمة الإدارة",
       "الأعضاء والصلاحيات (الإدارة)",
       "الأعضاء",
+      "اعتماد المندوبين",
       "المشاهدات",
     ],
   ],

@@ -9,6 +9,8 @@ import { OrderChatButton } from "./chat";
 import { DirectoryButton } from "./directory";
 import { collectIssues, FormIssues, type FormIssue } from "./form-issues";
 import { Stars } from "@/components/public/stars";
+import { NATIONALITIES } from "@/lib/nationalities";
+import { useTx } from "@/components/site-texts";
 import {
   AccountShell,
   Guard,
@@ -26,6 +28,7 @@ type Courier = {
   cityId: string;
   regionId: string;
   carType: string;
+  nationality: string | null;
   documentId: string | null;
   nationalId: string;
   showPhone: boolean;
@@ -138,6 +141,7 @@ export function CourierPanel() {
             nationalId: f.get("nationalId"),
             documentId,
             carType: f.get("carType"),
+            nationality: f.get("nationality"),
             cityId: f.get("cityId"),
             showPhone: f.has("showPhone"),
             showWhatsapp: f.has("showWhatsapp"),
@@ -289,6 +293,7 @@ export function CourierPanel() {
                 autoComplete="off"
               />
             </label>
+            <NationalityField defaultValue={courier?.nationality ?? ""} />
             <label className={s.field}>
               نوع السيارة
               <input
@@ -454,7 +459,34 @@ type FamilyCourier = {
  * «مندوبي الخاص»: الأسرة تسجّل مندوبها بالاسم والجوال ونوع السيارة، بتعهّدها بمعرفته
  * ومسؤوليتها عنه، فيُعتمد فورًا ويظهر لها وحدها في إسناد التوصيل.
  */
+/** الجنسية: قائمة منسدلة إلزامية (قرار المالك 2026-11-28). */
+function NationalityField({ defaultValue = "" }: { defaultValue?: string }) {
+  const { tx } = useTx();
+  return (
+    <label className={s.field}>
+      {tx("courier.nationality")}
+      <select
+        name="nationality"
+        required
+        defaultValue={defaultValue}
+        data-label={tx("courier.nationality")}
+        data-reason={tx("courier.nationality.required")}
+      >
+        <option value="" disabled>
+          {tx("courier.nationality.choose")}
+        </option>
+        {NATIONALITIES.map((n) => (
+          <option key={n} value={n}>
+            {n}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
 function FamilyCouriers() {
+  const { tx } = useTx();
   const [data, setData] = useState<{
     familyName: string;
     pledge: string;
@@ -487,11 +519,12 @@ function FamilyCouriers() {
     const f = new FormData(form);
     setBusy(true);
     try {
-      await api("/api/producer/couriers", {
+      const r = await api<{ status: string }>("/api/producer/couriers", {
         method: "POST",
         body: JSON.stringify({
           name: f.get("name"),
           phone: f.get("phone"),
+          nationality: f.get("nationality"),
           vehicle,
           ...(vehicle === "car"
             ? { carModel: f.get("carModel"), carColor: f.get("carColor") }
@@ -503,7 +536,9 @@ function FamilyCouriers() {
       setVehicle("car");
       await load();
       setSuccess(
-        "تم تسجيل المندوب ✓ يدخل بجواله من «دخول» ← «نسيت كلمة المرور» أول مرة، فتصله طلبات التوصيل التي تسندها إليه.",
+        r.status === "approved"
+          ? "تم تسجيل المندوب ✓ يدخل بجواله من «دخول» ← «نسيت كلمة المرور» أول مرة، فتصله طلبات التوصيل التي تسندها إليه."
+          : tx("familyCourier.pendingSaved"),
       );
     } catch (err) {
       setError((err as Error).message);
@@ -541,8 +576,7 @@ function FamilyCouriers() {
     <section className={s.card} aria-label="مندوبي الخاص">
       <h2>مندوبي الخاص</h2>
       <p className={s.muted}>
-        سجّل مندوبًا تعرفه شخصيًا ليوصل طلبات «{data.familyName}». يُعتمد فورًا
-        دون انتظار الإدارة، ويظهر لأسرتك فقط في إسناد التوصيل.
+        {tx("familyCourier.intro", { family: data.familyName })}
       </p>
       <Message error={error} success={success} />
       {data.couriers.length > 0 && (
@@ -560,9 +594,13 @@ function FamilyCouriers() {
                   ? k.active
                     ? "✅ نشط — تسند إليه طلبات التوصيل"
                     : "⏸️ أوقف ظهوره مؤقتًا من حسابه"
-                  : k.stoppedByAdmin
-                    ? "⛔ أوقفته الإدارة"
-                    : "⛔ موقوف"}
+                  : k.status === "pending"
+                    ? tx("familyCourier.pending")
+                    : k.status === "rejected"
+                      ? tx("familyCourier.rejected")
+                      : k.stoppedByAdmin
+                        ? "⛔ أوقفته الإدارة"
+                        : "⛔ موقوف"}
                 {k.status === "approved" && !k.joined && (
                   <small className={s.muted}>
                     {" "}
@@ -570,7 +608,7 @@ function FamilyCouriers() {
                   </small>
                 )}
               </p>
-              {k.status === "approved" && (
+              {(k.status === "approved" || k.status === "pending") && (
                 <button
                   type="button"
                   className={s.buttonSecondary}
@@ -603,6 +641,7 @@ function FamilyCouriers() {
             />
           </label>
         </div>
+        <NationalityField />
         <fieldset className={s.vehicleChoice}>
           <legend>المركبة</legend>
           {(
@@ -898,6 +937,7 @@ type AdminCourier = {
   phone: string;
   carType: string;
   cityName: string;
+  nationality: string | null;
   documentId: string | null;
   nationalId: string;
   status: Courier["status"];
@@ -913,6 +953,7 @@ export function AdminCouriers({
   onChanged?: () => void;
   onlyPending?: boolean;
 }) {
+  const { tx } = useTx();
   const [list, setList] = useState<AdminCourier[] | null>(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -968,6 +1009,10 @@ export function AdminCouriers({
             {k.familyName && <PrivateCourierBadge family={k.familyName} />}
             <p>
               <bdi dir="ltr">{k.phone}</bdi> · {k.cityName} · 🚗 {k.carType}
+            </p>
+            <p>
+              {tx("courier.nationality")}:{" "}
+              {k.nationality ?? tx("courier.nationality.none")}
             </p>
             {k.familyName ? (
               <p>سجّلته الأسرة بتعهّدها بمعرفته ومسؤوليتها عنه، دون هوية.</p>

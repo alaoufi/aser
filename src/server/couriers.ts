@@ -14,6 +14,7 @@ import {
 } from "./security";
 import { normalizeNationalId } from "./validation";
 import { notifyApprovers, privateKey } from "./management";
+import { NATIONALITIES } from "../lib/nationalities";
 
 /**
  * المندوب: عضو يتفق مع الأسر المنتجة على توصيل طلبات زبائنها.
@@ -27,6 +28,7 @@ const courierSchema = z
     nationalId: z.string().max(30),
     documentId: z.uuid({ error: "أرفق صورة الهوية" }),
     carType: z.string().trim().min(2, "اكتب نوع السيارة").max(80),
+    nationality: z.enum(NATIONALITIES, { error: "اختر الجنسية" }),
     cityId: z.string().min(1, "اختر مدينة العمل").max(50),
     showPhone: z.boolean().default(true),
     showWhatsapp: z.boolean().default(true),
@@ -56,7 +58,7 @@ const familyNameSql = `(SELECT COALESCE(fp.trade_name,fp.name) FROM jdatna.produ
 export async function ownCourier(user: SessionUser) {
   const row = (
     await db().query(
-      `SELECT k.id,k.name,k.city_id AS "cityId",c.region_id AS "regionId",k.car_type AS "carType",k.document_id AS "documentId",
+      `SELECT k.id,k.name,k.city_id AS "cityId",c.region_id AS "regionId",k.car_type AS "carType",k.nationality,k.document_id AS "documentId",
         k.show_phone AS "showPhone",k.show_whatsapp AS "showWhatsapp",k.status,k.review_reason AS "reviewReason",k.national_id_encrypted,
         k.active,k.city_price::float8 AS "cityPrice",${familyNameSql} AS "familyName",
         COALESCE((SELECT json_agg(json_build_object('nodeId',x.center_node_id,'price',x.price::float8)) FROM jdatna.courier_centers x WHERE x.courier_id=k.id),'[]') AS centers
@@ -145,9 +147,9 @@ export async function saveCourier(user: SessionUser, input: unknown) {
         : (existing.status as string);
     const id = (existing?.id as string | undefined) ?? randomUUID();
     await client.query(
-      `INSERT INTO jdatna.courier_profiles(id,user_id,name,city_id,car_type,document_id,national_id_encrypted,show_phone,show_whatsapp,status)
-       VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
-       ON CONFLICT(user_id) DO UPDATE SET name=EXCLUDED.name,city_id=EXCLUDED.city_id,car_type=EXCLUDED.car_type,
+      `INSERT INTO jdatna.courier_profiles(id,user_id,name,city_id,car_type,document_id,national_id_encrypted,show_phone,show_whatsapp,status,nationality)
+       VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+       ON CONFLICT(user_id) DO UPDATE SET name=EXCLUDED.name,city_id=EXCLUDED.city_id,car_type=EXCLUDED.car_type,nationality=EXCLUDED.nationality,
          document_id=EXCLUDED.document_id,national_id_encrypted=EXCLUDED.national_id_encrypted,
          show_phone=EXCLUDED.show_phone,show_whatsapp=EXCLUDED.show_whatsapp,status=EXCLUDED.status,updated_at=now()`,
       [
@@ -161,6 +163,7 @@ export async function saveCourier(user: SessionUser, input: unknown) {
         value.showPhone,
         value.showWhatsapp,
         status,
+        value.nationality,
       ],
     );
     // المراكز: التابعة لمدينة المندوب فقط، ولكل مركز سعره.
@@ -550,7 +553,7 @@ export async function adminCouriers(user: SessionUser) {
     throw new HttpError(403, "لا تملك صلاحية المراجعة");
   const rows = (
     await db().query(
-      `SELECT k.id,k.user_id AS "userId",k.name,u.phone,k.car_type AS "carType",c.name AS "cityName",
+      `SELECT k.id,k.user_id AS "userId",k.name,u.phone,k.car_type AS "carType",k.nationality,c.name AS "cityName",
          k.document_id AS "documentId",k.status,k.review_reason AS "reviewReason",k.created_at AS "createdAt",k.national_id_encrypted,
          ${familyNameSql} AS "familyName"
        FROM jdatna.courier_profiles k JOIN jdatna.users u ON u.id=k.user_id JOIN jdatna.cities c ON c.id=k.city_id
@@ -638,8 +641,8 @@ export async function pendingCouriers() {
 }
 
 /**
- * المندوب الخاص بالأسرة: تسجّله الأسرة المعتمدة بالاسم والجوال ونوع السيارة، بتعهّدها بمعرفته
- * ومسؤوليتها عنه، فيُعتمد فورًا دون الإدارة ويظهر لأسرتها فقط. يدخل المندوب بجواله
+ * المندوب الخاص بالأسرة: تسجّله الأسرة المعتمدة بالاسم والجوال والجنسية ونوع السيارة، بتعهّدها بمعرفته
+ * ومسؤوليتها عنه، ولا يُفعَّل إلا بموافقة الإدارة (قرار المالك 2026-11-28؛ كان يُعتمد فورًا)، ويظهر لأسرتها فقط. يدخل المندوب بجواله
  * («نسيت كلمة المرور» أول مرة برمز الجوال) فيرى طلبات التوصيل ويؤكد التوصيل.
  */
 /**
@@ -650,6 +653,7 @@ const familyCourierSchema = z
   .object({
     name: z.string().trim().min(2, "اكتب اسم المندوب").max(120),
     phone: z.string().trim().min(1, "اكتب جوال المندوب").max(40),
+    nationality: z.enum(NATIONALITIES, { error: "اختر جنسية المندوب" }),
     vehicle: z.enum(["car", "motorcycle"], {
       error: "اختر نوع المركبة: سيارة أو دباب",
     }),
@@ -711,7 +715,7 @@ export async function familyCouriers(user: SessionUser) {
   const family = await approvedFamily(db(), user);
   const couriers = (
     await db().query(
-      `SELECT k.id,k.user_id AS "userId",k.name,u.phone,k.car_type AS "carType",k.vehicle,k.status,k.active,
+      `SELECT k.id,k.user_id AS "userId",k.name,u.phone,k.car_type AS "carType",k.nationality,k.vehicle,k.status,k.active,
          k.review_reason AS "reviewReason",(k.status='suspended' AND k.reviewer_id IS NOT NULL AND k.reviewer_id<>$2) AS "stoppedByAdmin",
          (u.password_hash IS NOT NULL) AS joined,k.pledged_at AS "pledgedAt"
        FROM jdatna.courier_profiles k JOIN jdatna.users u ON u.id=k.user_id
@@ -728,7 +732,7 @@ export async function saveFamilyCourier(user: SessionUser, input: unknown) {
   const phone = normalizePhone(value.phone);
   if (phone === user.phone)
     throw new HttpError(409, "اكتب جوال المندوب، لا جوال الأسرة");
-  return transaction(async (client) => {
+  const saved = await transaction(async (client) => {
     const family = await approvedFamily(client, user, true);
     // نفس قفل التحقق من الجوال، فلا يتسابق مع تسجيل جديد بالرقم نفسه.
     await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1,2))", [
@@ -756,7 +760,7 @@ export async function saveFamilyCourier(user: SessionUser, input: unknown) {
     const existing = member
       ? ((
           await client.query(
-            "SELECT id,family_id,status,reviewer_id FROM jdatna.courier_profiles WHERE user_id=$1 FOR UPDATE",
+            "SELECT id,family_id,status,reviewer_id,approved_at FROM jdatna.courier_profiles WHERE user_id=$1 FOR UPDATE",
             [member.id],
           )
         ).rows[0] as
@@ -765,6 +769,7 @@ export async function saveFamilyCourier(user: SessionUser, input: unknown) {
               family_id: string | null;
               status: string;
               reviewer_id: string | null;
+              approved_at: Date | null;
             }
           | undefined)
       : undefined;
@@ -802,13 +807,17 @@ export async function saveFamilyCourier(user: SessionUser, input: unknown) {
       );
     }
     const id = existing?.id ?? randomUUID();
+    // لا يُفعَّل إلا بموافقة الإدارة. سبق أن اعتُمد (ثم أوقفته الأسرة) فيعود معتمدًا؛ غير ذلك ينتظر الاعتماد.
+    const status =
+      existing?.approved_at && existing.status !== "rejected"
+        ? "approved"
+        : "pending";
     await client.query(
-      `INSERT INTO jdatna.courier_profiles(id,user_id,name,city_id,car_type,status,family_id,pledged_by,pledged_at,approved_at,vehicle,car_model,car_color)
-       VALUES($1,$2,$3,$4,$5,'approved',$6,$7,now(),now(),$8,$9,$10)
+      `INSERT INTO jdatna.courier_profiles(id,user_id,name,city_id,car_type,status,family_id,pledged_by,pledged_at,vehicle,car_model,car_color,nationality)
+       VALUES($1,$2,$3,$4,$5,$11,$6,$7,now(),$8,$9,$10,$12)
        ON CONFLICT(user_id) DO UPDATE SET name=EXCLUDED.name,car_type=EXCLUDED.car_type,vehicle=EXCLUDED.vehicle,
-         car_model=EXCLUDED.car_model,car_color=EXCLUDED.car_color,status='approved',
-         review_reason=NULL,reviewer_id=NULL,pledged_by=EXCLUDED.pledged_by,pledged_at=now(),
-         approved_at=COALESCE(jdatna.courier_profiles.approved_at,now()),updated_at=now()`,
+         car_model=EXCLUDED.car_model,car_color=EXCLUDED.car_color,nationality=EXCLUDED.nationality,status=EXCLUDED.status,
+         review_reason=NULL,reviewer_id=NULL,pledged_by=EXCLUDED.pledged_by,pledged_at=now(),updated_at=now()`,
       [
         id,
         member!.id,
@@ -820,10 +829,30 @@ export async function saveFamilyCourier(user: SessionUser, input: unknown) {
         value.vehicle,
         value.vehicle === "car" ? value.carModel : null,
         value.vehicle === "car" ? value.carColor : null,
+        status,
+        value.nationality,
       ],
     );
-    return { id, userId: member!.id, status: "approved" as const };
+    return {
+      id,
+      userId: member!.id,
+      status: status as "approved" | "pending",
+      familyName: family.name,
+      newlyPending: status === "pending" && existing?.status !== "pending",
+    };
   });
+  if (saved.newlyPending)
+    void notifyApprovers(
+      value.name,
+      await msg("alert.courier.family.body", {
+        name: value.name,
+        family: saved.familyName,
+      }),
+      await msg("alert.courier.pending.title"),
+      "/admin/approvals",
+      "courier-approval",
+    );
+  return { id: saved.id, userId: saved.userId, status: saved.status };
 }
 
 /** الأسرة توقف مندوبها الخاص (يبقى سجل توصيلاته وتقييمه)، وتعيده بتسجيل جواله مرة أخرى. */
@@ -832,7 +861,7 @@ export async function stopFamilyCourier(user: SessionUser, input: unknown) {
   const r = await db().query(
     `UPDATE jdatna.courier_profiles k SET status='suspended',review_reason='أوقفته الأسرة',reviewer_id=$2,updated_at=now()
      FROM jdatna.producer_profiles p
-     WHERE k.id=$1 AND k.family_id=p.id AND p.user_id=$2 AND k.status='approved' RETURNING k.id`,
+     WHERE k.id=$1 AND k.family_id=p.id AND p.user_id=$2 AND k.status IN ('approved','pending') RETURNING k.id`,
     [id, user.id],
   );
   if (!r.rowCount) throw new HttpError(404, "المندوب غير موجود أو موقوف");

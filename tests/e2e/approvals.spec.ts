@@ -356,3 +356,67 @@ test("an admin opening an admin link from the personal site gets a one-tap way i
     page.getByRole("button", { name: "افتح لوحة الإدارة" }),
   ).toBeVisible();
 });
+
+// قرار المالك 2026-11-28: المدير العام يحدد من يستقبل إشعارات الموافقات، ويرى جنسية المندوب.
+test("the general manager chooses who receives approval notifications and sees the courier's nationality", async ({
+  page,
+}) => {
+  await asAdmin(page);
+  await page.route("**/api/admin/producers**", (r) =>
+    r.fulfill({ json: { producers: [], count: 0 } }),
+  );
+  await page.route("**/api/admin/couriers", (r) =>
+    r.fulfill({
+      json: {
+        couriers: [
+          {
+            id: "00000000-0000-4000-8000-000000000071",
+            userId: "u71",
+            name: "حسن المندوب",
+            phone: "+966500000071",
+            carType: "دباب",
+            nationality: "يمني",
+            cityName: "الرياض",
+            documentId: null,
+            nationalId: "",
+            status: "pending",
+            reviewReason: null,
+            familyName: "مطبخ أم محمد",
+          },
+        ],
+      },
+    }),
+  );
+  const people = [
+    { id: "a", name: "مدير", phone: "", role: "admin", memberNo: 1, on: true },
+    {
+      id: "b",
+      name: "مشرف الاعتماد",
+      phone: "",
+      role: "customer",
+      memberNo: 2,
+      on: true,
+    },
+  ];
+  let posted: unknown;
+  await page.route("**/api/admin/approval-alerts", (r) => {
+    if (r.request().method() === "POST") {
+      posted = r.request().postDataJSON();
+      const p = people.find((x) => x.id === (posted as { id: string }).id)!;
+      p.on = (posted as { on: boolean }).on;
+      return r.fulfill({ json: posted });
+    }
+    return r.fulfill({ json: { recipients: people } });
+  });
+  await page.goto("/admin/approvals");
+  const couriers = page.getByRole("region", { name: "اعتماد المندوبين" });
+  await expect(couriers).toContainText("حسن المندوب");
+  await expect(couriers).toContainText("الجنسية: يمني");
+  const box = page.getByRole("region", { name: "من يستقبل إشعارات الموافقات" });
+  const approver = box.getByRole("checkbox", { name: /مشرف الاعتماد/ });
+  await expect(approver).toBeChecked();
+  await approver.uncheck();
+  await expect(box).toContainText("تم الحفظ.");
+  expect(posted).toEqual({ id: "b", on: false });
+  await expect(approver).not.toBeChecked();
+});

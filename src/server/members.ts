@@ -80,7 +80,8 @@ export async function listMembers(
   return (
     await db().query(
       `SELECT u.id,u.name,u.phone,u.role,u.member_no AS "memberNo",u.permissions,(u.suspended_at IS NOT NULL) AS suspended,
-        COALESCE(p.trade_name,p.name) AS "familyName",p.status AS "familyStatus",u.created_at AS "createdAt"
+        COALESCE(p.trade_name,p.name) AS "familyName",p.status AS "familyStatus",u.created_at AS "createdAt",
+        (SELECT k.status FROM jdatna.courier_profiles k WHERE k.user_id=u.id) AS "courierStatus"
        FROM jdatna.users u LEFT JOIN jdatna.producer_profiles p ON p.user_id=u.id
        WHERE (${where}) AND ($1='' OR u.name ILIKE '%'||$1||'%' OR COALESCE(p.name,'') ILIKE '%'||$1||'%'
          OR COALESCE(p.trade_name,'') ILIKE '%'||$1||'%'
