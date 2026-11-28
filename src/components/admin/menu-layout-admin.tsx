@@ -1,5 +1,7 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import Sortable from "sortablejs";
+import { useTx } from "@/components/site-texts";
 import { api, s as forms, useSession } from "@/components/forms/shared";
 import { SectionIcon } from "@/components/forms/section-icon";
 import { can } from "@/lib/permissions";
@@ -17,7 +19,7 @@ import css from "./menu-layout-admin.module.css";
 
 /**
  * «ترتيب القوائم» (من «أي خدمة»، AYK-410 وAYK-417): الإدارة ترتّب قائمتها بنفسها.
- * المجموعات والصفحات بالسهمين ▲▼ (بلا سحب وإفلات)، ونقل صفحة لمجموعة أخرى، وتغيير اسم المجموعة،
+ * المجموعات والصفحات بالسحب والإفلات (قرار المالك 2026-11-28: لا أسهم ▲▼؛ SortableJS)، ونقل صفحة لمجموعة أخرى، وتغيير اسم المجموعة،
  * وإضافة مجموعة، وإخفاء صفحة. بعد الحفظ تتغير القائمة الجانبية فورًا لكل أعضاء الإدارة، بلا نشر.
  */
 const move = <T,>(list: T[], from: number, to: number) => {
@@ -35,6 +37,65 @@ export function MenuLayoutAdmin() {
   const [msg, setMsg] = useState<{ text: string; bad?: boolean } | null>(null);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const { tx } = useTx();
+  const board = useRef<HTMLDivElement>(null);
+  // السحب والإفلات (SortableJS): المجموعة من مقبضها، والصفحة داخل مجموعتها أو إلى مجموعة أخرى.
+  // على الجوال ضغطة مطوّلة ثم سحب. SortableJS يحرّك العناصر؛ نعيدها مكانها ويرسم React الترتيب.
+  const shape = groups?.map((g) => `${g.key}:${g.items.length}`).join("|");
+  useEffect(() => {
+    const root = board.current;
+    if (!root || !shape) return;
+    const undo = (e: Sortable.SortableEvent) => {
+      e.to.removeChild(e.item);
+      e.from.insertBefore(e.item, e.from.children[e.oldIndex ?? 0] ?? null);
+    };
+    const common = {
+      animation: 150,
+      delay: 300,
+      delayOnTouchOnly: true,
+      ghostClass: css.dragGhost,
+    };
+    const list = [
+      Sortable.create(root, {
+        ...common,
+        handle: "[data-group-handle]",
+        draggable: "[data-group]",
+        onEnd: (e) => {
+          undo(e);
+          if (e.oldIndex == null || e.newIndex == null) return;
+          if (e.oldIndex !== e.newIndex)
+            change((gs) => move(gs, e.oldIndex!, e.newIndex!));
+        },
+      }),
+      ...[...root.querySelectorAll<HTMLElement>("[data-items]")].map((el) =>
+        Sortable.create(el, {
+          ...common,
+          group: "menu-items",
+          draggable: "[data-testid=menu-item]",
+          handle: "[data-item-handle]",
+          onEnd: (e) => {
+            undo(e);
+            const from = Number((e.from as HTMLElement).dataset.items);
+            const to = Number((e.to as HTMLElement).dataset.items);
+            const oi = e.oldDraggableIndex ?? e.oldIndex;
+            const ni = e.newDraggableIndex ?? e.newIndex;
+            if (oi == null || ni == null || (from === to && oi === ni)) return;
+            change((gs) => {
+              const item = gs[from].items[oi];
+              const next = gs.map((g) => ({ ...g, items: [...g.items] }));
+              next[from].items.splice(oi, 1);
+              next[to].items.splice(ni, 0, item);
+              return next;
+            });
+          },
+        }),
+      ),
+    ];
+    return () => {
+      for (const s of list) s.destroy();
+    };
+    // biome-ignore lint/correctness/useExhaustiveDependencies: يُعاد عند تغيّر شكل المجموعات فقط
+  }, [shape]);
 
   const start = (layout: MenuLayout | null) => {
     // المخفية تظهر هنا باهتة، لتُظهر من جديد.
@@ -60,16 +121,6 @@ export function MenuLayoutAdmin() {
     setDirty(true);
     setMsg(null);
   };
-  const moveGroup = (i: number, d: number) =>
-    change((gs) => (i + d < 0 || i + d >= gs.length ? gs : move(gs, i, i + d)));
-  const moveItem = (gi: number, ii: number, d: number) =>
-    change((gs) =>
-      gs.map((g, k) =>
-        k !== gi || ii + d < 0 || ii + d >= g.items.length
-          ? g
-          : { ...g, items: move(g.items, ii, ii + d) },
-      ),
-    );
   const sendTo = (gi: number, ii: number, target: string) =>
     change((gs) => {
       const item = gs[gi].items[ii];
@@ -170,12 +221,7 @@ export function MenuLayoutAdmin() {
       <h1 id="menu-layout-title" className="sr-only">
         ترتيب القوائم
       </h1>
-      <p className={css.help}>
-        غيّر مكان المجموعة أو الصفحة بالسهمين ▲▼. انقل الصفحة لمجموعة أخرى من
-        «نقل إلى…»، وغيّر اسم المجموعة بالكتابة فيه، وأخفِ صفحة بزر العين. بعد
-        «حفظ الترتيب» تتغير القائمة الجانبية فورًا لكل أعضاء الإدارة. الصفحات
-        التي تُضاف للموقع لاحقًا تظهر وحدها في مجموعتها.
-      </p>
+      <p className={css.help}>{tx("menuLayout.help")}</p>
       {msg && (
         <p
           role="status"
@@ -192,111 +238,100 @@ export function MenuLayoutAdmin() {
           ))}
         </ul>
       )}
-      {groups.map((g, gi) => (
-        <section
-          key={g.key}
-          className={css.group}
-          aria-label={`مجموعة ${groupTitle(g) || "بلا اسم"}`}
-        >
-          <div className={css.groupHead}>
-            <input
-              className={css.groupTitle}
-              value={g.title ?? g.label ?? ""}
-              onChange={(e) => rename(gi, e.target.value)}
-              aria-label="اسم المجموعة"
-            />
-            <button
-              type="button"
-              className={css.arrow}
-              onClick={() => moveGroup(gi, -1)}
-              disabled={gi === 0}
-              aria-label={`المجموعة ${groupTitle(g)} للأعلى`}
-            >
-              ▲
-            </button>
-            <button
-              type="button"
-              className={css.arrow}
-              onClick={() => moveGroup(gi, 1)}
-              disabled={gi === groups.length - 1}
-              aria-label={`المجموعة ${groupTitle(g)} للأسفل`}
-            >
-              ▼
-            </button>
-          </div>
-          {g.items.length === 0 && (
-            <p className={css.empty}>
-              لا صفحات. انقل إليها صفحة من مجموعة أخرى.
-            </p>
-          )}
-          {g.items.map((it, ii) => {
-            const off = hidden.has(it.to);
-            return (
-              <div
-                key={it.to}
-                className={`${css.item} ${off ? css.itemOff : ""}`}
-                data-testid="menu-item"
+      <div ref={board} className={css.board}>
+        {groups.map((g, gi) => (
+          <section
+            key={g.key}
+            className={css.group}
+            data-group={gi}
+            aria-label={`مجموعة ${groupTitle(g) || "بلا اسم"}`}
+          >
+            <div className={css.groupHead}>
+              <span
+                className={css.handle}
+                data-group-handle
+                title={tx("menuLayout.drag")}
+                aria-hidden="true"
               >
-                <span className={css.itemName}>
-                  <SectionIcon name={it.icon} />
-                  {it.labelKey}
-                  {off && " (مخفية)"}
-                </span>
-                <span className={css.itemTools}>
-                  <button
-                    type="button"
-                    className={css.arrow}
-                    onClick={() => moveItem(gi, ii, -1)}
-                    disabled={ii === 0}
-                    aria-label={`${it.labelKey} للأعلى`}
+                ⠿
+              </span>
+              <input
+                className={css.groupTitle}
+                value={g.title ?? g.label ?? ""}
+                onChange={(e) => rename(gi, e.target.value)}
+                aria-label="اسم المجموعة"
+              />
+            </div>
+            {g.items.length === 0 && (
+              <p className={css.empty}>
+                لا صفحات. انقل إليها صفحة من مجموعة أخرى.
+              </p>
+            )}
+            <div data-items={gi} className={css.items}>
+              {g.items.map((it, ii) => {
+                const off = hidden.has(it.to);
+                return (
+                  <div
+                    key={it.to}
+                    className={`${css.item} ${off ? css.itemOff : ""}`}
+                    data-testid="menu-item"
                   >
-                    ▲
-                  </button>
-                  <button
-                    type="button"
-                    className={css.arrow}
-                    onClick={() => moveItem(gi, ii, 1)}
-                    disabled={ii === g.items.length - 1}
-                    aria-label={`${it.labelKey} للأسفل`}
-                  >
-                    ▼
-                  </button>
-                  <select
-                    className={css.moveTo}
-                    value=""
-                    onChange={(e) =>
-                      e.target.value && sendTo(gi, ii, e.target.value)
-                    }
-                    aria-label={`نقل ${it.labelKey} إلى`}
-                  >
-                    <option value="">نقل إلى…</option>
-                    {groups
-                      .filter((_, k) => k !== gi)
-                      .map((o) => (
-                        <option key={o.key} value={o.key}>
-                          {groupTitle(o) || "بلا اسم"}
-                        </option>
-                      ))}
-                  </select>
-                  <button
-                    type="button"
-                    className={css.arrow}
-                    onClick={() => toggleHidden(it.to)}
-                    disabled={LOCKED.has(it.to)}
-                    aria-pressed={off}
-                    aria-label={`${off ? "إظهار" : "إخفاء"} ${it.labelKey}`}
-                    title={
-                      LOCKED.has(it.to) ? "لا تُخفى" : off ? "إظهار" : "إخفاء"
-                    }
-                  >
-                    <EyeIcon off={off} />
-                  </button>
-                </span>
-              </div>
-            );
-          })}
-        </section>
-      ))}
+                    <span className={css.itemName}>
+                      <span
+                        className={css.handle}
+                        data-item-handle
+                        title={tx("menuLayout.drag")}
+                        aria-hidden="true"
+                      >
+                        ⠿
+                      </span>
+                      <SectionIcon name={it.icon} />
+                      {it.labelKey}
+                      {off && " (مخفية)"}
+                    </span>
+                    <span className={css.itemTools}>
+                      <select
+                        className={css.moveTo}
+                        value=""
+                        onChange={(e) =>
+                          e.target.value && sendTo(gi, ii, e.target.value)
+                        }
+                        aria-label={`نقل ${it.labelKey} إلى`}
+                      >
+                        <option value="">نقل إلى…</option>
+                        {groups
+                          .filter((_, k) => k !== gi)
+                          .map((o) => (
+                            <option key={o.key} value={o.key}>
+                              {groupTitle(o) || "بلا اسم"}
+                            </option>
+                          ))}
+                      </select>
+                      <button
+                        type="button"
+                        className={css.arrow}
+                        onClick={() => toggleHidden(it.to)}
+                        disabled={LOCKED.has(it.to)}
+                        aria-pressed={off}
+                        aria-label={`${off ? "إظهار" : "إخفاء"} ${it.labelKey}`}
+                        title={
+                          LOCKED.has(it.to)
+                            ? "لا تُخفى"
+                            : off
+                              ? "إظهار"
+                              : "إخفاء"
+                        }
+                      >
+                        <EyeIcon off={off} />
+                      </button>
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        ))}
+      </div>
       <div className={css.bar}>
         <button
           type="button"

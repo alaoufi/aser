@@ -54,16 +54,51 @@ test("admin adds a member and grants permissions to members and families", async
     },
   ];
   const sent: unknown[] = [];
+  const tabs: string[] = [];
   await page.route("**/api/admin/members**", async (r) => {
     if (r.request().method() === "PATCH") {
       sent.push(r.request().postDataJSON());
       return r.fulfill({ json: { ok: true } });
     }
-    return r.fulfill({ json: { members } });
+    tabs.push(new URL(r.request().url()).searchParams.get("tab") ?? "all");
+    return r.fulfill({
+      json: {
+        members,
+        counts: {
+          all: 3,
+          new: 1,
+          suspended: 0,
+          families: 1,
+          customers: 1,
+          admins: 1,
+        },
+      },
+    });
   });
   await page.goto("/admin/members");
+  // التبويبات بعددها (قرار المالك 2026-11-28).
+  const tablist = page.getByRole("tablist", { name: "تبويبات الأعضاء" });
+  await expect(tablist.getByRole("tab")).toHaveText([
+    "الكل (3)",
+    "＋ إضافة مستخدم",
+    "المسجلون خلال 24 ساعة (1)",
+    "الموقوفون (0)",
+    "الأسر المنتجة (1)",
+    "العملاء (1)",
+    "الإدارة (1)",
+  ]);
+  // سطر لكل عضو: الاسم والرقم ونوع الحساب.
+  const row = (id: string) => page.locator(`#member-row-${id}`);
+  await expect(row("f")).toContainText("أم محمد");
+  await expect(row("f")).toContainText("رقم العضو");
+  await expect(row("f")).toContainText("أسرة منتجة");
+  await expect(row("m")).toContainText("عميل");
+  await expect(row("a")).toContainText("مدير عام");
+  await tablist.getByRole("tab", { name: /الأسر المنتجة/ }).click();
+  await expect.poll(() => tabs.at(-1)).toBe("families");
+  await tablist.getByRole("tab", { name: /الكل/ }).click();
   // إضافة عضو جديد برقم جواله وصلاحيات محددة.
-  await page.getByRole("button", { name: "＋ إضافة عضو أو مشرف" }).click();
+  await tablist.getByRole("tab", { name: "＋ إضافة مستخدم" }).click();
   const add = page.getByRole("form", { name: "إضافة عضو" });
   await add.getByLabel("اسم العضو").fill("نورة");
   await add.getByLabel("رقم الجوال").fill("0500000099");
@@ -80,11 +115,24 @@ test("admin adds a member and grants permissions to members and families", async
     fullAdmin: false,
     permissions: ["orders"],
   });
-  // حساب المدير نفسه لا يُعدَّل.
-  await page.getByRole("button", { name: /المدير \(حسابك\)/ }).click();
+  // حساب المدير نفسه لا يُعدَّل ولا يُوقف.
+  const menu = async (name: string, item: string) => {
+    await page.getByLabel(`خيارات ${name}`).click();
+    await page.getByRole("button", { name: item, exact: true }).click();
+  };
+  await page.getByLabel("خيارات المدير").click();
+  await expect(
+    row("a").getByRole("button", { name: "إيقاف", exact: true }),
+  ).toHaveCount(0);
+  await row("a").getByRole("button", { name: "تعديل", exact: true }).click();
   await expect(page.getByText("لا يمكنك تعديل صلاحيات حسابك")).toBeVisible();
+  // التفاصيل.
+  await menu("سارة", "تفاصيل");
+  await expect(row("m").locator(".member-details")).toContainText(
+    "+966500000010",
+  );
   // عضو عادي يُعطى صلاحيات محددة.
-  await page.getByRole("button", { name: /سارة/ }).click();
+  await menu("سارة", "تعديل");
   await page
     .getByRole("radio", { name: "مدير مخصص (أقسام تختارها له)" })
     .check();
@@ -99,7 +147,7 @@ test("admin adds a member and grants permissions to members and families", async
     permissions: ["orders", "reports"],
   });
   // الأسرة المنتجة: صلاحيات محددة متاحة، والمدير الكامل غير متاح، ويمكن إيقافها.
-  await page.getByRole("button", { name: /أم محمد/ }).click();
+  await menu("أم محمد", "تعديل");
   await expect(
     page.getByRole("radio", {
       name: "مدير عام (كل الأقسام والأعضاء والصلاحيات)",
@@ -117,8 +165,12 @@ test("admin adds a member and grants permissions to members and families", async
     fullAdmin: false,
     permissions: ["products"],
   });
-  await page.getByRole("button", { name: "إيقاف الحساب" }).click();
-  await page.getByRole("button", { name: "تأكيد إيقاف أم محمد" }).click();
+  // الإيقاف من ⋮ برسالة تأكيد.
+  await menu("أم محمد", "إيقاف");
+  const confirm = row("f").getByRole("alertdialog");
+  await expect(confirm).toContainText("إيقاف حساب «أم محمد»؟");
+  await page.screenshot({ path: "test-results/members-rows.png" });
+  await confirm.getByRole("button", { name: "نعم، تأكيد" }).click();
   await expect.poll(() => sent.length).toBe(4);
   expect(sent[3]).toEqual({ action: "suspend", id: "f" });
 });

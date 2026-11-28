@@ -3036,3 +3036,173 @@ article[id^="family-"]:focus {
 .table-paged > .table-arrow[hidden] {
   display: none;
 }
+
+/* قائمة «الأسر المنتجة» في الإدارة (قرار المالك 2026-11-28): سطور متقاربة، وأمام كل أسرة ⋮. */
+.family-row {
+  border-bottom: 1px solid var(--line);
+  display: grid;
+  gap: 8px;
+  padding: 8px 2px;
+}
+.family-row-line {
+  align-items: center;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+.family-row-name {
+  display: grid;
+  min-width: 0;
+}
+.family-row-name strong,
+.family-row-name small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.family-row-name small {
+  color: var(--muted);
+  font-size: 13px;
+}
+.family-row-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: flex-end;
+}
+.family-row-state,
+.family-row-verified {
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+.family-row-state {
+  background: #f4ead9;
+  color: var(--ink);
+}
+.family-row-state[data-key="active"],
+.family-row-state[data-key="trusted"] {
+  background: #e5ecd9;
+  color: var(--olive);
+}
+.family-row-state[data-key="review"] {
+  background: #fbe7c6;
+  color: #7a4b0c;
+}
+.family-row-state[data-key="suspended"],
+.family-row-state[data-key="hidden"] {
+  background: #f7dcd5;
+  color: var(--rust);
+}
+.family-row-verified {
+  background: var(--olive);
+  color: #fff;
+}
+.family-row-menu {
+  position: relative;
+}
+.family-row-menu > summary {
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  font-size: 20px;
+  height: 40px;
+  justify-content: center;
+  list-style: none;
+  width: 40px;
+}
+.family-row-menu > summary::-webkit-details-marker {
+  display: none;
+}
+.family-row-menu-list {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 12px 28px #2e1d1233;
+  display: grid;
+  inset-inline-end: 0;
+  min-width: 170px;
+  padding: 6px;
+  position: absolute;
+  top: calc(100% + 4px);
+  z-index: 20;
+}
+.family-row-menu-list button {
+  background: none;
+  border: 0;
+  border-radius: 8px;
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+  min-height: 40px;
+  padding: 0 12px;
+  text-align: start;
+}
+.family-row-menu-list button:hover,
+.family-row-menu-list button:focus-visible {
+  background: #f4ead9;
+}
+.family-row-menu-list button[data-danger] {
+  color: var(--rust);
+}
+.family-row-confirm {
+  background: #fbf6ee;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+}
+.family-row-confirm p {
+  margin: 0;
+}
+.family-row-confirm label {
+  display: grid;
+  font-size: 14px;
+  gap: 4px;
+}
+.family-row-confirm textarea {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font: inherit;
+  padding: 6px 8px;
+}
+.family-row-confirm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.producer-verified-badge {
+  background: var(--olive);
+  border-radius: 999px;
+  color: #fff;
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 700;
+  margin-inline-start: 8px;
+  padding: 2px 10px;
+  vertical-align: middle;
+}
+
+/* تفاصيل العضو في «الأعضاء والصلاحيات» (2026-11-28). */
+.member-details {
+  background: #fbf6ee;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  display: grid;
+  gap: 4px 12px;
+  grid-template-columns: max-content 1fr;
+  margin: 0;
+  padding: 10px 12px;
+}
+.member-details dt {
+  color: var(--muted);
+  font-size: 14px;
+}
+.member-details dd {
+  margin: 0;
+}

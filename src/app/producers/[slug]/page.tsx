@@ -179,7 +179,14 @@ export default async function ProducerDetail({
               {p.regionName} · {p.cityName}
             </p>
             <MemberNo no={p.memberNo} />
-            <h1>{p.name}</h1>
+            <h1>
+              {p.name}
+              {p.adminVerified && texts["family.verifiedBadge"] && (
+                <span className="producer-verified-badge">
+                  {texts["family.verifiedBadge"]} ✓
+                </span>
+              )}
+            </h1>
             <p className="view-count">
               <span aria-hidden="true">🍲</span> {productsLabel(shown)}
             </p>

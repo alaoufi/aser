@@ -54,19 +54,31 @@ test("families waiting for approval show as a count in the panel menu, not on th
   if ((page.viewportSize()?.width ?? 1280) < 1024)
     await page.getByRole("button", { name: "أقسام الإدارة" }).click();
   const menu = page.getByRole("complementary", { name: "أقسام الإدارة" });
-  const item = menu.getByRole("link", { name: /اعتماد الأسر والمندوبين/ });
+  // كل ما يخص الأسر في «الأسر المنتجة» (قرار المالك 2026-11-28): العدد بجانبها، والأسر كلها بحالاتها.
+  const item = menu.getByRole("link", { name: /الأسر المنتجة/ });
   await expect(item).toContainText("1");
+  await expect(
+    menu.getByRole("link", { name: /اعتماد المندوبين/ }),
+  ).not.toContainText("1");
   await item.click();
-  await expect(page).toHaveURL(/\/admin\/approvals$/);
+  await expect(page).toHaveURL(/\/admin\/producers$/);
   // على الجوال تُغلق القائمة بعد الاختيار.
   if ((page.viewportSize()?.width ?? 1280) < 1024)
     await page.getByRole("button", { name: "أقسام الإدارة" }).click();
   await expect(item).toHaveAttribute("aria-current", "page");
-  const panel = page.getByRole("region", { name: "اعتماد الأسر المنتجة" });
+  const waiting = page.locator(
+    "#family-row-00000000-0000-4000-8000-000000000011",
+  );
+  await expect(waiting).toContainText("أسرة تنتظر");
+  await expect(waiting).toContainText("تحت المراجعة");
   await expect(
-    panel.getByRole("heading", { name: "أسرة تنتظر" }),
+    page.locator("#family-row-00000000-0000-4000-8000-000000000012"),
+  ).toContainText("أسرة معتمدة");
+  // «اعتماد المندوبين» يدل على الأسر المنتظرة هنا.
+  await page.goto("/admin/approvals");
+  await expect(
+    page.getByText(/1 أسرة تنتظر الموافقة، تجدها مع كل الأسر/),
   ).toBeVisible();
-  await expect(panel.getByText("أسرة معتمدة")).toHaveCount(0);
 });
 
 test("site texts can be searched by place, label or wording", async ({
@@ -173,12 +185,11 @@ test("admin follows approved families with missing items from a dedicated filter
   const missing = filters.getByRole("button", { name: /من لديهم نواقص/ });
   await expect(missing).toContainText("(1)");
   await missing.click();
-  await expect(
-    page.getByRole("heading", { name: "أسرة بنواقص" }),
-  ).toBeVisible();
-  await expect(page.getByRole("heading", { name: "أسرة مكتملة" })).toHaveCount(
-    0,
-  );
+  // قائمة مضغوطة (قرار المالك 2026-11-28): سطر لكل أسرة، والبطاقة الكاملة من ⋮ ← «تفاصيل».
+  await expect(page.getByText("أسرة بنواقص", { exact: true })).toBeVisible();
+  await expect(page.getByText("أسرة مكتملة", { exact: true })).toHaveCount(0);
+  await page.getByLabel("خيارات أسرة بنواقص").click();
+  await page.getByRole("button", { name: "تفاصيل", exact: true }).click();
   await expect(
     page.getByText("النواقص المكتوبة عند الاعتماد: إرفاق شهادة الأسرة المنتجة"),
   ).toBeVisible();
@@ -213,6 +224,8 @@ test("admin extends a late family's document deadline or hides its products unti
   await page.goto("/admin/producers");
   const filters = page.getByRole("group", { name: "تصفية الأسر" });
   await filters.getByRole("button", { name: /تأخرت في المستندات/ }).click();
+  await page.getByLabel("خيارات شاهي متأخرة").click();
+  await page.getByRole("button", { name: "تفاصيل", exact: true }).click();
   await expect(page.getByText(/تأخرت في المستندات: /)).toBeVisible();
   const box = page.getByRole("group", { name: "مهلة المستندات" });
   await box
@@ -233,5 +246,113 @@ test("admin extends a late family's document deadline or hides its products unti
   expect(sent[1]).toEqual({ action: "extend", days: 30 });
   await expect(
     box.getByRole("button", { name: "إخفاء المنتجات حتى رفع المستندات" }),
+  ).toBeVisible();
+});
+
+// قائمة «الأسر المنتجة» (قرار المالك 2026-11-28): سطور متقاربة بحالة الحساب، وأمام كل أسرة ⋮ فيه
+// تفاصيل، تنشيط، توثيق، إيقاف، إخفاء — وكلها برسالة تأكيد؛ الإيقاف والإخفاء بسبب.
+test("each family is one compact row with its status and a ⋮ menu whose actions ask for confirmation", async ({
+  page,
+}) => {
+  await asAdmin(page);
+  const id = "00000000-0000-4000-8000-000000000041";
+  const family: Record<string, unknown> = {
+    id,
+    name: "أم فهد",
+    tradeName: "مطبخ ام فهد",
+    ownerName: "أم فهد",
+    cityName: "جازان",
+    status: "approved",
+    verified: true,
+    documentId: null,
+    adminVerifiedAt: null,
+  };
+  await page.route("**/api/admin/producers**", (r) =>
+    r.fulfill({ json: { producers: [family] } }),
+  );
+  const sent: unknown[] = [];
+  await page.route(`**/api/admin/producers/${id}/action`, (r) => {
+    const body = r.request().postDataJSON();
+    sent.push(body);
+    if (body.action === "verify")
+      family.adminVerifiedAt = "2026-11-28T10:00:00Z";
+    if (body.action === "hide") family.status = "hidden";
+    if (body.action === "unhide") family.status = "approved";
+    return r.fulfill({ json: { status: family.status } });
+  });
+  await page.goto("/admin/producers");
+  const row = page.locator(`#family-row-${id}`);
+  await expect(row).toContainText("مطبخ ام فهد");
+  await expect(row).toContainText("نشط");
+  const menu = page.getByLabel("خيارات مطبخ ام فهد");
+  await menu.click();
+  const items = await row
+    .locator(".family-row-menu-list button")
+    .allTextContents();
+  expect(items).toEqual(["تفاصيل", "توثيق", "إيقاف", "إخفاء"]);
+  // توثيق: رسالة تأكيد ثم الحفظ.
+  await row.getByRole("button", { name: "توثيق", exact: true }).click();
+  const confirm = row.getByRole("alertdialog");
+  await expect(confirm).toContainText("توثيق «مطبخ ام فهد»؟");
+  expect(sent).toHaveLength(0);
+  await confirm.getByRole("button", { name: "نعم، تأكيد" }).click();
+  await expect.poll(() => sent).toEqual([{ action: "verify" }]);
+  await expect(row).toContainText("موثّقة ✓");
+  // السبب اختياري (قرار المالك 2026-11-28)، والتراجع لا يرسل شيئًا.
+  await menu.click();
+  await row.getByRole("button", { name: "إخفاء", exact: true }).click();
+  await expect(
+    confirm.getByRole("button", { name: "نعم، تأكيد" }),
+  ).toBeEnabled();
+  await confirm.getByRole("button", { name: "تراجع" }).click();
+  await expect(confirm).toHaveCount(0);
+  await menu.click();
+  await row.getByRole("button", { name: "إخفاء", exact: true }).click();
+  await confirm
+    .getByLabel("السبب (اختياري، يصل للأسرة)")
+    .fill("الصور غير واضحة");
+  await page.screenshot({ path: "test-results/family-rows.png" });
+  await confirm.getByRole("button", { name: "نعم، تأكيد" }).click();
+  await expect
+    .poll(() => sent.at(-1))
+    .toEqual({ action: "hide", reason: "الصور غير واضحة" });
+  await expect(row).toContainText("مخفية مؤقتًا");
+  await menu.click();
+  await expect(row.locator(".family-row-menu-list button")).toHaveText([
+    "تفاصيل",
+    "إظهار",
+    "إيقاف",
+  ]);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+});
+
+// ملاحظة المالك 2026-11-28: إشعار إداري يُفتح من الموقع بالجلسة الشخصية كان يقول «ليست لديك صلاحية».
+test("an admin opening an admin link from the personal site gets a one-tap way into the panel", async ({
+  page,
+}) => {
+  await page.route("**/api/session", (r) =>
+    r.fulfill({
+      json: {
+        user: {
+          id: "a",
+          name: "مدير",
+          phone: "+966500000009",
+          role: "customer",
+          adminAccess: true,
+        },
+        registrationOpen: true,
+      },
+    }),
+  );
+  await page.goto(
+    "/admin/approvals?family=00000000-0000-4000-8000-000000000041",
+  );
+  await expect(page.getByText("ليست لديك صلاحية الوصول")).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "افتح لوحة الإدارة" }),
   ).toBeVisible();
 });

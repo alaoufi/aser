@@ -1,4 +1,6 @@
 "use client";
+import { MenuOrderEditor, useMenuOrder } from "./menu-order";
+import { useTx } from "@/components/site-texts";
 import { PendingFamiliesNotice } from "./pending-families";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -25,18 +27,28 @@ export function AdminFrame({ children }: { children: React.ReactNode }) {
   const user = session.user;
   const path = usePathname() ?? "/admin";
   const [open, setOpen] = useState(false);
-  const [pending, setPending] = useState(0);
+  const [pending, setPending] = useState({ families: 0, couriers: 0 });
   const [leaving, setLeaving] = useState(false);
   const reviews = canAny(user, "approvals", "producers");
   // ترتيب «ترتيب القوائم» المحفوظ، لكل أعضاء الإدارة.
   const layout = useMenuLayout(isManager(user));
+  // ترتيب المدير الشخصي بالسحب والإفلات (طلب المالك 2026-11-28).
+  const order = useMenuOrder(isManager(user));
+  const [sorting, setSorting] = useState(false);
+  const { tx } = useTx();
 
   const check = useCallback(async () => {
     if (document.visibilityState !== "visible") return;
     try {
-      setPending(
-        (await api<{ count: number }>("/api/admin/producers/pending")).count,
-      );
+      const d = await api<{
+        count: number;
+        familiesCount?: number;
+        couriersCount?: number;
+      }>("/api/admin/producers/pending");
+      setPending({
+        families: d.familiesCount ?? d.count,
+        couriers: d.couriersCount ?? 0,
+      });
     } catch {
       // انقطاع مؤقت: نعيد المحاولة في الدورة التالية.
     }
@@ -67,6 +79,10 @@ export function AdminFrame({ children }: { children: React.ReactNode }) {
       </p>
     );
   if (!user) return <EnterAdmin error={session.error} />;
+  // صاحب صلاحيات إدارية بجلسته الشخصية (فتح إشعارًا إداريًا من الموقع، ملاحظة المالك 2026-11-28):
+  // زر يفتح اللوحة في الصفحة نفسها، بدل «ليست لديك صلاحية».
+  if (!isManager(user) && user.adminAccess)
+    return <EnterAdmin error={session.error} />;
   if (!isManager(user))
     return (
       <section className={css.enter}>
@@ -89,7 +105,7 @@ export function AdminFrame({ children }: { children: React.ReactNode }) {
       window.location.assign("/");
     }
   }
-  const groups = visibleGroups(user, layout);
+  const groups = visibleGroups(user, layout, order);
   return (
     <div className={css.frame}>
       {reviews && <PendingFamiliesNotice />}
@@ -112,39 +128,63 @@ export function AdminFrame({ children }: { children: React.ReactNode }) {
             ×
           </button>
         </div>
-        <nav className={css.nav}>
-          {groups.map((g, i) => (
-            <div key={g.key} role="group" aria-labelledby={`admin-group-${i}`}>
-              <p id={`admin-group-${i}`} className={css.groupTitle}>
-                {groupTitle(g)}
-              </p>
-              {g.items.map((it) => {
-                const active = it.end
-                  ? path === it.to
-                  : path === it.to || path.startsWith(it.to + "/");
-                return (
-                  <Link
-                    key={it.to}
-                    href={it.to}
-                    className={`${css.item} ${active ? css.itemActive : ""}`}
-                    aria-current={active ? "page" : undefined}
-                    onPointerEnter={() => prefetchAdmin(it.data ?? [])}
-                    onFocus={() => prefetchAdmin(it.data ?? [])}
-                  >
-                    <SectionIcon name={it.icon} />
-                    <span>{it.labelKey}</span>
-                    {it.to === "/admin/approvals" && pending > 0 && (
-                      <span className={css.badge}>
-                        {pending}
-                        <span className="sr-only"> تنتظر الاعتماد</span>
-                      </span>
-                    )}
-                  </Link>
-                );
-              })}
-            </div>
-          ))}
-        </nav>
+        {sorting ? (
+          <MenuOrderEditor groups={groups} onDone={() => setSorting(false)} />
+        ) : (
+          <nav className={css.nav}>
+            {groups.map((g, i) => (
+              <div
+                key={g.key}
+                role="group"
+                aria-labelledby={`admin-group-${i}`}
+              >
+                <p id={`admin-group-${i}`} className={css.groupTitle}>
+                  {groupTitle(g)}
+                </p>
+                {g.items.map((it) => {
+                  const active = it.end
+                    ? path === it.to
+                    : path === it.to || path.startsWith(it.to + "/");
+                  return (
+                    <Link
+                      key={it.to}
+                      href={it.to}
+                      className={`${css.item} ${active ? css.itemActive : ""}`}
+                      aria-current={active ? "page" : undefined}
+                      onPointerEnter={() => prefetchAdmin(it.data ?? [])}
+                      onFocus={() => prefetchAdmin(it.data ?? [])}
+                    >
+                      <SectionIcon name={it.icon} />
+                      <span>{it.labelKey}</span>
+                      {/* الأسر المنتظرة في «الأسر المنتجة»، والمندوبون في «اعتماد المندوبين». */}
+                      {(it.to === "/admin/producers"
+                        ? pending.families
+                        : it.to === "/admin/approvals"
+                          ? pending.couriers
+                          : 0) > 0 && (
+                        <span className={css.badge}>
+                          {it.to === "/admin/producers"
+                            ? pending.families
+                            : pending.couriers}
+                          <span className="sr-only"> تنتظر الاعتماد</span>
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+            ))}
+          </nav>
+        )}
+        {!sorting && (
+          <button
+            type="button"
+            className={css.orderOpen}
+            onClick={() => setSorting(true)}
+          >
+            <span aria-hidden="true">⇅</span> {tx("menuOrder.edit")}
+          </button>
+        )}
         <div className={css.sideFoot}>
           <p className={css.who}>
             <strong>{user.name}</strong>

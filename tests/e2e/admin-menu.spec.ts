@@ -65,10 +65,10 @@ test("the dashboard summary is grouped, and the sidebar lists the sections allow
   // رقم في الملخص يفتح قسمه بمساره.
   if (mobile) await page.keyboard.press("Escape");
   await families.getByRole("button", { name: /تنتظر الاعتماد/ }).click();
-  await expect(page).toHaveURL(/\/admin\/approvals$/);
+  await expect(page).toHaveURL(/\/admin\/producers\?filter=review$/);
   await openMenu();
   await expect(
-    menu.getByRole("link", { name: /اعتماد الأسر والمندوبين/ }),
+    menu.getByRole("link", { name: /الأسر المنتجة/ }),
   ).toHaveAttribute("aria-current", "page");
   expect(
     await page.evaluate(

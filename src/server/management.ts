@@ -270,6 +270,8 @@ export async function saveProfile(user: SessionUser, input: unknown) {
       saved.pledged
         ? await msg("alert.family.pledged.body", { name: saved.name })
         : undefined,
+      undefined,
+      `/admin/producers?family=${saved.id}`,
     );
   if (saved.newDocument)
     void notifyApprovers(
@@ -367,7 +369,10 @@ async function saveProfileRecord(user: SessionUser, input: unknown) {
       (value.tradeName ?? "").trim() === (existing?.trade_name ?? "").trim();
     // قرار المالك 2026-11-26: المستند لا يُخفي الأسرة المعتمدة؛ تبقى ظاهرة وتراجعه الإدارة حين يصل.
     // تغيير الاسم التجاري وحده يعيدها للمراجعة (قرار 2026-11-24).
-    const keepApproved = existing?.status === "approved" && sameTradeName;
+    // المخفية بقرار الإدارة (2026-11-28) تبقى مخفية وهي تُصلح بياناتها، والإدارة تعيدها.
+    const keepApproved =
+      (existing?.status === "approved" || existing?.status === "hidden") &&
+      sameTradeName;
     // قرار المالك 2026-11-28: لا تُقبل أسرة سجّلت إلا بعد موافقة الإدارة. التعهد بالمستندات يُسجَّل
     // فقط، ومهلة الـ15 يومًا تبدأ من موافقة الإدارة (reviewProducer). كان التعهد يعتمدها فورًا.
     const autoApprove = false;
@@ -505,9 +510,11 @@ async function saveProfileRecord(user: SessionUser, input: unknown) {
     return {
       id,
       status:
-        keepApproved || autoApprove
-          ? ("approved" as const)
-          : ("pending" as const),
+        existing?.status === "hidden" && keepApproved
+          ? ("hidden" as const)
+          : keepApproved || autoApprove
+            ? ("approved" as const)
+            : ("pending" as const),
       name: (value.tradeName || value.name) as string,
       // ينبّه المشرفين حين يدخل الملف قائمة الانتظار، لا مع كل تعديل وهو فيها.
       newlyPending:
@@ -608,8 +615,8 @@ export async function pendingApprovals(user: SessionUser) {
   const row = (
     await db().query(
       // الأسر والمندوبون بانتظار الاعتماد معًا.
-      `SELECT (SELECT count(*) FROM jdatna.producer_profiles WHERE status='pending')
-         +(SELECT count(*) FROM jdatna.courier_profiles WHERE status='pending') AS count`,
+      `SELECT (SELECT count(*) FROM jdatna.producer_profiles WHERE status='pending') AS families,
+         (SELECT count(*) FROM jdatna.courier_profiles WHERE status='pending') AS couriers`,
     )
   ).rows[0];
   // قائمة الأسر المنتظرة لنافذة الإدارة عند الدخول (قرار المالك 2026-11-28).
@@ -619,7 +626,13 @@ export async function pendingApprovals(user: SessionUser) {
          FROM jdatna.producer_profiles WHERE status='pending' ORDER BY created_at LIMIT 50`,
     )
   ).rows as { id: string; name: string; createdAt: string }[];
-  return { count: Number(row.count), families };
+  // «الأسر المنتجة» تجمع كل ما يخص الأسر (قرار المالك 2026-11-28)، و«اعتماد المندوبين» للمندوبين.
+  return {
+    count: Number(row.families) + Number(row.couriers),
+    familiesCount: Number(row.families),
+    couriersCount: Number(row.couriers),
+    families,
+  };
 }
 export async function ownProducts(user: SessionUser) {
   return (
@@ -760,7 +773,7 @@ export async function adminProducers(user: SessionUser) {
     throw new HttpError(403, "لا تملك صلاحية المراجعة");
   const profiles = (
     await db().query(
-      `SELECT p.*,p.trade_name AS "tradeName",p.city_id AS "cityId",c.name AS "cityName",u.name AS "ownerName",p.docs_due_at AS "docsDueAt",p.docs_hidden_at AS "docsHiddenAt",v.document_id AS "documentId",v.document_type AS "documentType",v.reason AS "reviewReason",v.document_number AS "documentNumber",v.document_expires_at::text AS "documentExpiresAt",p.docs_status AS "docsStatus",ARRAY(SELECT category_id FROM jdatna.producer_categories WHERE producer_id=p.id) AS "categoryIds" FROM jdatna.producer_profiles p JOIN jdatna.users u ON u.id=p.user_id JOIN jdatna.cities c ON c.id=p.city_id LEFT JOIN LATERAL(SELECT document_id,document_type,reason,document_number,document_expires_at FROM jdatna.producer_verifications WHERE producer_id=p.id ORDER BY created_at DESC LIMIT 1)v ON true ORDER BY (p.status='pending') DESC,(p.status='rejected') DESC,p.created_at DESC LIMIT 200`,
+      `SELECT p.*,p.trade_name AS "tradeName",p.city_id AS "cityId",c.name AS "cityName",u.name AS "ownerName",p.docs_due_at AS "docsDueAt",p.docs_hidden_at AS "docsHiddenAt",v.document_id AS "documentId",v.document_type AS "documentType",v.reason AS "reviewReason",v.document_number AS "documentNumber",v.document_expires_at::text AS "documentExpiresAt",p.docs_status AS "docsStatus",p.admin_verified_at AS "adminVerifiedAt",p.hidden_reason AS "hiddenReason",ARRAY(SELECT category_id FROM jdatna.producer_categories WHERE producer_id=p.id) AS "categoryIds" FROM jdatna.producer_profiles p JOIN jdatna.users u ON u.id=p.user_id JOIN jdatna.cities c ON c.id=p.city_id LEFT JOIN LATERAL(SELECT document_id,document_type,reason,document_number,document_expires_at FROM jdatna.producer_verifications WHERE producer_id=p.id ORDER BY created_at DESC LIMIT 1)v ON true ORDER BY (p.status='pending') DESC,(p.status='rejected') DESC,p.created_at DESC LIMIT 200`,
     )
   ).rows;
   if (!profiles.length) return profiles;
@@ -941,7 +954,7 @@ export async function reviewProducer(
 export async function familyStatus(user: SessionUser) {
   const row = (
     await db().query(
-      `SELECT p.status,p.verified,p.slug,p.docs_status AS "docsStatus",(SELECT max(created_at) FROM jdatna.producer_verifications WHERE producer_id=p.id AND decision='approved')::text AS "approvedAt",v.document_id AS "documentId",v.document_type AS "documentType",v.document_expires_at::text AS "documentExpiresAt",v.reason AS "reviewReason"
+      `SELECT p.status,p.verified,p.slug,p.docs_status AS "docsStatus",p.hidden_reason AS "hiddenReason",(SELECT max(created_at) FROM jdatna.producer_verifications WHERE producer_id=p.id AND decision='approved')::text AS "approvedAt",v.document_id AS "documentId",v.document_type AS "documentType",v.document_expires_at::text AS "documentExpiresAt",v.reason AS "reviewReason"
        FROM jdatna.producer_profiles p
        LEFT JOIN LATERAL(SELECT document_id,document_type,document_expires_at,reason FROM jdatna.producer_verifications WHERE producer_id=p.id ORDER BY created_at DESC LIMIT 1)v ON true
        WHERE p.user_id=$1`,
@@ -1109,6 +1122,113 @@ export async function remindPendingDocuments(limit = 100) {
     );
   }
   return due.length;
+}
+
+const familyActionSchema = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("verify") }).strict(),
+  z.object({ action: z.literal("unverify") }).strict(),
+  z
+    .object({
+      action: z.literal("hide"),
+      // السبب اختياري (قرار المالك 2026-11-28).
+      reason: z.string().trim().max(1000).default(""),
+    })
+    .strict(),
+  z.object({ action: z.literal("unhide") }).strict(),
+]);
+
+/**
+ * قائمة ⋮ أمام كل أسرة في الإدارة (قرار المالك 2026-11-28)، وكلها بعد رسالة تأكيد:
+ * - «توثيق» / «إلغاء التوثيق»: علامة توثيق مستقلة تضعها الإدارة يدويًا (للمعتمدة).
+ * - «إخفاء»: تختفي الأسرة ومنتجاتها عن الزوار وتبقى في القائمة (حالة 'hidden')، مع سبب يصل للأسرة.
+ * - «إظهار»: تعود معتمدة ظاهرة كما كانت.
+ * («تنشيط» و«إيقاف» قرارا مراجعة: reviewProducer.)
+ */
+export async function familyAdminAction(
+  user: SessionUser,
+  id: string,
+  input: unknown,
+) {
+  if (!canAny(user, "approvals", "producers"))
+    throw new HttpError(403, "لا تملك صلاحية المراجعة");
+  const v = familyActionSchema.parse(input);
+  const result = await transaction(async (client) => {
+    const p = (
+      await client.query(
+        "SELECT id,user_id,status FROM jdatna.producer_profiles WHERE id=$1 FOR UPDATE",
+        [id],
+      )
+    ).rows[0] as { id: string; user_id: string; status: string } | undefined;
+    if (!p) throw new HttpError(404, "الأسرة المنتجة غير موجودة");
+    if (p.user_id === user.id && user.role !== "admin")
+      throw new HttpError(403, "لا يمكن مراجعة ملف أسرتك بنفسك");
+    if (v.action === "verify" || v.action === "unverify") {
+      if (v.action === "verify" && p.status !== "approved")
+        throw new HttpError(409, "التوثيق للأسرة المعتمدة الظاهرة فقط");
+      await client.query(
+        v.action === "verify"
+          ? "UPDATE jdatna.producer_profiles SET admin_verified_at=now(),admin_verified_by=$2,updated_at=now() WHERE id=$1"
+          : "UPDATE jdatna.producer_profiles SET admin_verified_at=NULL,admin_verified_by=NULL,updated_at=now() WHERE id=$1",
+        v.action === "verify" ? [id, user.id] : [id],
+      );
+    } else if (v.action === "hide") {
+      if (p.status !== "approved")
+        throw new HttpError(409, "الإخفاء للأسرة المعتمدة الظاهرة فقط");
+      await client.query(
+        "UPDATE jdatna.producer_profiles SET status='hidden',hidden_reason=$2,updated_at=now() WHERE id=$1",
+        [id, v.reason || null],
+      );
+    } else {
+      if (p.status !== "hidden") throw new HttpError(409, "الأسرة ليست مخفية");
+      await client.query(
+        "UPDATE jdatna.producer_profiles SET status='approved',hidden_reason=NULL,updated_at=now() WHERE id=$1",
+        [id],
+      );
+    }
+    await client.query(
+      "INSERT INTO jdatna.admin_audit_logs(id,actor_id,action,target_id,details) VALUES($1,$2,$3,$4,$5)",
+      [randomUUID(), user.id, `producer.${v.action}`, id, JSON.stringify(v)],
+    );
+    return {
+      userId: p.user_id,
+      row: (
+        await client.query(
+          `SELECT status,admin_verified_at AS "adminVerifiedAt",hidden_reason AS "hiddenReason" FROM jdatna.producer_profiles WHERE id=$1`,
+          [id],
+        )
+      ).rows[0],
+    };
+  });
+  // الأسرة تعرف بالإخفاء وسببه، وبعودتها.
+  if (v.action === "hide" || v.action === "unhide")
+    try {
+      const { notifyUser } = await import("./push");
+      await notifyUser(result.userId, {
+        title: await msg(
+          v.action === "hide"
+            ? "msg.family.hidden.title"
+            : "msg.family.shown.title",
+        ),
+        body: await msg(
+          v.action === "hide"
+            ? "msg.family.hidden.body"
+            : "msg.family.shown.body",
+          {
+            reason:
+              v.action === "hide" && v.reason
+                ? await msg("msg.family.hidden.reason", { reason: v.reason })
+                : "",
+          },
+        ),
+        url: "/dashboard",
+        tag: "family-hidden",
+      });
+    } catch {}
+  return result.row as {
+    status: string;
+    adminVerifiedAt: string | null;
+    hiddenReason: string | null;
+  };
 }
 
 /** يعيد منتجات الأسرة المخفية لتأخر المستندات كما كانت. */

@@ -81,7 +81,7 @@ export const NAV_GROUPS: AdminNavGroup[] = [
       {
         to: "/admin/approvals",
         icon: "approvals",
-        labelKey: "اعتماد الأسر والمندوبين",
+        labelKey: "اعتماد المندوبين",
         perm: "approvals",
         data: ["/api/admin/producers"],
       },
@@ -269,9 +269,74 @@ export function allowedItem(user: Who, item: AdminNavItem) {
     ? Boolean(user.permissions?.length)
     : Boolean(user.permissions?.includes(item.perm));
 }
+/**
+ * ترتيب المدير الشخصي (طلب المالك 2026-11-28): ترتيب المجموعات، وترتيب الصفحات داخل كل مجموعة.
+ * للعرض فقط: لا يضيف صفحة ولا يُظهر مخفية ولا يغيّر الصلاحيات.
+ */
+export type MenuOrder = { groups: string[]; items: Record<string, string[]> };
+
+export function cleanMenuOrder(body: unknown): MenuOrder | null {
+  const b = body as { groups?: unknown; items?: unknown } | null;
+  if (!b || typeof b !== "object" || !Array.isArray(b.groups)) return null;
+  if (b.groups.length > 20) return null;
+  const groups: string[] = [];
+  for (const k of b.groups) {
+    if (typeof k !== "string" || !k.trim() || k.length > 60) return null;
+    if (!groups.includes(k)) groups.push(k);
+  }
+  const items: Record<string, string[]> = {};
+  const raw = (b.items ?? {}) as Record<string, unknown>;
+  if (typeof raw !== "object" || Array.isArray(raw)) return null;
+  for (const [k, list] of Object.entries(raw)) {
+    if (!groups.includes(k) || !Array.isArray(list) || list.length > 100)
+      return null;
+    const seen: string[] = [];
+    for (const to of list) {
+      if (typeof to !== "string" || !MENU_PATH.test(to)) return null;
+      if (!seen.includes(to)) seen.push(to);
+    }
+    items[k] = seen;
+  }
+  return { groups, items };
+}
+
+/** يرتّب المجموعات والصفحات بترتيب المدير؛ ما ليس فيه يبقى في مكانه بعد المرتَّب. */
+export function applyMenuOrder<
+  G extends { key: string; items: { to: string }[] },
+>(groups: G[], order: MenuOrder | null | undefined): G[] {
+  if (!order) return groups;
+  const rank = (list: string[], key: string) => {
+    const i = list.indexOf(key);
+    return i < 0 ? Number.MAX_SAFE_INTEGER : i;
+  };
+  return groups
+    .map((g, i) => ({ g, i }))
+    .sort(
+      (a, b) =>
+        rank(order.groups, a.g.key) - rank(order.groups, b.g.key) || a.i - b.i,
+    )
+    .map(({ g }) => {
+      const mine = order.items[g.key];
+      if (!mine) return g;
+      return {
+        ...g,
+        items: g.items
+          .map((it, i) => ({ it, i }))
+          .sort(
+            (a, b) => rank(mine, a.it.to) - rank(mine, b.it.to) || a.i - b.i,
+          )
+          .map(({ it }) => it),
+      };
+    });
+}
+
 /** المجموعات بالترتيب المحفوظ وبما يحق له فقط؛ المجموعة الفارغة لا تظهر. */
-export function visibleGroups(user: Who, layout?: MenuLayout | null) {
-  return applyMenuLayout(NAV_GROUPS, layout)
+export function visibleGroups(
+  user: Who,
+  layout?: MenuLayout | null,
+  order?: MenuOrder | null,
+) {
+  return applyMenuOrder(applyMenuLayout(NAV_GROUPS, layout), order)
     .map((g) => ({
       ...g,
       items: g.items.filter((it) => allowedItem(user, it)),
