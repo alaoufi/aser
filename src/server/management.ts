@@ -247,7 +247,9 @@ export async function notifyApprovers(
     });
     const approvers = (
       await db().query(
-        "SELECT id FROM jdatna.users WHERE role='admin' OR 'approvals'=ANY(permissions)",
+        // من حددته الإدارة لاستقبال إشعارات الموافقات (قرار المالك 2026-11-28).
+        `SELECT id FROM jdatna.users WHERE (role='admin' OR 'approvals'=ANY(permissions))
+           AND approval_alerts AND suspended_at IS NULL AND deleted_at IS NULL`,
       )
     ).rows as { id: string }[];
     await Promise.all(
@@ -262,6 +264,68 @@ export async function notifyApprovers(
     );
   } catch {}
 }
+/**
+ * «من يستقبل إشعارات الموافقات» (قرار المالك 2026-11-28): المديرون العامون وأصحاب صلاحية الاعتماد،
+ * ولكل منهم مفتاح. يغيّره المدير العام فقط.
+ */
+export async function approvalAlertRecipients(user: SessionUser) {
+  if (user.role !== "admin")
+    throw new HttpError(403, await msg("approvalAlerts.onlyAdmin"));
+  return (
+    await db().query(
+      `SELECT id,name,phone,role,member_no AS "memberNo",approval_alerts AS "on"
+       FROM jdatna.users WHERE (role='admin' OR 'approvals'=ANY(permissions))
+         AND suspended_at IS NULL AND deleted_at IS NULL
+       ORDER BY (role='admin') DESC,member_no`,
+    )
+  ).rows as {
+    id: string;
+    name: string;
+    phone: string;
+    role: string;
+    memberNo: number | null;
+    on: boolean;
+  }[];
+}
+
+export async function setApprovalAlert(user: SessionUser, input: unknown) {
+  if (user.role !== "admin")
+    throw new HttpError(403, await msg("approvalAlerts.onlyAdmin"));
+  const value = z
+    .object({ id: z.uuid(), on: z.boolean() })
+    .strict()
+    .parse(input);
+  return transaction(async (client) => {
+    const r = await client.query(
+      `UPDATE jdatna.users SET approval_alerts=$2 WHERE id=$1
+         AND (role='admin' OR 'approvals'=ANY(permissions)) RETURNING id`,
+      [value.id, value.on],
+    );
+    if (!r.rowCount)
+      throw new HttpError(404, await msg("approvalAlerts.notStaff"));
+    if (!value.on) {
+      const left = (
+        await client.query(
+          `SELECT count(*)::int AS n FROM jdatna.users WHERE (role='admin' OR 'approvals'=ANY(permissions))
+             AND approval_alerts AND suspended_at IS NULL AND deleted_at IS NULL`,
+        )
+      ).rows[0].n as number;
+      if (!left) throw new HttpError(409, await msg("approvalAlerts.lastOne"));
+    }
+    await client.query(
+      "INSERT INTO jdatna.admin_audit_logs(id,actor_id,action,target_id,details) VALUES($1,$2,$3,$4,$5)",
+      [
+        randomUUID(),
+        user.id,
+        "approval-alerts.set",
+        value.id,
+        JSON.stringify({ on: value.on }),
+      ],
+    );
+    return value;
+  });
+}
+
 export async function saveProfile(user: SessionUser, input: unknown) {
   const saved = await saveProfileRecord(user, input);
   if (saved.newlyPending)

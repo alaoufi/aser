@@ -80,7 +80,7 @@ test("a family picks its brand colour from the dashboard", async ({ page }) => {
     card.getByRole("group", { name, exact: true });
   // مئات التدرجات: 24 عائلة لون، ولكل عائلة 12 درجة.
   await expect(
-    card.getByRole("radiogroup", { name: "عائلة اللون" }).getByRole("radio"),
+    card.getByRole("radiogroup", { name: "درجات اللون" }).getByRole("radio"),
   ).toHaveCount(24);
   await expect(group("اللون").locator("input[type=radio]:checked")).toHaveCount(
     1,

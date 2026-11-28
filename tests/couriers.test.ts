@@ -70,6 +70,7 @@ test(
         nationalId: "١٠٢٣٤٥٦٧٨٩",
         documentId: doc,
         carType: "كامري 2020",
+        nationality: "سعودي",
         cityId: city,
       };
       // صورة الهوية لازمة، ومن نوع الهوية، ومن صاحب الحساب.

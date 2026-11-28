@@ -179,7 +179,7 @@ export function BrandCard({ name }: { name: string }) {
             <div
               className={s.hueRow}
               role="radiogroup"
-              aria-label="عائلة اللون"
+              aria-label="درجات اللون"
             >
               {hueFamilies.map((f, i) => (
                 <button

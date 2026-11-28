@@ -27,6 +27,7 @@ import { MembersAdmin } from "./members";
 import { AdminDocuments } from "./admin-documents";
 import { APPROVALS_CHANGED } from "@/components/admin/admin-frame";
 import { AdminCouriers } from "./courier";
+import { ApprovalAlertsAdmin } from "@/components/admin/approval-alerts";
 import { ContractsAdmin } from "./subscriptions";
 import { SecurityLog } from "./security-log";
 import { BackupsAdmin } from "./backups-admin";
@@ -672,6 +673,7 @@ export function Admin({ section }: { section?: string } = {}) {
                   window.dispatchEvent(new Event(APPROVALS_CHANGED))
                 }
               />
+              {session.user?.role === "admin" && <ApprovalAlertsAdmin />}
             </div>
           ) : active !== "producers" ? (
             <p className={s.notice}>

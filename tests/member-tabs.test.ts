@@ -63,6 +63,7 @@ test(
       const oldCustomer = await mk("customer", { old: true });
       const stopped = await mk("customer", { old: true, suspended: true });
       const owner = await mk("producer", { old: true });
+      const courier = await mk("courier", { old: true });
       const city = (
         await pool.query(
           "SELECT id FROM jdatna.cities WHERE id !~ '^[0-9a-f]{8}-' LIMIT 1",
@@ -79,6 +80,7 @@ test(
       assert.deepEqual(await tabIds("new"), [fresh]);
       assert.deepEqual(await tabIds("suspended"), [stopped]);
       assert.deepEqual(await tabIds("families"), [owner]);
+      assert.deepEqual(await tabIds("couriers"), [courier]);
       assert.deepEqual(
         await tabIds("customers"),
         [fresh, oldCustomer, stopped].sort(),
@@ -87,7 +89,14 @@ test(
       // تبويب غير معروف = الكل.
       assert.deepEqual(await tabIds("x"), [...ids].sort());
       const counts = await memberTabCounts(me);
-      for (const k of ["all", "new", "suspended", "families", "customers"])
+      for (const k of [
+        "all",
+        "new",
+        "suspended",
+        "families",
+        "couriers",
+        "customers",
+      ])
         assert.ok((counts as Record<string, number>)[k] >= 1, k);
       // غير المدير لا يرى.
       await assert.rejects(

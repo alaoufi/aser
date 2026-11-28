@@ -84,8 +84,66 @@ type AdminCategory = Category & {
   productCount?: number;
   childCount?: number;
   familyCount?: number;
+  /** القسم مع فروعه: الأسر المسجلة، والمنتجات، والمعروض الآن. */
+  stats?: { families: number; products: number; live: number };
 };
+/**
+ * «إحصائية الأقسام» (طلب المالك 2026-11-28): لكل قسم رئيسي (مع فروعه) كم أسرة مسجلة فيه
+ * وكم منتج، وكم منها معروض الآن. الأكثر أسرًا أولًا.
+ */
+function CategoryStats({ all }: { all: AdminCategory[] }) {
+  const { tx } = useTx();
+  const main = all
+    .filter((c) => !c.parentId)
+    .sort(
+      (a, b) =>
+        (b.stats?.families ?? 0) - (a.stats?.families ?? 0) ||
+        (b.stats?.products ?? 0) - (a.stats?.products ?? 0),
+    );
+  if (!main.length) return null;
+  const sum = (k: "families" | "products" | "live") =>
+    main.reduce((n, c) => n + (c.stats?.[k] ?? 0), 0);
+  return (
+    <section className={s.card} aria-label={tx("categoryStats.title")}>
+      <h3>{tx("categoryStats.title")}</h3>
+      <p className={s.muted}>{tx("categoryStats.hint")}</p>
+      <div className={s.tableWrap}>
+        <table className={`${s.adminTable} ${s.statsTable}`}>
+          <thead>
+            <tr>
+              <th scope="col">{tx("categoryStats.category")}</th>
+              <th scope="col">{tx("categoryStats.families")}</th>
+              <th scope="col">{tx("categoryStats.products")}</th>
+              <th scope="col">{tx("categoryStats.live")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {main.map((c) => (
+              <tr key={c.id}>
+                <th scope="row">
+                  {c.icon} {c.name}
+                  {c.hidden && <em className={s.hiddenTag}> · مخفي</em>}
+                </th>
+                <td>{c.stats?.families ?? 0}</td>
+                <td>{c.stats?.products ?? 0}</td>
+                <td>{c.stats?.live ?? 0}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className={s.muted}>
+        {tx("categoryStats.note", {
+          families: sum("families"),
+          products: sum("products"),
+        })}
+      </p>
+    </section>
+  );
+}
+
 export function CategoriesAdmin() {
+  const { tx } = useTx();
   const r = useResource<{ categories: AdminCategory[] }>(
     "/api/admin/categories",
   );
@@ -97,6 +155,7 @@ export function CategoriesAdmin() {
     <section>
       <h2>إدارة الأقسام</h2>
       <Message error={r.error} success={r.success} />
+      <CategoryStats all={all} />
       <div className={`${s.card} ${s.categoryList}`}>
         <div className={s.categoryItem}>
           <button
@@ -130,7 +189,10 @@ export function CategoriesAdmin() {
                   {c.hidden && <em className={s.hiddenTag}> · مخفي</em>}
                 </span>
                 <small>
-                  {c.productCount ?? 0} منتج{" "}
+                  {tx("categoryStats.row", {
+                    families: c.stats?.families ?? 0,
+                    products: c.stats?.products ?? 0,
+                  })}{" "}
                   <span aria-hidden="true">{openId === c.id ? "▴" : "▾"}</span>
                 </small>
               </button>

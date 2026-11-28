@@ -9,6 +9,8 @@ import { OrderChatButton } from "./chat";
 import { DirectoryButton } from "./directory";
 import { collectIssues, FormIssues, type FormIssue } from "./form-issues";
 import { Stars } from "@/components/public/stars";
+import { NATIONALITIES } from "@/lib/nationalities";
+import { useTx } from "@/components/site-texts";
 import {
   AccountShell,
   Guard,
@@ -26,6 +28,7 @@ type Courier = {
   cityId: string;
   regionId: string;
   carType: string;
+  nationality: string | null;
   documentId: string | null;
   nationalId: string;
   showPhone: boolean;
@@ -63,7 +66,12 @@ const statusText: Record<Courier["status"], [string, string]> = {
 
 /** شارة المندوب الخاص بأسرة. */
 export function PrivateCourierBadge({ family }: { family: string }) {
-  return <span className={s.privateCourier}>مندوب خاص لـ {family}</span>;
+  const { tx } = useTx();
+  return (
+    <span className={s.privateCourier}>
+      {tx("courier.privateBadge", { family })}
+    </span>
+  );
 }
 
 /** لوحة المندوب: تسجيله وبياناته (الاسم الحقيقي، الهوية رقمًا وصورة، نوع السيارة، مدينة العمل). */
@@ -138,6 +146,7 @@ export function CourierPanel() {
             nationalId: f.get("nationalId"),
             documentId,
             carType: f.get("carType"),
+            nationality: f.get("nationality"),
             cityId: f.get("cityId"),
             showPhone: f.has("showPhone"),
             showWhatsapp: f.has("showWhatsapp"),
@@ -289,6 +298,7 @@ export function CourierPanel() {
                 autoComplete="off"
               />
             </label>
+            <NationalityField defaultValue={courier?.nationality ?? ""} />
             <label className={s.field}>
               نوع السيارة
               <input
@@ -454,7 +464,34 @@ type FamilyCourier = {
  * «مندوبي الخاص»: الأسرة تسجّل مندوبها بالاسم والجوال ونوع السيارة، بتعهّدها بمعرفته
  * ومسؤوليتها عنه، فيُعتمد فورًا ويظهر لها وحدها في إسناد التوصيل.
  */
+/** الجنسية: قائمة منسدلة إلزامية (قرار المالك 2026-11-28). */
+function NationalityField({ defaultValue = "" }: { defaultValue?: string }) {
+  const { tx } = useTx();
+  return (
+    <label className={s.field}>
+      {tx("courier.nationality")}
+      <select
+        name="nationality"
+        required
+        defaultValue={defaultValue}
+        data-label={tx("courier.nationality")}
+        data-reason={tx("courier.nationality.required")}
+      >
+        <option value="" disabled>
+          {tx("courier.nationality.choose")}
+        </option>
+        {NATIONALITIES.map((n) => (
+          <option key={n} value={n}>
+            {n}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
 function FamilyCouriers() {
+  const { tx } = useTx();
   const [data, setData] = useState<{
     familyName: string;
     pledge: string;
@@ -463,6 +500,8 @@ function FamilyCouriers() {
   // ليس أسرة معتمدة بعد: يُشرح السبب بدل إخفاء القسم.
   const [unavailable, setUnavailable] = useState("");
   const [vehicle, setVehicle] = useState<"car" | "motorcycle">("car");
+  // التعهد باسم المندوب كما يُكتب (قرار المالك 2026-11-28).
+  const [typedName, setTypedName] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [issues, setIssues] = useState<FormIssue[]>([]);
@@ -487,11 +526,12 @@ function FamilyCouriers() {
     const f = new FormData(form);
     setBusy(true);
     try {
-      await api("/api/producer/couriers", {
+      const r = await api<{ status: string }>("/api/producer/couriers", {
         method: "POST",
         body: JSON.stringify({
           name: f.get("name"),
           phone: f.get("phone"),
+          nationality: f.get("nationality"),
           vehicle,
           ...(vehicle === "car"
             ? { carModel: f.get("carModel"), carColor: f.get("carColor") }
@@ -501,9 +541,12 @@ function FamilyCouriers() {
       });
       form.reset();
       setVehicle("car");
+      setTypedName("");
       await load();
       setSuccess(
-        "تم تسجيل المندوب ✓ يدخل بجواله من «دخول» ← «نسيت كلمة المرور» أول مرة، فتصله طلبات التوصيل التي تسندها إليه.",
+        r.status === "approved"
+          ? tx("familyCourier.saved")
+          : tx("familyCourier.pendingSaved"),
       );
     } catch (err) {
       setError((err as Error).message);
@@ -512,7 +555,8 @@ function FamilyCouriers() {
     }
   }
   async function stop(k: FamilyCourier) {
-    if (!window.confirm(`إيقاف المندوب ${k.name}؟`)) return;
+    if (!window.confirm(tx("familyCourier.stopConfirm", { name: k.name })))
+      return;
     setError("");
     setSuccess("");
     try {
@@ -521,32 +565,33 @@ function FamilyCouriers() {
         body: JSON.stringify({ id: k.id }),
       });
       await load();
-      setSuccess("تم إيقاف المندوب. تعيده بتسجيل جواله مرة أخرى.");
+      setSuccess(tx("familyCourier.stopped"));
     } catch (err) {
       setError((err as Error).message);
     }
   }
   if (unavailable)
     return (
-      <section className={s.card} aria-label="مندوبي الخاص">
-        <h2>مندوبي الخاص</h2>
+      <section className={s.card} aria-label={tx("familyCourier.title")}>
+        <h2>{tx("familyCourier.title")}</h2>
         <p className={s.notice}>
-          {unavailable}. تضيف مندوبك الخاص (الاسم والجوال والمركبة) بعد اعتماد
-          أسرتك.
+          {unavailable}. {tx("familyCourier.afterApproval")}
         </p>
       </section>
     );
   if (!data) return null;
   return (
-    <section className={s.card} aria-label="مندوبي الخاص">
-      <h2>مندوبي الخاص</h2>
+    <section className={s.card} aria-label={tx("familyCourier.title")}>
+      <h2>{tx("familyCourier.title")}</h2>
       <p className={s.muted}>
-        سجّل مندوبًا تعرفه شخصيًا ليوصل طلبات «{data.familyName}». يُعتمد فورًا
-        دون انتظار الإدارة، ويظهر لأسرتك فقط في إسناد التوصيل.
+        {tx("familyCourier.intro", { family: data.familyName })}
       </p>
       <Message error={error} success={success} />
       {data.couriers.length > 0 && (
-        <ul className={s.courierList} aria-label="مندوبو الأسرة الخاصون">
+        <ul
+          className={s.courierList}
+          aria-label={tx("familyCourier.listLabel")}
+        >
           {data.couriers.map((k) => (
             <li key={k.id} className={s.card}>
               <h3>{k.name}</h3>
@@ -558,25 +603,29 @@ function FamilyCouriers() {
               <p>
                 {k.status === "approved"
                   ? k.active
-                    ? "✅ نشط — تسند إليه طلبات التوصيل"
-                    : "⏸️ أوقف ظهوره مؤقتًا من حسابه"
-                  : k.stoppedByAdmin
-                    ? "⛔ أوقفته الإدارة"
-                    : "⛔ موقوف"}
+                    ? tx("familyCourier.active")
+                    : tx("familyCourier.paused")
+                  : k.status === "pending"
+                    ? tx("familyCourier.pending")
+                    : k.status === "rejected"
+                      ? tx("familyCourier.rejected")
+                      : k.stoppedByAdmin
+                        ? tx("familyCourier.stoppedByAdmin")
+                        : tx("familyCourier.suspended")}
                 {k.status === "approved" && !k.joined && (
                   <small className={s.muted}>
                     {" "}
-                    · لم يدخل بعد: يدخل بجواله من «نسيت كلمة المرور» أول مرة.
+                    · {tx("familyCourier.notJoined")}
                   </small>
                 )}
               </p>
-              {k.status === "approved" && (
+              {(k.status === "approved" || k.status === "pending") && (
                 <button
                   type="button"
                   className={s.buttonSecondary}
                   onClick={() => stop(k)}
                 >
-                  إيقاف المندوب
+                  {tx("familyCourier.stop")}
                 </button>
               )}
             </li>
@@ -584,14 +633,21 @@ function FamilyCouriers() {
         </ul>
       )}
       <form className={s.form} onSubmit={add} noValidate>
-        <h3>تسجيل مندوب خاص</h3>
+        <h3>{tx("familyCourier.formTitle")}</h3>
         <div className={s.grid}>
           <label className={s.field}>
-            اسم المندوب
-            <input name="name" required minLength={2} maxLength={120} />
+            {tx("familyCourier.name")}
+            <input
+              name="name"
+              required
+              minLength={2}
+              maxLength={120}
+              value={typedName}
+              onChange={(e) => setTypedName(e.target.value)}
+            />
           </label>
           <label className={s.field}>
-            جوال المندوب
+            {tx("familyCourier.phone")}
             <input
               name="phone"
               required
@@ -603,12 +659,13 @@ function FamilyCouriers() {
             />
           </label>
         </div>
+        <NationalityField />
         <fieldset className={s.vehicleChoice}>
-          <legend>المركبة</legend>
+          <legend>{tx("familyCourier.vehicle")}</legend>
           {(
             [
-              ["car", "🚗 سيارة"],
-              ["motorcycle", "🛵 دباب"],
+              ["car", tx("familyCourier.car")],
+              ["motorcycle", tx("familyCourier.motorcycle")],
             ] as const
           ).map(([id, label]) => (
             <label key={id}>
@@ -626,23 +683,23 @@ function FamilyCouriers() {
         {vehicle === "car" && (
           <div className={s.grid}>
             <label className={s.field}>
-              نوع السيارة
+              {tx("familyCourier.carModel")}
               <input
                 name="carModel"
                 required
                 minLength={2}
                 maxLength={60}
-                placeholder="مثال: كامري 2020"
+                placeholder={tx("familyCourier.carModelHint")}
               />
             </label>
             <label className={s.field}>
-              لون السيارة
+              {tx("familyCourier.carColor")}
               <input
                 name="carColor"
                 required
                 minLength={2}
                 maxLength={30}
-                placeholder="مثال: أبيض"
+                placeholder={tx("familyCourier.carColorHint")}
               />
             </label>
           </div>
@@ -652,16 +709,19 @@ function FamilyCouriers() {
             type="checkbox"
             name="pledge"
             required
-            data-label="التعهد بمعرفة المندوب"
-            data-reason="يلزم الإقرار بالتعهد"
+            data-label={tx("familyCourier.pledgeLabel")}
+            data-reason={tx("familyCourier.pledgeRequired")}
           />
           <span>
-            <strong>تعهّد:</strong> {data.pledge}
+            <strong>{tx("familyCourier.pledgeTitle")}</strong>{" "}
+            {tx("familyCourier.pledge", {
+              name: typedName.trim() || tx("familyCourier.pledgeNoName"),
+            })}
           </span>
         </label>
         <FormIssues issues={issues} />
         <button className={s.button} disabled={busy}>
-          {busy ? "جارٍ التسجيل…" : "تسجيل المندوب الخاص"}
+          {busy ? tx("familyCourier.saving") : tx("familyCourier.submit")}
         </button>
       </form>
     </section>
@@ -898,6 +958,7 @@ type AdminCourier = {
   phone: string;
   carType: string;
   cityName: string;
+  nationality: string | null;
   documentId: string | null;
   nationalId: string;
   status: Courier["status"];
@@ -913,6 +974,7 @@ export function AdminCouriers({
   onChanged?: () => void;
   onlyPending?: boolean;
 }) {
+  const { tx } = useTx();
   const [list, setList] = useState<AdminCourier[] | null>(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -942,7 +1004,7 @@ export function AdminCouriers({
           reason: f.get("reason"),
         }),
       });
-      setSuccess("تم حفظ قرار المندوب.");
+      setSuccess(tx("adminCourier.saved"));
       await load();
       onChanged?.();
     } catch (err) {
@@ -950,16 +1012,16 @@ export function AdminCouriers({
     }
   }
   return (
-    <section aria-label="اعتماد المندوبين">
-      <h2>المندوبون</h2>
+    <section aria-label={tx("adminCourier.region")}>
+      <h2>{tx("adminCourier.title")}</h2>
       <Message error={error} success={success} />
       {list === null ? (
-        <p role="status">جارٍ تحميل المندوبين…</p>
+        <p role="status">{tx("adminCourier.loading")}</p>
       ) : shown.length === 0 ? (
         <p className={s.notice}>
           {onlyPending
-            ? "لا يوجد مندوبون ينتظرون الاعتماد الآن."
-            : "لا يوجد مندوبون بعد."}
+            ? tx("adminCourier.nonePending")
+            : tx("adminCourier.none")}
         </p>
       ) : (
         shown.map((k) => (
@@ -969,11 +1031,15 @@ export function AdminCouriers({
             <p>
               <bdi dir="ltr">{k.phone}</bdi> · {k.cityName} · 🚗 {k.carType}
             </p>
+            <p>
+              {tx("courier.nationality")}:{" "}
+              {k.nationality ?? tx("courier.nationality.none")}
+            </p>
             {k.familyName ? (
-              <p>سجّلته الأسرة بتعهّدها بمعرفته ومسؤوليتها عنه، دون هوية.</p>
+              <p>{tx("adminCourier.byFamily")}</p>
             ) : (
               <p>
-                رقم الهوية (خاص): <bdi>{k.nationalId}</bdi>
+                {tx("adminCourier.nationalId")} <bdi>{k.nationalId}</bdi>
               </p>
             )}
             {k.documentId && (
@@ -982,13 +1048,15 @@ export function AdminCouriers({
                 target="_blank"
                 rel="noopener"
               >
-                عرض صورة الهوية
+                {tx("adminCourier.idImage")}
               </a>
             )}
-            {k.reviewReason && <p>آخر ملاحظة: {k.reviewReason}</p>}
+            {k.reviewReason && (
+              <p>{tx("adminCourier.lastNote", { note: k.reviewReason })}</p>
+            )}
             <form className={s.form} onSubmit={(e) => decide(k.id, e)}>
               <CourierDecisionFields />
-              <button className={s.button}>حفظ قرار المندوب</button>
+              <button className={s.button}>{tx("adminCourier.save")}</button>
             </form>
           </article>
         ))
@@ -1112,12 +1180,13 @@ function CourierDeliveries() {
 
 /** القرار والملاحظة: الملاحظة اختيارية عند الاعتماد، ومطلوبة عند طلب الاستكمال أو الإيقاف. */
 function CourierDecisionFields() {
+  const { tx } = useTx();
   const [decision, setDecision] = useState("");
   const approve = decision === "approved";
   return (
     <>
       <label className={s.field}>
-        <span className="sr-only">قرار المندوب</span>
+        <span className="sr-only">{tx("adminCourier.decision")}</span>
         <select
           name="decision"
           required
@@ -1125,17 +1194,17 @@ function CourierDecisionFields() {
           onChange={(e) => setDecision(e.target.value)}
         >
           <option value="" disabled>
-            اختر القرار
+            {tx("adminCourier.choose")}
           </option>
-          <option value="approved">اعتماد المندوب</option>
-          <option value="rejected">طلب استكمال النواقص</option>
-          <option value="suspended">إيقاف</option>
+          <option value="approved">{tx("adminCourier.approve")}</option>
+          <option value="rejected">{tx("adminCourier.reject")}</option>
+          <option value="suspended">{tx("adminCourier.suspend")}</option>
         </select>
       </label>
       <label className={s.field}>
         {approve
-          ? "ملاحظة للمندوب (اختيارية عند الاعتماد؛ تظهر له)"
-          : "ملاحظة للمندوب (مطلوبة: اذكر النواقص أو سبب القرار؛ تظهر له)"}
+          ? tx("adminCourier.noteOptional")
+          : tx("adminCourier.noteRequired")}
         <textarea
           name="reason"
           required={!approve}

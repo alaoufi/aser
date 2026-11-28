@@ -49,6 +49,7 @@ test("a courier registers with ID number and image, car type and city", async ({
   );
   await page.getByLabel("رقم الهوية").fill("١٠٢٣٤٥٦٧٨٩");
   await page.getByLabel("نوع السيارة").fill("كامري 2020");
+  await page.getByLabel("الجنسية").selectOption("سعودي");
   await page.locator('input[name="idImage"]').setInputFiles({
     name: "id.jpg",
     mimeType: "image/jpeg",
@@ -68,6 +69,7 @@ test("a courier registers with ID number and image, car type and city", async ({
     nationalId: "١٠٢٣٤٥٦٧٨٩",
     documentId: "00000000-0000-4000-8000-000000000031",
     carType: "كامري 2020",
+    nationality: "سعودي",
     cityId: city.id,
     showPhone: true,
     showWhatsapp: true,
@@ -176,6 +178,7 @@ test("a courier sets prices, goes active, and sees pickup and delivery locations
     cityId: city.id,
     regionId: "riyadh",
     carType: "كامري",
+    nationality: "سعودي",
     documentId: "00000000-0000-4000-8000-000000000031",
     nationalId: "1023456789",
     showPhone: true,

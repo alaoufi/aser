@@ -29,13 +29,14 @@ function assertOwnerAdmin(user: SessionUser) {
 
 /**
  * تبويبات «الأعضاء والصلاحيات» (قرار المالك 2026-11-28): الكل، المسجلون خلال 24 ساعة، الموقوفون،
- * الأسر المنتجة، العملاء، الإدارة. الشرط في الخادم، فلا يفوت عضو قديم خارج آخر 200.
+ * الأسر المنتجة، المندوبون (الخاص والعام)، العملاء، الإدارة. الشرط في الخادم، فلا يفوت عضو قديم خارج آخر 200.
  */
 export const MEMBER_TABS = [
   "all",
   "new",
   "suspended",
   "families",
+  "couriers",
   "customers",
   "admins",
 ] as const;
@@ -47,6 +48,8 @@ const TAB_SQL: Record<MemberTab, string> = {
   new: "u.created_at > now()-interval '24 hours'",
   suspended: "u.suspended_at IS NOT NULL",
   families: FAMILY_SQL,
+  // المندوبون الخاص والعام معًا (طلب المالك 2026-11-28)؛ «مندوب خاص» يظهر أمام اسمه.
+  couriers: "u.role='courier'",
   customers: `u.role='customer' AND NOT ${FAMILY_SQL} AND NOT ${ADMIN_SQL}`,
   admins: ADMIN_SQL,
 };
@@ -80,7 +83,10 @@ export async function listMembers(
   return (
     await db().query(
       `SELECT u.id,u.name,u.phone,u.role,u.member_no AS "memberNo",u.permissions,(u.suspended_at IS NOT NULL) AS suspended,
-        COALESCE(p.trade_name,p.name) AS "familyName",p.status AS "familyStatus",u.created_at AS "createdAt"
+        COALESCE(p.trade_name,p.name) AS "familyName",p.status AS "familyStatus",u.created_at AS "createdAt",
+        (SELECT k.status FROM jdatna.courier_profiles k WHERE k.user_id=u.id) AS "courierStatus",
+        (SELECT COALESCE(fp.trade_name,fp.name) FROM jdatna.courier_profiles k JOIN jdatna.producer_profiles fp ON fp.id=k.family_id
+          WHERE k.user_id=u.id) AS "courierFamily"
        FROM jdatna.users u LEFT JOIN jdatna.producer_profiles p ON p.user_id=u.id
        WHERE (${where}) AND ($1='' OR u.name ILIKE '%'||$1||'%' OR COALESCE(p.name,'') ILIKE '%'||$1||'%'
          OR COALESCE(p.trade_name,'') ILIKE '%'||$1||'%'

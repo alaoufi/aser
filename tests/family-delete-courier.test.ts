@@ -49,6 +49,7 @@ test(
       await saveFamilyCourier(family, {
         name: "مندوب الأسرة",
         phone: courierLocal,
+        nationality: "سعودي",
         vehicle: "motorcycle",
         pledge: true,
       });
