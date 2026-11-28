@@ -18,6 +18,8 @@ export type City = {
 };
 export type Producer = {
   notCookingToday?: boolean;
+  /** علامة «موثّقة» اليدوية من الإدارة (2026-11-28). */
+  adminVerified?: boolean;
   /** رقم العضو (صاحب الأسرة) فوق اسمها: المميِّز لها لأن الأسماء تتكرر. */
   memberNo?: number | null;
   /** شهادة «أسرة مميزة» إن صدرت. */

@@ -65,6 +65,10 @@ type Application = {
   docsStatus?: string | null;
   nationalId?: string | null;
   workLocation?: string | null;
+  /** علامة التوثيق اليدوية من الإدارة (2026-11-28). */
+  adminVerifiedAt?: string | null;
+  /** سبب «الإخفاء» من الإدارة. */
+  hiddenReason?: string | null;
 };
 const today = () =>
   new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Riyadh" }).format(
@@ -90,6 +94,7 @@ function stateOf(p: Application): FamilyState {
       documentExpiresAt: p.documentExpiresAt,
       reviewReason: p.reviewReason,
       docsStatus: p.docsStatus,
+      hiddenReason: p.hiddenReason,
     },
     today(),
   );
@@ -354,6 +359,176 @@ function Review({
     </article>
   );
 }
+type FamilyAct =
+  "activate" | "verify" | "unverify" | "suspend" | "hide" | "unhide";
+/**
+ * سطر أسرة مضغوط في «الأسر المنتجة» (قرار المالك 2026-11-28): الاسم وحالة الحساب وعلامة التوثيق،
+ * وأمامه ⋮ فيه: تفاصيل، تنشيط، توثيق، إيقاف، إخفاء — وكل إجراء برسالة تأكيد.
+ */
+function FamilyRow({
+  producer: p,
+  onSaved,
+}: {
+  producer: Application;
+  onSaved: () => Promise<void>;
+}) {
+  const { tx } = useTx();
+  const [details, setDetails] = useState(false);
+  const [confirm, setConfirm] = useState<FamilyAct | null>(null);
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const state = stateOf(p);
+  const name = p.tradeName || p.name;
+  // تفتح بطاقة الأسرة كاملة من الرابط (?family=) كنافذة الأسر المنتظرة والتذكير الأسبوعي.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("family") === p.id)
+      setDetails(true);
+  }, [p.id]);
+  const acts: FamilyAct[] = [
+    ...(p.status === "hidden"
+      ? (["unhide"] as const)
+      : p.status !== "approved"
+        ? (["activate"] as const)
+        : []),
+    ...(p.status === "approved"
+      ? ([p.adminVerifiedAt ? "unverify" : "verify"] as const)
+      : []),
+    ...(p.status !== "suspended" ? (["suspend"] as const) : []),
+    ...(p.status === "approved" ? (["hide"] as const) : []),
+  ];
+  const needsReason = confirm === "suspend" || confirm === "hide";
+  const close = (e: React.MouseEvent) =>
+    (
+      e.currentTarget.closest("details") as HTMLDetailsElement | null
+    )?.removeAttribute("open");
+  async function run() {
+    if (!confirm) return;
+    setBusy(true);
+    setError("");
+    try {
+      const id = encodeURIComponent(p.id);
+      if (confirm === "activate" || confirm === "suspend")
+        await api(`/api/admin/producers/${id}/review`, {
+          method: "POST",
+          body: JSON.stringify(
+            confirm === "activate"
+              ? { decision: "approved", eligibilityConfirmed: true }
+              : { decision: "suspended", reason },
+          ),
+        });
+      else
+        await api(`/api/admin/producers/${id}/action`, {
+          method: "POST",
+          body: JSON.stringify(
+            confirm === "hide"
+              ? { action: "hide", reason }
+              : { action: confirm },
+          ),
+        });
+      setConfirm(null);
+      setReason("");
+      await onSaved();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <article className="family-row" id={`family-row-${p.id}`}>
+      <div className="family-row-line">
+        <span className="family-row-name">
+          <strong>{name}</strong>
+          <small>{[p.ownerName, p.cityName].filter(Boolean).join(" — ")}</small>
+        </span>
+        <span className="family-row-tags">
+          <span className="family-row-state" data-key={state.key}>
+            {state.label}
+          </span>
+          {p.adminVerifiedAt && (
+            <span className="family-row-verified">
+              {tx("familyList.verifiedTag")}
+            </span>
+          )}
+        </span>
+        <details className="family-row-menu">
+          <summary aria-label={tx("familyList.menu", { name })}>⋮</summary>
+          <div className="family-row-menu-list">
+            <button
+              type="button"
+              onClick={(e) => {
+                close(e);
+                setDetails((d) => !d);
+              }}
+            >
+              {details
+                ? tx("familyList.hideDetails")
+                : tx("familyList.details")}
+            </button>
+            {acts.map((a) => (
+              <button
+                key={a}
+                type="button"
+                data-danger={a === "suspend" || a === "hide" || undefined}
+                onClick={(e) => {
+                  close(e);
+                  setError("");
+                  setConfirm(a);
+                }}
+              >
+                {tx(`familyList.${a}`)}
+              </button>
+            ))}
+          </div>
+        </details>
+      </div>
+      {confirm && (
+        <div
+          className="family-row-confirm"
+          role="alertdialog"
+          aria-label={tx(`familyList.${confirm}`)}
+        >
+          <p>{tx(`familyList.confirm.${confirm}`, { name })}</p>
+          {needsReason && (
+            <label>
+              {tx("familyList.reason")}
+              <textarea
+                value={reason}
+                minLength={5}
+                maxLength={1000}
+                rows={2}
+                onChange={(e) => setReason(e.target.value)}
+              />
+            </label>
+          )}
+          <div className="family-row-confirm-actions">
+            <button
+              type="button"
+              className={s.button}
+              disabled={busy || (needsReason && reason.trim().length < 5)}
+              onClick={run}
+            >
+              {busy ? tx("familyList.saving") : tx("familyList.yes")}
+            </button>
+            <button
+              type="button"
+              className={s.buttonSecondary}
+              onClick={() => {
+                setConfirm(null);
+                setReason("");
+              }}
+            >
+              {tx("familyList.no")}
+            </button>
+          </div>
+        </div>
+      )}
+      {error && <Message error={error} />}
+      {details && <Review producer={p} onSaved={onSaved} />}
+    </article>
+  );
+}
 /**
  * لوحة الإدارة: بلا قسم (/admin) لوحة التحكم وملخصها، ومع قسم (/admin/orders…) ذلك القسم.
  * التنقل بين الأقسام من القائمة الجانبية (AdminFrame)، والصلاحية يفرضها الخادم في كل طلب.
@@ -516,6 +691,8 @@ export function Admin({ section }: { section?: string } = {}) {
                     ["active", "نشط"],
                     ["trusted", "موثوق"],
                     ["suspended", "موقوف"],
+                    ["hidden", "مخفية"],
+                    ["verified", "موثّقة"],
                     ["missing", "من لديهم نواقص"],
                     ["late", "تأخرت في المستندات"],
                     ["exempt", "مستثنى من الشروط"],
@@ -539,7 +716,9 @@ export function Admin({ section }: { section?: string } = {}) {
                               ? docsLate(p)
                               : id === "exempt"
                                 ? p.docsStatus === "exempt"
-                                : stateOf(p).key === id,
+                                : id === "verified"
+                                  ? Boolean(p.adminVerifiedAt)
+                                  : stateOf(p).key === id,
                         ).length}
                     )
                   </button>
@@ -596,7 +775,7 @@ export function Admin({ section }: { section?: string } = {}) {
                       );
                       return shown.length ? (
                         shown.map((p) => (
-                          <Review
+                          <FamilyRow
                             key={p.id}
                             producer={p}
                             onSaved={async () => {

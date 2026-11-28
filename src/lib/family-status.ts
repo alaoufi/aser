@@ -8,9 +8,18 @@ export type FamilyStatusInput = {
   reviewReason?: string | null;
   /** complete: مكتمل الشروط؛ exempt: مستثنى من الشروط (قرار المالك 2026-11-27). */
   docsStatus?: string | null;
+  /** سبب «الإخفاء» من الإدارة (2026-11-28). */
+  hiddenReason?: string | null;
 };
 export type FamilyState = {
-  key: "review" | "active" | "incomplete" | "trusted" | "suspended" | "closed";
+  key:
+    | "review"
+    | "active"
+    | "incomplete"
+    | "trusted"
+    | "suspended"
+    | "closed"
+    | "hidden";
   label: string;
   detail: string;
   reason?: string;
@@ -66,6 +75,15 @@ export function familyAccountState(
         label: "تحوّلت إلى عميل",
         detail:
           "حسابك الآن حساب عميل، وصفحة أسرتك ومنتجاتها مخفية ومحفوظة. تعود كما كانت من «معلوماتي».",
+      };
+    // قرار المالك 2026-11-28: أخفتها الإدارة عن الزوار مؤقتًا حتى يُصلح وضعها.
+    case "hidden":
+      return {
+        key: "hidden",
+        label: "مخفية مؤقتًا",
+        detail:
+          "أخفت الإدارة أسرتك ومنتجاتها عن الزوار مؤقتًا. أصلح ما طلبته الإدارة، وتعود ظاهرة بعد مراجعتها.",
+        reason: input.hiddenReason?.trim() || reason,
       };
     case "suspended":
       return {

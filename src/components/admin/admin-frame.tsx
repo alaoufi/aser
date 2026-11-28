@@ -67,6 +67,10 @@ export function AdminFrame({ children }: { children: React.ReactNode }) {
       </p>
     );
   if (!user) return <EnterAdmin error={session.error} />;
+  // صاحب صلاحيات إدارية بجلسته الشخصية (فتح إشعارًا إداريًا من الموقع، ملاحظة المالك 2026-11-28):
+  // زر يفتح اللوحة في الصفحة نفسها، بدل «ليست لديك صلاحية».
+  if (!isManager(user) && user.adminAccess)
+    return <EnterAdmin error={session.error} />;
   if (!isManager(user))
     return (
       <section className={css.enter}>

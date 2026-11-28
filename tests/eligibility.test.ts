@@ -105,7 +105,8 @@ test(
       assert.equal(p.status, "pending");
       // كل تسجيل ينتظر الاعتماد ينبّه المشرف، ويظهر في عدّاد «اعتماد الأسر المنتجة».
       const alert = await reached("admin", "أسرة تنتظر الاعتماد");
-      assert.equal(alert?.url, "/admin?tab=approvals");
+      // الرابط يفتح بطاقة الأسرة نفسها (2026-11-28).
+      assert.equal(alert?.url, `/admin/approvals?family=${pid}`);
       assert.ok((await pendingApprovals(admin)).count >= 1);
       await assert.rejects(pendingApprovals(user), { status: 403 });
       // المشرف بصلاحية الأسر لا يعتمد أسرته؛ المدير الكامل صلاحياته مطلقة (قرار المالك 2026-11-16).
