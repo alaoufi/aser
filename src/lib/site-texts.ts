@@ -658,6 +658,11 @@ export const siteTextDefaults = {
     "اختياري مع التوصيل وحده: الموقع يُطلب فقط في التسليم المباشر.",
   "appShare.label": "مشاركة التطبيق",
   "menu.appearance": "الألوان والقوالب",
+  "familyHub.waitingThere":
+    "{n} أسرة تنتظر الموافقة، تجدها مع كل الأسر وحالاتها في «الأسر المنتجة».",
+  "familyHub.noneWaiting":
+    "لا توجد أسر تنتظر الموافقة. كل الأسر وحالاتها في «الأسر المنتجة».",
+  "familyHub.open": "افتح «الأسر المنتجة»",
   "familyList.menu": "خيارات {name}",
   "familyList.details": "تفاصيل",
   "familyList.hideDetails": "إغلاق التفاصيل",
@@ -1503,6 +1508,12 @@ export const siteTextLabels: Record<
   ],
   "appShare.label": ["مشاركة التطبيق", "اسم أيقونة المشاركة في رأس الموقع"],
   "menu.appearance": ["قائمة الجوال", "زر الألوان والقوالب في القائمة"],
+  "familyHub.waitingThere": [
+    "قائمة الأسر (الإدارة)",
+    "رابط الأسر المنتظرة ({n})",
+  ],
+  "familyHub.noneWaiting": ["قائمة الأسر (الإدارة)", "لا أسر منتظرة"],
+  "familyHub.open": ["قائمة الأسر (الإدارة)", "زر الرابط"],
   "familyList.menu": ["قائمة الأسر (الإدارة)", "زر ⋮ (للقارئ الصوتي)"],
   "familyList.details": ["قائمة الأسر (الإدارة)", "تفاصيل"],
   "familyList.hideDetails": ["قائمة الأسر (الإدارة)", "إغلاق التفاصيل"],

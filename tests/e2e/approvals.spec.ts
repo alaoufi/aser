@@ -54,19 +54,31 @@ test("families waiting for approval show as a count in the panel menu, not on th
   if ((page.viewportSize()?.width ?? 1280) < 1024)
     await page.getByRole("button", { name: "أقسام الإدارة" }).click();
   const menu = page.getByRole("complementary", { name: "أقسام الإدارة" });
-  const item = menu.getByRole("link", { name: /اعتماد الأسر والمندوبين/ });
+  // كل ما يخص الأسر في «الأسر المنتجة» (قرار المالك 2026-11-28): العدد بجانبها، والأسر كلها بحالاتها.
+  const item = menu.getByRole("link", { name: /الأسر المنتجة/ });
   await expect(item).toContainText("1");
+  await expect(
+    menu.getByRole("link", { name: /اعتماد المندوبين/ }),
+  ).not.toContainText("1");
   await item.click();
-  await expect(page).toHaveURL(/\/admin\/approvals$/);
+  await expect(page).toHaveURL(/\/admin\/producers$/);
   // على الجوال تُغلق القائمة بعد الاختيار.
   if ((page.viewportSize()?.width ?? 1280) < 1024)
     await page.getByRole("button", { name: "أقسام الإدارة" }).click();
   await expect(item).toHaveAttribute("aria-current", "page");
-  const panel = page.getByRole("region", { name: "اعتماد الأسر المنتجة" });
+  const waiting = page.locator(
+    "#family-row-00000000-0000-4000-8000-000000000011",
+  );
+  await expect(waiting).toContainText("أسرة تنتظر");
+  await expect(waiting).toContainText("تحت المراجعة");
   await expect(
-    panel.getByRole("heading", { name: "أسرة تنتظر" }),
+    page.locator("#family-row-00000000-0000-4000-8000-000000000012"),
+  ).toContainText("أسرة معتمدة");
+  // «اعتماد المندوبين» يدل على الأسر المنتظرة هنا.
+  await page.goto("/admin/approvals");
+  await expect(
+    page.getByText(/1 أسرة تنتظر الموافقة، تجدها مع كل الأسر/),
   ).toBeVisible();
-  await expect(panel.getByText("أسرة معتمدة")).toHaveCount(0);
 });
 
 test("site texts can be searched by place, label or wording", async ({

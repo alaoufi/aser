@@ -25,7 +25,7 @@ export function AdminFrame({ children }: { children: React.ReactNode }) {
   const user = session.user;
   const path = usePathname() ?? "/admin";
   const [open, setOpen] = useState(false);
-  const [pending, setPending] = useState(0);
+  const [pending, setPending] = useState({ families: 0, couriers: 0 });
   const [leaving, setLeaving] = useState(false);
   const reviews = canAny(user, "approvals", "producers");
   // ترتيب «ترتيب القوائم» المحفوظ، لكل أعضاء الإدارة.
@@ -34,9 +34,15 @@ export function AdminFrame({ children }: { children: React.ReactNode }) {
   const check = useCallback(async () => {
     if (document.visibilityState !== "visible") return;
     try {
-      setPending(
-        (await api<{ count: number }>("/api/admin/producers/pending")).count,
-      );
+      const d = await api<{
+        count: number;
+        familiesCount?: number;
+        couriersCount?: number;
+      }>("/api/admin/producers/pending");
+      setPending({
+        families: d.familiesCount ?? d.count,
+        couriers: d.couriersCount ?? 0,
+      });
     } catch {
       // انقطاع مؤقت: نعيد المحاولة في الدورة التالية.
     }
@@ -137,9 +143,16 @@ export function AdminFrame({ children }: { children: React.ReactNode }) {
                   >
                     <SectionIcon name={it.icon} />
                     <span>{it.labelKey}</span>
-                    {it.to === "/admin/approvals" && pending > 0 && (
+                    {/* الأسر المنتظرة في «الأسر المنتجة»، والمندوبون في «اعتماد المندوبين». */}
+                    {(it.to === "/admin/producers"
+                      ? pending.families
+                      : it.to === "/admin/approvals"
+                        ? pending.couriers
+                        : 0) > 0 && (
                       <span className={css.badge}>
-                        {pending}
+                        {it.to === "/admin/producers"
+                          ? pending.families
+                          : pending.couriers}
                         <span className="sr-only"> تنتظر الاعتماد</span>
                       </span>
                     )}

@@ -271,7 +271,7 @@ export async function saveProfile(user: SessionUser, input: unknown) {
         ? await msg("alert.family.pledged.body", { name: saved.name })
         : undefined,
       undefined,
-      `/admin/approvals?family=${saved.id}`,
+      `/admin/producers?family=${saved.id}`,
     );
   if (saved.newDocument)
     void notifyApprovers(
@@ -615,8 +615,8 @@ export async function pendingApprovals(user: SessionUser) {
   const row = (
     await db().query(
       // الأسر والمندوبون بانتظار الاعتماد معًا.
-      `SELECT (SELECT count(*) FROM jdatna.producer_profiles WHERE status='pending')
-         +(SELECT count(*) FROM jdatna.courier_profiles WHERE status='pending') AS count`,
+      `SELECT (SELECT count(*) FROM jdatna.producer_profiles WHERE status='pending') AS families,
+         (SELECT count(*) FROM jdatna.courier_profiles WHERE status='pending') AS couriers`,
     )
   ).rows[0];
   // قائمة الأسر المنتظرة لنافذة الإدارة عند الدخول (قرار المالك 2026-11-28).
@@ -626,7 +626,13 @@ export async function pendingApprovals(user: SessionUser) {
          FROM jdatna.producer_profiles WHERE status='pending' ORDER BY created_at LIMIT 50`,
     )
   ).rows as { id: string; name: string; createdAt: string }[];
-  return { count: Number(row.count), families };
+  // «الأسر المنتجة» تجمع كل ما يخص الأسر (قرار المالك 2026-11-28)، و«اعتماد المندوبين» للمندوبين.
+  return {
+    count: Number(row.families) + Number(row.couriers),
+    familiesCount: Number(row.families),
+    couriersCount: Number(row.couriers),
+    families,
+  };
 }
 export async function ownProducts(user: SessionUser) {
   return (

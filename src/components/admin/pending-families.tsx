@@ -71,7 +71,7 @@ export function PendingFamiliesNotice() {
                 </small>
               </span>
               <Link
-                href={`/admin/approvals?family=${encodeURIComponent(f.id)}`}
+                href={`/admin/producers?family=${encodeURIComponent(f.id)}`}
                 className={css.open}
                 onClick={close}
               >

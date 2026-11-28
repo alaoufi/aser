@@ -81,7 +81,7 @@ export const NAV_GROUPS: AdminNavGroup[] = [
       {
         to: "/admin/approvals",
         icon: "approvals",
-        labelKey: "اعتماد الأسر والمندوبين",
+        labelKey: "اعتماد المندوبين",
         perm: "approvals",
         data: ["/api/admin/producers"],
       },

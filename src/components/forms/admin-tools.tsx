@@ -877,7 +877,8 @@ export function AdminSummary({ onOpen }: { onOpen: (tab: string) => void }) {
             [
               "تنتظر الاعتماد",
               v.familiesPending,
-              "approvals",
+              // كل ما يخص الأسر في «الأسر المنتجة» (قرار المالك 2026-11-28).
+              "producers?filter=review",
               v.familiesPending > 0,
             ],
             ["بانتظار الاستكمال", v.familiesIncomplete, "producers"],

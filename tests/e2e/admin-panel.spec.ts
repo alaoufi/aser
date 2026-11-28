@@ -119,7 +119,7 @@ test("one tap opens the separate panel with a right sidebar, and leaving returns
     await expect(menu.getByRole("group", { name: group })).toBeVisible();
   // عدد «تنتظر الاعتماد» بجانب قسمه.
   await expect(
-    menu.getByRole("link", { name: /اعتماد الأسر والمندوبين\s*2/ }),
+    menu.getByRole("link", { name: /الأسر المنتجة\s*2/ }),
   ).toBeVisible();
   // القسم يفتح بمساره، والعنوان يتبعه.
   await menu.getByRole("link", { name: "الطلبات" }).click();
@@ -159,7 +159,8 @@ test("old ?tab= links open the section at its new path", async ({ page }) => {
   );
   await page.goto("/admin?tab=approvals");
   await expect(page).toHaveURL(/\/admin\/approvals$/);
+  // القسم صار «اعتماد المندوبين»، والأسر المنتظرة رابطها فيه إلى «الأسر المنتجة» (2026-11-28).
   await expect(
-    page.getByRole("heading", { name: "اعتماد الأسر المنتجة" }),
+    page.getByRole("region", { name: "اعتماد المندوبين" }),
   ).toBeVisible();
 });

@@ -71,12 +71,12 @@ test("on entering the panel, admins see the families waiting and open one with i
   ).toBe(true);
   await dialog.getByRole("link", { name: "افتح الأسرة" }).click();
   await expect(page).toHaveURL(
-    new RegExp(`/admin/approvals\\?family=${familyId}$`),
+    new RegExp(`/admin/producers\\?family=${familyId}$`),
   );
   await expect(dialog).toHaveCount(0);
-  // بطاقة الأسرة كاملة: البيانات والمستند والقرارات الخمسة.
+  // في «الأسر المنتجة» بطاقتها مفتوحة كاملة: البيانات والمستند والقرارات الخمسة.
   const card = page.locator(`#family-${familyId}`);
-  await expect(card).toBeFocused();
+  await expect(card).toBeVisible();
   await expect(card).toContainText("صاحب الحساب: أم محمد");
   await expect(
     card.getByRole("link", { name: /عرض المستند الخاص/ }),

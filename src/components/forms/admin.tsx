@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useTx } from "@/components/site-texts";
 import { AdminInsights } from "./admin-insights";
 import { useEffect, useState } from "react";
@@ -382,8 +383,14 @@ function FamilyRow({
   const name = p.tradeName || p.name;
   // تفتح بطاقة الأسرة كاملة من الرابط (?family=) كنافذة الأسر المنتظرة والتذكير الأسبوعي.
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("family") === p.id)
-      setDetails(true);
+    if (new URLSearchParams(window.location.search).get("family") !== p.id)
+      return;
+    setDetails(true);
+    requestAnimationFrame(() =>
+      document
+        .getElementById(`family-row-${p.id}`)
+        ?.scrollIntoView({ block: "start" }),
+    );
   }, [p.id]);
   const acts: FamilyAct[] = [
     ...(p.status === "hidden"
@@ -534,17 +541,28 @@ function FamilyRow({
  */
 export function Admin({ section }: { section?: string } = {}) {
   const session = useSession();
+  const { tx } = useTx();
   const router = useRouter();
   const [producers, setProducers] = useState<Application[]>([]);
   const [error, setError] = useState("");
   const [loaded, setLoaded] = useState(false);
   const [success, setSuccess] = useState("");
   const [filter, setFilter] = useState("all");
+  // «الأسر المنتجة» تفتح على تصفية من الرابط (?filter=review من «اعتماد المندوبين»).
+  useEffect(() => {
+    const f = new URLSearchParams(window.location.search).get("filter");
+    if (f) setFilter(f);
+  }, []);
   const [query, setQuery] = useState("");
   const item = section
     ? SECTIONS.find((it) => it.to === `/admin/${section}`)
     : undefined;
-  const active = item && allowedItem(session.user, item) ? section : undefined;
+  const active =
+    item &&
+    (allowedItem(session.user, item) ||
+      (section === "producers" && canAny(session.user, "approvals")))
+      ? section
+      : undefined;
   const open = (tab: string) => router.push(`/admin/${tab}`);
   async function load() {
     const d = await api<{ producers: Application[] }>("/api/admin/producers");
@@ -637,37 +655,24 @@ export function Admin({ section }: { section?: string } = {}) {
           ) : active === "suggestions" ? (
             <SuggestionsAdmin />
           ) : active === "approvals" ? (
-            <section aria-label="اعتماد الأسر المنتجة">
-              <h2>اعتماد الأسر المنتجة</h2>
-              <p className={s.muted}>
-                كل أسرة سجّلت أو عدّلت بياناتها وتنتظر قرارك. فعّلها ولو دون
-                مستندات واكتب النواقص في الملاحظة، أو اطلب الاستكمال قبل
-                التفعيل. يصلك تنبيه عند كل تسجيل جديد.
-              </p>
-              <Message error={error} success={success} />
-              {!loaded ? (
-                <p role="status">جارٍ تحميل الطلبات…</p>
-              ) : waiting.length ? (
-                waiting.map((p) => (
-                  <Review
-                    key={p.id}
-                    producer={p}
-                    onSaved={async () => {
-                      await load();
-                      window.dispatchEvent(new Event(APPROVALS_CHANGED));
-                      setSuccess("تم حفظ قرار المراجعة.");
-                    }}
-                  />
-                ))
-              ) : (
-                <p className={s.notice}>لا توجد أسر تنتظر الاعتماد الآن.</p>
+            <div>
+              {/* الأسر كلها في «الأسر المنتجة» (قرار المالك 2026-11-28)؛ هنا رابط للمنتظرة منها. */}
+              {loaded && (
+                <p className={s.notice}>
+                  {waiting.length
+                    ? tx("familyHub.waitingThere", { n: waiting.length })
+                    : tx("familyHub.noneWaiting")}{" "}
+                  <Link href="/admin/producers?filter=review">
+                    {tx("familyHub.open")} ←
+                  </Link>
+                </p>
               )}
               <AdminCouriers
                 onChanged={() =>
                   window.dispatchEvent(new Event(APPROVALS_CHANGED))
                 }
               />
-            </section>
+            </div>
           ) : active !== "producers" ? (
             <p className={s.notice}>
               {item
