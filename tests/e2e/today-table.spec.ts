@@ -89,9 +89,34 @@ test.describe("today's table on a real isolated catalog", () => {
   }) => {
     await page.goto(`/?region=${encodeURIComponent(region)}`);
     const table = page.getByRole("region", { name: "مائدة اليوم" });
-    await expect(
-      table.getByRole("link", { name: new RegExp(dish) }),
-    ).toBeVisible();
+    // الرئيسية (طلب المالك 2026-11-28): صورة الطبق فقط على المائدة؛ الضغط يكتب بياناته تحتها.
+    const plate = table.getByRole("button", { name: dish, exact: true });
+    await expect(plate).toBeVisible();
+    await expect(table.getByText(dish, { exact: true })).toHaveCount(0);
+    await plate.click();
+    await expect(plate).toHaveAttribute("aria-pressed", "true");
+    const card = table.getByRole("link", { name: new RegExp(dish) });
+    await expect(card).toContainText(/٢٠|20/);
+    await expect(card).toContainText("أسرة المائدة");
+    // 1) الضغط على البيانات يفتح التفاصيل.
+    await card.click();
+    await expect(page).toHaveURL(new RegExp(`/products/${productId}$`));
+    // 2) نقرتان على الطبق.
+    await page.goto(`/?region=${encodeURIComponent(region)}`);
+    await table.getByRole("button", { name: dish, exact: true }).dblclick();
+    await expect(page).toHaveURL(new RegExp(`/products/${productId}$`));
+    // 3) ضغطة مطوّلة.
+    await page.goto(`/?region=${encodeURIComponent(region)}`);
+    const again = table.getByRole("button", { name: dish, exact: true });
+    await again.scrollIntoViewIfNeeded();
+    const box = (await again.boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await expect(page).toHaveURL(new RegExp(`/products/${productId}$`), {
+      timeout: 5000,
+    });
+    await page.mouse.up();
+    await page.goto(`/?region=${encodeURIComponent(region)}`);
     await table.getByRole("link", { name: /افتح المائدة كاملة/ }).click();
     await expect(page).toHaveURL(/\/table\?region=/);
     await expect(
@@ -108,7 +133,7 @@ test.describe("today's table on a real isolated catalog", () => {
   });
 });
 
-test.describe("today's table slides with arrows, most ordered first", () => {
+test.describe("today's table pages with arrows outside it, most ordered first", () => {
   test.skip(
     process.env.JDATNA_TEST_DB !== "true" || !process.env.DATABASE_URL,
     "Requires isolated database environment",
@@ -178,16 +203,37 @@ test.describe("today's table slides with arrows, most ordered first", () => {
       await pool?.end();
     }
   });
-  test("arrows move the dishes and the most ordered dish comes first", async ({
+  test("arrows outside the table page through the dishes, and the most ordered comes first", async ({
     page,
   }) => {
     await page.goto(`/?region=${encodeURIComponent(region)}`);
     const table = page.getByRole("region", { name: "مائدة اليوم" });
-    const ours = table.getByRole("link", { name: new RegExp(`طبق ${tag}`) });
-    await expect(ours.first()).toContainText(`طبق ${tag} 9`);
+    const ours = table.getByRole("button", { name: new RegExp(`طبق ${tag}`) });
+    await expect(ours.first()).toHaveAccessibleName(`طبق ${tag} 9`);
     const prev = table.getByRole("button", { name: "الأطباق السابقة" });
     const next = table.getByRole("button", { name: "الأطباق التالية" });
     const track = table.locator(".table-track");
+    // السهمان خارج خشب المائدة (أخوان لها في الصف، لا داخلها).
+    expect(
+      await table.evaluate((el) => {
+        const wood = el
+          .querySelector(".table-paged > .table-3d")!
+          .getBoundingClientRect();
+        return [...el.querySelectorAll(".table-paged > .table-arrow")]
+          .filter((a) => !(a as HTMLElement).hidden)
+          .map((a) => {
+            const r = a.getBoundingClientRect();
+            return r.right <= wood.left + 1 || r.left >= wood.right - 1
+              ? "out"
+              : `in ${Math.round(r.left)}-${Math.round(r.right)} / ${Math.round(wood.left)}-${Math.round(wood.right)}`;
+          });
+      }),
+    ).not.toContainEqual(expect.stringMatching(/^in/));
+    // الكمبيوتر يتسع لكل الأطباق (6×3)، فلا أسهم؛ الجوال 3×3 فيتقلّب بالأسهم.
+    if ((page.viewportSize()?.width ?? 1280) >= 900) {
+      await expect(next).toBeHidden();
+      return;
+    }
     await expect(prev).toBeDisabled();
     await expect(next).toBeEnabled();
     await next.click();

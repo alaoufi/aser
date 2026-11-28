@@ -2871,3 +2871,167 @@ article[id^="family-"]:focus {
   outline: 3px solid var(--gold, #d6a35c);
   outline-offset: 3px;
 }
+
+/* «مائدة اليوم» في الرئيسية (طلب المالك 2026-11-28): المائدة ممتلئة بصور المنتجات صفوفًا بلا كتابة،
+   والسهمان خارج المائدة، وبيانات الطبق المختار تحتها. */
+.table-paged {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+}
+.table-paged > .table-3d {
+  flex: 1;
+  min-width: 0;
+}
+.table-paged > .table-arrow {
+  margin-bottom: 34px;
+}
+.table-paged .table-top {
+  padding: 18px 14px 22px;
+}
+.table-paged .table-track {
+  container-type: inline-size;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+  position: relative;
+  z-index: 1;
+}
+.table-paged .table-track::-webkit-scrollbar {
+  display: none;
+}
+.table-dishes.is-grid {
+  --cols: 3;
+  --rows: var(--rows-s, 3);
+  --gap: 10px;
+  display: grid;
+  gap: var(--gap);
+  grid-auto-columns: calc(
+    (100cqi - (var(--cols) - 1) * var(--gap)) / var(--cols)
+  );
+  grid-auto-flow: column;
+  /* تُلغى أعمدة المائدة الكاملة الثابتة: الأعمدة هنا متساوية بعدد --cols. */
+  grid-template-columns: none;
+  grid-template-rows: repeat(var(--rows), auto);
+  /* إن قلّت المنتجات عن صفحة تتوسط المائدة. */
+  justify-content: safe center;
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+}
+.table-dishes.is-grid > li {
+  scroll-snap-align: start;
+}
+.table-plate {
+  aspect-ratio: 1;
+  background: #fbf3e4;
+  border: 4px solid #f1dfbf;
+  border-radius: 50%;
+  box-shadow:
+    0 6px 10px #1a0f0866,
+    inset 0 0 0 2px #c9a273;
+  cursor: pointer;
+  display: grid;
+  overflow: hidden;
+  padding: 0;
+  place-items: center;
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+  user-select: none;
+  width: 100%;
+}
+.table-plate img {
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  width: 100%;
+}
+.table-plate[aria-pressed="true"] {
+  border-color: var(--gold, #d6a35c);
+  box-shadow:
+    0 0 0 3px var(--gold, #d6a35c),
+    0 8px 14px #1a0f0880;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .table-plate {
+    transition: transform 0.15s ease;
+  }
+  .table-plate:active {
+    transform: scale(0.95);
+  }
+}
+.table-picked {
+  display: grid;
+  justify-items: center;
+  margin-top: 6px;
+  min-height: 64px;
+}
+.table-picked-hint {
+  color: var(--muted);
+  font-size: 14px;
+  margin: 0;
+  text-align: center;
+}
+.table-picked-card {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 6px 16px #2e1d1220;
+  color: var(--ink);
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+  min-width: min(320px, 100%);
+  padding: 10px 18px;
+  text-align: center;
+  text-decoration: none;
+}
+.table-picked-card strong {
+  font-size: 17px;
+}
+.table-picked-card > span {
+  color: var(--muted);
+  font-size: 14px;
+}
+.table-picked-card .table-picked-price {
+  color: var(--ink);
+  font-weight: 700;
+}
+.table-picked-card .table-picked-open {
+  color: var(--rust);
+  font-weight: 700;
+  margin-top: 2px;
+}
+@media (min-width: 601px) {
+  .table-dishes.is-grid {
+    --cols: 4;
+    --rows: var(--rows-m, 3);
+    --gap: 14px;
+  }
+}
+@media (min-width: 900px) {
+  .table-dishes.is-grid {
+    --cols: 6;
+    --rows: var(--rows-l, 3);
+    --gap: 18px;
+  }
+  .table-paged .table-top {
+    padding: 22px 26px 28px;
+  }
+}
+@media (max-width: 600px) {
+  .table-paged {
+    gap: 4px;
+  }
+  .table-paged > .table-arrow {
+    width: 30px;
+    height: 30px;
+    font-size: 14px;
+  }
+}
+/* السهمان لا يظهران إن اتسعت المائدة لكل الأطباق (العرض grid يتجاوز السمة hidden). */
+.table-paged > .table-arrow[hidden] {
+  display: none;
+}
