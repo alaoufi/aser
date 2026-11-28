@@ -270,7 +270,7 @@ export async function notifyApprovers(
  */
 export async function approvalAlertRecipients(user: SessionUser) {
   if (user.role !== "admin")
-    throw new HttpError(403, "تحديد مستقبلي الإشعارات للمدير العام فقط");
+    throw new HttpError(403, await msg("approvalAlerts.onlyAdmin"));
   return (
     await db().query(
       `SELECT id,name,phone,role,member_no AS "memberNo",approval_alerts AS "on"
@@ -290,7 +290,7 @@ export async function approvalAlertRecipients(user: SessionUser) {
 
 export async function setApprovalAlert(user: SessionUser, input: unknown) {
   if (user.role !== "admin")
-    throw new HttpError(403, "تحديد مستقبلي الإشعارات للمدير العام فقط");
+    throw new HttpError(403, await msg("approvalAlerts.onlyAdmin"));
   const value = z
     .object({ id: z.uuid(), on: z.boolean() })
     .strict()
@@ -301,7 +301,8 @@ export async function setApprovalAlert(user: SessionUser, input: unknown) {
          AND (role='admin' OR 'approvals'=ANY(permissions)) RETURNING id`,
       [value.id, value.on],
     );
-    if (!r.rowCount) throw new HttpError(404, "العضو ليس من الإدارة");
+    if (!r.rowCount)
+      throw new HttpError(404, await msg("approvalAlerts.notStaff"));
     if (!value.on) {
       const left = (
         await client.query(
@@ -309,8 +310,7 @@ export async function setApprovalAlert(user: SessionUser, input: unknown) {
              AND approval_alerts AND suspended_at IS NULL AND deleted_at IS NULL`,
         )
       ).rows[0].n as number;
-      if (!left)
-        throw new HttpError(409, "يلزم أن يستقبل الإشعارات شخص واحد على الأقل");
+      if (!left) throw new HttpError(409, await msg("approvalAlerts.lastOne"));
     }
     await client.query(
       "INSERT INTO jdatna.admin_audit_logs(id,actor_id,action,target_id,details) VALUES($1,$2,$3,$4,$5)",
