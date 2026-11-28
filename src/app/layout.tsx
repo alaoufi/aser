@@ -9,6 +9,7 @@ import { AccountLink } from "@/components/public/account-link";
 import { OrderAlert } from "@/components/public/order-alert";
 import { SiteOnly } from "@/components/public/site-only";
 import { PushSetup } from "@/components/public/push-setup";
+import { InviteClipboard } from "@/components/public/invite-clipboard";
 import { SaveToast } from "@/components/public/save-toast";
 import { MessageAlert, MessagesLink } from "@/components/public/message-alert";
 import { FamilyWelcome } from "@/components/public/family-welcome";
@@ -334,6 +335,7 @@ export default async function RootLayout({
                 }
               />
             </header>
+            <InviteClipboard />
             <PushSetup
               texts={{
                 title: texts["push.title"] || "فعّل الإشعارات",
