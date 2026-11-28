@@ -495,6 +495,8 @@ function FamilyCouriers() {
   // ليس أسرة معتمدة بعد: يُشرح السبب بدل إخفاء القسم.
   const [unavailable, setUnavailable] = useState("");
   const [vehicle, setVehicle] = useState<"car" | "motorcycle">("car");
+  // التعهد باسم المندوب كما يُكتب (قرار المالك 2026-11-28).
+  const [typedName, setTypedName] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [issues, setIssues] = useState<FormIssue[]>([]);
@@ -519,7 +521,7 @@ function FamilyCouriers() {
     const f = new FormData(form);
     setBusy(true);
     try {
-      const r = await api<{ status: string }>("/api/producer/couriers", {
+      await api("/api/producer/couriers", {
         method: "POST",
         body: JSON.stringify({
           name: f.get("name"),
@@ -534,11 +536,10 @@ function FamilyCouriers() {
       });
       form.reset();
       setVehicle("car");
+      setTypedName("");
       await load();
       setSuccess(
-        r.status === "approved"
-          ? "تم تسجيل المندوب ✓ يدخل بجواله من «دخول» ← «نسيت كلمة المرور» أول مرة، فتصله طلبات التوصيل التي تسندها إليه."
-          : tx("familyCourier.pendingSaved"),
+        "تم تسجيل المندوب ✓ يدخل بجواله من «دخول» ← «نسيت كلمة المرور» أول مرة، فتصله طلبات التوصيل التي تسندها إليه.",
       );
     } catch (err) {
       setError((err as Error).message);
@@ -594,13 +595,9 @@ function FamilyCouriers() {
                   ? k.active
                     ? "✅ نشط — تسند إليه طلبات التوصيل"
                     : "⏸️ أوقف ظهوره مؤقتًا من حسابه"
-                  : k.status === "pending"
-                    ? tx("familyCourier.pending")
-                    : k.status === "rejected"
-                      ? tx("familyCourier.rejected")
-                      : k.stoppedByAdmin
-                        ? "⛔ أوقفته الإدارة"
-                        : "⛔ موقوف"}
+                  : k.stoppedByAdmin
+                    ? "⛔ أوقفته الإدارة"
+                    : "⛔ موقوف"}
                 {k.status === "approved" && !k.joined && (
                   <small className={s.muted}>
                     {" "}
@@ -608,7 +605,7 @@ function FamilyCouriers() {
                   </small>
                 )}
               </p>
-              {(k.status === "approved" || k.status === "pending") && (
+              {k.status === "approved" && (
                 <button
                   type="button"
                   className={s.buttonSecondary}
@@ -626,7 +623,14 @@ function FamilyCouriers() {
         <div className={s.grid}>
           <label className={s.field}>
             اسم المندوب
-            <input name="name" required minLength={2} maxLength={120} />
+            <input
+              name="name"
+              required
+              minLength={2}
+              maxLength={120}
+              value={typedName}
+              onChange={(e) => setTypedName(e.target.value)}
+            />
           </label>
           <label className={s.field}>
             جوال المندوب
@@ -695,7 +699,10 @@ function FamilyCouriers() {
             data-reason="يلزم الإقرار بالتعهد"
           />
           <span>
-            <strong>تعهّد:</strong> {data.pledge}
+            <strong>{tx("familyCourier.pledgeTitle")}</strong>{" "}
+            {tx("familyCourier.pledge", {
+              name: typedName.trim() || tx("familyCourier.pledgeNoName"),
+            })}
           </span>
         </label>
         <FormIssues issues={issues} />

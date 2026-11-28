@@ -642,7 +642,7 @@ export async function pendingCouriers() {
 
 /**
  * المندوب الخاص بالأسرة: تسجّله الأسرة المعتمدة بالاسم والجوال والجنسية ونوع السيارة، بتعهّدها بمعرفته
- * ومسؤوليتها عنه، ولا يُفعَّل إلا بموافقة الإدارة (قرار المالك 2026-11-28؛ كان يُعتمد فورًا)، ويظهر لأسرتها فقط. يدخل المندوب بجواله
+ * ومسؤوليتها عنه، فيُفعَّل فورًا دون موافقة الإدارة (أكده المالك 2026-11-28) ويظهر لأسرتها فقط بشارة «مندوب خاص». يدخل المندوب بجواله
  * («نسيت كلمة المرور» أول مرة برمز الجوال) فيرى طلبات التوصيل ويؤكد التوصيل.
  */
 /**
@@ -692,7 +692,7 @@ export function vehicleLabel(v: {
 }
 
 export const familyCourierPledge =
-  "أتعهد بأنني أعرف هذا المندوب معرفة شخصية، وأتحمل مسؤولية توصيله وتعامله مع عملائي، وأن بياناته صحيحة.";
+  "هذا المندوب «{name}» تابع لي وأعرفه، وتحت مسؤوليتي نظاميته وأمانته.";
 
 async function approvedFamily(
   client: Pick<PoolClient, "query">,
@@ -760,7 +760,7 @@ export async function saveFamilyCourier(user: SessionUser, input: unknown) {
     const existing = member
       ? ((
           await client.query(
-            "SELECT id,family_id,status,reviewer_id,approved_at FROM jdatna.courier_profiles WHERE user_id=$1 FOR UPDATE",
+            "SELECT id,family_id,status,reviewer_id FROM jdatna.courier_profiles WHERE user_id=$1 FOR UPDATE",
             [member.id],
           )
         ).rows[0] as
@@ -769,7 +769,6 @@ export async function saveFamilyCourier(user: SessionUser, input: unknown) {
               family_id: string | null;
               status: string;
               reviewer_id: string | null;
-              approved_at: Date | null;
             }
           | undefined)
       : undefined;
@@ -807,17 +806,13 @@ export async function saveFamilyCourier(user: SessionUser, input: unknown) {
       );
     }
     const id = existing?.id ?? randomUUID();
-    // لا يُفعَّل إلا بموافقة الإدارة. سبق أن اعتُمد (ثم أوقفته الأسرة) فيعود معتمدًا؛ غير ذلك ينتظر الاعتماد.
-    const status =
-      existing?.approved_at && existing.status !== "rejected"
-        ? "approved"
-        : "pending";
     await client.query(
-      `INSERT INTO jdatna.courier_profiles(id,user_id,name,city_id,car_type,status,family_id,pledged_by,pledged_at,vehicle,car_model,car_color,nationality)
-       VALUES($1,$2,$3,$4,$5,$11,$6,$7,now(),$8,$9,$10,$12)
+      `INSERT INTO jdatna.courier_profiles(id,user_id,name,city_id,car_type,status,family_id,pledged_by,pledged_at,approved_at,vehicle,car_model,car_color,nationality)
+       VALUES($1,$2,$3,$4,$5,'approved',$6,$7,now(),now(),$8,$9,$10,$11)
        ON CONFLICT(user_id) DO UPDATE SET name=EXCLUDED.name,car_type=EXCLUDED.car_type,vehicle=EXCLUDED.vehicle,
-         car_model=EXCLUDED.car_model,car_color=EXCLUDED.car_color,nationality=EXCLUDED.nationality,status=EXCLUDED.status,
-         review_reason=NULL,reviewer_id=NULL,pledged_by=EXCLUDED.pledged_by,pledged_at=now(),updated_at=now()`,
+         car_model=EXCLUDED.car_model,car_color=EXCLUDED.car_color,nationality=EXCLUDED.nationality,status='approved',
+         review_reason=NULL,reviewer_id=NULL,pledged_by=EXCLUDED.pledged_by,pledged_at=now(),
+         approved_at=COALESCE(jdatna.courier_profiles.approved_at,now()),updated_at=now()`,
       [
         id,
         member!.id,
@@ -829,30 +824,12 @@ export async function saveFamilyCourier(user: SessionUser, input: unknown) {
         value.vehicle,
         value.vehicle === "car" ? value.carModel : null,
         value.vehicle === "car" ? value.carColor : null,
-        status,
         value.nationality,
       ],
     );
-    return {
-      id,
-      userId: member!.id,
-      status: status as "approved" | "pending",
-      familyName: family.name,
-      newlyPending: status === "pending" && existing?.status !== "pending",
-    };
+    return { id, userId: member!.id, status: "approved" as const };
   });
-  if (saved.newlyPending)
-    void notifyApprovers(
-      value.name,
-      await msg("alert.courier.family.body", {
-        name: value.name,
-        family: saved.familyName,
-      }),
-      await msg("alert.courier.pending.title"),
-      "/admin/approvals",
-      "courier-approval",
-    );
-  return { id: saved.id, userId: saved.userId, status: saved.status };
+  return saved;
 }
 
 /** الأسرة توقف مندوبها الخاص (يبقى سجل توصيلاته وتقييمه)، وتعيده بتسجيل جواله مرة أخرى. */
@@ -861,7 +838,7 @@ export async function stopFamilyCourier(user: SessionUser, input: unknown) {
   const r = await db().query(
     `UPDATE jdatna.courier_profiles k SET status='suspended',review_reason='أوقفته الأسرة',reviewer_id=$2,updated_at=now()
      FROM jdatna.producer_profiles p
-     WHERE k.id=$1 AND k.family_id=p.id AND p.user_id=$2 AND k.status IN ('approved','pending') RETURNING k.id`,
+     WHERE k.id=$1 AND k.family_id=p.id AND p.user_id=$2 AND k.status='approved' RETURNING k.id`,
     [id, user.id],
   );
   if (!r.rowCount) throw new HttpError(404, "المندوب غير موجود أو موقوف");

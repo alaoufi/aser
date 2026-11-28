@@ -21,6 +21,8 @@ type Member = {
   familyStatus?: string | null;
   /** حالة اعتماد المندوب إن كان مندوبًا. */
   courierStatus?: string | null;
+  /** المندوب الخاص: اسم الأسرة التي أضافته (null للمندوب العام). */
+  courierFamily?: string | null;
   createdAt?: string;
 };
 type Access = { fullAdmin: boolean; permissions: string[] };
@@ -192,7 +194,9 @@ function accountType(m: Member, tx: ReturnType<typeof useTx>["tx"]) {
   const family = Boolean(m.familyName) && m.familyStatus !== "closed";
   const base =
     m.role === "courier"
-      ? tx("members.type.courier")
+      ? m.courierFamily
+        ? tx("members.type.privateCourier")
+        : tx("members.type.courier")
       : family
         ? tx("members.type.family")
         : tx("members.type.customer");
@@ -497,6 +501,12 @@ export function MembersAdmin() {
                           <>
                             <dt>{tx("members.d.family")}</dt>
                             <dd>{m.familyName}</dd>
+                          </>
+                        )}
+                        {m.courierFamily && (
+                          <>
+                            <dt>{tx("members.d.courierFamily")}</dt>
+                            <dd>{m.courierFamily}</dd>
                           </>
                         )}
                         <dt>{tx("members.d.access")}</dt>

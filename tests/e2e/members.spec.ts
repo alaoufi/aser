@@ -261,3 +261,54 @@ test("visitors pick the site look themselves and it is remembered", async ({
     4,
   );
 });
+
+// قرار المالك 2026-11-28: مندوب الأسرة يظهر «مندوب خاص»، وفي التفاصيل الأسرة التي يتبعها.
+test("a family's private courier is labelled private with its family in the details", async ({
+  page,
+}) => {
+  await as(page, {
+    id: "a",
+    name: "المدير",
+    phone: "+966500000009",
+    role: "admin",
+  });
+  const base = { permissions: [], suspended: false, familyName: null };
+  await page.route("**/api/admin/members**", (r) =>
+    r.fulfill({
+      json: {
+        members: [
+          {
+            ...base,
+            id: "k1",
+            name: "حسن",
+            phone: "+966500000117",
+            role: "courier",
+            courierStatus: "approved",
+            courierFamily: "مطبخ أم محمد",
+          },
+          {
+            ...base,
+            id: "k2",
+            name: "معاذ",
+            phone: "+966500000118",
+            role: "courier",
+            courierStatus: "approved",
+            courierFamily: null,
+          },
+        ],
+        counts: {},
+      },
+    }),
+  );
+  await page.goto("/admin/members");
+  const row = (id: string) => page.locator(`#member-row-${id}`);
+  await expect(row("k1")).toContainText("مندوب خاص");
+  await expect(row("k2")).not.toContainText("مندوب خاص");
+  await expect(row("k2")).toContainText("مندوب");
+  await page.getByLabel("خيارات حسن").click();
+  await page.getByRole("button", { name: "تفاصيل", exact: true }).click();
+  const details = row("k1").locator(".member-details");
+  await expect(details).toContainText("يتبع أسرة");
+  await expect(details).toContainText("مطبخ أم محمد");
+  await expect(details).toContainText("مندوب خاص");
+});

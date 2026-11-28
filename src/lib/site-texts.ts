@@ -688,6 +688,12 @@ export const siteTextDefaults = {
   "members.type.family": "أسرة منتجة",
   "members.type.customer": "عميل",
   "members.type.courier": "مندوب",
+  "familyCourier.pledgeTitle": "تعهّد:",
+  "familyCourier.pledge":
+    "هذا المندوب «{name}» تابع لي وأعرفه، وتحت مسؤوليتي نظاميته وأمانته.",
+  "familyCourier.pledgeNoName": "(اسمه)",
+  "members.type.privateCourier": "مندوب خاص",
+  "members.d.courierFamily": "يتبع أسرة",
   "members.d.phone": "الجوال",
   "members.d.type": "نوع الحساب",
   "members.d.family": "الأسرة",
@@ -790,18 +796,12 @@ export const siteTextDefaults = {
   "alert.family.late.body":
     "«{name}» مضت 15 يومًا على تعهدها ولم ترفع المستندات الرسمية. تجدها في «تأخرت في المستندات».",
   "alert.courier.pending.title": "مندوب ينتظر الاعتماد",
-  "alert.courier.family.body":
-    "أسرة «{family}» سجّلت المندوب «{name}» وينتظر اعتمادك.",
   "courier.nationality": "الجنسية",
   "courier.nationality.choose": "اختر الجنسية",
   "courier.nationality.required": "اختر الجنسية من القائمة",
   "courier.nationality.none": "لم تُسجَّل",
   "familyCourier.intro":
-    "سجّل مندوبًا تعرفه شخصيًا ليوصل طلبات «{family}». لا يُفعَّل إلا بعد موافقة الإدارة، ثم يظهر لأسرتك فقط في إسناد التوصيل.",
-  "familyCourier.pending": "⏳ بانتظار اعتماد الإدارة",
-  "familyCourier.rejected": "⛔ لم تعتمده الإدارة",
-  "familyCourier.pendingSaved":
-    "تم تسجيل المندوب ✓ وأُرسل للإدارة. يُفعَّل بعد موافقتها، ثم يدخل بجواله من «دخول» ← «نسيت كلمة المرور» أول مرة.",
+    "سجّل مندوبًا تعرفه شخصيًا ليوصل طلبات «{family}». يُفعَّل فورًا دون انتظار الإدارة، ويظهر لأسرتك فقط في إسناد التوصيل بشارة «مندوب خاص».",
   "members.d.approval": "الاعتماد",
   "members.approval.pending": "بانتظار اعتماد الإدارة",
   "members.approval.approved": "معتمد",
@@ -1616,6 +1616,26 @@ export const siteTextLabels: Record<
   "members.type.family": ["الأعضاء والصلاحيات (الإدارة)", "نوع: أسرة"],
   "members.type.customer": ["الأعضاء والصلاحيات (الإدارة)", "نوع: عميل"],
   "members.type.courier": ["الأعضاء والصلاحيات (الإدارة)", "نوع: مندوب"],
+  "familyCourier.pledgeTitle": [
+    "اعتماد المندوبين",
+    "مندوب الأسرة: عنوان التعهد",
+  ],
+  "familyCourier.pledge": [
+    "اعتماد المندوبين",
+    "مندوب الأسرة: نص التعهد ({name})",
+  ],
+  "familyCourier.pledgeNoName": [
+    "اعتماد المندوبين",
+    "مندوب الأسرة: مكان الاسم قبل كتابته",
+  ],
+  "members.type.privateCourier": [
+    "الأعضاء والصلاحيات (الإدارة)",
+    "نوع: مندوب خاص",
+  ],
+  "members.d.courierFamily": [
+    "الأعضاء والصلاحيات (الإدارة)",
+    "تفاصيل: أسرة المندوب الخاص",
+  ],
   "members.d.phone": ["الأعضاء والصلاحيات (الإدارة)", "تفاصيل: الجوال"],
   "members.d.type": ["الأعضاء والصلاحيات (الإدارة)", "تفاصيل: النوع"],
   "members.d.family": ["الأعضاء والصلاحيات (الإدارة)", "تفاصيل: الأسرة"],
@@ -1788,10 +1808,6 @@ export const siteTextLabels: Record<
     "تأخر المستندات: النص ({name})",
   ],
   "alert.courier.pending.title": ["تنبيهات الإدارة", "مندوب جديد: العنوان"],
-  "alert.courier.family.body": [
-    "تنبيهات الإدارة",
-    "مندوب سجّلته أسرة: النص ({name} {family})",
-  ],
   "courier.nationality": ["اعتماد المندوبين", "حقل الجنسية"],
   "courier.nationality.choose": ["اعتماد المندوبين", "الجنسية: الخيار الأول"],
   "courier.nationality.required": [
@@ -1802,15 +1818,6 @@ export const siteTextLabels: Record<
   "familyCourier.intro": [
     "اعتماد المندوبين",
     "مندوب الأسرة: المقدمة ({family})",
-  ],
-  "familyCourier.pending": [
-    "اعتماد المندوبين",
-    "مندوب الأسرة: بانتظار الاعتماد",
-  ],
-  "familyCourier.rejected": ["اعتماد المندوبين", "مندوب الأسرة: مرفوض"],
-  "familyCourier.pendingSaved": [
-    "اعتماد المندوبين",
-    "مندوب الأسرة: رسالة بعد التسجيل",
   ],
   "members.d.approval": ["الأعضاء والصلاحيات (الإدارة)", "تفاصيل: الاعتماد"],
   "members.approval.pending": [

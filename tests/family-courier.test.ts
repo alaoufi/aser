@@ -9,14 +9,13 @@ import {
   saveCourier,
   saveFamilyCourier,
   stopFamilyCourier,
-  reviewCourier,
 } from "../src/server/couriers";
 import { moderateConversation, startConversation } from "../src/server/chat";
 import { adminReports } from "../src/server/admin";
 import type { SessionUser } from "../src/lib/types";
 
 test(
-  "isolated family courier: the family registers it with a pledge, it waits for admin approval, then is visible to that family only; chat reports name the reported person",
+  "isolated family courier: the family registers it with a pledge, no admin approval, visible to that family only; chat reports name the reported person",
   { skip: process.env.JDATNA_TEST_DB !== "true" },
   async () => {
     const pool = db();
@@ -129,14 +128,13 @@ test(
       await assert.rejects(
         saveFamilyCourier(famUser, { ...pledge, nationality: "مريخي" }),
       );
-      // جوال جديد بأي صيغة: حساب مندوب خاص بالأسرة، بلا هوية ولا كلمة مرور،
-      // ولا يُفعَّل إلا بموافقة الإدارة (قرار المالك 2026-11-28؛ كان يُعتمد فورًا).
+      // جوال جديد بأي صيغة: حساب مندوب معتمد فورًا (أكده المالك 2026-11-28)، خاص بالأسرة، بلا هوية ولا كلمة مرور.
       const saved = await saveFamilyCourier(famUser, {
         ...pledge,
         phone: " " + newPhoneLocal.replace(/^0/, "+966 ") + " ",
       });
       created.push(saved.userId);
-      assert.equal(saved.status, "pending");
+      assert.equal(saved.status, "approved");
       const row = (
         await pool.query(
           `SELECT u.phone,u.role,u.password_hash,k.status,k.family_id,k.pledged_by,k.national_id_encrypted,
@@ -150,7 +148,7 @@ test(
       assert.equal(row.car_color, "أبيض");
       assert.equal(row.car_type, "سيارة سوناتا 2019 · أبيض");
       assert.equal(row.nationality, "سعودي");
-      assert.equal(row.approved_at, null);
+      assert.ok(row.approved_at);
       // تعديل المركبة إلى دباب: لا نوع ولا لون للسيارة.
       await saveFamilyCourier(famUser, {
         name: pledge.name,
@@ -174,11 +172,11 @@ test(
       assert.equal(row.phone, newPhone);
       assert.equal(row.role, "courier");
       assert.equal(row.password_hash, null);
-      assert.equal(row.status, "pending");
+      assert.equal(row.status, "approved");
       assert.equal(row.family_id, fam);
       assert.equal(row.pledged_by, famUser.id);
       assert.equal(row.national_id_encrypted, null);
-      // يدخل طلب الاعتماد عند الإدارة، ولا يظهر للإسناد قبل الموافقة.
+      // لا يدخل طلب الاعتماد عند الإدارة.
       assert.equal(
         (
           await pool.query(
@@ -186,21 +184,8 @@ test(
             [fam],
           )
         ).rows[0].n,
-        1,
+        0,
       );
-      assert.equal(
-        (await listCouriers(famUser, {})).some(
-          (k) => k.userId === saved.userId,
-        ),
-        false,
-        "لا يظهر قبل اعتماد الإدارة",
-      );
-      // إعادة تسجيله وهو بالانتظار لا تعتمده.
-      assert.equal(
-        (await saveFamilyCourier(famUser, pledge)).status,
-        "pending",
-      );
-      await reviewCourier(admin, saved.id, { decision: "approved" });
 
       // يظهر لأسرته فقط، بشارة اسم الأسرة، والعام يظهر للأسرتين.
       const mine = await listCouriers(famUser, {});
