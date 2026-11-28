@@ -203,7 +203,7 @@ export default async function Home({
         products={today}
         regions={regions}
         region={region}
-        capacity={12}
+        capacity={18}
         path="/"
         picker={false}
         texts={texts}

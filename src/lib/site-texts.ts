@@ -658,6 +658,9 @@ export const siteTextDefaults = {
     "اختياري مع التوصيل وحده: الموقع يُطلب فقط في التسليم المباشر.",
   "appShare.label": "مشاركة التطبيق",
   "menu.appearance": "الألوان والقوالب",
+  "table.hint":
+    "اضغط على الطبق لترى بياناته هنا، وضغطتان أو ضغطة مطوّلة تفتح تفاصيله.",
+  "table.details": "التفاصيل",
   "admin.texts.section": "القسم",
   "admin.texts.allSections": "كل الأقسام",
   "msg.order.new.title": "طلب جديد: {product}",
@@ -1469,6 +1472,8 @@ export const siteTextLabels: Record<
   ],
   "appShare.label": ["مشاركة التطبيق", "اسم أيقونة المشاركة في رأس الموقع"],
   "menu.appearance": ["قائمة الجوال", "زر الألوان والقوالب في القائمة"],
+  "table.hint": ["الرئيسية", "تحت المائدة قبل اختيار طبق"],
+  "table.details": ["الرئيسية", "رابط التفاصيل تحت المائدة"],
   "admin.texts.section": ["إدارة نصوص الموقع", "قائمة الأقسام: العنوان"],
   "admin.texts.allSections": ["إدارة نصوص الموقع", "قائمة الأقسام: الكل"],
   "msg.order.new.title": [

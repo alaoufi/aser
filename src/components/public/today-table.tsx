@@ -3,7 +3,7 @@ import type { Product } from "@/lib/types";
 import { priceLabel, safeMediaUrl } from "./ui";
 import { RegionPicker } from "./region-picker";
 import type { SiteTexts } from "@/lib/site-texts";
-import { TableCarousel } from "./table-carousel";
+import { TableGrid } from "./table-grid";
 
 export type Region = { id: string; name: string };
 /** يرتب المناطق من قائمة المدن بلا تكرار. */
@@ -341,6 +341,8 @@ export function TodayTable({
     | "table.next"
     | "delivery.kingdom"
     | "table.emptyRegion"
+    | "table.hint"
+    | "table.details"
   >;
   products: Product[];
   regions: Region[];
@@ -370,35 +372,51 @@ export function TodayTable({
           <RegionPicker regions={regions} value={region} path={path} />
         )}
       </div>
-      {/* مائدة خشب كبيرة ثلاثية الأبعاد بأرجل قصيرة */}
-      <div className="table-3d">
-        <div className="table-top">
-          {/* علامة مائية على الجوانب الأربعة، كل واحدة تُقرأ من جهة الجالس أمامها */}
-          {(["bottom", "top", "right", "left"] as const).map((side) => (
-            <span
-              key={side}
-              className={`table-watermark is-${side}`}
-              aria-hidden="true"
-            >
-              {texts["table.title"] || "مائدة اليوم"}
-            </span>
-          ))}
-          {shown.length === 0 ? (
-            <div className="table-empty">
-              <span className="table-bouquet-shadow" aria-hidden="true" />
-              <p>
-                {texts["table.empty"]}
-                {region && texts["table.emptyRegion"] ? (
-                  <small title={regionName}>{texts["table.emptyRegion"]}</small>
-                ) : null}
-              </p>
-            </div>
-          ) : capacity ? (
-            <TableCarousel
-              prevLabel={texts["table.prev"] || "الأطباق السابقة"}
-              nextLabel={texts["table.next"] || "الأطباق التالية"}
-            >
-              <ul className={`table-dishes${capacity ? " is-row" : ""}`}>
+      {capacity && shown.length > 0 ? (
+        // الرئيسية (طلب المالك 2026-11-28): المائدة ممتلئة بصور المنتجات صفوفًا، والسهمان خارجها.
+        <TableGrid
+          products={shown}
+          texts={{
+            title: texts["table.title"] || "مائدة اليوم",
+            prev: texts["table.prev"] || "الأطباق السابقة",
+            next: texts["table.next"] || "الأطباق التالية",
+            hint: texts["table.hint"],
+            details: texts["table.details"] || "التفاصيل",
+            shipping: texts["delivery.kingdom"],
+          }}
+        />
+      ) : (
+        /* مائدة خشب كبيرة ثلاثية الأبعاد بأرجل قصيرة */
+        <div className="table-3d">
+          <div className="table-top">
+            {/* علامة مائية على الجوانب الأربعة، كل واحدة تُقرأ من جهة الجالس أمامها */}
+            {(["bottom", "top", "right", "left"] as const).map((side) => (
+              <span
+                key={side}
+                className={`table-watermark is-${side}`}
+                aria-hidden="true"
+              >
+                {texts["table.title"] || "مائدة اليوم"}
+              </span>
+            ))}
+            {shown.length === 0 ? (
+              <div className="table-empty">
+                <span className="table-bouquet-shadow" aria-hidden="true" />
+                <p>
+                  {texts["table.empty"]}
+                  {region && texts["table.emptyRegion"] ? (
+                    <small title={regionName}>
+                      {texts["table.emptyRegion"]}
+                    </small>
+                  ) : null}
+                </p>
+              </div>
+            ) : (
+              // الحجم حسب العدد: قليلة كبيرة بالاسم والسعر، ومتوسطة أصغر بالاسم فقط،
+              // وكثيرة أصغر صفوفًا متراصة. التفاصيل الكاملة في صفحة الطبق عند فتحه.
+              <ul
+                className={`table-dishes is-${shown.length <= 4 ? "few" : shown.length <= 12 ? "some" : "many"}`}
+              >
                 {shown.map((p) => (
                   <li key={p.id}>
                     <Link href={`/products/${p.id}`} className="table-dish">
@@ -423,45 +441,15 @@ export function TodayTable({
                   </li>
                 ))}
               </ul>
-            </TableCarousel>
-          ) : (
-            // الحجم حسب العدد: قليلة كبيرة بالاسم والسعر، ومتوسطة أصغر بالاسم فقط،
-            // وكثيرة أصغر صفوفًا متراصة. التفاصيل الكاملة في صفحة الطبق عند فتحه.
-            <ul
-              className={`table-dishes is-${shown.length <= 4 ? "few" : shown.length <= 12 ? "some" : "many"}`}
-            >
-              {shown.map((p) => (
-                <li key={p.id}>
-                  <Link href={`/products/${p.id}`} className="table-dish">
-                    <span className="plate">
-                      {p.imageUrl && safeMediaUrl(p.imageUrl) ? (
-                        <img src={p.imageUrl} alt="" loading="lazy" />
-                      ) : (
-                        <span aria-hidden="true">♨</span>
-                      )}
-                    </span>
-                    <strong>{p.name}</strong>
-                    <small>
-                      {p.producerName} · {priceLabel(p.price)}
-                    </small>
-                    {p.deliveryScope === "kingdom" &&
-                      texts["delivery.kingdom"] && (
-                        <em className="dish-shipping">
-                          {texts["delivery.kingdom"]}
-                        </em>
-                      )}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
+            )}
+          </div>
+          {shown.length === 0 && <Bouquet />}
+          <span className="table-leg leg-1" aria-hidden="true" />
+          <span className="table-leg leg-2" aria-hidden="true" />
+          <span className="table-leg leg-3" aria-hidden="true" />
+          <span className="table-leg leg-4" aria-hidden="true" />
         </div>
-        {shown.length === 0 && <Bouquet />}
-        <span className="table-leg leg-1" aria-hidden="true" />
-        <span className="table-leg leg-2" aria-hidden="true" />
-        <span className="table-leg leg-3" aria-hidden="true" />
-        <span className="table-leg leg-4" aria-hidden="true" />
-      </div>
+      )}
       {capacity && products.length > 0 && (
         <Link href={full} className="table-more">
           {products.length > shown.length
