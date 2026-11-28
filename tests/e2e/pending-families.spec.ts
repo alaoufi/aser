@@ -94,6 +94,31 @@ test("on entering the panel, admins see the families waiting and open one with i
   await expect(dialog).toHaveCount(0);
 });
 
+test("Esc closes the dialog for the session", async ({ page }) => {
+  await page.route("**/api/session", (r) =>
+    r.fulfill({ json: { user: admin, registrationOpen: true } }),
+  );
+  await page.route("**/api/admin/summary", (r) =>
+    r.fulfill({ json: { summary: {} } }),
+  );
+  await page.route("**/api/admin/producers**", (r) =>
+    r.fulfill({
+      json: {
+        producers: [],
+        count: 1,
+        families: [
+          { id: familyId, name: "أسرة", createdAt: "2026-11-27T09:00:00Z" },
+        ],
+      },
+    }),
+  );
+  await page.goto("/admin");
+  const dialog = page.getByRole("dialog", { name: "أسر تنتظر الموافقة" });
+  await expect(dialog).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+});
+
 test("no dialog when nobody is waiting", async ({ page }) => {
   await page.route("**/api/session", (r) =>
     r.fulfill({ json: { user: admin, registrationOpen: true } }),

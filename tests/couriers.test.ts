@@ -49,7 +49,9 @@ test(
           [u.id, u.name, u.phone, u.role],
         );
       const [city, other] = (
-        await pool.query("SELECT id FROM jdatna.cities ORDER BY id LIMIT 2")
+        await pool.query(
+          "SELECT id FROM jdatna.cities WHERE id !~ '^[0-9a-f]{8}-' ORDER BY id LIMIT 2",
+        )
       ).rows.map((r) => r.id as string);
       await pool.query(
         "INSERT INTO jdatna.producer_profiles(id,user_id,slug,name,city_id,phone,status) VALUES($1,$2,$3,'أسرة المندوب',$4,$5,'approved')",

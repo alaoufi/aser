@@ -44,7 +44,7 @@ test.describe("today's table on a real isolated catalog", () => {
     expect(name.startsWith("jdatna_test_")).toBe(true);
     const city = (
       await pool.query(
-        "SELECT c.id,c.region_id FROM jdatna.cities c ORDER BY c.id LIMIT 1",
+        "SELECT c.id,c.region_id FROM jdatna.cities c WHERE c.id !~ '^[0-9a-f]{8}-' ORDER BY c.id LIMIT 1",
       )
     ).rows[0];
     region = city.region_id;
@@ -130,7 +130,7 @@ test.describe("today's table slides with arrows, most ordered first", () => {
     ).toBe(true);
     const city = (
       await pool.query(
-        "SELECT id,region_id FROM jdatna.cities ORDER BY id LIMIT 1",
+        "SELECT id,region_id FROM jdatna.cities WHERE id !~ '^[0-9a-f]{8}-' ORDER BY id LIMIT 1",
       )
     ).rows[0];
     region = city.region_id;

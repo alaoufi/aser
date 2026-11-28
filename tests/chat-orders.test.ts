@@ -83,8 +83,11 @@ test(
           "INSERT INTO jdatna.users(id,name,phone,role,phone_verified_at) VALUES($1,$2,$3,$4,now())",
           [u.id, u.name, u.phone, u.role],
         );
-      const city = (await pool.query("SELECT id FROM jdatna.cities LIMIT 1"))
-        .rows[0].id;
+      const city = (
+        await pool.query(
+          "SELECT id FROM jdatna.cities WHERE id !~ '^[0-9a-f]{8}-' LIMIT 1",
+        )
+      ).rows[0].id;
       for (const [id, owner] of [
         [familyId, family],
         [otherFamilyId, otherOwner],

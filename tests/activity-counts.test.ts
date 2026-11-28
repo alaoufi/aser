@@ -36,8 +36,11 @@ test(
           "','customer',now())",
         [owner, buyer],
       );
-      const city = (await pool.query("SELECT id FROM jdatna.cities LIMIT 1"))
-        .rows[0].id;
+      const city = (
+        await pool.query(
+          "SELECT id FROM jdatna.cities WHERE id !~ '^[0-9a-f]{8}-' LIMIT 1",
+        )
+      ).rows[0].id;
       await pool.query(
         "INSERT INTO jdatna.producer_profiles(id,user_id,slug,name,city_id,phone,status) VALUES($1,$2,$3,'أسرة الأرقام',$4,$5,'approved')",
         [family, owner, slug, city, phone()],

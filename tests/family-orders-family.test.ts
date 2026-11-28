@@ -32,8 +32,11 @@ test(
       sellerProduct = randomUUID(),
       buyerProduct = randomUUID();
     try {
-      const city = (await pool.query("SELECT id FROM jdatna.cities LIMIT 1"))
-        .rows[0].id;
+      const city = (
+        await pool.query(
+          "SELECT id FROM jdatna.cities WHERE id !~ '^[0-9a-f]{8}-' LIMIT 1",
+        )
+      ).rows[0].id;
       for (const [u, f, p] of [
         [buyer, buyerFamily, buyerProduct],
         [seller, sellerFamily, sellerProduct],

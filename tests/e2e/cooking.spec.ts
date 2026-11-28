@@ -86,8 +86,11 @@ test.describe("public cooking-day availability on an isolated catalog", () => {
       (await pool.query("SELECT current_database() AS name")).rows[0].name,
     ).toMatch(/^jdatna_test_/);
     started = true;
-    const city = (await pool.query("SELECT id FROM jdatna.cities LIMIT 1"))
-      .rows[0].id;
+    const city = (
+      await pool.query(
+        "SELECT id FROM jdatna.cities WHERE id !~ '^[0-9a-f]{8}-' LIMIT 1",
+      )
+    ).rows[0].id;
     await pool.query(
       "INSERT INTO jdatna.users(id,name,phone,role,phone_verified_at) VALUES($1,'cooking-browser',$2,'producer',now())",
       [uid, `cooking-browser-${uid}`],

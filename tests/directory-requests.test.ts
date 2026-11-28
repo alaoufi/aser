@@ -44,7 +44,7 @@ test(
     };
     const city = (
       await pool.query<{ id: string }>(
-        "SELECT id FROM jdatna.cities ORDER BY id LIMIT 1",
+        "SELECT id FROM jdatna.cities WHERE id !~ '^[0-9a-f]{8}-' ORDER BY id LIMIT 1",
       )
     ).rows[0].id;
     const customer = await mk("customer");

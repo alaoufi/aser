@@ -30,7 +30,7 @@ test(
     );
     const [r1, r2] = (
       await pool.query<{ id: string; region: string }>(
-        "SELECT DISTINCT ON (region_id) id,region_id AS region FROM jdatna.cities ORDER BY region_id,id LIMIT 2",
+        "SELECT DISTINCT ON (region_id) id,region_id AS region FROM jdatna.cities WHERE id !~ '^[0-9a-f]{8}-' ORDER BY region_id,id LIMIT 2",
       )
     ).rows;
     const [c1, c2] = (

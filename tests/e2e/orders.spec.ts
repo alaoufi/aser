@@ -30,7 +30,9 @@ test.describe("requests on a real isolated catalog product", () => {
       "Browser fixtures require isolated jdatna_test_ database",
     ).toBe(true);
     const city = (
-      await pool.query("SELECT id FROM jdatna.cities ORDER BY id LIMIT 1")
+      await pool.query(
+        "SELECT id FROM jdatna.cities WHERE id !~ '^[0-9a-f]{8}-' ORDER BY id LIMIT 1",
+      )
     ).rows[0];
     expect(
       city,

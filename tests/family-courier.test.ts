@@ -69,7 +69,9 @@ test(
           [u.id, u.name, u.phone, u.role, u.permissions ?? []],
         );
       const city = (
-        await pool.query("SELECT id FROM jdatna.cities ORDER BY id LIMIT 1")
+        await pool.query(
+          "SELECT id FROM jdatna.cities WHERE id !~ '^[0-9a-f]{8}-' ORDER BY id LIMIT 1",
+        )
       ).rows[0].id as string;
       for (const [id, u, status] of [
         [fam, famUser, "approved"],

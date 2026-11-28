@@ -115,7 +115,9 @@ test(
       });
     try {
       const city = (
-        await pool.query("SELECT id FROM jdatna.cities ORDER BY id LIMIT 1")
+        await pool.query(
+          "SELECT id FROM jdatna.cities WHERE id !~ '^[0-9a-f]{8}-' ORDER BY id LIMIT 1",
+        )
       ).rows[0].id;
       for (let i = 0; i < users.length; i++) {
         const user = users[i];

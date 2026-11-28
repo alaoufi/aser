@@ -24,6 +24,19 @@ export function PendingFamiliesNotice() {
       .then((d) => setFamilies(d.families ?? []))
       .catch(() => {});
   }, []);
+  // Esc يغلق النافذة كأي نافذة منبثقة.
+  useEffect(() => {
+    if (!families.length) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      try {
+        sessionStorage.setItem(SEEN, "1");
+      } catch {}
+      setFamilies([]);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [families.length]);
   if (!families.length) return null;
   const close = () => {
     try {

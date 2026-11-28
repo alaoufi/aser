@@ -48,8 +48,11 @@ test("offer validity: permanent stays, expired hides, statistics remain", async 
   );
   const userId = randomUUID();
   const family = randomUUID();
-  const city = (await pool.query("SELECT id FROM jdatna.cities LIMIT 1"))
-    .rows[0].id;
+  const city = (
+    await pool.query(
+      "SELECT id FROM jdatna.cities WHERE id !~ '^[0-9a-f]{8}-' LIMIT 1",
+    )
+  ).rows[0].id;
   const user = {
     id: userId,
     name: "أسرة العروض",

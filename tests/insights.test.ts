@@ -48,7 +48,7 @@ test(
     const tag = randomUUID().slice(0, 8);
     const [a, b] = (
       await pool.query(
-        "SELECT DISTINCT ON (region_id) c.id,c.region_id,r.name AS region FROM jdatna.cities c JOIN jdatna.regions r ON r.id=c.region_id ORDER BY region_id,c.id LIMIT 2",
+        "SELECT DISTINCT ON (region_id) c.id,c.region_id,r.name AS region FROM jdatna.cities c JOIN jdatna.regions r ON r.id=c.region_id WHERE c.id !~ '^[0-9a-f]{8}-' ORDER BY region_id,c.id LIMIT 2",
       )
     ).rows;
     const ids = {

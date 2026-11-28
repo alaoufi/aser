@@ -125,8 +125,11 @@ test(
     let childId: string | undefined;
     const descendants: string[] = [];
     try {
-      const city = (await pool.query("SELECT id FROM jdatna.cities LIMIT 1"))
-        .rows[0].id;
+      const city = (
+        await pool.query(
+          "SELECT id FROM jdatna.cities WHERE id !~ '^[0-9a-f]{8}-' LIMIT 1",
+        )
+      ).rows[0].id;
       await pool.query(
         "INSERT INTO jdatna.users(id,phone,name,role,phone_verified_at) VALUES($1,$2,'section fixture','admin',now())",
         [uid, user.phone],

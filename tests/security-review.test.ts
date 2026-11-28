@@ -40,7 +40,7 @@ test(
           [u, phoneNo()],
         );
       await pool.query(
-        "INSERT INTO jdatna.producer_profiles(id,user_id,slug,name,city_id,phone,status) VALUES($1,$2,$3,'أسرة التقييم',(SELECT id FROM jdatna.cities LIMIT 1),$4,'approved')",
+        "INSERT INTO jdatna.producer_profiles(id,user_id,slug,name,city_id,phone,status) VALUES($1,$2,$3,'أسرة التقييم',(SELECT id FROM jdatna.cities WHERE id !~ '^[0-9a-f]{8}-' LIMIT 1),$4,'approved')",
         [family, owner, "sr-" + family, phoneNo()],
       );
       const rate = (rater: string, stars: number) =>

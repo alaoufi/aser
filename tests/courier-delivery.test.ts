@@ -66,7 +66,7 @@ test(
       // مدينتان من منطقتين مختلفتين، ومركز تابع للأولى.
       const [a, b] = (
         await pool.query(
-          "SELECT DISTINCT ON (region_id) id,region_id FROM jdatna.cities ORDER BY region_id,id LIMIT 2",
+          "SELECT DISTINCT ON (region_id) id,region_id FROM jdatna.cities WHERE id !~ '^[0-9a-f]{8}-' ORDER BY region_id,id LIMIT 2",
         )
       ).rows as { id: string; region_id: string }[];
       regionNode = "region:" + a.region_id;

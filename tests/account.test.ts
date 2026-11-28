@@ -34,8 +34,11 @@ test(
           "INSERT INTO jdatna.users(id,name,phone,role,phone_verified_at,username) VALUES($1,$2,$3,$4,now(),$5)",
           [u.id, u.name, u.phone, u.role, "u" + u.id.slice(0, 8)],
         );
-      const city = (await pool.query("SELECT id FROM jdatna.cities LIMIT 1"))
-        .rows[0].id;
+      const city = (
+        await pool.query(
+          "SELECT id FROM jdatna.cities WHERE id !~ '^[0-9a-f]{8}-' LIMIT 1",
+        )
+      ).rows[0].id;
       await pool.query(
         "INSERT INTO jdatna.producer_profiles(id,user_id,slug,name,city_id,phone,status,description) VALUES($1,$2,$3,'مطبخ الحذف',$4,$5,'approved','وصف')",
         [familyId, family.id, slug, city, family.phone],

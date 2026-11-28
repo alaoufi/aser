@@ -24,8 +24,11 @@ test(
     const users: string[] = [];
     const families: string[] = [];
     const tag = randomUUID().slice(0, 6);
-    const city = (await pool.query("SELECT id FROM jdatna.cities LIMIT 1"))
-      .rows[0].id;
+    const city = (
+      await pool.query(
+        "SELECT id FROM jdatna.cities WHERE id !~ '^[0-9a-f]{8}-' LIMIT 1",
+      )
+    ).rows[0].id;
     const mkUser = async (role: string) => {
       const id = randomUUID();
       await pool.query(

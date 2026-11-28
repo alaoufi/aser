@@ -39,7 +39,7 @@ test(
         );
       const [city, other] = (
         await pool.query(
-          "SELECT DISTINCT ON (region_id) id,region_id FROM jdatna.cities ORDER BY region_id,id LIMIT 2",
+          "SELECT DISTINCT ON (region_id) id,region_id FROM jdatna.cities WHERE id !~ '^[0-9a-f]{8}-' ORDER BY region_id,id LIMIT 2",
         )
       ).rows;
       await pool.query(
@@ -213,7 +213,9 @@ test(
           [u.id, u.name, u.phone, u.role],
         );
       const city = (
-        await pool.query("SELECT id FROM jdatna.cities ORDER BY id LIMIT 1")
+        await pool.query(
+          "SELECT id FROM jdatna.cities WHERE id !~ '^[0-9a-f]{8}-' ORDER BY id LIMIT 1",
+        )
       ).rows[0].id;
       await pool.query(
         "INSERT INTO jdatna.producer_profiles(id,user_id,slug,name,city_id,phone,status,delivery) VALUES($1,$2,$3,'أسرة القائمة',$4,$5,'approved',true)",

@@ -57,8 +57,11 @@ test(
         endpoint: `https://push.invalid/pledge-admin-${admin.id}`,
         keys: { p256dh: "p".repeat(40), auth: "a".repeat(16) },
       });
-      const city = (await pool.query("SELECT id FROM jdatna.cities LIMIT 1"))
-        .rows[0].id;
+      const city = (
+        await pool.query(
+          "SELECT id FROM jdatna.cities WHERE id !~ '^[0-9a-f]{8}-' LIMIT 1",
+        )
+      ).rows[0].id;
       const category = (
         await pool.query("SELECT id FROM jdatna.categories LIMIT 1")
       ).rows[0].id;
