@@ -1,0 +1,126 @@
+/* الطلب داخل المحادثة (قرار المالك 2026-11-27). */
+.bar {
+  display: grid;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #fbf6ee;
+  border-bottom: 1px solid #e6d8c2;
+  flex: none;
+  max-height: 62vh;
+  overflow-y: auto;
+}
+.list {
+  display: grid;
+  gap: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.card {
+  display: grid;
+  gap: 4px;
+  padding: 8px 10px;
+  border: 1px solid #e6d8c2;
+  border-inline-start: 4px solid var(--gold, #d6a35c);
+  border-radius: 10px;
+  background: #fff;
+}
+.card[data-status="completed"] {
+  border-inline-start-color: var(--olive, #4f5d36);
+}
+.card[data-status="cancelled"],
+.card[data-status="declined"] {
+  border-inline-start-color: #9aa0a6;
+  opacity: 0.8;
+}
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 14px;
+}
+.status {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #f4ead9;
+  color: var(--ink, #2e1d12);
+  font-size: 12px;
+  font-weight: 700;
+}
+.card[data-status="completed"] .status {
+  background: #e5ecd9;
+  color: var(--olive, #4f5d36);
+}
+.note,
+.hint {
+  margin: 0;
+  color: #5f5148;
+  font-size: 13px;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.primary,
+.secondary,
+.orderButton {
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.primary,
+.orderButton {
+  border: 1px solid var(--olive, #4f5d36);
+  background: var(--olive, #4f5d36);
+  color: #fff;
+}
+.secondary {
+  border: 1px solid #d1c3ad;
+  background: #fff;
+  color: var(--ink, #2e1d12);
+}
+.primary:disabled,
+.secondary:disabled {
+  opacity: 0.6;
+}
+.orderButton {
+  justify-self: start;
+}
+.form {
+  display: grid;
+  grid-template-columns: 1fr 96px;
+  gap: 8px;
+}
+/* المنتج والكمية في سطر، والملاحظة والأزرار بعرض كامل. */
+.form > :nth-child(n + 3) {
+  grid-column: 1 / -1;
+}
+.form label {
+  display: grid;
+  gap: 4px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.form select,
+.form input,
+.form textarea {
+  font: inherit;
+  font-weight: 400;
+  min-height: 42px;
+  padding: 6px 10px;
+  border: 1px solid #d1c3ad;
+  border-radius: 8px;
+  background: #fff;
+}
+.error {
+  margin: 0;
+  color: var(--rust, #9c2f1e);
+  font-size: 14px;
+}

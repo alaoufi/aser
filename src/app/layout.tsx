@@ -1,4 +1,5 @@
 import { MobileNavigation } from "@/components/public/mobile-navigation";
+import { NotificationsBell } from "@/components/public/notifications-bell";
 import { PushChime } from "@/components/public/push-chime";
 import { activityTotals } from "@/server/activity";
 import { HeaderShare } from "@/components/public/header-share";
@@ -303,6 +304,8 @@ export default async function RootLayout({
                 <MessagesLink />
                 <AccountLink className="button small" />
               </div>
+              {/* جرس «الإشعارات» (قرار المالك 2026-11-27): على الجوال والكمبيوتر للعضو المسجّل. */}
+              <NotificationsBell />
               {/* مشاركة التطبيق (قرار المالك 2026-11-27): أيقونة في الرأس على الجوال والكمبيوتر. */}
               <HeaderShare />
               {/* المحادثات ظاهرة دائمًا على الجوال بجانب زر القائمة */}

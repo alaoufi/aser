@@ -408,7 +408,12 @@ export async function adminSummary(user: SessionUser) {
         (SELECT count(*)::int FROM jdatna.reports WHERE status IN ('new','reviewing')) AS "reportsOpen",
         (SELECT count(*)::int FROM jdatna.order_requests WHERE created_at > now()-interval '24 hours') AS "ordersToday",
         (SELECT count(*)::int FROM jdatna.order_requests WHERE status='pending' AND created_at < now()-interval '24 hours') AS "ordersStale",
-        (SELECT count(*)::int FROM jdatna.products WHERE visible=true AND status<>'unavailable') AS "productsLive"`,
+        (SELECT count(*)::int FROM jdatna.products WHERE visible=true AND status<>'unavailable') AS "productsLive",
+        -- المنفّذة والملغاة (قرار المالك 2026-11-27)، دون حسابات مراجعة المتاجر.
+        (SELECT count(*)::int FROM jdatna.order_requests o WHERE o.status='completed'
+           AND NOT EXISTS(SELECT 1 FROM jdatna.users u WHERE u.id=o.user_id AND u.review_account)) AS "ordersCompleted",
+        (SELECT count(*)::int FROM jdatna.order_requests o WHERE o.status='cancelled'
+           AND NOT EXISTS(SELECT 1 FROM jdatna.users u WHERE u.id=o.user_id AND u.review_account)) AS "ordersCancelled"`,
     )
   ).rows[0];
   return row as Record<string, number>;

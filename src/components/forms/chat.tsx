@@ -12,6 +12,7 @@ import {
 import c from "./chat.module.css";
 import { UNREAD_REFRESH } from "@/components/public/message-alert";
 import { onLive } from "./live";
+import { ChatOrders } from "./chat-orders";
 
 /** الطرف الآخر في المحادثة، ويحدد تبويبها. */
 type Kind = "family" | "courier" | "customer";
@@ -717,6 +718,10 @@ function Conversation({
         <p role="status" className={c.safetyNotice}>
           {notice}
         </p>
+      )}
+      {/* الطلب داخل المحادثة (قرار المالك 2026-11-27): محادثات الأسر المنتجة فقط. */}
+      {thread.conversation.producerSlug && (
+        <ChatOrders conversationId={id} refreshKey={last} />
       )}
       <div className={c.messages} aria-live="polite">
         {thread.messages.length === 0 && (

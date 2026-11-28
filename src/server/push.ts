@@ -124,6 +124,9 @@ export function setPushTransport(t: Transport | null) {
  * والاشتراك المنتهي (404/410) يُحذف.
  */
 export async function notifyUser(userId: string, payload: PushPayload) {
+  // يُحفظ أولًا ليظهر في جرس «الإشعارات» ولو لم يصل للجوال (قرار المالك 2026-11-27).
+  const { saveNotification } = await import("./notifications");
+  await saveNotification(userId, payload);
   // الويب وأندرويد (Web Push) والآيفون (Apple) معًا: الإشعار نفسه لكل أجهزة الحساب.
   const [web, iphone] = await Promise.all([
     notifyWeb(userId, payload),

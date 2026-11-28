@@ -2417,6 +2417,12 @@ button.food-dish:focus-visible .food-dish-visual {
     display: none;
   }
 }
+/* حتى ١٣٦٥ للعضو المسجّل فقط: يتسع الرأس لجرس «الإشعارات» (2026-11-27). */
+@media (min-width: 851px) and (max-width: 1365px) {
+  .site-header:has(.notif-bell) .header-actions > .desktop-only {
+    display: none;
+  }
+}
 /* الصف الأعلى من اليسار (كالرسم). */
 .food-ring-line.is-top {
   direction: ltr;
@@ -2473,9 +2479,9 @@ button.food-dish:focus-visible .food-dish-visual {
 }
 .ring-arrow {
   --nudge: 0px, 0px;
-  /* تتابع (طلب المالك 2026-11-27): سهم واحد يضيء ويتقدم في كل لحظة، من ١ إلى ١٠ ثم يعود.
-     تسعة أسهم × ٠٫٣ ثانية = دورة ٢٫٧ ثانية. */
-  animation: plate-flow 2.7s linear infinite;
+  /* تتابع (طلب المالك 2026-11-27): سهم واحد يضيء ويتقدم في كل لحظة، من ١ إلى ٩ ثم يعود.
+     ثمانية أسهم × ٠٫٣ ثانية = دورة ٢٫٤ ثانية (٣ و٣ و٣، طلب المالك 2026-11-28). */
+  animation: plate-flow 2.4s linear infinite;
   animation-delay: calc(var(--i, 0) * 0.3s);
   border: 9px solid transparent;
   filter: drop-shadow(0 1px 1px #2e1d1240);
@@ -2701,4 +2707,161 @@ button.food-dish:focus-visible .food-dish-visual {
   body:has(.bottom-nav) main {
     padding-bottom: calc(96px + env(safe-area-inset-bottom));
   }
+}
+
+/* مستندات الأسر في الإدارة. */
+.admin-documents-list {
+  display: grid;
+  gap: 10px;
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+}
+.admin-documents-list li p {
+  margin: 4px 0;
+}
+
+/* جرس «الإشعارات» في الرأس (قرار المالك 2026-11-27). */
+.notif-bell {
+  position: relative;
+}
+.notif-bell > summary {
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--ink);
+  cursor: pointer;
+  display: flex;
+  height: 42px;
+  justify-content: center;
+  list-style: none;
+  position: relative;
+  width: 42px;
+  background: var(--surface);
+}
+.notif-bell > summary::-webkit-details-marker {
+  display: none;
+}
+.notif-count {
+  position: absolute;
+  top: -4px;
+  inset-inline-end: -4px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border: 2px solid var(--paper);
+  border-radius: 999px;
+  background: var(--rust);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+/* Chrome يُبقي محتوى details المغلق في التخطيط (content-visibility)، فيوسّع الصفحة: يُخفى كليًا. */
+.notif-bell:not([open]) .notif-panel {
+  display: none;
+}
+.notif-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  inset-inline-end: 0;
+  z-index: 60;
+  width: min(340px, calc(100vw - 24px));
+  max-height: min(70vh, 520px);
+  overflow-y: auto;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: 0 18px 40px #2e1d1233;
+}
+.notif-head {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 6px 8px;
+}
+.notif-head button {
+  background: none;
+  border: 0;
+  color: var(--olive);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+}
+.notif-panel ul {
+  display: grid;
+  gap: 4px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.notif-panel li a {
+  border-radius: 10px;
+  color: var(--ink);
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px;
+  text-decoration: none;
+}
+.notif-panel li.is-unread a {
+  background: #f4ead9;
+  border-inline-start: 3px solid var(--rust);
+}
+.notif-panel li a span {
+  color: var(--muted);
+  font-size: 13px;
+}
+.notif-panel li a small {
+  color: var(--muted);
+  font-size: 11px;
+}
+.notif-empty {
+  color: var(--muted);
+  margin: 8px;
+}
+@media (max-width: 850px) {
+  .notif-bell {
+    margin-inline-start: auto;
+  }
+  .notif-bell > summary {
+    height: 40px;
+    width: 40px;
+  }
+  .notif-panel {
+    position: fixed;
+    top: 96px;
+    inset-inline: 12px;
+    width: auto;
+  }
+}
+
+/* جرس «الإشعارات» في رأس الكمبيوتر (2026-11-27): مسافات أضيق ليتسع الرأس دون تجاوز العرض. */
+@media (min-width: 1101px) {
+  html body > header.site-header {
+    gap: 14px;
+  }
+}
+@media (min-width: 851px) and (max-width: 960px) {
+  html body > header.site-header {
+    gap: 6px;
+    padding-inline: 10px;
+  }
+  .header-actions .messages-link {
+    padding: 0 8px;
+    font-size: 13px;
+  }
+  html .site-header .desktop-nav {
+    gap: 6px;
+  }
+}
+
+/* سعر الصحن المكبّر في سطر مستقل (قرار المالك 2026-11-28). */
+.food-showcase-caption .food-showcase-price {
+  color: var(--ink);
+  font-weight: 700;
 }

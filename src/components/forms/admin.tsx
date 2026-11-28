@@ -23,6 +23,7 @@ import { Guard, Message, api, s, useSession } from "./shared";
 import { canAny, isManager } from "@/lib/permissions";
 import { NAV_GROUPS, allowedItem } from "@/lib/admin-nav";
 import { MembersAdmin } from "./members";
+import { AdminDocuments } from "./admin-documents";
 import { APPROVALS_CHANGED } from "@/components/admin/admin-frame";
 import { AdminCouriers } from "./courier";
 import { ContractsAdmin } from "./subscriptions";
@@ -60,6 +61,8 @@ type Application = {
   docsDueAt?: string | null;
   /** منتجاتها مخفية حتى ترفع المستندات. */
   docsHiddenAt?: string | null;
+  /** complete: مكتمل الشروط؛ exempt: مستثنى من الشروط. */
+  docsStatus?: string | null;
   nationalId?: string | null;
   workLocation?: string | null;
 };
@@ -86,6 +89,7 @@ function stateOf(p: Application): FamilyState {
       documentType: p.documentType,
       documentExpiresAt: p.documentExpiresAt,
       reviewReason: p.reviewReason,
+      docsStatus: p.docsStatus,
     },
     today(),
   );
@@ -189,6 +193,7 @@ function Review({
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [decision, setDecision] = useState("");
+  const activating = ["approved", "complete", "exempt"].includes(decision);
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
@@ -216,6 +221,9 @@ function Review({
   return (
     <article className={s.card}>
       <span className={s.tag}>{stateOf(producer).label}</span>
+      {producer.docsStatus === "exempt" && (
+        <span className={s.tag}> مستثنى من الشروط</span>
+      )}
       <h2>{producer.tradeName || producer.name}</h2>
       {(producer.ownerName || producer.phone) && (
         <p>
@@ -304,6 +312,11 @@ function Review({
             <option value="approved">
               تفعيل الحساب (ولو دون مستندات، مع ذكر النواقص في الملاحظة)
             </option>
+            {/* قرار المالك 2026-11-27 */}
+            <option value="complete">تم استكمال المطلوب (مكتمل الشروط)</option>
+            <option value="exempt">
+              يُستثنى من الشروط (يظهر مع النواقص، ولا يُوقف حسابه بمهلة)
+            </option>
             <option value="rejected">
               طلب استكمال النواقص قبل التفعيل (الحساب لا يظهر للعملاء)
             </option>
@@ -311,13 +324,13 @@ function Review({
           </select>
         </label>
         <label className={s.field}>
-          {decision === "approved"
+          {activating
             ? "ملاحظة للأسرة المنتجة (اختيارية عند التفعيل؛ تظهر لها أعلى صفحتها)"
             : "ملاحظة للأسرة المنتجة (مطلوبة: اذكر النواقص أو سبب القرار؛ تظهر لها أعلى صفحتها)"}
           <textarea
             name="reason"
-            required={decision !== "approved"}
-            minLength={decision === "approved" ? undefined : 5}
+            required={!activating}
+            minLength={activating ? undefined : 5}
             maxLength={2000}
             placeholder={
               producer.documentId
@@ -330,7 +343,7 @@ function Review({
           <input
             name="eligibilityConfirmed"
             type="checkbox"
-            required={decision === "approved"}
+            required={activating}
           />
           راجعت بيانات الأسرة المنتجة وأوافق على تفعيل حسابها.
         </label>
@@ -495,6 +508,7 @@ export function Admin({ section }: { section?: string } = {}) {
                     ["suspended", "موقوف"],
                     ["missing", "من لديهم نواقص"],
                     ["late", "تأخرت في المستندات"],
+                    ["exempt", "مستثنى من الشروط"],
                     ["all", "الكل"],
                   ] as const
                 ).map(([id, label]) => (
@@ -513,54 +527,83 @@ export function Admin({ section }: { section?: string } = {}) {
                             ? hasMissing(p)
                             : id === "late"
                               ? docsLate(p)
-                              : stateOf(p).key === id,
+                              : id === "exempt"
+                                ? p.docsStatus === "exempt"
+                                : stateOf(p).key === id,
                         ).length}
                     )
                   </button>
                 ))}
+                {/* تبويب «عرض المستندات» (قرار المالك 2026-11-27): كل مستندات كل أسرة. */}
+                <button
+                  type="button"
+                  className={s.buttonSecondary}
+                  aria-pressed={filter === "documents"}
+                  onClick={() => setFilter("documents")}
+                >
+                  عرض المستندات
+                </button>
               </div>
-              <label className={s.field}>
-                بحث باسم الأسرة المنتجة أو صاحبها أو الجوال أو المدينة
-                <input
-                  type="search"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                />
-              </label>
-              {!loaded ? (
-                <p role="status">جارٍ تحميل طلبات المراجعة…</p>
+              {filter === "documents" ? (
+                <AdminDocuments labels={documentLabels} />
               ) : (
-                (() => {
-                  const q = query.trim().toLowerCase();
-                  const shown = producers.filter(
-                    (p) =>
-                      (filter === "all" ||
-                        (filter === "missing"
-                          ? hasMissing(p)
-                          : filter === "late"
-                            ? docsLate(p)
-                            : stateOf(p).key === filter)) &&
-                      (!q ||
-                        [p.name, p.tradeName, p.ownerName, p.phone, p.cityName]
-                          .filter(Boolean)
-                          .some((v) => String(v).toLowerCase().includes(q))),
-                  );
-                  return shown.length ? (
-                    shown.map((p) => (
-                      <Review
-                        key={p.id}
-                        producer={p}
-                        onSaved={async () => {
-                          await load();
-                          window.dispatchEvent(new Event(APPROVALS_CHANGED));
-                          setSuccess("تم حفظ قرار المراجعة.");
-                        }}
-                      />
-                    ))
+                <>
+                  <label className={s.field}>
+                    بحث باسم الأسرة المنتجة أو صاحبها أو الجوال أو المدينة
+                    <input
+                      type="search"
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                    />
+                  </label>
+                  {!loaded ? (
+                    <p role="status">جارٍ تحميل طلبات المراجعة…</p>
                   ) : (
-                    <p className={s.notice}>لا توجد أسر في هذا التصنيف.</p>
-                  );
-                })()
+                    (() => {
+                      const q = query.trim().toLowerCase();
+                      const shown = producers.filter(
+                        (p) =>
+                          (filter === "all" ||
+                            (filter === "missing"
+                              ? hasMissing(p)
+                              : filter === "late"
+                                ? docsLate(p)
+                                : filter === "exempt"
+                                  ? p.docsStatus === "exempt"
+                                  : stateOf(p).key === filter)) &&
+                          (!q ||
+                            [
+                              p.name,
+                              p.tradeName,
+                              p.ownerName,
+                              p.phone,
+                              p.cityName,
+                            ]
+                              .filter(Boolean)
+                              .some((v) =>
+                                String(v).toLowerCase().includes(q),
+                              )),
+                      );
+                      return shown.length ? (
+                        shown.map((p) => (
+                          <Review
+                            key={p.id}
+                            producer={p}
+                            onSaved={async () => {
+                              await load();
+                              window.dispatchEvent(
+                                new Event(APPROVALS_CHANGED),
+                              );
+                              setSuccess("تم حفظ قرار المراجعة.");
+                            }}
+                          />
+                        ))
+                      ) : (
+                        <p className={s.notice}>لا توجد أسر في هذا التصنيف.</p>
+                      );
+                    })()
+                  )}
+                </>
               )}
             </>
           )}

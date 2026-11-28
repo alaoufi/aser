@@ -288,7 +288,7 @@ export async function unreadConversations(user: SessionUser) {
 }
 
 /** طرف المحادثة فقط يصل إليها؛ غيره يرى «غير موجودة». */
-async function participant(
+export async function participant(
   client: Pick<PoolClient, "query">,
   user: SessionUser,
   id: string,

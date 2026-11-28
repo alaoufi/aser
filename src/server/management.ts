@@ -755,7 +755,7 @@ export async function adminProducers(user: SessionUser) {
     throw new HttpError(403, "لا تملك صلاحية المراجعة");
   const profiles = (
     await db().query(
-      `SELECT p.*,p.trade_name AS "tradeName",p.city_id AS "cityId",c.name AS "cityName",u.name AS "ownerName",p.docs_due_at AS "docsDueAt",p.docs_hidden_at AS "docsHiddenAt",v.document_id AS "documentId",v.document_type AS "documentType",v.reason AS "reviewReason",v.document_number AS "documentNumber",v.document_expires_at::text AS "documentExpiresAt",ARRAY(SELECT category_id FROM jdatna.producer_categories WHERE producer_id=p.id) AS "categoryIds" FROM jdatna.producer_profiles p JOIN jdatna.users u ON u.id=p.user_id JOIN jdatna.cities c ON c.id=p.city_id LEFT JOIN LATERAL(SELECT document_id,document_type,reason,document_number,document_expires_at FROM jdatna.producer_verifications WHERE producer_id=p.id ORDER BY created_at DESC LIMIT 1)v ON true ORDER BY (p.status='pending') DESC,(p.status='rejected') DESC,p.created_at DESC LIMIT 200`,
+      `SELECT p.*,p.trade_name AS "tradeName",p.city_id AS "cityId",c.name AS "cityName",u.name AS "ownerName",p.docs_due_at AS "docsDueAt",p.docs_hidden_at AS "docsHiddenAt",v.document_id AS "documentId",v.document_type AS "documentType",v.reason AS "reviewReason",v.document_number AS "documentNumber",v.document_expires_at::text AS "documentExpiresAt",p.docs_status AS "docsStatus",ARRAY(SELECT category_id FROM jdatna.producer_categories WHERE producer_id=p.id) AS "categoryIds" FROM jdatna.producer_profiles p JOIN jdatna.users u ON u.id=p.user_id JOIN jdatna.cities c ON c.id=p.city_id LEFT JOIN LATERAL(SELECT document_id,document_type,reason,document_number,document_expires_at FROM jdatna.producer_verifications WHERE producer_id=p.id ORDER BY created_at DESC LIMIT 1)v ON true ORDER BY (p.status='pending') DESC,(p.status='rejected') DESC,p.created_at DESC LIMIT 200`,
     )
   ).rows;
   if (!profiles.length) return profiles;
@@ -777,6 +777,48 @@ export async function adminProducers(user: SessionUser) {
     workLocation: data.get(profile.id)?.workLocation ?? null,
   }));
 }
+/**
+ * «مستندات الأسر» في الإدارة (قرار المالك 2026-11-27): كل مستندات كل أسرة، الأحدث أولًا، مع بيانات
+ * المراجعة إن وُجدت (النوع والرقم والانتهاء والقرار). الملف نفسه يُفتح من /api/documents/{id} ويُسجَّل فتحه.
+ */
+export async function adminDocuments(user: SessionUser, q = "") {
+  if (!canAny(user, "approvals", "producers"))
+    throw new HttpError(403, "لا تملك صلاحية المراجعة");
+  const term = q.trim().slice(0, 80);
+  return (
+    await db().query(
+      `SELECT d.id,d.type,d.mime,d.size,d.created_at AS "createdAt",
+              p.id AS "producerId",COALESCE(p.trade_name,p.name,u.name) AS "familyName",p.slug,p.status AS "familyStatus",
+              u.member_no AS "memberNo",
+              v.document_type AS "documentType",v.document_number AS "documentNumber",
+              v.document_expires_at::text AS "expiresAt",v.decision
+         FROM jdatna.producer_documents d
+         JOIN jdatna.users u ON u.id=d.user_id
+         LEFT JOIN jdatna.producer_profiles p ON p.user_id=d.user_id
+         LEFT JOIN LATERAL (SELECT document_type,document_number,document_expires_at,decision
+                              FROM jdatna.producer_verifications
+                             WHERE document_id=d.id ORDER BY created_at DESC LIMIT 1) v ON true
+        WHERE ($1='' OR COALESCE(p.trade_name,p.name,u.name) ILIKE '%'||$1||'%' OR u.member_no::text=$1)
+        ORDER BY d.created_at DESC LIMIT 500`,
+      [term],
+    )
+  ).rows as {
+    id: string;
+    type: string;
+    mime: string;
+    size: number;
+    createdAt: string;
+    producerId: string | null;
+    familyName: string;
+    slug: string | null;
+    familyStatus: string | null;
+    memberNo: number | null;
+    documentType: string | null;
+    documentNumber: string | null;
+    expiresAt: string | null;
+    decision: string | null;
+  }[];
+}
 export async function reviewProducer(
   user: SessionUser,
   id: string,
@@ -785,6 +827,14 @@ export async function reviewProducer(
   if (!canAny(user, "approvals", "producers"))
     throw new HttpError(403, "لا تملك صلاحية المراجعة");
   const value = reviewSchema.parse(input);
+  // «مكتمل الشروط» و«مستثنى من الشروط» تفعيل للحساب بعلامة تحفظ نوعه.
+  const status = ["complete", "exempt"].includes(value.decision)
+    ? "approved"
+    : (value.decision as "approved" | "rejected" | "suspended");
+  const docsStatus =
+    value.decision === "complete" || value.decision === "exempt"
+      ? value.decision
+      : null;
   const result = await transaction(async (client) => {
     const producer = (
       await client.query(
@@ -805,6 +855,14 @@ export async function reviewProducer(
     ).rows[0];
     if (value.decision === "approved" && verification?.expired === true)
       throw new HttpError(400, "المستند منتهي الصلاحية ويجب تحديثه");
+    // المكتمل والمستثنى: لا مهلة مستندات ولا تنبيه تأخر، والمنتجات المخفية لتأخر المستندات تعود.
+    if (docsStatus) {
+      await client.query(
+        "UPDATE jdatna.producer_profiles SET docs_due_at=NULL,docs_late_notified_at=NULL WHERE id=$1",
+        [id],
+      );
+      await restoreDocsHold(client, id);
+    }
     // المباركة لأول اعتماد فقط؛ إعادة الاعتماد بعد تعديل البيانات لا تكررها.
     const approvedBefore = Boolean(
       (
@@ -817,8 +875,8 @@ export async function reviewProducer(
     // تفعيل الإدارة لا يشترط مستندًا (قرار المالك 2026-11-14)؛ الحساب دون مستند «نشط» لا «موثوق»،
     // وملاحظة القرار تظهر للأسرة بالنواقص.
     await client.query(
-      "UPDATE jdatna.producer_profiles SET status=$2,verified=$3,updated_at=now() WHERE id=$1",
-      [id, value.decision, value.decision === "approved"],
+      "UPDATE jdatna.producer_profiles SET status=$2,verified=$3,docs_status=$4,updated_at=now() WHERE id=$1",
+      [id, status, status === "approved", docsStatus],
     );
     await client.query(
       "INSERT INTO jdatna.producer_verifications(id,producer_id,document_id,document_type,decision,reason,reviewer_id,eligibility_confirmed,document_number,document_expires_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)",
@@ -827,8 +885,8 @@ export async function reviewProducer(
         id,
         verification?.document_id ?? null,
         verification?.document_type ?? "exception",
-        value.decision,
-        value.reason || null,
+        status,
+        value.reason || (docsStatus === "complete" ? "مكتمل الشروط" : null),
         user.id,
         value.eligibilityConfirmed ?? false,
         verification?.document_number ?? null,
@@ -840,9 +898,10 @@ export async function reviewProducer(
       [randomUUID(), user.id, "producer.review", id, JSON.stringify(value)],
     );
     return {
-      status: value.decision,
+      status,
+      docsStatus,
       congratulate:
-        value.decision === "approved" &&
+        status === "approved" &&
         producer.status !== "approved" &&
         !approvedBefore
           ? (producer.user_id as string)
@@ -867,7 +926,7 @@ export async function reviewProducer(
 export async function familyStatus(user: SessionUser) {
   const row = (
     await db().query(
-      `SELECT p.status,p.verified,p.slug,(SELECT max(created_at) FROM jdatna.producer_verifications WHERE producer_id=p.id AND decision='approved')::text AS "approvedAt",v.document_id AS "documentId",v.document_type AS "documentType",v.document_expires_at::text AS "documentExpiresAt",v.reason AS "reviewReason"
+      `SELECT p.status,p.verified,p.slug,p.docs_status AS "docsStatus",(SELECT max(created_at) FROM jdatna.producer_verifications WHERE producer_id=p.id AND decision='approved')::text AS "approvedAt",v.document_id AS "documentId",v.document_type AS "documentType",v.document_expires_at::text AS "documentExpiresAt",v.reason AS "reviewReason"
        FROM jdatna.producer_profiles p
        LEFT JOIN LATERAL(SELECT document_id,document_type,document_expires_at,reason FROM jdatna.producer_verifications WHERE producer_id=p.id ORDER BY created_at DESC LIMIT 1)v ON true
        WHERE p.user_id=$1`,
@@ -932,7 +991,7 @@ export async function notifyLateDocuments(limit = 50) {
       `UPDATE jdatna.producer_profiles p SET docs_late_notified_at=now()
        WHERE p.id IN (
          SELECT x.id FROM jdatna.producer_profiles x
-         WHERE x.docs_due_at<now() AND x.docs_late_notified_at IS NULL AND x.status='approved'
+         WHERE x.docs_due_at<now() AND x.docs_late_notified_at IS NULL AND x.status='approved' AND x.docs_status IS NULL
            AND NOT EXISTS(SELECT 1 FROM jdatna.producer_verifications v WHERE v.producer_id=x.id AND v.document_id IS NOT NULL)
          ORDER BY x.docs_due_at LIMIT $1)
        RETURNING p.id,p.user_id AS "userId",COALESCE(p.trade_name,p.name) AS name`,

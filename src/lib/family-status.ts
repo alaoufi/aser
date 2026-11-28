@@ -6,6 +6,8 @@ export type FamilyStatusInput = {
   documentType?: string | null;
   documentExpiresAt?: string | null;
   reviewReason?: string | null;
+  /** complete: مكتمل الشروط؛ exempt: مستثنى من الشروط (قرار المالك 2026-11-27). */
+  docsStatus?: string | null;
 };
 export type FamilyState = {
   key: "review" | "active" | "incomplete" | "trusted" | "suspended" | "closed";
@@ -27,6 +29,14 @@ export function familyAccountState(
   const reason = input.reviewReason?.trim() || undefined;
   switch (input.status) {
     case "approved":
+      // «تم استكمال المطلوب»: مكتمل الشروط ولو لم يُرفع مستند في الموقع.
+      if (input.docsStatus === "complete")
+        return {
+          key: "trusted",
+          label: "مكتمل الشروط",
+          detail:
+            "حسابك معتمد ومكتمل الشروط. منتجاتك ظاهرة للعملاء بعلامة المراجعة.",
+        };
       if (input.verified && input.documentId && !exception && !expired)
         return {
           key: "trusted",
