@@ -1,4 +1,5 @@
 "use client";
+import { PendingFamiliesNotice } from "./pending-families";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -91,6 +92,7 @@ export function AdminFrame({ children }: { children: React.ReactNode }) {
   const groups = visibleGroups(user, layout);
   return (
     <div className={css.frame}>
+      {reviews && <PendingFamiliesNotice />}
       <aside
         id="admin-menu"
         className={`${css.side} ${open ? css.sideOpen : ""}`}

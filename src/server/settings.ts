@@ -92,6 +92,14 @@ async function storedSiteTexts() {
   return { texts, hidden };
 }
 
+/** للرسائل من الخادم (التذكيرات): المعدّل أو الأصلي، والمحذوف يعود لأصله فلا تخرج رسالة فارغة. */
+export async function readSiteTexts(): Promise<SiteTexts> {
+  const { texts } = await storedSiteTexts();
+  for (const key of Object.keys(texts) as (keyof SiteTexts)[])
+    if (!texts[key]) texts[key] = siteTextDefaults[key];
+  return texts;
+}
+
 /** نصوص الواجهة: الأصلية مع ما عدّلته الإدارة («» = محذوف أو مخفي). */
 /** تُقرأ مرة واحدة لكل طلب صفحة (القالب والصفحة يطلبانها معًا). */
 export const getSiteTexts = cache(async (): Promise<SiteTexts> => {
