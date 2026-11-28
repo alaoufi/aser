@@ -216,19 +216,24 @@ export async function countProducts(filters: Filters = {}): Promise<number> {
   ).rows[0].n as number;
 }
 /**
- * أطباق «مائدة اليوم»: المتوفر اليوم في المنطقة، والأكثر طلبًا أولًا
- * (الطلبات غير المرفوضة أو الملغاة)، ثم المميز، ثم الأحدث.
+ * أطباق «مائدة اليوم»: القابل للطلب في المنطقة (جاهز اليوم أو حسب الطلب)، بترتيب عشوائي
+ * يتغير مع كل تحديث (قرار المالك 2026-11-28؛ كان الأكثر طلبًا أولًا).
  */
 export async function todayProducts(
   filters: Pick<Filters, "region" | "city" | "mine"> = {},
   limit = 48,
 ): Promise<Product[]> {
   if (!databaseConfigured()) return [];
-  const { args, where } = conditions({ ...filters, status: "available" }, true);
+  const { args, where } = conditions(filters, true);
   args.push(Math.max(1, Math.min(200, limit)));
+  // قرار المالك 2026-11-28: ترتيب عشوائي يتغير مع كل تحديث، فتتبدل عروض الأسر على المائدة.
+  // المعروض: القابل للطلب فقط — جاهز والأسرة تطبخ اليوم، أو حسب الطلب. غير المتوفر والمخفي والأسرة
+  // الموقوفة أو المخفية لا تظهر (الأسرة المعتمدة فقط، والمنتج الظاهر فقط، من conditions).
   return (
     await db().query(
-      `${productSelect} WHERE ${where} ORDER BY (SELECT count(*) FROM jdatna.order_requests o WHERE o.product_id=x.id AND o.status NOT IN ('declined','cancelled')) DESC,x.featured DESC,x.created_at DESC,x.id LIMIT $${args.length}`,
+      `${productSelect} WHERE ${where}
+         AND ((x.status='available' AND NOT ${notCookingTodaySql()}) OR x.status='preorder')
+       ORDER BY random() LIMIT $${args.length}`,
       args,
     )
   ).rows.map(mapProduct);

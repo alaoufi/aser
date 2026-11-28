@@ -22,7 +22,7 @@ test("order snapshot keeps kingdom shipping added on top of the price", () => {
 });
 
 test(
-  "isolated delivery scope: family default at signup, inherited by new products, editable per product; today's table puts most ordered first",
+  "isolated delivery scope: family default at signup, inherited by new products, editable per product; today's table shows both",
   { skip: process.env.JDATNA_TEST_DB !== "true" },
   async () => {
     const pool = db();
@@ -136,7 +136,7 @@ test(
         delivery_scope: "kingdom",
         fee: 30,
       });
-      // مائدة اليوم: الأكثر طلبًا أولًا (المرفوض والملغى لا يُحسبان).
+      // مائدة اليوم: ترتيب عشوائي مع كل تحديث (قرار المالك 2026-11-28)، والطبقان فيها.
       for (const status of ["pending", "completed", "declined", "cancelled"])
         await pool.query(
           "INSERT INTO jdatna.order_requests(id,request_key,request_hash,user_id,producer_id,product_id,snapshot,customer_name,phone,quantity,meal,start_date,end_date,status) VALUES($1,$2,'h',$3,$4,$5,'{}','عميل','+966500000000',1,'lunch',current_date+1,current_date+1,$6)",
@@ -152,7 +152,7 @@ test(
       const order = (await todayProducts({ region: city.region_id }, 200))
         .filter((p) => products.includes(p.id))
         .map((p) => p.id);
-      assert.deepEqual(order, [local, inherited]);
+      assert.deepEqual([...order].sort(), [local, inherited].sort());
       const shipped = (
         await todayProducts({ region: city.region_id }, 200)
       ).find((p) => p.id === inherited);
