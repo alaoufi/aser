@@ -27,11 +27,54 @@ function assertOwnerAdmin(user: SessionUser) {
     throw new HttpError(403, "إدارة الأعضاء للمدير فقط");
 }
 
+/**
+ * تبويبات «الأعضاء والصلاحيات» (قرار المالك 2026-11-28): الكل، المسجلون خلال 24 ساعة، الموقوفون،
+ * الأسر المنتجة، العملاء، الإدارة. الشرط في الخادم، فلا يفوت عضو قديم خارج آخر 200.
+ */
+export const MEMBER_TABS = [
+  "all",
+  "new",
+  "suspended",
+  "families",
+  "customers",
+  "admins",
+] as const;
+export type MemberTab = (typeof MEMBER_TABS)[number];
+const FAMILY_SQL = "(p.id IS NOT NULL AND p.status<>'closed')";
+const ADMIN_SQL = "(u.role='admin' OR cardinality(u.permissions)>0)";
+const TAB_SQL: Record<MemberTab, string> = {
+  all: "true",
+  new: "u.created_at > now()-interval '24 hours'",
+  suspended: "u.suspended_at IS NOT NULL",
+  families: FAMILY_SQL,
+  customers: `u.role='customer' AND NOT ${FAMILY_SQL} AND NOT ${ADMIN_SQL}`,
+  admins: ADMIN_SQL,
+};
+
+/** عدد الأعضاء في كل تبويب. */
+export async function memberTabCounts(user: SessionUser) {
+  assertOwnerAdmin(user);
+  const row = (
+    await db().query(
+      `SELECT ${MEMBER_TABS.map((t) => `count(*) FILTER (WHERE ${TAB_SQL[t]})::int AS "${t}"`).join(",")}
+         FROM jdatna.users u LEFT JOIN jdatna.producer_profiles p ON p.user_id=u.id`,
+    )
+  ).rows[0];
+  return row as Record<MemberTab, number>;
+}
+
 export async function listMembers(
   user: SessionUser,
   query = "",
+  tab: string = "all",
 ): Promise<Member[]> {
   assertOwnerAdmin(user);
+  const where =
+    TAB_SQL[
+      (MEMBER_TABS as readonly string[]).includes(tab)
+        ? (tab as MemberTab)
+        : "all"
+    ];
   const q = query.trim().slice(0, 80);
   const digits = q.replace(/\D/g, "");
   return (
@@ -39,9 +82,10 @@ export async function listMembers(
       `SELECT u.id,u.name,u.phone,u.role,u.member_no AS "memberNo",u.permissions,(u.suspended_at IS NOT NULL) AS suspended,
         COALESCE(p.trade_name,p.name) AS "familyName",p.status AS "familyStatus",u.created_at AS "createdAt"
        FROM jdatna.users u LEFT JOIN jdatna.producer_profiles p ON p.user_id=u.id
-       WHERE $1='' OR u.name ILIKE '%'||$1||'%' OR COALESCE(p.name,'') ILIKE '%'||$1||'%'
+       WHERE (${where}) AND ($1='' OR u.name ILIKE '%'||$1||'%' OR COALESCE(p.name,'') ILIKE '%'||$1||'%'
+         OR COALESCE(p.trade_name,'') ILIKE '%'||$1||'%'
          OR ($2<>'' AND u.phone LIKE '%'||$2||'%')
-         OR u.member_no=$3::int
+         OR u.member_no=$3::int)
        ORDER BY (u.role='admin' OR cardinality(u.permissions)>0) DESC,u.created_at DESC LIMIT 200`,
       [
         q,
