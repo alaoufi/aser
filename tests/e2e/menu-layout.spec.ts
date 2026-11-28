@@ -37,8 +37,27 @@ test("the owner reorders the admin menu and the sidebar follows at once", async 
   await expect(
     main.getByRole("region", { name: "مجموعة التقارير" }),
   ).toBeVisible();
-  // «التقارير» للأعلى فتصير الأولى، و«الطلبات» تنتقل إليها، و«الاقتراحات» تُخفى.
-  await main.getByRole("button", { name: "المجموعة التقارير للأعلى" }).click();
+  // «التقارير» تُسحب فوق الأولى (بلا أسهم، قرار المالك 2026-11-28)، و«الطلبات» تنتقل إليها، و«الاقتراحات» تُخفى.
+  await expect(main.getByText("▲")).toHaveCount(0);
+  const reports = main
+    .getByRole("region", { name: "مجموعة التقارير" })
+    .locator("[data-group-handle]");
+  const first = main.locator("[data-group-handle]").first();
+  if (test.info().project.name === "mobile") {
+    // الجوال: ضغط مطوّل ثم سحب.
+    await reports.scrollIntoViewIfNeeded();
+    const a = (await reports.boundingBox())!;
+    const b = (await first.boundingBox())!;
+    await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2);
+    await page.mouse.down();
+    await page.waitForTimeout(450);
+    await page.mouse.move(b.x + b.width / 2, b.y + 2, { steps: 12 });
+    await page.mouse.up();
+  } else await reports.dragTo(first, { targetPosition: { x: 5, y: 2 } });
+  await expect(main.locator("[data-group]").first()).toHaveAttribute(
+    "aria-label",
+    "مجموعة التقارير",
+  );
   await main
     .getByRole("combobox", { name: "نقل الطلبات إلى" })
     .selectOption({ label: "التقارير" });

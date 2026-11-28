@@ -129,3 +129,27 @@
   background: rgb(255 253 248 / 0.95);
   backdrop-filter: blur(6px);
 }
+
+/* السحب والإفلات بدل الأسهم (قرار المالك 2026-11-28). */
+.board {
+  display: grid;
+  gap: inherit;
+}
+.items {
+  display: grid;
+  gap: 8px;
+  min-height: 12px;
+}
+.handle {
+  cursor: grab;
+  font-size: 18px;
+  line-height: 1;
+  opacity: 0.6;
+  padding: 6px;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.dragGhost {
+  opacity: 0.35;
+}
