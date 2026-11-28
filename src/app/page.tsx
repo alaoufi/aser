@@ -1,4 +1,5 @@
 import { REGION_COOKIE } from "@/lib/region-cookie";
+import { pickGateStyle } from "@/lib/gate-styles";
 import { T } from "@/components/site-texts";
 import { productStatusLabels } from "@/lib/site-texts";
 import { MineBar } from "@/components/public/mine-bar";
@@ -50,6 +51,8 @@ export default async function Home({
   const [cities, jar] = await Promise.all([getCities(), cookies()]);
   const regions = regionsOf(cities);
   const asked = typeof raw.region === "string" ? raw.region : undefined;
+  // «البوابة»: حركة مختلفة بين الصحون مع كل تحديث (طلب المالك 2026-11-28)، و?gate= للمعاينة.
+  const gate = pickGateStyle(typeof raw.gate === "string" ? raw.gate : null);
   const saved = jar.get(REGION_COOKIE)?.value ?? "";
   const region =
     [asked ?? saved].find((r) => r && regions.some((x) => x.id === r)) ?? "";
@@ -169,7 +172,7 @@ export default async function Home({
             </div>
           </div>
           <div className="hero-visual">
-            {template === "najdi" ? <NajdiDoor /> : <FoodPhotos />}
+            {template === "najdi" ? <NajdiDoor /> : <FoodPhotos gate={gate} />}
           </div>
           {/* الجوال (النموذج 1 الذي اختاره المالك): تحت الصورة «متوفر الآن» و«اطلب الآن» متجاورتان. */}
           <div className="hero-side">

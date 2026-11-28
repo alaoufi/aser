@@ -3206,3 +3206,159 @@ article[id^="family-"]:focus {
 .member-details dd {
   margin: 0;
 }
+
+/* «البوابة» (طلب المالك 2026-11-28): حركة مختلفة بين الصحون مع كل تحديث.
+   arrows أسهم خفيفة · lights لمبات · pearls عقد ذهب · belt شريط متحرك · stars نجوم.
+   المقاطع نفسها (.ring-arrow) في كل الأنماط، وترتيبها --i يجعلها تتتابع من ١ إلى ٩. */
+.food-ring[data-gate="arrows"] .ring-arrow {
+  filter: drop-shadow(0 1px 1px #2e1d1226);
+  opacity: 0.75;
+}
+.food-ring:is([data-gate="lights"], [data-gate="pearls"], [data-gate="stars"])
+  .ring-arrow {
+  border: 0;
+  border-radius: 50%;
+  height: 12px;
+  width: 12px;
+}
+/* لمبات: تضيء واحدة بعد الأخرى كأضواء الزينة. */
+.food-ring[data-gate="lights"] .food-ring-path {
+  border: 3px dotted #e7b45a;
+  border-bottom: 0;
+  filter: drop-shadow(0 0 3px #ffcf6b);
+}
+.food-ring[data-gate="lights"] .ring-arrow {
+  animation: gate-bulb 2.4s linear infinite;
+  animation-delay: calc(var(--i, 0) * 0.3s);
+  background: radial-gradient(circle at 35% 35%, #fff8dc, #ffc24a 45%, #b86b0f);
+}
+@keyframes gate-bulb {
+  0%,
+  20%,
+  100% {
+    box-shadow: 0 0 2px 1px #ffcf6b55;
+    filter: brightness(0.7);
+  }
+  8% {
+    box-shadow:
+      0 0 10px 4px #ffd27acc,
+      0 0 22px 8px #ffcf6b66;
+    filter: brightness(1.25);
+  }
+}
+/* عقد ذهب: خرز ذهبي على المسار، والبريق يسري من حبة إلى حبة. */
+.food-ring[data-gate="pearls"] .food-ring-path {
+  border: 6px dotted #c8963e;
+  border-bottom: 0;
+  filter: drop-shadow(0 1px 1px #6b4a1a66);
+}
+.food-ring[data-gate="pearls"] .ring-arrow {
+  animation: gate-pearl 2.4s ease-in-out infinite;
+  animation-delay: calc(var(--i, 0) * 0.3s);
+  background: radial-gradient(
+    circle at 30% 30%,
+    #fffbe6,
+    #f3d18a 30%,
+    #c8963e 65%,
+    #7a5520
+  );
+  box-shadow: 0 1px 2px #5a3a1255;
+  height: 15px;
+  width: 15px;
+}
+@keyframes gate-pearl {
+  0%,
+  22%,
+  100% {
+    filter: brightness(0.95);
+    transform: scale(1);
+  }
+  9% {
+    filter: brightness(1.35) drop-shadow(0 0 6px #ffe1a1);
+    transform: scale(1.35);
+  }
+}
+/* شريط متحرك: حزام مخطط يدور على المسار كأنه ينقل الصحون، وأسهم صغيرة تسير معه. */
+@property --belt {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+.food-ring[data-gate="belt"] .food-ring-path {
+  animation: gate-belt 0.9s linear infinite;
+  border: 6px solid #8a5a2b;
+  border-bottom: 0;
+  border-image: repeating-linear-gradient(
+      45deg,
+      #8a5a2b var(--belt),
+      #8a5a2b calc(var(--belt) + 8px),
+      #e2bb85 calc(var(--belt) + 8px),
+      #e2bb85 calc(var(--belt) + 16px)
+    )
+    6;
+}
+@keyframes gate-belt {
+  to {
+    --belt: 16px;
+  }
+}
+.food-ring[data-gate="belt"] .ring-arrow {
+  animation: gate-carry 1.2s linear infinite;
+  opacity: 0.9;
+  transform: scale(0.8);
+}
+@keyframes gate-carry {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.8);
+  }
+  30%,
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--nudge)) scale(0.8);
+  }
+}
+/* نجوم: نجمة تلمع وتدور من مكان إلى مكان. */
+.food-ring[data-gate="stars"] .food-ring-path {
+  border: 2px dotted #d6a35c;
+  border-bottom: 0;
+}
+.food-ring[data-gate="stars"] .ring-arrow {
+  animation: gate-star 2.4s ease-in-out infinite;
+  animation-delay: calc(var(--i, 0) * 0.3s);
+  background: none;
+  height: 22px;
+  width: 22px;
+}
+.food-ring[data-gate="stars"] .ring-arrow::before {
+  color: #c98a2e;
+  content: "✦";
+  display: grid;
+  font-size: 22px;
+  inset: 0;
+  line-height: 22px;
+  place-items: center;
+  position: absolute;
+  text-shadow: 0 0 6px #ffe1a1;
+}
+@keyframes gate-star {
+  0%,
+  22%,
+  100% {
+    opacity: 0.7;
+    transform: scale(0.85) rotate(0deg);
+  }
+  10% {
+    opacity: 1;
+    transform: scale(1.45) rotate(90deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .food-ring[data-gate] .ring-arrow,
+  .food-ring[data-gate] .food-ring-path {
+    animation: none;
+  }
+}

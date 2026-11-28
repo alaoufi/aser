@@ -5,6 +5,7 @@ import { createContext, useContext, useState } from "react";
 import { useTx } from "@/components/site-texts";
 
 import type { Plate } from "@/lib/site-plates";
+import type { GateStyle } from "@/lib/gate-styles";
 
 const Ctx = createContext<{
   plates: Plate[];
@@ -102,7 +103,7 @@ function EmptyPlate({ at }: { at: number }) {
  * الترتيب يدور: ١ أسفل اليسار (الأحدث) صعودًا، ثم الصف العلوي من اليسار لليمين،
  * ثم العمود الأيمن نزولًا. القوس في الوسط، والصحن فيه أكبر ومرفوع، ومعه بياناته.
  */
-export function FoodPhotos() {
+export function FoodPhotos({ gate = "arrows" }: { gate?: GateStyle } = {}) {
   const ctx = useContext(Ctx);
   const { txb } = useTx();
   if (!ctx) return null;
@@ -138,7 +139,7 @@ export function FoodPhotos() {
     return out;
   };
   return (
-    <figure className="food-showcase food-ring">
+    <figure className="food-showcase food-ring" data-gate={gate}>
       {/* مسار انتقال المنتجات: من ١ أسفل اليسار صعودًا، ثم الأعلى، ثم اليمين نزولًا. */}
       <span className="food-ring-path" aria-hidden="true" />
       <div className="food-showcase-main">
