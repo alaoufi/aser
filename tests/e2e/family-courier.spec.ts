@@ -40,13 +40,14 @@ test("a family registers its own courier with a pledge and sees the private badg
               ? `سيارة ${posted!.carModel} · ${posted!.carColor}`
               : "دباب",
           vehicle: posted!.vehicle,
-          status: "approved",
+          // قرار المالك 2026-11-28: ينتظر اعتماد الإدارة.
+          status: "pending",
           active: true,
           stoppedByAdmin: false,
           joined: false,
         },
       ];
-      return r.fulfill({ json: { id: "k1", status: "approved" } });
+      return r.fulfill({ json: { id: "k1", status: "pending" } });
     }
     if (method === "PATCH") {
       stopped = r.request().postDataJSON();
@@ -112,7 +113,9 @@ test("a family registers its own courier with a pledge and sees the private badg
   // الضغط على نص التعهد يحدد الخانة.
   await section.getByText("تابع لي وأعرفه").click();
   await section.getByRole("button", { name: "تسجيل المندوب الخاص" }).click();
-  await expect(section.getByText("تم تسجيل المندوب ✓")).toBeVisible();
+  await expect(section.getByText("تم تسجيل المندوب ✓")).toContainText(
+    "يُفعَّل بعد موافقتها",
+  );
   expect(posted).toEqual({
     name: "سالم",
     phone: "0511111111",
@@ -125,7 +128,7 @@ test("a family registers its own courier with a pledge and sees the private badg
   await expect(section).toContainText("🚗 سيارة سوناتا · أبيض");
   const card = section.getByRole("listitem").filter({ hasText: "سالم" });
   await expect(card.getByText("مندوب خاص لـ مطبخ أم سعد")).toBeVisible();
-  await expect(card).toContainText("لم يدخل بعد");
+  await expect(card).toContainText("بانتظار اعتماد الإدارة");
 
   // الإيقاف بتأكيد.
   page.once("dialog", (d) => d.accept());

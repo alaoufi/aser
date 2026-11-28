@@ -521,7 +521,7 @@ function FamilyCouriers() {
     const f = new FormData(form);
     setBusy(true);
     try {
-      await api("/api/producer/couriers", {
+      const r = await api<{ status: string }>("/api/producer/couriers", {
         method: "POST",
         body: JSON.stringify({
           name: f.get("name"),
@@ -539,7 +539,9 @@ function FamilyCouriers() {
       setTypedName("");
       await load();
       setSuccess(
-        "تم تسجيل المندوب ✓ يدخل بجواله من «دخول» ← «نسيت كلمة المرور» أول مرة، فتصله طلبات التوصيل التي تسندها إليه.",
+        r.status === "approved"
+          ? "تم تسجيل المندوب ✓ يدخل بجواله من «دخول» ← «نسيت كلمة المرور» أول مرة، فتصله طلبات التوصيل التي تسندها إليه."
+          : tx("familyCourier.pendingSaved"),
       );
     } catch (err) {
       setError((err as Error).message);
@@ -595,9 +597,13 @@ function FamilyCouriers() {
                   ? k.active
                     ? "✅ نشط — تسند إليه طلبات التوصيل"
                     : "⏸️ أوقف ظهوره مؤقتًا من حسابه"
-                  : k.stoppedByAdmin
-                    ? "⛔ أوقفته الإدارة"
-                    : "⛔ موقوف"}
+                  : k.status === "pending"
+                    ? tx("familyCourier.pending")
+                    : k.status === "rejected"
+                      ? tx("familyCourier.rejected")
+                      : k.stoppedByAdmin
+                        ? "⛔ أوقفته الإدارة"
+                        : "⛔ موقوف"}
                 {k.status === "approved" && !k.joined && (
                   <small className={s.muted}>
                     {" "}
@@ -605,7 +611,7 @@ function FamilyCouriers() {
                   </small>
                 )}
               </p>
-              {k.status === "approved" && (
+              {(k.status === "approved" || k.status === "pending") && (
                 <button
                   type="button"
                   className={s.buttonSecondary}

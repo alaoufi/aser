@@ -688,6 +688,12 @@ export const siteTextDefaults = {
   "members.type.family": "أسرة منتجة",
   "members.type.customer": "عميل",
   "members.type.courier": "مندوب",
+  "alert.courier.family.body":
+    "أسرة «{family}» سجّلت مندوبها الخاص «{name}» وينتظر اعتمادك.",
+  "familyCourier.pending": "⏳ بانتظار اعتماد الإدارة",
+  "familyCourier.rejected": "⛔ لم تعتمده الإدارة",
+  "familyCourier.pendingSaved":
+    "تم تسجيل المندوب ✓ وأُرسل للإدارة. يُفعَّل بعد موافقتها، ثم يدخل بجواله من «دخول» ← «نسيت كلمة المرور» أول مرة.",
   "familyCourier.pledgeTitle": "تعهّد:",
   "familyCourier.pledge":
     "هذا المندوب «{name}» تابع لي وأعرفه، وتحت مسؤوليتي نظاميته وأمانته.",
@@ -801,7 +807,7 @@ export const siteTextDefaults = {
   "courier.nationality.required": "اختر الجنسية من القائمة",
   "courier.nationality.none": "لم تُسجَّل",
   "familyCourier.intro":
-    "سجّل مندوبًا تعرفه شخصيًا ليوصل طلبات «{family}». يُفعَّل فورًا دون انتظار الإدارة، ويظهر لأسرتك فقط في إسناد التوصيل بشارة «مندوب خاص».",
+    "سجّل مندوبًا تعرفه شخصيًا ليوصل طلبات «{family}». يُفعَّل بعد موافقة الإدارة، ثم يظهر لأسرتك فقط في إسناد التوصيل بشارة «مندوب خاص».",
   "members.d.approval": "الاعتماد",
   "members.approval.pending": "بانتظار اعتماد الإدارة",
   "members.approval.approved": "معتمد",
@@ -1616,6 +1622,19 @@ export const siteTextLabels: Record<
   "members.type.family": ["الأعضاء والصلاحيات (الإدارة)", "نوع: أسرة"],
   "members.type.customer": ["الأعضاء والصلاحيات (الإدارة)", "نوع: عميل"],
   "members.type.courier": ["الأعضاء والصلاحيات (الإدارة)", "نوع: مندوب"],
+  "alert.courier.family.body": [
+    "تنبيهات الإدارة",
+    "مندوب خاص سجّلته أسرة: النص ({name} {family})",
+  ],
+  "familyCourier.pending": [
+    "اعتماد المندوبين",
+    "مندوب الأسرة: بانتظار الاعتماد",
+  ],
+  "familyCourier.rejected": ["اعتماد المندوبين", "مندوب الأسرة: مرفوض"],
+  "familyCourier.pendingSaved": [
+    "اعتماد المندوبين",
+    "مندوب الأسرة: رسالة بعد التسجيل",
+  ],
   "familyCourier.pledgeTitle": [
     "اعتماد المندوبين",
     "مندوب الأسرة: عنوان التعهد",
