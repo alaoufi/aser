@@ -68,7 +68,16 @@ export async function chatOrders(user: SessionUser, id: string) {
         WHERE co.conversation_id=$1 ORDER BY co.created_at DESC LIMIT 20`,
       [c.id],
     )
-  ).rows as (ChatOrderState & Record<string, unknown>)[];
+  ).rows as (ChatOrderState & {
+    id: string;
+    productName: string;
+    unit: string;
+    price: string | number | null;
+    quantity: number;
+    notes: string;
+    createdAt: string;
+    cancelRequestedAt: string | null;
+  })[];
   const now = Date.now();
   const orders = rows.map((o) => ({
     ...o,

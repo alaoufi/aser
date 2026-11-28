@@ -2479,9 +2479,9 @@ button.food-dish:focus-visible .food-dish-visual {
 }
 .ring-arrow {
   --nudge: 0px, 0px;
-  /* تتابع (طلب المالك 2026-11-27): سهم واحد يضيء ويتقدم في كل لحظة، من ١ إلى ١٠ ثم يعود.
-     تسعة أسهم × ٠٫٣ ثانية = دورة ٢٫٧ ثانية. */
-  animation: plate-flow 2.7s linear infinite;
+  /* تتابع (طلب المالك 2026-11-27): سهم واحد يضيء ويتقدم في كل لحظة، من ١ إلى ٩ ثم يعود.
+     ثمانية أسهم × ٠٫٣ ثانية = دورة ٢٫٤ ثانية (٣ و٣ و٣، طلب المالك 2026-11-28). */
+  animation: plate-flow 2.4s linear infinite;
   animation-delay: calc(var(--i, 0) * 0.3s);
   border: 9px solid transparent;
   filter: drop-shadow(0 1px 1px #2e1d1240);

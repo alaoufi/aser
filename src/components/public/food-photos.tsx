@@ -98,7 +98,7 @@ function EmptyPlate({ at }: { at: number }) {
 }
 
 /**
- * الصحون حول القوس (رسم المالك 2026-11-27): ثلاثة صفوف، في كل صف أربعة.
+ * الصحون حول القوس (رسم المالك 2026-11-27): ثلاثة صفوف، في كل صف ثلاثة (٩).
  * الترتيب يدور: ١ أسفل اليسار (الأحدث) صعودًا، ثم الصف العلوي من اليسار لليمين،
  * ثم العمود الأيمن نزولًا. القوس في الوسط، والصحن فيه أكبر ومرفوع، ومعه بياناته.
  */
@@ -109,7 +109,7 @@ export function FoodPhotos() {
   const main = ctx.plates.find((p) => p.id === ctx.selected) ?? ctx.plates[0];
   if (!main) return null;
   // كل صف أربعة أماكن: المنتج إن وُجد، وإلا صحن فارغ برقم مكانه (يمتلئ بالمنتجات الجديدة).
-  // ٣ يسار، و٤ أعلى، و٣ يمين (طلب المالك 2026-11-27): مسافات أوسع لأسهم متحركة واضحة.
+  // ٣ يسار، و٣ أعلى، و٣ يمين (طلب المالك 2026-11-28): الصف العلوي ينتظم مع الأسهم.
   const slot = (at: number) => {
     const plate = ctx.plates[at];
     return plate ? (
@@ -187,14 +187,14 @@ export function FoodPhotos() {
         role="group"
         aria-label={txb("plates.more")}
       >
-        {line(3, 4, "right")}
+        {line(3, 3, "right")}
       </div>
       <div
         className="food-ring-line is-right"
         role="group"
         aria-label={txb("plates.rest")}
       >
-        {line(7, 3, "down", "lead")}
+        {line(6, 3, "down", "lead")}
       </div>
     </figure>
   );
