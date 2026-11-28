@@ -691,14 +691,14 @@ export const siteTextDefaults = {
   "members.type.courier": "مندوب",
   "categoryStats.title": "إحصائية الأقسام",
   "categoryStats.hint":
-    "كل قسم رئيسي مع أقسامه الفرعية: الأسر المسجلة فيه، ومنتجاته، والمعروض منها الآن للزوار.",
+    "كل قسم رئيسي مع أقسامه الفرعية: الأسر المنتجة المسجلة فيه، ومنتجاته، والمعروض منها الآن للزوار.",
   "categoryStats.category": "القسم",
-  "categoryStats.families": "الأسر",
+  "categoryStats.families": "الأسر المنتجة",
   "categoryStats.products": "المنتجات",
   "categoryStats.live": "المعروض الآن",
   "categoryStats.note":
-    "الأسرة أو المنتج في أكثر من قسم يُعدّ في كل قسم ({families} أسرة و{products} منتج في المجموع بالتكرار).",
-  "categoryStats.row": "{families} أسرة · {products} منتج",
+    "الأسرة المنتجة أو المنتج في أكثر من قسم يُعدّ في كل قسم ({families} أسرة منتجة و{products} منتج في المجموع بالتكرار).",
+  "categoryStats.row": "{families} أسرة منتجة · {products} منتج",
   "approvalAlerts.onlyAdmin": "تحديد مستقبلي الإشعارات للمدير العام فقط",
   "approvalAlerts.notStaff": "العضو ليس من الإدارة",
   "approvalAlerts.lastOne": "يلزم أن يستقبل الإشعارات شخص واحد على الأقل",
@@ -707,8 +707,8 @@ export const siteTextDefaults = {
   "familyCourier.stopConfirm": "إيقاف المندوب {name}؟",
   "familyCourier.stopped": "تم إيقاف المندوب. تعيده بتسجيل جواله مرة أخرى.",
   "familyCourier.afterApproval":
-    "تضيف مندوبك الخاص (الاسم والجوال والمركبة) بعد اعتماد أسرتك.",
-  "familyCourier.listLabel": "مندوبو الأسرة الخاصون",
+    "تضيف مندوبك الخاص (الاسم والجوال والمركبة) بعد اعتماد أسرتك المنتجة.",
+  "familyCourier.listLabel": "مندوبو الأسرة المنتجة الخاصون",
   "familyCourier.active": "✅ نشط — تسند إليه طلبات التوصيل",
   "familyCourier.paused": "⏸️ أوقف ظهوره مؤقتًا من حسابه",
   "familyCourier.stoppedByAdmin": "⛔ أوقفته الإدارة",
@@ -736,7 +736,7 @@ export const siteTextDefaults = {
   "adminCourier.nonePending": "لا يوجد مندوبون ينتظرون الاعتماد الآن.",
   "adminCourier.none": "لا يوجد مندوبون بعد.",
   "adminCourier.byFamily":
-    "سجّلته الأسرة بتعهّدها بمعرفته ومسؤوليتها عنه، دون هوية.",
+    "سجّلته الأسرة المنتجة بتعهّدها بمعرفته ومسؤوليتها عنه، دون هوية.",
   "adminCourier.nationalId": "رقم الهوية (خاص):",
   "adminCourier.idImage": "عرض صورة الهوية",
   "adminCourier.lastNote": "آخر ملاحظة: {note}",
@@ -754,7 +754,7 @@ export const siteTextDefaults = {
     "ملاحظة للمندوب (مطلوبة: اذكر النواقص أو سبب القرار؛ تظهر له)",
   "courier.privateBadge": "مندوب خاص لـ {family}",
   "alert.courier.family.body":
-    "أسرة «{family}» سجّلت مندوبها الخاص «{name}» وينتظر اعتمادك.",
+    "الأسرة المنتجة «{family}» سجّلت مندوبها الخاص «{name}» وينتظر اعتمادك.",
   "familyCourier.pending": "⏳ بانتظار اعتماد الإدارة",
   "familyCourier.rejected": "⛔ لم تعتمده الإدارة",
   "familyCourier.pendingSaved":
@@ -764,7 +764,7 @@ export const siteTextDefaults = {
     "هذا المندوب «{name}» تابع لي وأعرفه، وتحت مسؤوليتي نظاميته وأمانته.",
   "familyCourier.pledgeNoName": "(اسمه)",
   "members.type.privateCourier": "مندوب خاص",
-  "members.d.courierFamily": "يتبع أسرة",
+  "members.d.courierFamily": "يتبع الأسرة المنتجة",
   "members.d.phone": "الجوال",
   "members.d.type": "نوع الحساب",
   "members.d.family": "الأسرة",

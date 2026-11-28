@@ -128,7 +128,7 @@ test("admin sees how many families and products each section has", async ({
   await expect(stats).not.toContainText("مشروبات باردة");
   await expect(
     page.getByRole("button", { name: /الحلويات/ }).first(),
-  ).toContainText("1 أسرة · 3 منتج");
+  ).toContainText("1 أسرة منتجة · 3 منتج");
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth - window.innerWidth,
   );

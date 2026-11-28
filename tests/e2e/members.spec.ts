@@ -313,7 +313,7 @@ test("a family's private courier is labelled private with its family in the deta
   await page.getByLabel("خيارات حسن").click();
   await page.getByRole("button", { name: "تفاصيل", exact: true }).click();
   const details = row("k1").locator(".member-details");
-  await expect(details).toContainText("يتبع أسرة");
+  await expect(details).toContainText("يتبع الأسرة المنتجة");
   await expect(details).toContainText("مطبخ أم محمد");
   await expect(details).toContainText("مندوب خاص");
 });
