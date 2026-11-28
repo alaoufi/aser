@@ -10,6 +10,7 @@ const categories = [
     productCount: 3,
     childCount: 0,
     familyCount: 1,
+    stats: { families: 1, products: 3, live: 2 },
   },
   {
     id: "2",
@@ -20,6 +21,7 @@ const categories = [
     productCount: 0,
     childCount: 1,
     familyCount: 0,
+    stats: { families: 2, products: 4, live: 4 },
   },
   {
     id: "3",
@@ -30,6 +32,7 @@ const categories = [
     productCount: 0,
     childCount: 0,
     familyCount: 2,
+    stats: { families: 2, products: 4, live: 4 },
   },
 ];
 
@@ -92,4 +95,42 @@ test("tapping a category opens it right below for editing, and it is deleted onl
   await expect.poll(() => sent.length).toBe(2);
   expect(sent[1]).toEqual({ method: "DELETE", body: { id: "3" } });
   await expect(page.getByLabel("اسم القسم")).toHaveCount(0);
+});
+
+// «إحصائية الأقسام» (طلب المالك 2026-11-28): لكل قسم رئيسي أسره ومنتجاته والمعروض، الأكثر أسرًا أولًا.
+test("admin sees how many families and products each section has", async ({
+  page,
+}) => {
+  await page.route("**/api/session", (r) =>
+    r.fulfill({
+      json: {
+        user: { id: "a", name: "مدير", phone: "+966500000009", role: "admin" },
+        registrationOpen: true,
+      },
+    }),
+  );
+  await page.route("**/api/admin/summary", (r) =>
+    r.fulfill({ json: { summary: {} } }),
+  );
+  await page.route("**/api/admin/producers", (r) =>
+    r.fulfill({ json: { producers: [] } }),
+  );
+  await page.route("**/api/admin/categories", (r) =>
+    r.fulfill({ json: { categories } }),
+  );
+  await page.goto("/admin/categories");
+  const stats = page.getByRole("region", { name: "إحصائية الأقسام" });
+  const rows = stats.getByRole("row");
+  await expect(rows).toHaveCount(3);
+  await expect(rows.nth(1)).toHaveText(/المشروبات\s*2\s*4\s*4/);
+  await expect(rows.nth(2)).toHaveText(/الحلويات\s*1\s*3\s*2/);
+  // الفرعي لا يظهر في الجدول؛ وسطر كل قسم بعدد أسره ومنتجاته.
+  await expect(stats).not.toContainText("مشروبات باردة");
+  await expect(
+    page.getByRole("button", { name: /الحلويات/ }).first(),
+  ).toContainText("1 أسرة · 3 منتج");
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - window.innerWidth,
+  );
+  expect(overflow).toBeLessThanOrEqual(1);
 });

@@ -140,6 +140,12 @@ export type AdminCategory = Category & {
   productCount: number;
   childCount: number;
   familyCount: number;
+  /**
+   * «إحصائية الأقسام» (طلب المالك 2026-11-28): القسم مع أقسامه الفرعية كلها.
+   * الأسر المسجلة فيه (غير المغلقة)، والمنتجات (غير المحذوفة)، والمعروض الآن
+   * (ظاهر، غير «غير متوفر»، وأسرته معتمدة).
+   */
+  stats: { families: number; products: number; live: number };
 };
 export async function adminCategories(
   user: SessionUser,
@@ -157,11 +163,42 @@ export async function adminCategories(
       )
     ).rows.map((r) => [r.id as string, r]),
   );
+  // كل قسم مع فروعه (بأي عمق)، ثم العدّ بلا تكرار: الأسرة أو المنتج في قسمين فرعيين يُعدّ مرة.
+  const stats = new Map(
+    (
+      await db().query(
+        `WITH RECURSIVE tree AS (
+           SELECT id AS root,id FROM jdatna.categories
+           UNION ALL
+           SELECT t.root,k.id FROM tree t JOIN jdatna.categories k ON k.parent_id=t.id)
+         SELECT t.root AS id,
+           (SELECT count(DISTINCT f.producer_id)::int FROM jdatna.producer_categories f
+              JOIN jdatna.producer_profiles p ON p.id=f.producer_id AND p.status<>'closed'
+              WHERE f.category_id=ANY(array_agg(t.id))) AS families,
+           (SELECT count(DISTINCT x.product_id)::int FROM jdatna.product_categories x
+              JOIN jdatna.products p ON p.id=x.product_id AND p.deleted_at IS NULL
+              WHERE x.category_id=ANY(array_agg(t.id))) AS products,
+           (SELECT count(DISTINCT x.product_id)::int FROM jdatna.product_categories x
+              JOIN jdatna.products p ON p.id=x.product_id AND p.deleted_at IS NULL AND p.visible AND p.status<>'unavailable'
+              JOIN jdatna.producer_profiles f ON f.id=p.producer_id AND f.status='approved'
+              WHERE x.category_id=ANY(array_agg(t.id))) AS live
+         FROM tree t GROUP BY t.root`,
+      )
+    ).rows.map((r) => [
+      r.id as string,
+      {
+        families: r.families as number,
+        products: r.products as number,
+        live: r.live as number,
+      },
+    ]),
+  );
   return categories.map((c) => ({
     ...c,
     productCount: counts.get(c.id)?.productCount ?? 0,
     childCount: counts.get(c.id)?.childCount ?? 0,
     familyCount: counts.get(c.id)?.familyCount ?? 0,
+    stats: stats.get(c.id) ?? { families: 0, products: 0, live: 0 },
   }));
 }
 /** يحذف قسمًا فقط إذا لم يبقَ له منتجات ولا أقسام فرعية؛ واختيارات الأسر له تُزال معه. */

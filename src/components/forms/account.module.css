@@ -1905,3 +1905,20 @@
   background: var(--surface, #fff);
   font: inherit;
 }
+
+/* «إحصائية الأقسام»: اسم القسم عنوان السطر، والأعداد في المنتصف. */
+.statsTable tbody th {
+  position: static;
+  background: none;
+  border-top: 1px solid var(--line);
+  font-size: 15px;
+  white-space: normal;
+}
+.statsTable td {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  vertical-align: middle;
+}
+.statsTable thead th:not(:first-child) {
+  text-align: center;
+}
