@@ -1124,7 +1124,8 @@ const familyActionSchema = z.discriminatedUnion("action", [
   z
     .object({
       action: z.literal("hide"),
-      reason: z.string().trim().min(5).max(1000),
+      // السبب اختياري (قرار المالك 2026-11-28).
+      reason: z.string().trim().max(1000).default(""),
     })
     .strict(),
   z.object({ action: z.literal("unhide") }).strict(),
@@ -1169,7 +1170,7 @@ export async function familyAdminAction(
         throw new HttpError(409, "الإخفاء للأسرة المعتمدة الظاهرة فقط");
       await client.query(
         "UPDATE jdatna.producer_profiles SET status='hidden',hidden_reason=$2,updated_at=now() WHERE id=$1",
-        [id, v.reason],
+        [id, v.reason || null],
       );
     } else {
       if (p.status !== "hidden") throw new HttpError(409, "الأسرة ليست مخفية");
@@ -1206,7 +1207,12 @@ export async function familyAdminAction(
           v.action === "hide"
             ? "msg.family.hidden.body"
             : "msg.family.shown.body",
-          { reason: v.action === "hide" ? v.reason : "" },
+          {
+            reason:
+              v.action === "hide" && v.reason
+                ? await msg("msg.family.hidden.reason", { reason: v.reason })
+                : "",
+          },
         ),
         url: "/dashboard",
         tag: "family-hidden",

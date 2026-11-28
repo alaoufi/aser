@@ -329,13 +329,13 @@ function Review({
           </select>
         </label>
         <label className={s.field}>
-          {activating
-            ? "ملاحظة للأسرة المنتجة (اختيارية عند التفعيل؛ تظهر لها أعلى صفحتها)"
-            : "ملاحظة للأسرة المنتجة (مطلوبة: اذكر النواقص أو سبب القرار؛ تظهر لها أعلى صفحتها)"}
+          {decision === "rejected"
+            ? "ملاحظة للأسرة المنتجة (مطلوبة: اذكر النواقص؛ تظهر لها أعلى صفحتها)"
+            : "ملاحظة للأسرة المنتجة (اختيارية؛ تظهر لها أعلى صفحتها)"}
           <textarea
             name="reason"
-            required={!activating}
-            minLength={activating ? undefined : 5}
+            required={decision === "rejected"}
+            minLength={decision === "rejected" ? 5 : undefined}
             maxLength={2000}
             placeholder={
               producer.documentId
@@ -414,7 +414,7 @@ function FamilyRow({
           body: JSON.stringify(
             confirm === "activate"
               ? { decision: "approved", eligibilityConfirmed: true }
-              : { decision: "suspended", reason },
+              : { decision: "suspended", reason: reason.trim() },
           ),
         });
       else
@@ -422,7 +422,7 @@ function FamilyRow({
           method: "POST",
           body: JSON.stringify(
             confirm === "hide"
-              ? { action: "hide", reason }
+              ? { action: "hide", reason: reason.trim() }
               : { action: confirm },
           ),
         });
@@ -495,7 +495,6 @@ function FamilyRow({
               {tx("familyList.reason")}
               <textarea
                 value={reason}
-                minLength={5}
                 maxLength={1000}
                 rows={2}
                 onChange={(e) => setReason(e.target.value)}
@@ -506,7 +505,7 @@ function FamilyRow({
             <button
               type="button"
               className={s.button}
-              disabled={busy || (needsReason && reason.trim().length < 5)}
+              disabled={busy}
               onClick={run}
             >
               {busy ? tx("familyList.saving") : tx("familyList.yes")}

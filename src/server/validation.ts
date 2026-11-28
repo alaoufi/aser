@@ -181,7 +181,7 @@ export const reviewSchema = z
       "rejected",
       "suspended",
     ]),
-    /** الملاحظة اختيارية عند الاعتماد، ولازمة عند طلب الاستكمال أو الإيقاف (لتعرف الأسرة السبب). */
+    /** الملاحظة اختيارية عند الاعتماد والإيقاف (قرار المالك 2026-11-28)، ولازمة عند طلب الاستكمال (النواقص). */
     reason: z.string().trim().max(2000).default(""),
     eligibilityConfirmed: z.boolean().optional(),
     exceptionApproved: z.boolean().optional(),
@@ -194,12 +194,7 @@ export const reviewSchema = z
       message: "يجب تأكيد الأهلية النظامية للنشاط قبل الاعتماد",
     },
   )
-  .refine(
-    (x) =>
-      ["approved", "complete", "exempt"].includes(x.decision) ||
-      x.reason.length >= 5,
-    {
-      message: "اكتب للأسرة النواقص أو سبب القرار (خمسة أحرف على الأقل)",
-      path: ["reason"],
-    },
-  );
+  .refine((x) => x.decision !== "rejected" || x.reason.length >= 5, {
+    message: "اكتب للأسرة النواقص أو سبب القرار (خمسة أحرف على الأقل)",
+    path: ["reason"],
+  });

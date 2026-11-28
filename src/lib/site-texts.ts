@@ -668,7 +668,7 @@ export const siteTextDefaults = {
   "familyList.hide": "إخفاء",
   "familyList.unhide": "إظهار",
   "familyList.verifiedTag": "موثّقة ✓",
-  "familyList.reason": "السبب (يصل للأسرة)",
+  "familyList.reason": "السبب (اختياري، يصل للأسرة)",
   "familyList.yes": "نعم، تأكيد",
   "familyList.no": "تراجع",
   "familyList.saving": "جارٍ الحفظ…",
@@ -677,15 +677,16 @@ export const siteTextDefaults = {
   "familyList.confirm.verify": "توثيق «{name}»؟ تظهر علامة «موثّقة» للأسرة.",
   "familyList.confirm.unverify": "إلغاء توثيق «{name}»؟",
   "familyList.confirm.suspend":
-    "إيقاف «{name}»؟ يُوقف الحساب ولا تظهر الأسرة ولا منتجاتها. اكتب السبب.",
+    "إيقاف «{name}»؟ يُوقف الحساب ولا تظهر الأسرة ولا منتجاتها.",
   "familyList.confirm.hide":
-    "إخفاء «{name}» عن الزوار؟ تختفي الأسرة وكل منتجاتها، وتبقى هنا حتى تُظهرها. اكتب السبب.",
+    "إخفاء «{name}» عن الزوار؟ تختفي الأسرة وكل منتجاتها، وتبقى هنا حتى تُظهرها.",
   "familyList.confirm.unhide":
     "إظهار «{name}»؟ تعود الأسرة ومنتجاتها ظاهرة كما كانت.",
   "family.verifiedBadge": "موثّقة",
   "msg.family.hidden.title": "أُخفيت أسرتك مؤقتًا",
   "msg.family.hidden.body":
-    "أخفت الإدارة أسرتك ومنتجاتها عن الزوار مؤقتًا: {reason}. أصلح المطلوب من «هوية الأسرة»، وتعود ظاهرة بعد المراجعة.",
+    "أخفت الإدارة أسرتك ومنتجاتها عن الزوار مؤقتًا.{reason} أصلح المطلوب من «هوية الأسرة»، وتعود ظاهرة بعد المراجعة.",
+  "msg.family.hidden.reason": " السبب: {reason}.",
   "msg.family.shown.title": "عادت أسرتك ظاهرة",
   "msg.family.shown.body": "أعادت الإدارة أسرتك ومنتجاتها ظاهرة للعملاء.",
   "table.hint":
@@ -1542,7 +1543,14 @@ export const siteTextLabels: Record<
   ],
   "family.verifiedBadge": ["صفحة الأسرة", "علامة التوثيق في صفحة الأسرة"],
   "msg.family.hidden.title": ["رسائل الأسرة", "إخفاء الأسرة: العنوان"],
-  "msg.family.hidden.body": ["رسائل الأسرة", "إخفاء الأسرة: النص ({reason})"],
+  "msg.family.hidden.body": [
+    "رسائل الأسرة",
+    "إخفاء الأسرة: النص ({reason} = سطر السبب إن كُتب)",
+  ],
+  "msg.family.hidden.reason": [
+    "رسائل الأسرة",
+    "إخفاء الأسرة: سطر السبب ({reason})",
+  ],
   "msg.family.shown.title": ["رسائل الأسرة", "إظهار الأسرة: العنوان"],
   "msg.family.shown.body": ["رسائل الأسرة", "إظهار الأسرة: النص"],
   "table.hint": ["الرئيسية", "تحت المائدة قبل اختيار طبق"],

@@ -61,10 +61,13 @@ test(
       });
       assert.ok(verified.adminVerifiedAt);
       assert.equal((await catalog.getProducer(slug))?.adminVerified, true);
-      // الإخفاء يحتاج سببًا، ويخفي الأسرة ومنتجاتها عن الزوار.
-      await assert.rejects(
-        m.familyAdminAction(admin, family, { action: "hide", reason: "" }),
-      );
+      // الإخفاء يخفي الأسرة ومنتجاتها عن الزوار، والسبب اختياري (قرار المالك 2026-11-28).
+      const noReason = await m.familyAdminAction(admin, family, {
+        action: "hide",
+      });
+      assert.equal(noReason.status, "hidden");
+      assert.equal(noReason.hiddenReason, null);
+      await m.familyAdminAction(admin, family, { action: "unhide" });
       const hidden = await m.familyAdminAction(admin, family, {
         action: "hide",
         reason: "صور المنتجات غير واضحة",

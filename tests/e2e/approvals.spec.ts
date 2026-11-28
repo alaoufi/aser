@@ -286,17 +286,19 @@ test("each family is one compact row with its status and a ⋮ menu whose action
   await confirm.getByRole("button", { name: "نعم، تأكيد" }).click();
   await expect.poll(() => sent).toEqual([{ action: "verify" }]);
   await expect(row).toContainText("موثّقة ✓");
-  // الإخفاء يطلب سببًا، والتراجع لا يرسل شيئًا.
+  // السبب اختياري (قرار المالك 2026-11-28)، والتراجع لا يرسل شيئًا.
   await menu.click();
   await row.getByRole("button", { name: "إخفاء", exact: true }).click();
   await expect(
     confirm.getByRole("button", { name: "نعم، تأكيد" }),
-  ).toBeDisabled();
+  ).toBeEnabled();
   await confirm.getByRole("button", { name: "تراجع" }).click();
   await expect(confirm).toHaveCount(0);
   await menu.click();
   await row.getByRole("button", { name: "إخفاء", exact: true }).click();
-  await confirm.getByLabel("السبب (يصل للأسرة)").fill("الصور غير واضحة");
+  await confirm
+    .getByLabel("السبب (اختياري، يصل للأسرة)")
+    .fill("الصور غير واضحة");
   await page.screenshot({ path: "test-results/family-rows.png" });
   await confirm.getByRole("button", { name: "نعم، تأكيد" }).click();
   await expect
