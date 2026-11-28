@@ -2825,8 +2825,9 @@ button.food-dish:focus-visible .food-dish-visual {
   margin: 8px;
 }
 @media (max-width: 850px) {
-  .notif-bell {
-    margin-inline-start: auto;
+  /* الجرس بجانب ☰ في الجهة نفسها، والشعار آخر الرأس في الجهة المقابلة (ملاحظة المالك 2026-11-28). */
+  .site-header > .notif-bell {
+    order: -1;
   }
   .notif-bell > summary {
     height: 40px;
