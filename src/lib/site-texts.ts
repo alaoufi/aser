@@ -658,6 +658,58 @@ export const siteTextDefaults = {
     "اختياري مع التوصيل وحده: الموقع يُطلب فقط في التسليم المباشر.",
   "appShare.label": "مشاركة التطبيق",
   "menu.appearance": "الألوان والقوالب",
+  "admin.texts.section": "القسم",
+  "admin.texts.allSections": "كل الأقسام",
+  "msg.order.new.title": "طلب جديد: {product}",
+  "msg.order.new.body": "{name} — {quantity} {unit}",
+  "msg.chat.title": "رسالة جديدة من {name}",
+  "chatOrder.msg.new": "🧾 طلب: {product} × {quantity}",
+  "chatOrder.msg.note": "ملاحظة: {note}",
+  "chatOrder.msg.complete": "✅ تمت الموافقة وإتمام الطلب: {product}",
+  "chatOrder.msg.decline": "↩️ اعتذرت الأسرة عن الطلب: {product}",
+  "chatOrder.msg.cancel": "✖️ أُلغي الطلب: {product}",
+  "chatOrder.msg.requestCancel":
+    "⏳ طلب إلغاء الطلب، بانتظار موافقة الطرف الآخر: {product}",
+  "chatOrder.msg.agreeCancel": "✖️ أُلغي الطلب بالاتفاق: {product}",
+  "chatOrder.msg.keep": "✔️ بقي الطلب منفّذًا (رُفض طلب الإلغاء): {product}",
+  "msg.courier.assigned.title": "طلب توصيل جديد",
+  "msg.courier.assigned.body": "أسندت إليك «{family}» توصيل {product}.",
+  "msg.courier.chosen.body": "اختارك عميل لتوصيل {product} من «{family}».",
+  "msg.courier.toFamily.title": "مندوب العميل",
+  "msg.courier.toFamily.body":
+    "اختار العميل المندوب {courier} لتوصيل {product}، وسيستلم منكم.",
+  "msg.courier.pickup.title": "موقع الاستلام",
+  "msg.courier.pickup.body": "أرسلت «{family}» موقع استلام {product}.",
+  "msg.courier.delivered.title": "تم التوصيل",
+  "msg.courier.delivered.body": "أوصل المندوب {product} إلى العميل.",
+  "msg.courier.approved.title": "مبارك اعتمادك مندوبًا",
+  "msg.courier.approved.body":
+    "تم اعتماد حسابك، وصار ظاهرًا للأسر المنتجة في «المندوبين». نسأل الله لنا ولكم التوفيق",
+  "msg.docs.late.title": "انتهت مهلة المستندات",
+  "msg.docs.late.body":
+    "مضت 15 يومًا على تعهدك. ارفع المستندات الرسمية لممارسة النشاط من «هوية الأسرة» ← «بيانات الأسرة».",
+  "msg.docs.extend.title": "مُدّدت مهلة المستندات",
+  "msg.docs.extend.body": "ارفع المستندات الرسمية لممارسة النشاط قبل {due}.",
+  "msg.docs.hide.title": "أُخفيت منتجاتك حتى رفع المستندات",
+  "msg.docs.hide.body":
+    "ارفع المستندات الرسمية من «هوية الأسرة» ← «بيانات الأسرة»، فتعود منتجاتك كما كانت.",
+  "msg.docs.show.title": "عادت منتجاتك ظاهرة",
+  "msg.docs.show.body": "أعادت الإدارة منتجاتك ظاهرة للعملاء.",
+  "alert.family.pending.title": "أسرة تنتظر الاعتماد",
+  "alert.family.pending.body": "«{name}» سجّلت وتنتظر الاعتماد.",
+  "alert.family.pledged.body":
+    "«{name}» سجّلت وتنتظر الاعتماد، وتعهدت بتقديم المستندات خلال 15 يومًا من الموافقة.",
+  "alert.family.document.title": "مستند أسرة للمراجعة",
+  "alert.family.document.body": "«{name}» رفعت مستندًا جديدًا للمراجعة.",
+  "alert.family.late.title": "أسرة تأخرت في المستندات",
+  "alert.family.late.body":
+    "«{name}» مضت 15 يومًا على تعهدها ولم ترفع المستندات الرسمية. تجدها في «تأخرت في المستندات».",
+  "alert.courier.pending.title": "مندوب ينتظر الاعتماد",
+  "alert.courier.pending.body": "المندوب «{name}» سجّل وينتظر الاعتماد.",
+  "alert.suggestion.title": "اقتراح جديد",
+  "alert.security.title": "تنبيه أمني: محاولات دخول فاشلة كثيرة",
+  "alert.security.body":
+    "{count} محاولة فاشلة خلال 10 دقائق. راجع «التقرير الأمني» في الإدارة.",
   "docsWeekly.family.title": "تذكير بإكمال التسجيل",
   "docsWeekly.family.grace":
     "شريكنا العزيز، ننتظر إكمال طلبات التسجيل حتى لا يعرّضك ذلك للإيقاف؛ مُنحت مهلة كافية. وفقك الله.",
@@ -1417,6 +1469,113 @@ export const siteTextLabels: Record<
   ],
   "appShare.label": ["مشاركة التطبيق", "اسم أيقونة المشاركة في رأس الموقع"],
   "menu.appearance": ["قائمة الجوال", "زر الألوان والقوالب في القائمة"],
+  "admin.texts.section": ["إدارة نصوص الموقع", "قائمة الأقسام: العنوان"],
+  "admin.texts.allSections": ["إدارة نصوص الموقع", "قائمة الأقسام: الكل"],
+  "msg.order.new.title": [
+    "رسائل الطلبات",
+    "طلب جديد للأسرة: العنوان ({product})",
+  ],
+  "msg.order.new.body": [
+    "رسائل الطلبات",
+    "طلب جديد للأسرة: النص ({name} {quantity} {unit})",
+  ],
+  "msg.chat.title": ["رسائل المحادثات", "إشعار رسالة جديدة ({name})"],
+  "chatOrder.msg.new": [
+    "رسائل الطلب في المحادثة",
+    "رسالة الطلب الجديد ({product} {quantity})",
+  ],
+  "chatOrder.msg.note": ["رسائل الطلب في المحادثة", "سطر الملاحظة ({note})"],
+  "chatOrder.msg.complete": [
+    "رسائل الطلب في المحادثة",
+    "عند الموافقة والإتمام ({product})",
+  ],
+  "chatOrder.msg.decline": [
+    "رسائل الطلب في المحادثة",
+    "عند اعتذار الأسرة ({product})",
+  ],
+  "chatOrder.msg.cancel": [
+    "رسائل الطلب في المحادثة",
+    "عند الإلغاء ({product})",
+  ],
+  "chatOrder.msg.requestCancel": [
+    "رسائل الطلب في المحادثة",
+    "عند طلب الإلغاء ({product})",
+  ],
+  "chatOrder.msg.agreeCancel": [
+    "رسائل الطلب في المحادثة",
+    "عند الإلغاء بالاتفاق ({product})",
+  ],
+  "chatOrder.msg.keep": [
+    "رسائل الطلب في المحادثة",
+    "عند إبقاء الطلب ({product})",
+  ],
+  "msg.courier.assigned.title": ["رسائل المندوبين", "إسناد توصيل: العنوان"],
+  "msg.courier.assigned.body": [
+    "رسائل المندوبين",
+    "إسناد من الأسرة: النص ({family} {product})",
+  ],
+  "msg.courier.chosen.body": [
+    "رسائل المندوبين",
+    "اختيار العميل للمندوب: النص ({product} {family})",
+  ],
+  "msg.courier.toFamily.title": [
+    "رسائل المندوبين",
+    "للأسرة عن مندوب العميل: العنوان",
+  ],
+  "msg.courier.toFamily.body": [
+    "رسائل المندوبين",
+    "للأسرة عن مندوب العميل: النص ({courier} {product})",
+  ],
+  "msg.courier.pickup.title": ["رسائل المندوبين", "موقع الاستلام: العنوان"],
+  "msg.courier.pickup.body": [
+    "رسائل المندوبين",
+    "موقع الاستلام: النص ({family} {product})",
+  ],
+  "msg.courier.delivered.title": [
+    "رسائل المندوبين",
+    "تم التوصيل (للأسرة): العنوان",
+  ],
+  "msg.courier.delivered.body": [
+    "رسائل المندوبين",
+    "تم التوصيل (للأسرة): النص ({product})",
+  ],
+  "msg.courier.approved.title": ["رسائل المندوبين", "اعتماد المندوب: العنوان"],
+  "msg.courier.approved.body": ["رسائل المندوبين", "اعتماد المندوب: النص"],
+  "msg.docs.late.title": ["رسائل مستندات الأسرة", "انتهاء المهلة: العنوان"],
+  "msg.docs.late.body": ["رسائل مستندات الأسرة", "انتهاء المهلة: النص"],
+  "msg.docs.extend.title": ["رسائل مستندات الأسرة", "تمديد المهلة: العنوان"],
+  "msg.docs.extend.body": [
+    "رسائل مستندات الأسرة",
+    "تمديد المهلة: النص ({due})",
+  ],
+  "msg.docs.hide.title": ["رسائل مستندات الأسرة", "إخفاء المنتجات: العنوان"],
+  "msg.docs.hide.body": ["رسائل مستندات الأسرة", "إخفاء المنتجات: النص"],
+  "msg.docs.show.title": ["رسائل مستندات الأسرة", "إظهار المنتجات: العنوان"],
+  "msg.docs.show.body": ["رسائل مستندات الأسرة", "إظهار المنتجات: النص"],
+  "alert.family.pending.title": ["تنبيهات الإدارة", "أسرة جديدة: العنوان"],
+  "alert.family.pending.body": ["تنبيهات الإدارة", "أسرة جديدة: النص ({name})"],
+  "alert.family.pledged.body": [
+    "تنبيهات الإدارة",
+    "أسرة جديدة بتعهد: النص ({name})",
+  ],
+  "alert.family.document.title": ["تنبيهات الإدارة", "مستند جديد: العنوان"],
+  "alert.family.document.body": [
+    "تنبيهات الإدارة",
+    "مستند جديد: النص ({name})",
+  ],
+  "alert.family.late.title": ["تنبيهات الإدارة", "تأخر المستندات: العنوان"],
+  "alert.family.late.body": [
+    "تنبيهات الإدارة",
+    "تأخر المستندات: النص ({name})",
+  ],
+  "alert.courier.pending.title": ["تنبيهات الإدارة", "مندوب جديد: العنوان"],
+  "alert.courier.pending.body": [
+    "تنبيهات الإدارة",
+    "مندوب جديد: النص ({name})",
+  ],
+  "alert.suggestion.title": ["تنبيهات الإدارة", "اقتراح جديد: العنوان"],
+  "alert.security.title": ["تنبيهات الإدارة", "تنبيه أمني: العنوان"],
+  "alert.security.body": ["تنبيهات الإدارة", "تنبيه أمني: النص ({count})"],
   "docsWeekly.family.title": ["تذكير المستندات الأسبوعي", "عنوان رسالة الأسرة"],
   "docsWeekly.family.grace": [
     "تذكير المستندات الأسبوعي",
@@ -1990,4 +2149,114 @@ export function productStatusLabels(
     unavailable: pick("status.unavailable"),
     preorder: pick("status.preorder"),
   };
+}
+
+/**
+ * أقسام «نصوص الموقع» (طلب المالك 2026-11-28): قائمة منسدلة تجمع المجموعات ليسهل الوصول إليها.
+ * كل نص جديد يُضاف لمجموعة هنا؛ وما لا ينتمي لقسم يظهر في «أخرى».
+ */
+export const siteTextSections: readonly (readonly [
+  string,
+  readonly string[],
+])[] = [
+  [
+    "الواجهة العامة",
+    [
+      "أعلى وأسفل الموقع",
+      "أعلى الموقع",
+      "أسفل الموقع",
+      "الرئيسية",
+      "قائمة الجوال",
+      "ألوان الموقع",
+      "صفحة المنتج",
+      "صفحة الأسرة",
+      "الأسر المنتجة",
+      "الأكلات",
+      "طبخات اليوم (التصفح)",
+      "العروض الخاصة",
+      "الاشتراكات",
+      "صفحة البحث",
+      "بطاقات المنتجات والأسر",
+      "حكايتنا",
+      "الدعم والتواصل",
+      "زر المشاركة",
+      "مشاركة التطبيق",
+      "صفحة التطبيق",
+      "متجر موثّق",
+      "الإعلانات",
+      "اختيار المنطقة",
+      "حقول الموقع الجغرافي",
+      "حالة المنتج",
+      "التوصيل والشحن",
+      "شهادة الأسرة المميزة",
+      "صفحة الدعوة",
+      "التفاهم",
+      "البلاغات",
+      "الاقتراحات",
+    ],
+  ],
+  [
+    "واجهة العميل",
+    [
+      "التسجيل",
+      "الدخول",
+      "اعرض لي (فلاتر العضو)",
+      "مقترحات لك",
+      "الطلب في المحادثة",
+      "التقييمات",
+      "ادعُ صديقًا",
+      "الدليل",
+    ],
+  ],
+  [
+    "واجهة الأسرة",
+    [
+      "مائدة الأسرة",
+      "هوية الأسرة",
+      "الأسرة كعميل",
+      "تسجيل الأسرة",
+      "ترحيب الأسرة",
+      "ترحيب الأسرة المنتجة",
+    ],
+  ],
+  [
+    "الرسائل",
+    [
+      "رسائل الطلبات",
+      "رسائل المحادثات",
+      "رسائل الطلب في المحادثة",
+      "رسائل المندوبين",
+      "رسائل مستندات الأسرة",
+      "تذكير المستندات الأسبوعي",
+      "اعتماد الأسر المنتجة",
+    ],
+  ],
+  [
+    "التنبيهات",
+    [
+      "تنبيهات الإدارة",
+      "جرس الإشعارات",
+      "الإشعارات",
+      "تنبيه الرسائل",
+      "تنبيه الطلبات",
+    ],
+  ],
+  [
+    "لوحة الإدارة",
+    [
+      "إدارة نصوص الموقع",
+      "ملخص الإدارة",
+      "مستندات الأسر (الإدارة)",
+      "الإحصاءات (لوحة الإدارة)",
+      "أسر تنتظر الموافقة",
+      "الأعضاء",
+      "المشاهدات",
+    ],
+  ],
+  ["الأدلة", ["دليل المستخدم", "دليل التسجيل"]],
+];
+export function siteTextSection(group: string) {
+  return (
+    siteTextSections.find(([, groups]) => groups.includes(group))?.[0] ?? "أخرى"
+  );
 }

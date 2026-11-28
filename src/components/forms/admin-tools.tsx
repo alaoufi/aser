@@ -11,6 +11,8 @@ import {
 } from "@/lib/brand";
 import {
   siteTextLabels,
+  siteTextSection,
+  siteTextSections,
   siteTextParagraphs,
   siteTextTitleKeys,
   type SiteTextKey,
@@ -1104,8 +1106,22 @@ export function TextsAdmin() {
   const { tx } = useTx();
   const r = useResource<{ texts: AdminText[] }>("/api/admin/texts");
   const [query, setQuery] = useState("");
+  // القسم (الواجهة، واجهة العميل، واجهة الأسرة، الرسائل، التنبيهات…): قائمة منسدلة.
+  const [section, setSection] = useState("");
   const q = normalizeSearch(query);
-  const all = r.data?.texts ?? [];
+  const all = (r.data?.texts ?? []).filter(
+    (t) =>
+      !section ||
+      siteTextSection((siteTextLabels[t.key as SiteTextKey] ?? ["أخرى"])[0]) ===
+        section,
+  );
+  const sectionCount = (name: string) =>
+    (r.data?.texts ?? []).filter(
+      (t) =>
+        siteTextSection(
+          (siteTextLabels[t.key as SiteTextKey] ?? ["أخرى"])[0],
+        ) === name,
+    ).length;
   // البحث في اسم القسم ووصف النص ونصه الحالي والأصلي؛ والفقرة تظهر كاملة إن طابق عنوانها أو نصها.
   const matches = (t: AdminText) => {
     const [group, label] = siteTextLabels[t.key as SiteTextKey] ?? [
@@ -1140,6 +1156,19 @@ export function TextsAdmin() {
       <h2>نصوص الموقع</h2>
       <p className={s.muted}>{tx("admin.texts.intro")}</p>
       <label className={s.field}>
+        {tx("admin.texts.section")}
+        <select value={section} onChange={(e) => setSection(e.target.value)}>
+          <option value="">{tx("admin.texts.allSections")}</option>
+          {[...siteTextSections.map(([name]) => name), "أخرى"]
+            .filter((name) => sectionCount(name) > 0)
+            .map((name) => (
+              <option key={name} value={name}>
+                {name} ({sectionCount(name)})
+              </option>
+            ))}
+        </select>
+      </label>
+      <label className={s.field}>
         بحث في النصوص
         <input
           type="search"
@@ -1148,7 +1177,7 @@ export function TextsAdmin() {
           onChange={(e) => setQuery(e.target.value)}
         />
       </label>
-      {q && r.data && (
+      {(q || section) && r.data && (
         <p className={s.muted} role="status">
           {shown.size ? `${shown.size} نتيجة` : "لا توجد نصوص مطابقة."}
         </p>

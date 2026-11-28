@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { msg } from "./messages";
 import type { PoolClient } from "pg";
 import { randomUUID } from "node:crypto";
 import type { SessionUser } from "../lib/types";
@@ -233,13 +234,17 @@ export async function saveProducerCategories(
 /** تنبيه المشرفين (المدير ومن له صلاحية الأسر) بأسرة تنتظر الاعتماد. لا يُفشل الحفظ إن تعذر. */
 export async function notifyApprovers(
   familyName: string,
-  body = `«${familyName}» سجّلت وتنتظر الاعتماد.`,
-  title = "أسرة تنتظر الاعتماد",
+  body?: string,
+  title?: string,
   link = "/admin?tab=approvals",
   tag = "family-approval",
 ) {
   try {
     const { notifyUser } = await import("./push");
+    const defaultTitle = await msg("alert.family.pending.title");
+    const defaultBody = await msg("alert.family.pending.body", {
+      name: familyName,
+    });
     const approvers = (
       await db().query(
         "SELECT id FROM jdatna.users WHERE role='admin' OR 'approvals'=ANY(permissions)",
@@ -248,8 +253,8 @@ export async function notifyApprovers(
     await Promise.all(
       approvers.map((a) =>
         notifyUser(a.id, {
-          title,
-          body,
+          title: title ?? defaultTitle,
+          body: body ?? defaultBody,
           url: link,
           tag,
         }),
@@ -263,14 +268,14 @@ export async function saveProfile(user: SessionUser, input: unknown) {
     void notifyApprovers(
       saved.name,
       saved.pledged
-        ? `«${saved.name}» سجّلت وتنتظر الاعتماد، وتعهدت بتقديم المستندات خلال 15 يومًا من الموافقة.`
+        ? await msg("alert.family.pledged.body", { name: saved.name })
         : undefined,
     );
   if (saved.newDocument)
     void notifyApprovers(
       saved.name,
-      `«${saved.name}» رفعت مستندًا جديدًا للمراجعة.`,
-      "مستند أسرة للمراجعة",
+      await msg("alert.family.document.body", { name: saved.name }),
+      await msg("alert.family.document.title"),
     );
   return { id: saved.id, status: saved.status };
 }
@@ -1012,15 +1017,15 @@ export async function notifyLateDocuments(limit = 50) {
   for (const f of late) {
     // الأسرة نفسها تُنبَّه أيضًا (قرار المالك 2026-11-26).
     await notifyUser(f.userId, {
-      title: "انتهت مهلة المستندات",
-      body: "مضت 15 يومًا على تعهدك. ارفع المستندات الرسمية لممارسة النشاط من «هوية الأسرة» ← «بيانات الأسرة».",
+      title: await msg("msg.docs.late.title"),
+      body: await msg("msg.docs.late.body"),
       url: "/dashboard/identity",
       tag: "family-docs",
     }).catch(() => {});
     await notifyApprovers(
       f.name,
-      `«${f.name}» مضت 15 يومًا على تعهدها ولم ترفع المستندات الرسمية. تجدها في «تأخرت في المستندات».`,
-      "أسرة تأخرت في المستندات",
+      await msg("alert.family.late.body", { name: f.name }),
+      await msg("alert.family.late.title"),
     );
   }
   return late.length;
@@ -1193,18 +1198,21 @@ export async function producerDocsAction(
         })
       : "";
     await notifyUser(result.userId, {
-      title:
+      title: await msg(
         v.action === "extend"
-          ? "مُدّدت مهلة المستندات"
+          ? "msg.docs.extend.title"
           : v.action === "hide"
-            ? "أُخفيت منتجاتك حتى رفع المستندات"
-            : "عادت منتجاتك ظاهرة",
-      body:
+            ? "msg.docs.hide.title"
+            : "msg.docs.show.title",
+      ),
+      body: await msg(
         v.action === "extend"
-          ? `ارفع المستندات الرسمية لممارسة النشاط قبل ${due}.`
+          ? "msg.docs.extend.body"
           : v.action === "hide"
-            ? "ارفع المستندات الرسمية من «هوية الأسرة» ← «بيانات الأسرة»، فتعود منتجاتك كما كانت."
-            : "أعادت الإدارة منتجاتك ظاهرة للعملاء.",
+            ? "msg.docs.hide.body"
+            : "msg.docs.show.body",
+        { due },
+      ),
       url: "/dashboard/identity",
       tag: "family-docs",
     });

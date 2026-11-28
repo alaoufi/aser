@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { msg } from "./messages";
 import { z } from "zod";
 import type { PoolClient } from "pg";
 import type { SessionUser } from "../lib/types";
@@ -517,7 +518,7 @@ async function deliver(
   });
   // إشعار الجوال للطرف الآخر بعد حفظ الرسالة، دون انتظار يؤخر المرسل.
   void notifyUser(sent.to, {
-    title: `رسالة جديدة من ${user.name}`,
+    title: await msg("msg.chat.title", { name: user.name }),
     body: body.length > 140 ? `${body.slice(0, 140)}…` : body,
     url: `/messages?c=${sent.conversation}`,
     tag: `chat-${sent.conversation}`,

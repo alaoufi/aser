@@ -1,4 +1,5 @@
 import { ratingAverageSql, ratingCountSql } from "./rating-sql";
+import { msg } from "./messages";
 import { randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
 import { z } from "zod";
@@ -202,8 +203,8 @@ export async function saveCourier(user: SessionUser, input: unknown) {
   if (saved.newlyPending)
     void notifyApprovers(
       value.name,
-      `المندوب «${value.name}» سجّل وينتظر الاعتماد.`,
-      "مندوب ينتظر الاعتماد",
+      await msg("alert.courier.pending.body", { name: value.name }),
+      await msg("alert.courier.pending.title"),
     );
   return { id: saved.id, status: saved.status };
 }
@@ -376,8 +377,11 @@ export async function assignOrderCourier(user: SessionUser, input: unknown) {
   if (!saved.rowCount) throw new HttpError(409, "تم توصيل هذا الطلب");
   const { notifyUser } = await import("./push");
   void notifyUser(value.courierUserId, {
-    title: "طلب توصيل جديد",
-    body: `أسندت إليك «${order.family}» توصيل ${order.product ?? "طلب"}.`,
+    title: await msg("msg.courier.assigned.title"),
+    body: await msg("msg.courier.assigned.body", {
+      family: order.family,
+      product: order.product ?? "طلب",
+    }),
     url: "/courier",
     tag: `delivery-${order.id}`,
   });
@@ -437,14 +441,20 @@ export async function customerChooseCourier(user: SessionUser, input: unknown) {
     throw new HttpError(409, "تغيّر توصيل هذا الطلب، حدّث الصفحة");
   const { notifyUser } = await import("./push");
   void notifyUser(value.courierUserId, {
-    title: "طلب توصيل جديد",
-    body: `اختارك عميل لتوصيل ${order.product ?? "طلبه"} من «${order.family}».`,
+    title: await msg("msg.courier.assigned.title"),
+    body: await msg("msg.courier.chosen.body", {
+      product: order.product ?? "طلبه",
+      family: order.family,
+    }),
     url: "/courier",
     tag: `delivery-${order.id}`,
   });
   void notifyUser(order.familyUserId, {
-    title: "مندوب العميل",
-    body: `اختار العميل المندوب ${courier.name} لتوصيل ${order.product ?? "طلبه"}، وسيستلم منكم.`,
+    title: await msg("msg.courier.toFamily.title"),
+    body: await msg("msg.courier.toFamily.body", {
+      courier: courier.name,
+      product: order.product ?? "طلبه",
+    }),
     url: "/dashboard/orders",
     tag: `courier-${order.id}`,
   });
@@ -478,8 +488,11 @@ export async function setCourierPickup(user: SessionUser, input: unknown) {
   if (!row) throw new HttpError(404, "لا يوجد مندوب لهذا الطلب الآن");
   const { notifyUser } = await import("./push");
   void notifyUser(row.courierUserId, {
-    title: "موقع الاستلام",
-    body: `أرسلت «${row.family}» موقع استلام ${row.product ?? "الطلب"}.`,
+    title: await msg("msg.courier.pickup.title"),
+    body: await msg("msg.courier.pickup.body", {
+      family: row.family,
+      product: row.product ?? "الطلب",
+    }),
     url: "/courier",
     tag: `pickup-${value.orderId}`,
   });
@@ -521,8 +534,10 @@ export async function markCourierDelivered(user: SessionUser, input: unknown) {
   if (!row) throw new HttpError(404, "طلب التوصيل غير موجود");
   const { notifyUser } = await import("./push");
   void notifyUser(row.familyUserId, {
-    title: "تم التوصيل",
-    body: `أوصل المندوب ${row.product ?? "الطلب"} إلى العميل.`,
+    title: await msg("msg.courier.delivered.title"),
+    body: await msg("msg.courier.delivered.body", {
+      product: row.product ?? "الطلب",
+    }),
     url: "/dashboard/orders",
     tag: `delivered-${orderId}`,
   });
@@ -604,8 +619,8 @@ export async function reviewCourier(
   if (result.congratulate) {
     const { notifyUser } = await import("./push");
     void notifyUser(result.congratulate, {
-      title: "مبارك اعتمادك مندوبًا",
-      body: "تم اعتماد حسابك، وصار ظاهرًا للأسر المنتجة في «المندوبين». نسأل الله لنا ولكم التوفيق",
+      title: await msg("msg.courier.approved.title"),
+      body: await msg("msg.courier.approved.body"),
       url: "/courier",
       tag: "courier-approved",
     });

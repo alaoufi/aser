@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { msg } from "./messages";
 import { z } from "zod";
 import type { SessionUser } from "../lib/types";
 import { db, transaction } from "./db";
@@ -169,7 +170,14 @@ export async function createChatOrder(
     return product.name as string;
   });
   await sendMessage(user, c.id, {
-    body: `🧾 طلب: ${productName} × ${v.quantity}${v.notes ? `\nملاحظة: ${v.notes}` : ""}`,
+    body:
+      (await msg("chatOrder.msg.new", {
+        product: productName,
+        quantity: v.quantity,
+      })) +
+      (v.notes
+        ? `\n${await msg("chatOrder.msg.note", { note: v.notes })}`
+        : ""),
   });
   return chatOrders(user, c.id);
 }
@@ -188,14 +196,14 @@ const actSchema = z
   })
   .strict();
 
-const NOTES: Record<ChatOrderAction, string> = {
-  complete: "✅ تمت الموافقة وإتمام الطلب",
-  decline: "↩️ اعتذرت الأسرة عن الطلب",
-  cancel: "✖️ أُلغي الطلب",
-  "request-cancel": "⏳ طلب إلغاء الطلب، بانتظار موافقة الطرف الآخر",
-  "agree-cancel": "✖️ أُلغي الطلب بالاتفاق",
-  keep: "✔️ بقي الطلب منفّذًا (رُفض طلب الإلغاء)",
-};
+const NOTES = {
+  complete: "chatOrder.msg.complete",
+  decline: "chatOrder.msg.decline",
+  cancel: "chatOrder.msg.cancel",
+  "request-cancel": "chatOrder.msg.requestCancel",
+  "agree-cancel": "chatOrder.msg.agreeCancel",
+  keep: "chatOrder.msg.keep",
+} as const satisfies Record<ChatOrderAction, string>;
 
 export async function actOnChatOrder(
   user: SessionUser,
@@ -247,7 +255,7 @@ export async function actOnChatOrder(
     return o.productName;
   });
   await sendMessage(user, c.id, {
-    body: `${NOTES[v.action]}: ${productName}`,
+    body: await msg(NOTES[v.action], { product: productName }),
   });
   return chatOrders(user, c.id);
 }
