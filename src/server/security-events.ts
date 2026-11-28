@@ -1,4 +1,5 @@
 import { createHmac, randomUUID } from "node:crypto";
+import { msg } from "./messages";
 import { can } from "../lib/permissions";
 import { isIP } from "node:net";
 import { db, databaseConfigured } from "./db";
@@ -102,10 +103,10 @@ async function alertOnBurst(kind: SecurityEventKind) {
   ).rows as { id: string }[];
   const { notifyUser } = await import("./push");
   await Promise.all(
-    admins.map((a) =>
+    admins.map(async (a) =>
       notifyUser(a.id, {
-        title: "تنبيه أمني: محاولات دخول فاشلة كثيرة",
-        body: `${recent} محاولة فاشلة خلال 10 دقائق. راجع «التقرير الأمني» في الإدارة.`,
+        title: await msg("alert.security.title"),
+        body: await msg("alert.security.body", { count: recent }),
         url: "/admin?tab=security",
         tag: "security-alert",
       }),

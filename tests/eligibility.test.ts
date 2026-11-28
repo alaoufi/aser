@@ -69,8 +69,11 @@ test(
         phone: "+966500000018",
         role: "admin" as const,
       };
-      const city = (await db().query("SELECT id FROM jdatna.cities LIMIT 1"))
-        .rows[0].id;
+      const city = (
+        await db().query(
+          "SELECT id FROM jdatna.cities WHERE id !~ '^[0-9a-f]{8}-' LIMIT 1",
+        )
+      ).rows[0].id;
       // جهازا المدير والأسرة يلتقطان الإشعارات بدل الإرسال الحقيقي.
       const sent: {
         endpoint: string;

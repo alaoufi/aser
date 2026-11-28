@@ -61,8 +61,11 @@ test(
         "INSERT INTO jdatna.producer_documents(id,user_id,type,object_key,mime,size) VALUES($1,$2,'other_document',$3,'application/pdf',10)",
         [doc, uid, "test/" + doc],
       );
-      const city = (await pool.query("SELECT id FROM jdatna.cities LIMIT 1"))
-        .rows[0].id;
+      const city = (
+        await pool.query(
+          "SELECT id FROM jdatna.cities WHERE id !~ '^[0-9a-f]{8}-' LIMIT 1",
+        )
+      ).rows[0].id;
       const data = {
         name: "أسرة أقسام " + tag,
         tradeName: "أقسام معلنة " + tag,

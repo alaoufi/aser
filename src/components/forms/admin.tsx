@@ -219,7 +219,7 @@ function Review({
     }
   }
   return (
-    <article className={s.card}>
+    <article className={s.card} id={`family-${producer.id}`} tabIndex={-1}>
       <span className={s.tag}>{stateOf(producer).label}</span>
       {producer.docsStatus === "exempt" && (
         <span className={s.tag}> مستثنى من الشروط</span>
@@ -384,6 +384,16 @@ export function Admin({ section }: { section?: string } = {}) {
       router.replace(`/admin/${wanted}`);
   }, [section, router]);
   const waiting = producers.filter((p) => p.status === "pending");
+  // ?family=<id> (نافذة «أسر تنتظر الموافقة» والتذكير الأسبوعي): تُفتح بطاقة الأسرة كاملة.
+  useEffect(() => {
+    if (!loaded) return;
+    const wanted = new URLSearchParams(window.location.search).get("family");
+    if (!wanted) return;
+    const card = document.getElementById(`family-${wanted}`);
+    if (!card) return;
+    card.scrollIntoView({ block: "start" });
+    card.focus({ preventScroll: true });
+  }, [loaded, section]);
   useEffect(() => {
     if (canAny(session.user, "approvals", "producers"))
       load()

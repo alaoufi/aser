@@ -74,7 +74,7 @@ test(
     const regions = (
       await pool.query<{ region_id: string; ids: string[] }>(
         `SELECT region_id, (array_agg(id ORDER BY id))[1:2] AS ids FROM jdatna.cities
-         GROUP BY region_id HAVING count(*)>=2 ORDER BY region_id LIMIT 3`,
+         WHERE id !~ '^[0-9a-f]{8}-' GROUP BY region_id HAVING count(*)>=2 ORDER BY region_id LIMIT 3`,
       )
     ).rows;
     assert.equal(regions.length, 3, "ثلاث مناطق في كل منها مدينتان");

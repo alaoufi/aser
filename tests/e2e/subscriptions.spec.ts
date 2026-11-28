@@ -27,7 +27,7 @@ test.describe("subscriptions for customers", () => {
       "+9665" + String(Math.floor(Math.random() * 1e8)).padStart(8, "0");
     const city = (
       await pool.query(
-        "SELECT id,region_id FROM jdatna.cities ORDER BY id LIMIT 1",
+        "SELECT id,region_id FROM jdatna.cities WHERE id !~ '^[0-9a-f]{8}-' ORDER BY id LIMIT 1",
       )
     ).rows[0];
     region = city.region_id;

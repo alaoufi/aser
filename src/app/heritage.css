@@ -2865,3 +2865,9 @@ button.food-dish:focus-visible .food-dish-visual {
   color: var(--ink);
   font-weight: 700;
 }
+
+/* بطاقة الأسرة المفتوحة من «أسر تنتظر الموافقة» أو التذكير الأسبوعي (2026-11-28). */
+article[id^="family-"]:focus {
+  outline: 3px solid var(--gold, #d6a35c);
+  outline-offset: 3px;
+}

@@ -60,7 +60,7 @@ test(
       );
       const city = (
         await pool.query(
-          "SELECT c.id,c.region_id FROM jdatna.cities c ORDER BY c.id LIMIT 1",
+          "SELECT c.id,c.region_id FROM jdatna.cities c WHERE c.id !~ '^[0-9a-f]{8}-' ORDER BY c.id LIMIT 1",
         )
       ).rows[0];
       pid = (

@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { msg } from "./messages";
 import { can } from "../lib/permissions";
 import { z } from "zod";
 import type { SessionUser } from "../lib/types";
@@ -46,9 +47,9 @@ export async function submitSuggestion(
       await db().query("SELECT id FROM jdatna.users WHERE role='admin'")
     ).rows as { id: string }[];
     await Promise.all(
-      admins.map((a) =>
+      admins.map(async (a) =>
         notifyUser(a.id, {
-          title: "اقتراح جديد",
+          title: await msg("alert.suggestion.title"),
           body:
             value.body.length > 120
               ? value.body.slice(0, 120) + "…"

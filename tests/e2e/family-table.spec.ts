@@ -134,8 +134,11 @@ test.describe("the family page shows the chosen table", () => {
     expect(
       (await pool.query("SELECT current_database() AS n")).rows[0].n,
     ).toMatch(/^jdatna_test_/);
-    const city = (await pool.query("SELECT id FROM jdatna.cities LIMIT 1"))
-      .rows[0].id;
+    const city = (
+      await pool.query(
+        "SELECT id FROM jdatna.cities WHERE id !~ '^[0-9a-f]{8}-' LIMIT 1",
+      )
+    ).rows[0].id;
     await pool.query(
       "INSERT INTO jdatna.users(id,name,phone,role,phone_verified_at) VALUES($1,'family-table',$2,'producer',now())",
       [uid, `family-table-${uid}`],

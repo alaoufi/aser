@@ -30,7 +30,9 @@ test.describe("a family buys from other families like a customer", () => {
     const ph = () =>
       "+9665" + String(Math.floor(Math.random() * 1e8)).padStart(8, "0");
     const city = (
-      await pool.query("SELECT id FROM jdatna.cities ORDER BY id LIMIT 1")
+      await pool.query(
+        "SELECT id FROM jdatna.cities WHERE id !~ '^[0-9a-f]{8}-' ORDER BY id LIMIT 1",
+      )
     ).rows[0].id;
     await pool.query(
       "INSERT INTO jdatna.users(id,name,phone,role,phone_verified_at) VALUES($1,'عميل يتحول',$2,'customer',now()),($3,'أسرة الشاهي',$4,'producer',now())",

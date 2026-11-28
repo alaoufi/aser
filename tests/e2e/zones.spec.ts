@@ -104,8 +104,11 @@ test.describe("member checks a real family's delivery zone", () => {
         (await pool.query("SELECT current_database() AS n")).rows[0].n as string
       ).startsWith("jdatna_test_"),
     ).toBe(true);
-    const city = (await pool.query("SELECT id FROM jdatna.cities LIMIT 1"))
-      .rows[0].id;
+    const city = (
+      await pool.query(
+        "SELECT id FROM jdatna.cities WHERE id !~ '^[0-9a-f]{8}-' LIMIT 1",
+      )
+    ).rows[0].id;
     started = true;
     const phone =
       "+9665" + String(Math.floor(Math.random() * 1e8)).padStart(8, "0");

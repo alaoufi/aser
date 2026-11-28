@@ -23,7 +23,7 @@ test(
     const tag = randomUUID().slice(0, 6);
     const [a, b] = (
       await pool.query(
-        "SELECT DISTINCT ON (region_id) id,region_id FROM jdatna.cities ORDER BY region_id,id LIMIT 2",
+        "SELECT DISTINCT ON (region_id) id,region_id FROM jdatna.cities WHERE id !~ '^[0-9a-f]{8}-' ORDER BY region_id,id LIMIT 2",
       )
     ).rows as { id: string; region_id: string }[];
     // ثلاث أسر: في المنطقة (أ)، وفي (ب) تشحن للمملكة، وفي (ب) محلية فقط.

@@ -11,6 +11,12 @@ async function main() {
     const { notifyLateDocuments } = await import("../src/server/management");
     lateDocuments = await notifyLateDocuments();
   } catch {}
+  // تذكير أسبوعي للأسر ذات المهلة والمستثناة، وللإدارة عنها (قرار المالك 2026-11-28).
+  let docsReminders = 0;
+  try {
+    const { remindPendingDocuments } = await import("../src/server/management");
+    docsReminders = await remindPendingDocuments();
+  } catch {}
   // بصمات فتح روابط الدعوة تُحذف بعد يوم (قرار المالك 2026-11-27).
   let inviteClicks = 0;
   try {
@@ -22,6 +28,7 @@ async function main() {
       removed,
       batchPerTable: batch,
       lateDocuments,
+      docsReminders,
       inviteClicks,
     }),
   );

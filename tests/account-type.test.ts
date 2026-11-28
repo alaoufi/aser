@@ -40,8 +40,11 @@ test(
       const admin = await mk("admin");
       const customer = await mk("customer");
       const family = await mk("producer");
-      const city = (await pool.query("SELECT id FROM jdatna.cities LIMIT 1"))
-        .rows[0].id;
+      const city = (
+        await pool.query(
+          "SELECT id FROM jdatna.cities WHERE id !~ '^[0-9a-f]{8}-' LIMIT 1",
+        )
+      ).rows[0].id;
       const slug = "type-test-" + profileId;
       await pool.query(
         "INSERT INTO jdatna.producer_profiles(id,user_id,slug,name,city_id,phone,status) VALUES($1,$2,$3,'أسرة التحويل',$4,$5,'approved')",

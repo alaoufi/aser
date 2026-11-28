@@ -5,17 +5,18 @@ import {
   manageProduct,
   notifyLateDocuments,
   producerDocsAction,
+  reviewProducer,
   saveProfile,
 } from "../src/server/management";
 import { setPushTransport, subscribePush } from "../src/server/push";
 import { db } from "../src/server/db";
 
 /**
- * قرار المالك 2026-11-26: الأسرة تتعهد بتقديم المستندات الرسمية خلال 15 يومًا، فتُعطى كل صلاحيات
- * الأسرة المنتجة فورًا (تظهر للعملاء). المستند الجديد لا يُخفيها. بعد المدة بلا مستند: تنبيه الإدارة فقط.
+ * قرار المالك 2026-11-28: لا تُقبل أسرة سجّلت إلا بعد موافقة الإدارة؛ التعهد بالمستندات يُسجَّل فقط،
+ * ومهلة الـ15 يومًا تبدأ من موافقة الإدارة. المستند الجديد لا يُخفي المعتمدة. بعد المدة بلا مستند: تنبيه.
  */
 test(
-  "a pledge to submit documents within 15 days approves the family at once; late ones alert the admin only",
+  "a pledge waits for the admin; approval starts 15 days for the documents; late ones alert the admin only",
   { skip: process.env.JDATNA_TEST_DB !== "true" },
   async () => {
     const pool = db();
@@ -56,8 +57,11 @@ test(
         endpoint: `https://push.invalid/pledge-admin-${admin.id}`,
         keys: { p256dh: "p".repeat(40), auth: "a".repeat(16) },
       });
-      const city = (await pool.query("SELECT id FROM jdatna.cities LIMIT 1"))
-        .rows[0].id;
+      const city = (
+        await pool.query(
+          "SELECT id FROM jdatna.cities WHERE id !~ '^[0-9a-f]{8}-' LIMIT 1",
+        )
+      ).rows[0].id;
       const category = (
         await pool.query("SELECT id FROM jdatna.categories LIMIT 1")
       ).rows[0].id;
@@ -75,7 +79,7 @@ test(
       });
       const tag = randomUUID().slice(0, 6);
 
-      // 1) التعهد: معتمدة فورًا، وموعد المستندات بعد 15 يومًا، وتنبيه للإدارة.
+      // 1) التعهد: تنتظر موافقة الإدارة (لا تظهر للعملاء)، ويُسجَّل التعهد بلا موعد بعد، وتنبيه للإدارة.
       const pledged = await mk("customer");
       users.push(pledged.id);
       const name1 = `شاهي التعهد ${tag}`;
@@ -84,16 +88,16 @@ test(
         pledge: true,
       });
       producers.push(p1.id);
-      assert.equal(p1.status, "approved");
+      assert.equal(p1.status, "pending");
       const row = (
         await pool.query(
-          "SELECT status,docs_pledged_at,EXTRACT(EPOCH FROM docs_due_at-docs_pledged_at)/86400 AS days FROM jdatna.producer_profiles WHERE id=$1",
+          "SELECT status,docs_pledged_at,docs_due_at FROM jdatna.producer_profiles WHERE id=$1",
           [p1.id],
         )
       ).rows[0];
-      assert.equal(row.status, "approved");
+      assert.equal(row.status, "pending");
       assert.ok(row.docs_pledged_at);
-      assert.equal(Math.round(Number(row.days)), 15);
+      assert.equal(row.docs_due_at, null, "المهلة تبدأ من الموافقة");
       assert.equal(
         (
           await pool.query(
@@ -101,9 +105,22 @@ test(
             [p1.id],
           )
         ).rows[0].decision,
-        "approved",
+        "pending",
       );
-      assert.ok(await reached("أسرة جديدة بتعهد المستندات", name1));
+      assert.ok(await reached("أسرة تنتظر الاعتماد", name1));
+      // موافقة الإدارة («تفعيل» بلا مستند): مهلة 15 يومًا من الموافقة.
+      await reviewProducer(admin as never, p1.id, {
+        decision: "approved",
+        eligibilityConfirmed: true,
+      });
+      const approved = (
+        await pool.query(
+          "SELECT status,EXTRACT(EPOCH FROM docs_due_at-now())/86400 AS days FROM jdatna.producer_profiles WHERE id=$1",
+          [p1.id],
+        )
+      ).rows[0];
+      assert.equal(approved.status, "approved");
+      assert.equal(Math.round(Number(approved.days)), 15);
       // صار حساب أسرة.
       assert.equal(
         (
@@ -155,6 +172,10 @@ test(
         pledge: true,
       });
       producers.push(p3.id);
+      await reviewProducer(admin as never, p3.id, {
+        decision: "approved",
+        eligibilityConfirmed: true,
+      });
       await pool.query(
         "UPDATE jdatna.producer_profiles SET docs_due_at=now()-interval '1 day' WHERE id=$1",
         [p3.id],

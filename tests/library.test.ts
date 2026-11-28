@@ -68,8 +68,11 @@ test(
     const families = [randomUUID(), randomUUID()];
     let productId: string | undefined;
     try {
-      const city = (await pool.query("SELECT id FROM jdatna.cities LIMIT 1"))
-        .rows[0].id;
+      const city = (
+        await pool.query(
+          "SELECT id FROM jdatna.cities WHERE id !~ '^[0-9a-f]{8}-' LIMIT 1",
+        )
+      ).rows[0].id;
       for (const [i, u] of [owner, other].entries()) {
         await pool.query(
           "INSERT INTO jdatna.users(id,name,phone,role,phone_verified_at) VALUES($1,$2,$3,'producer',now())",

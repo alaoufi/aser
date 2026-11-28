@@ -35,7 +35,7 @@ test.describe("admin statistics", () => {
       [adminId, phone(), customer, phone(), owner, phone()],
     );
     await pool.query(
-      "INSERT INTO jdatna.producer_profiles(id,user_id,slug,name,city_id,phone,status) VALUES($1,$2,$3,$4,(SELECT id FROM jdatna.cities LIMIT 1),$5,'approved')",
+      "INSERT INTO jdatna.producer_profiles(id,user_id,slug,name,city_id,phone,status) VALUES($1,$2,$3,$4,(SELECT id FROM jdatna.cities WHERE id !~ '^[0-9a-f]{8}-' LIMIT 1),$5,'approved')",
       [family, owner, `ins-e2e-${tag}`, `أسرة الإحصاء ${tag}`, phone()],
     );
     await pool.query(
@@ -101,6 +101,8 @@ test.describe("admin statistics", () => {
       { name: "jdatna_admin", value: panel, domain: host, path: "/" },
     ]);
     await page.addInitScript(() => {
+      // نافذة «أسر تنتظر الموافقة» (2026-11-28) لها اختبارها؛ هنا تُعدّ مرئية سابقًا.
+      sessionStorage.setItem("jdatna:pending-families-seen", "1");
       (window as unknown as { printed: number }).printed = 0;
       window.print = () => {
         (window as unknown as { printed: number }).printed++;

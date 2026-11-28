@@ -26,12 +26,12 @@ test(
     const tag = randomUUID().slice(0, 8);
     const city = (
       await pool.query(
-        "SELECT c.id, c.region_id FROM jdatna.cities c ORDER BY c.id LIMIT 1",
+        "SELECT c.id, c.region_id FROM jdatna.cities c WHERE c.id !~ '^[0-9a-f]{8}-' ORDER BY c.id LIMIT 1",
       )
     ).rows[0];
     const far = (
       await pool.query(
-        "SELECT id FROM jdatna.cities WHERE region_id <> $1 ORDER BY id LIMIT 1",
+        "SELECT id FROM jdatna.cities WHERE region_id <> $1 AND id !~ '^[0-9a-f]{8}-' ORDER BY id LIMIT 1",
         [city.region_id],
       )
     ).rows[0];

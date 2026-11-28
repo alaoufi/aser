@@ -249,7 +249,7 @@ export function ProfileForm({
       await load();
       setSuccess(
         (registration || !profile || profile.status === "pending") &&
-          saved.status === "approved"
+          f.get("pledge") === "on"
           ? tx("pledge.success")
           : registration || !profile
             ? "تم تسجيل أسرتك بنجاح ✓ طلبك الآن تحت المراجعة، وستظهر حالة الحساب أعلى الصفحة. يمكنك إضافة منتجاتك خلال المراجعة."

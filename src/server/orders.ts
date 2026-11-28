@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
+import { msg } from "./messages";
 import { z } from "zod";
 import type { SessionUser } from "../lib/types";
 import { db, transaction } from "./db";
@@ -262,8 +263,12 @@ export async function submitOrder(user: SessionUser | null, input: unknown) {
       status: "pending",
       notify: {
         to: (product as unknown as { producerUser: string }).producerUser,
-        title: `طلب جديد: ${product.name}`,
-        body: `${value.name} — ${value.quantity} ${product.unit}`,
+        title: await msg("msg.order.new.title", { product: product.name }),
+        body: await msg("msg.order.new.body", {
+          name: value.name,
+          quantity: value.quantity,
+          unit: product.unit,
+        }),
       },
     };
   });

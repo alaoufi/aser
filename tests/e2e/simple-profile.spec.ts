@@ -294,7 +294,7 @@ test("registration asks the delivery method, and the work location is required o
 });
 
 // قرار المالك 2026-11-26: بلا مستند الآن يلزم التعهد بتقديمه خلال 15 يومًا، فتُعتمد الأسرة فورًا.
-test("registering without a document needs the 15-day pledge, and the family is active at once", async ({
+test("registering without a document needs the 15-day pledge, and the family waits for the admin", async ({
   page,
 }) => {
   let profile: any = null,
@@ -319,10 +319,11 @@ test("registering without a document needs the 15-day pledge, and the family is 
         categoryIds: ["12"],
         pickup: true,
         delivery: false,
-        status: "approved",
-        docs_due_at: "2026-12-11T12:00:00Z",
+        // قرار المالك 2026-11-28: لا اعتماد إلا بموافقة الإدارة؛ المهلة تبدأ من الموافقة.
+        status: "pending",
+        docs_due_at: null,
       };
-      return r.fulfill({ json: { id: profile.id, status: "approved" } });
+      return r.fulfill({ json: { id: profile.id, status: "pending" } });
     }
     return r.fulfill({
       json: {
@@ -371,9 +372,9 @@ test("registering without a document needs the 15-day pledge, and the family is 
   await save.click();
   await expect.poll(() => posted?.pledge).toBe(true);
   expect(posted.documentId).toBeNull();
-  await expect(page.getByText(/صارت ظاهرة للعملاء بكل صلاحيات/)).toBeVisible();
-  // التذكير بموعد المستندات.
+  await expect(page.getByText(/تظهر أسرتك للعملاء بعد موافقتها/)).toBeVisible();
+  // لا موعد قبل موافقة الإدارة.
   await expect(
     page.getByText(/تعهدت بتقديم المستندات الرسمية لممارسة النشاط قبل/),
-  ).toBeVisible();
+  ).toHaveCount(0);
 });

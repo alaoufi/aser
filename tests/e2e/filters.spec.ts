@@ -48,7 +48,7 @@ test.describe("browse filters show exactly the matching data", () => {
     ).toBe(true);
     const [here, there] = (
       await pool.query(
-        "SELECT DISTINCT ON (region_id) id,region_id FROM jdatna.cities ORDER BY region_id,id LIMIT 2",
+        "SELECT DISTINCT ON (region_id) id,region_id FROM jdatna.cities WHERE id !~ '^[0-9a-f]{8}-' ORDER BY region_id,id LIMIT 2",
       )
     ).rows;
     region = here.region_id;

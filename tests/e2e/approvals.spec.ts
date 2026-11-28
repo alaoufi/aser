@@ -114,6 +114,27 @@ test("site texts can be searched by place, label or wording", async ({
   await expect(page.getByText("1 نتيجة")).toBeVisible();
   await search.fill("كلمة غير موجودة");
   await expect(page.getByText("لا توجد نصوص مطابقة.")).toBeVisible();
+  // القائمة المنسدلة للأقسام (طلب المالك 2026-11-28): الرسائل وحدها، أو الواجهة العامة وحدها.
+  await search.fill("");
+  const section = page.getByRole("combobox", { name: "القسم", exact: true });
+  await expect
+    .poll(() => section.locator("option").allTextContents())
+    .toEqual(["كل الأقسام", "الواجهة العامة (2)", "الرسائل (1)"]);
+  await section.selectOption("الرسائل");
+  await expect(
+    page.getByRole("group", { name: /رسالة المباركة بعد الاعتماد/ }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("group", { name: "عنوان المائدة", exact: true }),
+  ).toHaveCount(0);
+  await section.selectOption("الواجهة العامة");
+  await expect(
+    page.getByRole("group", { name: "عنوان المائدة", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("group", { name: /رسالة المباركة بعد الاعتماد/ }),
+  ).toHaveCount(0);
+  await page.screenshot({ path: "test-results/texts-sections.png" });
 });
 
 // المعتمدة لا تُطالَب بالنواقص؛ الإدارة تتابعها من «من لديهم نواقص».
