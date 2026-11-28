@@ -183,7 +183,10 @@ test("admin activates a document-free application with a note listing what is mi
     body = r.request().postDataJSON();
     await r.fulfill({ json: { status: "approved" } });
   });
-  await page.goto("/admin/approvals");
+  // كل ما يخص الأسر في «الأسر المنتجة» (قرار المالك 2026-11-28)، وبطاقتها تفتح من الرابط.
+  await page.goto(
+    "/admin/producers?family=00000000-0000-4000-8000-000000000002",
+  );
   await expect(page.getByText("لم ترفق مستندات بعد")).toBeVisible();
   await page
     .getByRole("combobox", { name: "القرار", exact: true })
