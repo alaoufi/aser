@@ -133,6 +133,22 @@ test.describe("invite a friend", () => {
     await page.route(/^https:\/\/(apps\.apple\.com|play\.google\.com)\//, (r) =>
       r.fulfill({ contentType: "text/html", body: "<p>store</p>" }),
     );
+    // ما ينسخه زر الآيفون يُلتقط هنا (الحافظة الحقيقية خارج الاختبار).
+    let copied = "";
+    await page.exposeFunction("__copied", (t: string) => {
+      copied = t;
+    });
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, "clipboard", {
+        configurable: true,
+        value: {
+          writeText: (t: string) =>
+            (
+              window as unknown as { __copied(t: string): Promise<void> }
+            ).__copied(t),
+        },
+      });
+    });
     await page.goto(`/r/${code}`);
     await expect(page).toHaveURL(new RegExp(`/invite/${code}$`));
     const landing = page.getByRole("region", {
@@ -146,16 +162,23 @@ test.describe("invite a friend", () => {
         name: desktop ? "سجّل الآن" : "أكمل من الموقع بدل التطبيق",
       }),
     ).toHaveAttribute("href", "/login?signup=1");
-    // الكمبيوتر إلى التسجيل، والآيفون (مشروع الجوال) إلى App Store.
+    // الكمبيوتر إلى التسجيل تلقائيًا. الآيفون (مشروع الجوال): لا تحويل تلقائي، بل زر واحد ينسخ رابط
+    // الدعوة ثم يفتح App Store، فيقرؤه التطبيق عند أول فتح (قرار المالك 2026-11-28).
     if (desktop)
       await expect(page).toHaveURL(/\/login\?signup=1/, { timeout: 8000 });
-    else
+    else {
+      await expect(landing).toContainText("نحفظ رقم الدعوة ثم نفتح App Store");
+      await page.waitForTimeout(3000);
+      await expect(page).toHaveURL(new RegExp(`/invite/${code}$`));
+      await landing
+        .getByRole("link", { name: "حمّل التطبيق من App Store" })
+        .click();
       await expect(page).toHaveURL(
         /^https:\/\/apps\.apple\.com\/sa\/app\/id6833382132$/,
-        {
-          timeout: 8000,
-        },
+        { timeout: 8000 },
       );
+      expect(copied).toMatch(new RegExp(`/r/${code}$`));
+    }
     const saved = (await context.cookies()).find(
       (c) => c.name === "jdatna_ref",
     );

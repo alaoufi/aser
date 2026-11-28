@@ -961,6 +961,8 @@ export const siteTextDefaults = {
   "inviteLanding.copy": "انسخ الرقم",
   "inviteLanding.copied": "تم النسخ ✓",
   "inviteLanding.hint": "إن طُلب منك «رقم الدعوة» عند التسجيل فاكتب هذا الرقم.",
+  "inviteLanding.iosHint":
+    "اضغط «حمّل التطبيق»: نحفظ رقم الدعوة ثم نفتح App Store، وعند أول فتح للتطبيق يُحسب لصديقك تلقائيًا.",
   "inviteLanding.going": "جارٍ تحويلك إلى {place}…",
   "inviteLanding.download": "حمّل التطبيق من {place}",
   "inviteLanding.signup": "سجّل الآن",
@@ -2143,6 +2145,10 @@ export const siteTextLabels: Record<
   "inviteLanding.copy": ["صفحة الدعوة", "زر نسخ الرقم"],
   "inviteLanding.copied": ["صفحة الدعوة", "بعد النسخ"],
   "inviteLanding.hint": ["صفحة الدعوة", "تنبيه كتابة الرقم عند التسجيل"],
+  "inviteLanding.iosHint": [
+    "صفحة الدعوة",
+    "تنبيه الآيفون: الزر ينسخ الرقم ويفتح المتجر",
+  ],
   "inviteLanding.going": ["صفحة الدعوة", "أثناء التحويل ({place} المتجر)"],
   "inviteLanding.download": ["صفحة الدعوة", "زر المتجر ({place} المتجر)"],
   "inviteLanding.signup": ["صفحة الدعوة", "زر التسجيل"],

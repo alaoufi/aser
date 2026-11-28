@@ -6,6 +6,7 @@
     "configure": "node scripts/configure-ios.mjs"
   },
   "dependencies": {
+    "@capacitor/clipboard": "8.0.1",
     "@capacitor/core": "8.6.0",
     "@capacitor/ios": "8.6.0",
     "@capacitor/push-notifications": "8.1.3"
