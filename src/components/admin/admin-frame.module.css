@@ -282,3 +282,94 @@
     transition: none;
   }
 }
+
+/* ترتيب القائمة بالسحب والإفلات (طلب المالك 2026-11-28). */
+.orderOpen {
+  background: transparent;
+  border: 1px dashed #ffffff40;
+  border-radius: 10px;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  margin: 8px 12px;
+  min-height: 40px;
+  opacity: 0.85;
+}
+.orderEditor {
+  display: grid;
+  gap: 8px;
+  overflow-y: auto;
+}
+.orderHint {
+  font-size: 13px;
+  margin: 8px 12px 0;
+  opacity: 0.85;
+}
+.orderGroup {
+  border: 1px dashed #ffffff30;
+  border-radius: 10px;
+  margin: 4px 8px;
+  padding-bottom: 4px;
+}
+.orderGroup > .groupTitle {
+  cursor: grab;
+  touch-action: none;
+}
+.orderList {
+  display: grid;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.orderList > .item {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.dragHandle {
+  font-size: 15px;
+  margin-inline-end: 6px;
+  opacity: 0.7;
+}
+.dragGhost {
+  opacity: 0.35;
+}
+.dragChosen {
+  background: #ffffff1f;
+  border-radius: 8px;
+}
+.orderError {
+  color: #ffb4a6;
+  font-size: 14px;
+  margin: 0 12px;
+}
+.orderActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 12px 8px;
+}
+.orderSave,
+.orderCancel,
+.orderReset {
+  border-radius: 10px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  min-height: 40px;
+  padding: 0 12px;
+}
+.orderSave {
+  background: #d6a35c;
+  border: 0;
+  color: #2e1d12;
+  font-weight: 700;
+}
+.orderCancel,
+.orderReset {
+  background: transparent;
+  border: 1px solid #ffffff55;
+  color: inherit;
+}

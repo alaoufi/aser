@@ -1,6 +1,11 @@
 import { randomUUID } from "node:crypto";
 import type { SessionUser } from "../lib/types";
-import { cleanMenuLayout, type MenuLayout } from "../lib/admin-nav";
+import {
+  cleanMenuLayout,
+  cleanMenuOrder,
+  type MenuLayout,
+  type MenuOrder,
+} from "../lib/admin-nav";
 import { can, isManager } from "../lib/permissions";
 import { databaseConfigured, db, transaction } from "./db";
 import { HttpError } from "./security";
@@ -55,4 +60,41 @@ export async function saveMenuLayout(user: SessionUser, input: unknown) {
     );
     return { layout };
   });
+}
+
+/**
+ * ترتيب القائمة الجانبية الشخصي لكل مدير (طلب المالك 2026-11-28): بالسحب والإفلات، ويبقى بعد التحديث.
+ * لكل عضو إدارة ترتيبه، فوق «ترتيب القوائم» العام. للعرض فقط ولا يغيّر الصلاحيات.
+ */
+export async function getMenuOrder(
+  user: SessionUser,
+): Promise<MenuOrder | null> {
+  if (!isManager(user)) throw new HttpError(403, "لا تملك صلاحية الإدارة");
+  if (!databaseConfigured()) return null;
+  const raw = (
+    await db().query<{ menu_order: unknown }>(
+      "SELECT menu_order FROM jdatna.admin_menu_orders WHERE user_id=$1",
+      [user.id],
+    )
+  ).rows[0]?.menu_order;
+  return raw ? cleanMenuOrder(raw) : null;
+}
+
+export async function saveMenuOrder(user: SessionUser, input: unknown) {
+  if (!isManager(user)) throw new HttpError(403, "لا تملك صلاحية الإدارة");
+  const reset = (input as { reset?: unknown } | null)?.reset === true;
+  const order = reset ? null : cleanMenuOrder(input);
+  if (!reset && !order)
+    throw new HttpError(400, "الترتيب غير صالح. حدّث الصفحة وحاول مرة أخرى.");
+  if (order)
+    await db().query(
+      `INSERT INTO jdatna.admin_menu_orders(user_id,menu_order,updated_at) VALUES($1,$2,now())
+       ON CONFLICT(user_id) DO UPDATE SET menu_order=EXCLUDED.menu_order,updated_at=now()`,
+      [user.id, JSON.stringify(order)],
+    );
+  else
+    await db().query("DELETE FROM jdatna.admin_menu_orders WHERE user_id=$1", [
+      user.id,
+    ]);
+  return { order };
 }
