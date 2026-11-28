@@ -29,13 +29,14 @@ function assertOwnerAdmin(user: SessionUser) {
 
 /**
  * تبويبات «الأعضاء والصلاحيات» (قرار المالك 2026-11-28): الكل، المسجلون خلال 24 ساعة، الموقوفون،
- * الأسر المنتجة، العملاء، الإدارة. الشرط في الخادم، فلا يفوت عضو قديم خارج آخر 200.
+ * الأسر المنتجة، المندوبون (الخاص والعام)، العملاء، الإدارة. الشرط في الخادم، فلا يفوت عضو قديم خارج آخر 200.
  */
 export const MEMBER_TABS = [
   "all",
   "new",
   "suspended",
   "families",
+  "couriers",
   "customers",
   "admins",
 ] as const;
@@ -47,6 +48,8 @@ const TAB_SQL: Record<MemberTab, string> = {
   new: "u.created_at > now()-interval '24 hours'",
   suspended: "u.suspended_at IS NOT NULL",
   families: FAMILY_SQL,
+  // المندوبون الخاص والعام معًا (طلب المالك 2026-11-28)؛ «مندوب خاص» يظهر أمام اسمه.
+  couriers: "u.role='courier'",
   customers: `u.role='customer' AND NOT ${FAMILY_SQL} AND NOT ${ADMIN_SQL}`,
   admins: ADMIN_SQL,
 };

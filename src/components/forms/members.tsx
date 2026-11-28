@@ -159,13 +159,21 @@ function AccessFields({
 /** قائمة الأعضاء بلا بحث؛ تُحفظ وتُحمَّل مسبقًا كبقية أقسام الإدارة. */
 export const MEMBERS_URL = "/api/admin/members?q=";
 type MemberTab =
-  "add" | "all" | "new" | "suspended" | "families" | "customers" | "admins";
+  | "add"
+  | "all"
+  | "new"
+  | "suspended"
+  | "families"
+  | "couriers"
+  | "customers"
+  | "admins";
 const TABS: MemberTab[] = [
   "all",
   "add",
   "new",
   "suspended",
   "families",
+  "couriers",
   "customers",
   "admins",
 ];

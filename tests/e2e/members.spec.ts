@@ -69,6 +69,7 @@ test("admin adds a member and grants permissions to members and families", async
           new: 1,
           suspended: 0,
           families: 1,
+          couriers: 2,
           customers: 1,
           admins: 1,
         },
@@ -84,6 +85,7 @@ test("admin adds a member and grants permissions to members and families", async
     "المسجلون خلال 24 ساعة (1)",
     "الموقوفون (0)",
     "الأسر المنتجة (1)",
+    "المندوبون (2)",
     "العملاء (1)",
     "الإدارة (1)",
   ]);
@@ -96,6 +98,9 @@ test("admin adds a member and grants permissions to members and families", async
   await expect(row("a")).toContainText("مدير عام");
   await tablist.getByRole("tab", { name: /الأسر المنتجة/ }).click();
   await expect.poll(() => tabs.at(-1)).toBe("families");
+  // تبويب المندوبين: الخاص والعام معًا.
+  await tablist.getByRole("tab", { name: /المندوبون/ }).click();
+  await expect.poll(() => tabs.at(-1)).toBe("couriers");
   await tablist.getByRole("tab", { name: /الكل/ }).click();
   // إضافة عضو جديد برقم جواله وصلاحيات محددة.
   await tablist.getByRole("tab", { name: "＋ إضافة مستخدم" }).click();
