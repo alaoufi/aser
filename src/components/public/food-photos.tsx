@@ -167,7 +167,11 @@ export function FoodPhotos() {
         {main.href && (
           <figcaption className="food-showcase-caption" aria-live="polite">
             <strong>{main.name}</strong>
-            <span>{[main.family, main.price].filter(Boolean).join(" · ")}</span>
+            {/* اسم الأسرة ثم السعر في سطر مستقل (قرار المالك 2026-11-28): النقطة «·» كانت تشبه الصفر. */}
+            {main.family && <span>{main.family}</span>}
+            {main.price && (
+              <span className="food-showcase-price">{main.price}</span>
+            )}
             <Link href={main.href}>
               {txb("plates.details")} <span aria-hidden="true">←</span>
             </Link>

@@ -2859,3 +2859,9 @@ button.food-dish:focus-visible .food-dish-visual {
     gap: 6px;
   }
 }
+
+/* سعر الصحن المكبّر في سطر مستقل (قرار المالك 2026-11-28). */
+.food-showcase-caption .food-showcase-price {
+  color: var(--ink);
+  font-weight: 700;
+}
