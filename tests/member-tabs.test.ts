@@ -18,7 +18,14 @@ test(
       (await pool.query("SELECT current_database() AS n")).rows[0].n,
       /^jdatna_test_/,
     );
-    const tag = "تبويب" + randomUUID().slice(0, 6);
+    // حروف فقط: البحث يطابق الجوال بأي أرقام في النص، فأرقام الوسم كانت تطابق جوالات اختبارات تعمل معه.
+    const letters = "ابتثجحخدذرزسشصضطظعغفقكلمنهوي";
+    const tag =
+      "تبويب" +
+      Array.from(
+        { length: 8 },
+        () => letters[Math.floor(Math.random() * letters.length)],
+      ).join("");
     const ids: string[] = [];
     const family = randomUUID();
     const mk = async (

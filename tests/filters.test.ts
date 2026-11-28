@@ -523,14 +523,17 @@ test(
       );
       assert.deepEqual(await famIds({ q: "الجدة" }), [a2.id]);
 
-      // مائدة اليوم: المتاح فقط، وليس من أسرة لا تطبخ اليوم.
+      // مائدة اليوم: القابل للطلب (قرار المالك 2026-11-28): الجاهز من أسرة تطبخ اليوم، وحسب الطلب.
       const today = (await todayProducts({ region: A.region_id }, 200))
         .map((p) => p.id)
         .filter((id) => products.some((p) => p.id === id))
         .sort();
       assert.deepEqual(
         today,
-        expected({ region: A.region_id, status: "available" }),
+        [
+          ...expected({ region: A.region_id, status: "available" }),
+          ...expected({ region: A.region_id, status: "preorder" }),
+        ].sort(),
       );
 
       // التصفح بالمنطقة: منتجات المنطقة، ثم «يُشحن لكل المناطق» من خارجها، بلا تكرار بين القسمين.

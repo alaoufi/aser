@@ -133,7 +133,7 @@ test.describe("today's table on a real isolated catalog", () => {
   });
 });
 
-test.describe("today's table pages with arrows outside it, most ordered first", () => {
+test.describe("today's table pages with arrows outside it, in a random order", () => {
   test.skip(
     process.env.JDATNA_TEST_DB !== "true" || !process.env.DATABASE_URL,
     "Requires isolated database environment",
@@ -203,13 +203,14 @@ test.describe("today's table pages with arrows outside it, most ordered first", 
       await pool?.end();
     }
   });
-  test("arrows outside the table page through the dishes, and the most ordered comes first", async ({
+  test("arrows outside the table page through the dishes, all of them on the table", async ({
     page,
   }) => {
     await page.goto(`/?region=${encodeURIComponent(region)}`);
     const table = page.getByRole("region", { name: "مائدة اليوم" });
     const ours = table.getByRole("button", { name: new RegExp(`طبق ${tag}`) });
-    await expect(ours.first()).toHaveAccessibleName(`طبق ${tag} 9`);
+    // الترتيب عشوائي مع كل تحديث (قرار المالك 2026-11-28): أطباقنا العشرة كلها على المائدة.
+    await expect(ours).toHaveCount(10);
     const prev = table.getByRole("button", { name: "الأطباق السابقة" });
     const next = table.getByRole("button", { name: "الأطباق التالية" });
     const track = table.locator(".table-track");
