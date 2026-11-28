@@ -7,7 +7,7 @@ const crypto = require("crypto");
 
 const API = "https://api.appstoreconnect.apple.com/v1";
 const BUNDLE = "com.jdatna.app";
-const WHATS_NEW = "التطبيق يفتح نطاقنا الجديد jdtna.sa، مع تحسينات في الأداء والدخول.";
+const WHATS_NEW = "دعوة صديق صارت أسهل: إذا فتح صديقك رابط دعوتك ثم حمّل التطبيق، يُحسب لك تلقائيًا. مع تحسينات عامة.";
 
 const b64url = (v) => Buffer.from(v).toString("base64url");
 function token() {

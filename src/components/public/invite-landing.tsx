@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useTx } from "@/components/site-texts";
 import { insideApp } from "./store-badges";
+import { inviteClipText } from "@/lib/invite-clipboard";
 
 const SIGNUP = "/login?signup=1";
 
@@ -23,13 +24,18 @@ export function InviteLanding({
   const [target, setTarget] = useState(store ?? SIGNUP);
   const [copied, setCopied] = useState(false);
   const [paused, setPaused] = useState(false);
+  // الآيفون إلى App Store مع رقم دعوة: لا تحويل تلقائي، بل زر واحد ينسخ رابط الدعوة ثم يفتح المتجر،
+  // فيقرؤه التطبيق عند أول فتح ويُحسب لصاحب الدعوة (قرار المالك 2026-11-28). الآيفون لا ينسخ إلا بلمسة.
+  const [iosCopy, setIosCopy] = useState(false);
   useEffect(() => {
     const to = insideApp() ? SIGNUP : (store ?? SIGNUP);
     setTarget(to);
-    if (paused) return;
+    const copyFirst = Boolean(code) && platform === "ios" && to !== SIGNUP;
+    setIosCopy(copyFirst);
+    if (paused || copyFirst) return;
     const t = window.setTimeout(() => window.location.assign(to), 2500);
     return () => window.clearTimeout(t);
-  }, [store, paused]);
+  }, [store, paused, code, platform]);
   const storeName =
     target === SIGNUP
       ? txb("inviteLanding.site")
@@ -64,13 +70,33 @@ export function InviteLanding({
         </div>
       )}
       {code && (
-        <p className="invite-landing-hint">{tx("inviteLanding.hint")}</p>
+        <p className="invite-landing-hint">
+          {tx(iosCopy ? "inviteLanding.iosHint" : "inviteLanding.hint")}
+        </p>
       )}
       <p role="status" aria-live="polite">
-        {paused ? "" : txb("inviteLanding.going", { place: storeName })}
+        {paused || iosCopy
+          ? ""
+          : txb("inviteLanding.going", { place: storeName })}
       </p>
       <div className="invite-landing-actions">
-        <a className="button" href={target}>
+        <a
+          className="button"
+          href={target}
+          onClick={
+            iosCopy && code
+              ? async (e) => {
+                  e.preventDefault();
+                  try {
+                    await navigator.clipboard.writeText(
+                      inviteClipText(window.location.origin, code),
+                    );
+                  } catch {}
+                  window.location.assign(target);
+                }
+              : undefined
+          }
+        >
           {target === SIGNUP
             ? txb("inviteLanding.signup")
             : txb("inviteLanding.download", { place: storeName })}
